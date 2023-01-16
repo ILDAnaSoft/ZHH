@@ -1,1 +1,8 @@
 *~
+source/*/.gitignore
+source/*/build
+source/*/lib
+source/*/xml
+*#
+*oldsrc*
+*.swp
