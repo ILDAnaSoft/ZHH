@@ -22,6 +22,10 @@ cmake -C $ILCSOFT/ILCSoft.cmake ..
 make install
 ```
 
+#### Helper script
+If you compile a freshly cloned copy from scratch, you _might_ want to use the `compile_from_scratch.sh` script.
+For that you need to `source` it from the top level directory of the repository. It saves some typing, that's all.
+
 ### How to run the analysis
 ```shell
 Marlin scripts/ZHHllbbbbAnalysis.xml
