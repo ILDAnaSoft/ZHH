@@ -94,6 +94,7 @@ class ZHHllbbbbKinFit : public Processor , public TrueJet_Parser
 		virtual void	getLeptonParameters( ReconstructedParticle* lepton , float (&parameters)[ 3 ] , float (&errors)[ 3 ] );
 		std::vector<double> calculateStartZH1H2(pfoVector jets, pfoVector leptons, vector<unsigned int> perm);
 		std::vector<double> calculatePulls(std::shared_ptr<ParticleFitObject> fittedobject, ReconstructedParticle* startobject, int type);
+		double calcChi2(shared_ptr<vector<shared_ptr<BaseFitObject>>> fitobjects);
 		virtual void	check( LCEvent * evt );
 		virtual void	end();
 		string get_recoMCTruthLink()

@@ -1106,10 +1106,16 @@ ZHHllbbbbKinFit::FitResult ZHHllbbbbKinFit::performFIT( pfoVector jets,
     }
 
     //perform fit: 
+    streamlog_out(MESSAGE) << "chi2 before fit" << calcChi2(fos) << endl; 
     float fitProbability = fitter->fit();
+    streamlog_out(MESSAGE) << "chi2 after fit (from fitter)" << fitter->getChi2() << endl; 
+    streamlog_out(MESSAGE) << "chi2 after fit (from calcchi2)" << (dynamic_pointer_cast<NewFitterGSL>(fitter))->calcChi2() << endl; 
+    streamlog_out(MESSAGE) << "chi2 after fit (from fitter)" << fitter->getChi2() << endl; 
+    streamlog_out(MESSAGE) << "chi2 after fit (from fitobjects)" << calcChi2(fos) << endl; 
     fitter->addConstraint( h1.get() );
     fitter->addConstraint( h2.get() );
     fitter->addConstraint( z.get() );
+    streamlog_out(MESSAGE) << "chi2 after adding helper constraints" << fitter->getChi2() << endl; 
     shared_ptr<vector<shared_ptr<BaseHardConstraint>>> constraints = make_shared<vector<shared_ptr<BaseHardConstraint>>>();
     constraints->push_back(z);
     constraints->push_back(pxc);
@@ -1350,6 +1356,21 @@ std::vector<double> ZHHllbbbbKinFit::calculatePulls(std::shared_ptr<ParticleFitO
     }
   }
   return pulls;
+}
+
+double ZHHllbbbbKinFit::calcChi2(shared_ptr<vector<shared_ptr<BaseFitObject>>> fitobjects) {
+  double chi2 = 0;
+  for (auto it = fitobjects->begin(); it != fitobjects->end(); ++it) {
+    shared_ptr<BaseFitObject> fo = *it;
+    assert (fo);
+    chi2 += fo->getChi2();
+  }/*
+  for (SoftConstraintIterator i = softconstraints.begin(); i != softconstraints.end(); ++i) {
+    BaseSoftConstraint *bsc = *i;
+    assert (bsc);
+    chi2 += bsc->getChi2();
+    }*/
+  return chi2;
 }
 
 void ZHHllbbbbKinFit::check( LCEvent* )
