@@ -5,6 +5,7 @@
 #include <EVENT/LCCollection.h>
 #include <EVENT/MCParticle.h>
 #include <EVENT/ReconstructedParticle.h>
+#include <EVENT/LCIntVec.h>
 #include <IMPL/ReconstructedParticleImpl.h>
 #include <UTIL/PIDHandler.h>
 
@@ -158,6 +159,14 @@ PreSelection::PreSelection() :
 				 m_PreSelectionCollection,
 				 std::string("preselection")
 				 );
+
+	registerOutputCollection( LCIO::LCINTVEC,
+				  "isPassed",
+				  "Output for whether preselection is passed" ,
+				  m_isPassed,
+				  std::string("ispassed")
+				  );
+
 }
 
 void PreSelection::init()
@@ -279,6 +288,8 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
     inputPfoCollection = pLCEvent->getCollection( m_inputPfoCollection );
 
     LCCollectionVec* preselectioncol = new LCCollectionVec(LCIO::RECONSTRUCTEDPARTICLE);
+    LCCollectionVec *ispassedcol = new LCCollectionVec(LCIO::LCINTVEC);
+    LCIntVec *ispassedvec = new LCIntVec;
 
     m_nJets = inputJetCollection->getNumberOfElements();
     m_nIsoLeps = inputLeptonCollection->getNumberOfElements();
@@ -419,9 +430,14 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
     if (m_Evis > m_maxEvis) passed = false;
     if (m_dihiggsMass < m_minHHmass) passed = false;
     if (m_nbjets < m_minnbjets) passed = false;
+    ReconstructedParticleImpl* ispassedparticle = new ReconstructedParticleImpl;
+    ispassedparticle->setType(passed);
+    preselectioncol->addElement(ispassedparticle);
     preselectioncol->parameters().setValue("isPassed", (bool)passed);
+    ispassedvec->push_back(passed);
+    ispassedcol->addElement(ispassedvec);
     pLCEvent->addCollection(preselectioncol, m_PreSelectionCollection);
-
+    pLCEvent->addCollection(ispassedcol, m_isPassed);
   }
   catch(DataNotAvailableException &e) {
     streamlog_out(MESSAGE) << "processEvent : Input collections not found in event " << m_nEvt << std::endl;
