@@ -9,6 +9,7 @@
 #include <TTree.h>
 #include <vector>
 #include "TLorentzVector.h"
+#include "physsim/LCMEZHH.h"
 class TFile;
 class TH1F;
 class TH1I;
@@ -17,7 +18,8 @@ class TTree;
 
 using namespace lcio ;
 using namespace marlin ;
-using namespace lcme;
+using namespace lcme ;
+
 class ZHHPostRecoMEProcessor : public Processor
 {
 	public:
@@ -51,20 +53,19 @@ class ZHHPostRecoMEProcessor : public Processor
 		std::string m_inputMCTrueCollection{};
 		std::string m_outputFile{};
 
+		int m_nRun;
+        int m_nEvt;
 		int m_ZDecayMode{};
 		float m_Hmass{};
 
 		TFile *m_pTFile{};
         TTree *m_pTTree{};
-		lcme::LCMEZZH *_zzh; // ZZH MEM calculator instance
-
-		int m_nRun;
-        int m_nEvt;
+		lcme::LCMEZHH *_zhh; // ZHH MEM calculator instance
 
 		// Refreshed every run
 		int m_passed_preselection{};
-		int m_h1_decay_pdg{};
-		int m_h2_decay_pdg{};
+		int m_true_h1_decay_pdg{};
+		int m_true_h2_decay_pdg{};
 
 		float m_true_sigma{};
 		float m_true_sigmall{};

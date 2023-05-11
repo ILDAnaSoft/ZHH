@@ -7,3 +7,4 @@ source/*/xml
 *oldsrc*
 *.swp
 Physsim
+.npy

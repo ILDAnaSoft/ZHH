@@ -4,12 +4,12 @@
             "name": "Linux",
             "includePath": [
                 "/cvmfs/ilc.desy.de/key4hep/spackages/root/6.26.06/x86_64-centos7-gcc11.2.0-opt/dctcyvzmo7xg4dehiooyfl24oevtaids/include/**", // Root
-                "/cvmfs/ilc.desy.de/key4hep/spackages/physsim/0.4.2/x86_64-centos7-gcc11.2.0-opt/e26yiqeeecuwnx563aoawj2yhovjquox/include/**", // Physsim
+                //"/cvmfs/ilc.desy.de/key4hep/spackages/physsim/0.4.2/x86_64-centos7-gcc11.2.0-opt/e26yiqeeecuwnx563aoawj2yhovjquox/include/**", // Physsim
                 "/cvmfs/ilc.desy.de/key4hep/spackages/lcio/2.19/x86_64-centos7-gcc11.2.0-opt/lr4mjd4u7kmg2ugmdcvcr6vdjtrxxwwv/include/**", // LCIO
                 "/cvmfs/ilc.desy.de/key4hep/spackages/marlin/1.19/x86_64-centos7-gcc11.2.0-opt/aj5n37vac5zzw4eil7raxolernp6o4vi/include/**", // Marlin
                 "/cvmfs/ilc.desy.de/key4hep/spackages/ilcutil/1.7/x86_64-centos7-gcc11.2.0-opt/nnyawmpqncnl6tu3nfhufy4seyzdlfj2/include/**", // streamlog
-                "${workspaceFolder}/source/**",
-                "${workspaceFolder}/Physsim/include/**"
+                "${workspaceFolder}/source/ZHHPostRecoMEProcessor/include/**",
+                "${workspaceFolder}/Physsim/include/**" // Physsim
             ],
             "defines": [],
             "compilerPath": "/cvmfs/ilc.desy.de/key4hep/spackages/gcc/11.2.0/x86_64-centos7-gcc4.8.5-opt/7isdlpuoi7cbcsugpa2hzuqhh5zgeapj/bin/g++",

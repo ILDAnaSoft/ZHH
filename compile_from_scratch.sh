@@ -28,4 +28,5 @@ compile_pkg LeptonErrorAnalysis
 compile_pkg LeptonPairing
 compile_pkg PreSelection
 compile_pkg ZHHKinfitProcessors
+compile_pkg ZHHPostRecoMEProcessor
 cd ..
