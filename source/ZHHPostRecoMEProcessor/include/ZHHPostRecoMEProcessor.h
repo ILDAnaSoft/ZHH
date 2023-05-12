@@ -56,6 +56,7 @@ class ZHHPostRecoMEProcessor : public Processor
 		int m_nRun;
         int m_nEvt;
 		int m_ZDecayMode{};
+		int m_run_reco{};
 		float m_Hmass{};
 
 		TFile *m_pTFile{};
@@ -76,7 +77,11 @@ class ZHHPostRecoMEProcessor : public Processor
 		float m_true_mhh{};
 		float m_true_mzhh{};
 		float m_true_phi{};
+		float m_true_phif{};
+		float m_true_phih{};
 		float m_true_costheta{};
+		float m_true_costhetaf{};
+		float m_true_costhetah{};
 		
 		float m_reco_sigma{};
 		float m_reco_sigmall{};
@@ -87,7 +92,11 @@ class ZHHPostRecoMEProcessor : public Processor
 		float m_reco_mhh{};
 		float m_reco_mzhh{};
 		float m_reco_phi{};
+		float m_reco_phif{};
+		float m_reco_phih{};
 		float m_reco_costheta{};
+		float m_reco_costhetaf{};
+		float m_reco_costhetah{};
 
 };
 

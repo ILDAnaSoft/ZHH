@@ -116,7 +116,11 @@ void ZHHPostRecoMEProcessor::init()
   m_pTTree->Branch("true_mhh", &m_true_mhh, "true_mhh/F");
   m_pTTree->Branch("true_mzhh", &m_true_mzhh, "true_mzhh/F");
   m_pTTree->Branch("true_phi", &m_true_phi, "true_phi/F");
+  m_pTTree->Branch("true_phif", &m_true_phif, "true_phif/F");
+  m_pTTree->Branch("true_phih", &m_true_phih, "true_phih/F");
   m_pTTree->Branch("true_costheta", &m_true_costheta, "true_costheta/F");
+  m_pTTree->Branch("true_costhetaf", &m_true_costhetaf, "true_costhetaf/F");
+  m_pTTree->Branch("true_costhetah", &m_true_costhetah, "true_costhetah/F");
 
   m_pTTree->Branch("reco_sigma", &m_reco_sigma, "reco_sigma/F");
   m_pTTree->Branch("reco_sigmall", &m_reco_sigmall, "reco_sigmall/F");
@@ -127,7 +131,11 @@ void ZHHPostRecoMEProcessor::init()
   m_pTTree->Branch("reco_mhh", &m_reco_mhh, "reco_mhh/F");
   m_pTTree->Branch("reco_mzhh", &m_reco_mzhh, "reco_mzhh/F");
   m_pTTree->Branch("reco_phi", &m_reco_phi, "reco_phi/F");
+  m_pTTree->Branch("reco_phif", &m_reco_phif, "reco_phif/F");
+  m_pTTree->Branch("reco_phih", &m_reco_phih, "reco_phih/F");
   m_pTTree->Branch("reco_costheta", &m_reco_costheta, "reco_costheta/F");
+  m_pTTree->Branch("reco_costhetaf", &m_reco_costhetaf, "reco_costhetaf/F");
+  m_pTTree->Branch("reco_costhetah", &m_reco_costhetah, "reco_costhetah/F");
 
   streamlog_out(DEBUG) << "   init finished  " << std::endl;
 
@@ -140,30 +148,39 @@ void ZHHPostRecoMEProcessor::Clear()
   streamlog_out(DEBUG) << "   Clear called  " << std::endl;
   
   m_passed_preselection = 0;
-  m_true_h1_decay_pdg = 0;
-	m_true_h2_decay_pdg = 0;
+  m_true_h1_decay_pdg   = 0;
+	m_true_h2_decay_pdg   = 0;
+  m_run_reco            = 0;
 
-  m_true_sigma    = 0.;
-  m_true_sigmall  = 0.;
-  m_true_sigmalr  = 0.;
-  m_true_sigmarl  = 0.;
-  m_true_sigmarr  = 0.;
-  m_true_mz       = 0.;
-  m_true_mhh      = 0.;
-  m_true_mzhh     = 0.;
-  m_true_phi      = 0.;
-  m_true_costheta = 0.;
+  m_true_sigma     = 0.;
+  m_true_sigmall   = 0.;
+  m_true_sigmalr   = 0.;
+  m_true_sigmarl   = 0.;
+  m_true_sigmarr   = 0.;
+  m_true_mz        = 0.;
+  m_true_mhh       = 0.;
+  m_true_mzhh      = 0.;
+  m_true_phi       = 0.;
+  m_true_phif      = 0.;
+  m_true_phih      = 0.;
+  m_true_costheta  = 0.;
+  m_true_costhetaf = 0.;
+  m_true_costhetah = 0.;
   
-  m_reco_sigma    = 0.;
-  m_reco_sigmall  = 0.;
-  m_reco_sigmalr  = 0.;
-  m_reco_sigmarl  = 0.;
-  m_reco_sigmarr  = 0.;
-  m_reco_mz       = 0.;
-  m_reco_mhh      = 0.;
-  m_reco_mzhh     = 0.;
-  m_reco_phi      = 0.;
-  m_reco_costheta = 0.;
+  m_reco_sigma     = 0.;
+  m_reco_sigmall   = 0.;
+  m_reco_sigmalr   = 0.;
+  m_reco_sigmarl   = 0.;
+  m_reco_sigmarr   = 0.;
+  m_reco_mz        = 0.;
+  m_reco_mhh       = 0.;
+  m_reco_mzhh      = 0.;
+  m_reco_phi       = 0.;
+  m_reco_phif      = 0.;
+  m_reco_phih      = 0.;
+  m_reco_costheta  = 0.;
+  m_reco_costhetaf = 0.;
+  m_reco_costhetah = 0.;
 }
 void ZHHPostRecoMEProcessor::processRunHeader( LCRunHeader*  /*run*/) { 
   m_nRun++ ;
@@ -222,21 +239,27 @@ void ZHHPostRecoMEProcessor::processEvent( EVENT::LCEvent *pLCEvent )
 
       _zhh->SetMomentumFinal(reco_lortz);
 
-      m_reco_sigmall  = _zhh->GetMatrixElement2(vHelLL);
-      m_reco_sigmalr  = _zhh->GetMatrixElement2(vHelLR);
-      m_reco_sigmarl  = _zhh->GetMatrixElement2(vHelRL);
-      m_reco_sigmarr  = _zhh->GetMatrixElement2(vHelRR);
-      m_reco_sigma    = _zhh->GetMatrixElement2();
+      m_reco_sigmall   = _zhh->GetMatrixElement2(vHelLL);
+      m_reco_sigmalr   = _zhh->GetMatrixElement2(vHelLR);
+      m_reco_sigmarl   = _zhh->GetMatrixElement2(vHelRL);
+      m_reco_sigmarr   = _zhh->GetMatrixElement2(vHelRR);
+      m_reco_sigma     = _zhh->GetMatrixElement2();
 
-      m_reco_mz       = TMath::Sqrt(_zhh->GetQ2Z());
-      m_reco_mhh      = TMath::Sqrt(_zhh->GetQ2HH());
-      m_reco_mzhh     = TMath::Sqrt(_zhh->GetQ2ZHH());
+      m_reco_mz        = TMath::Sqrt(_zhh->GetQ2Z());
+      m_reco_mhh       = TMath::Sqrt(_zhh->GetQ2HH());
+      m_reco_mzhh      = TMath::Sqrt(_zhh->GetQ2ZHH());
 
-      m_reco_phi      = _zhh->GetPhi();
-      m_reco_costheta = _zhh->GetCosTheta();
+      m_reco_phi       = _zhh->GetPhi();
+      m_reco_phif      = _zhh->GetPhiF();
+      m_reco_phih      = _zhh->GetPhiH();
+      m_reco_costheta  = _zhh->GetCosTheta();
+      m_reco_costhetaf = _zhh->GetCosThetaF();
+      m_reco_costhetah = _zhh->GetCosThetaH();
     }
 
     // True
+    m_run_reco = 1;
+
     streamlog_out(DEBUG) << "        getting true MC collection: " << m_inputMCTrueCollection << std::endl ;
     inputMCTrueCollection = pLCEvent->getCollection( m_inputMCTrueCollection );
 
@@ -265,21 +288,24 @@ void ZHHPostRecoMEProcessor::processEvent( EVENT::LCEvent *pLCEvent )
     m_true_mhh  = TMath::Sqrt(_zhh->GetQ2HH());
     m_true_mzhh = TMath::Sqrt(_zhh->GetQ2ZHH());
 
-    m_true_phi      = _zhh->GetPhi();
-    m_true_costheta = _zhh->GetCosTheta();
+    m_true_phi       = _zhh->GetPhi();
+    m_true_phif      = _zhh->GetPhiF();
+    m_true_phih      = _zhh->GetPhiH();
+    m_true_costheta  = _zhh->GetCosTheta();
+    m_true_costhetaf = _zhh->GetCosThetaF();
+    m_true_costhetah = _zhh->GetCosThetaH();
 
     MCParticle *mcPart_h1_decay = dynamic_cast<MCParticle*>(inputMCTrueCollection->getElementAt(12));
     m_true_h1_decay_pdg = abs(mcPart_h1_decay->getPDG());
 
     MCParticle *mcPart_h2_decay = dynamic_cast<MCParticle*>(inputMCTrueCollection->getElementAt(14));
     m_true_h2_decay_pdg = abs(mcPart_h2_decay->getPDG());
+
+    m_pTTree->Fill();
     
   } catch(DataNotAvailableException &e) {
     streamlog_out(MESSAGE) << "processEvent : Input collections not found in event " << m_nEvt << std::endl;
   }
-
-  m_pTTree->Fill();
-
 
 }
 
