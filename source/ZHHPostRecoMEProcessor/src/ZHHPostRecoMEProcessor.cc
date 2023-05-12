@@ -112,12 +112,22 @@ void ZHHPostRecoMEProcessor::init()
   m_pTTree->Branch("true_sigmalr", &m_true_sigmalr, "true_sigmalr/F");
   m_pTTree->Branch("true_sigmarl", &m_true_sigmarl, "true_sigmarl/F");
   m_pTTree->Branch("true_sigmarr", &m_true_sigmarr, "true_sigmarr/F");
+  m_pTTree->Branch("true_mz", &m_true_mz, "true_mz/F");
+  m_pTTree->Branch("true_mhh", &m_true_mhh, "true_mhh/F");
+  m_pTTree->Branch("true_mzhh", &m_true_mzhh, "true_mzhh/F");
+  m_pTTree->Branch("true_phi", &m_true_phi, "true_phi/F");
+  m_pTTree->Branch("true_costheta", &m_true_costheta, "true_costheta/F");
 
   m_pTTree->Branch("reco_sigma", &m_reco_sigma, "reco_sigma/F");
   m_pTTree->Branch("reco_sigmall", &m_reco_sigmall, "reco_sigmall/F");
   m_pTTree->Branch("reco_sigmalr", &m_reco_sigmalr, "reco_sigmalr/F");
   m_pTTree->Branch("reco_sigmarl", &m_reco_sigmarl, "reco_sigmarl/F");
   m_pTTree->Branch("reco_sigmarr", &m_reco_sigmarr, "reco_sigmarr/F");
+  m_pTTree->Branch("reco_mz", &m_reco_mz, "reco_mz/F");
+  m_pTTree->Branch("reco_mhh", &m_reco_mhh, "reco_mhh/F");
+  m_pTTree->Branch("reco_mzhh", &m_reco_mzhh, "reco_mzhh/F");
+  m_pTTree->Branch("reco_phi", &m_reco_phi, "reco_phi/F");
+  m_pTTree->Branch("reco_costheta", &m_reco_costheta, "reco_costheta/F");
 
   streamlog_out(DEBUG) << "   init finished  " << std::endl;
 
@@ -133,17 +143,27 @@ void ZHHPostRecoMEProcessor::Clear()
   m_true_h1_decay_pdg = 0;
 	m_true_h2_decay_pdg = 0;
 
-  m_true_sigma   = 0.;
-  m_true_sigmall = 0.;
-  m_true_sigmalr = 0.;
-  m_true_sigmarl = 0.;
-  m_true_sigmarr = 0.;
+  m_true_sigma    = 0.;
+  m_true_sigmall  = 0.;
+  m_true_sigmalr  = 0.;
+  m_true_sigmarl  = 0.;
+  m_true_sigmarr  = 0.;
+  m_true_mz       = 0.;
+  m_true_mhh      = 0.;
+  m_true_mzhh     = 0.;
+  m_true_phi      = 0.;
+  m_true_costheta = 0.;
   
-  m_reco_sigma   = 0.;
-  m_reco_sigmall = 0.;
-  m_reco_sigmalr = 0.;
-  m_reco_sigmarl = 0.;
-  m_reco_sigmarr = 0.;
+  m_reco_sigma    = 0.;
+  m_reco_sigmall  = 0.;
+  m_reco_sigmalr  = 0.;
+  m_reco_sigmarl  = 0.;
+  m_reco_sigmarr  = 0.;
+  m_reco_mz       = 0.;
+  m_reco_mhh      = 0.;
+  m_reco_mzhh     = 0.;
+  m_reco_phi      = 0.;
+  m_reco_costheta = 0.;
 }
 void ZHHPostRecoMEProcessor::processRunHeader( LCRunHeader*  /*run*/) { 
   m_nRun++ ;
@@ -202,11 +222,18 @@ void ZHHPostRecoMEProcessor::processEvent( EVENT::LCEvent *pLCEvent )
 
       _zhh->SetMomentumFinal(reco_lortz);
 
-      m_reco_sigmall = _zhh->GetMatrixElement2(vHelLL);
-      m_reco_sigmalr = _zhh->GetMatrixElement2(vHelLR);
-      m_reco_sigmarl = _zhh->GetMatrixElement2(vHelRL);
-      m_reco_sigmarr = _zhh->GetMatrixElement2(vHelRR);
+      m_reco_sigmall  = _zhh->GetMatrixElement2(vHelLL);
+      m_reco_sigmalr  = _zhh->GetMatrixElement2(vHelLR);
+      m_reco_sigmarl  = _zhh->GetMatrixElement2(vHelRL);
+      m_reco_sigmarr  = _zhh->GetMatrixElement2(vHelRR);
       m_reco_sigma    = _zhh->GetMatrixElement2();
+
+      m_reco_mz       = TMath::Sqrt(_zhh->GetQ2Z());
+      m_reco_mhh      = TMath::Sqrt(_zhh->GetQ2HH());
+      m_reco_mzhh     = TMath::Sqrt(_zhh->GetQ2ZHH());
+
+      m_reco_phi      = _zhh->GetPhi();
+      m_reco_costheta = _zhh->GetCosTheta();
     }
 
     // True
@@ -232,12 +259,19 @@ void ZHHPostRecoMEProcessor::processEvent( EVENT::LCEvent *pLCEvent )
     m_true_sigmalr = _zhh->GetMatrixElement2(vHelLR);
     m_true_sigmarl = _zhh->GetMatrixElement2(vHelRL);
     m_true_sigmarr = _zhh->GetMatrixElement2(vHelRR);
-    m_true_sigma    = _zhh->GetMatrixElement2();
+    m_true_sigma   = _zhh->GetMatrixElement2();
+
+    m_true_mz   = TMath::Sqrt(_zhh->GetQ2Z());
+    m_true_mhh  = TMath::Sqrt(_zhh->GetQ2HH());
+    m_true_mzhh = TMath::Sqrt(_zhh->GetQ2ZHH());
+
+    m_true_phi      = _zhh->GetPhi();
+    m_true_costheta = _zhh->GetCosTheta();
 
     MCParticle *mcPart_h1_decay = dynamic_cast<MCParticle*>(inputMCTrueCollection->getElementAt(12));
-    MCParticle *mcPart_h2_decay = dynamic_cast<MCParticle*>(inputMCTrueCollection->getElementAt(14));
-
     m_true_h1_decay_pdg = abs(mcPart_h1_decay->getPDG());
+
+    MCParticle *mcPart_h2_decay = dynamic_cast<MCParticle*>(inputMCTrueCollection->getElementAt(14));
     m_true_h2_decay_pdg = abs(mcPart_h2_decay->getPDG());
     
   } catch(DataNotAvailableException &e) {
