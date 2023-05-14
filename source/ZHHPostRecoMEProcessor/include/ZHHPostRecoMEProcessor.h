@@ -56,7 +56,6 @@ class ZHHPostRecoMEProcessor : public Processor
 		int m_nRun;
         int m_nEvt;
 		int m_ZDecayMode{};
-		int m_run_reco{};
 		float m_Hmass{};
 
 		TFile *m_pTFile{};

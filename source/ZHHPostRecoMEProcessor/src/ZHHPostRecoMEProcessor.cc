@@ -13,20 +13,6 @@ using namespace marlin ;
 using namespace std ;
 using namespace lcme;
 
-template<class T>
-double inv_mass(T* p1, T* p2){
-  double e = p1->getEnergy()+p2->getEnergy() ;
-  double px = p1->getMomentum()[0]+p2->getMomentum()[0];
-  double py = p1->getMomentum()[1]+p2->getMomentum()[1];
-  double pz = p1->getMomentum()[2]+p2->getMomentum()[2];
-  return( sqrt( e*e - px*px - py*py - pz*pz  ) );
-}
-
-template<class T>
-TLorentzVector v4(T* p){
-  return TLorentzVector( p->getMomentum()[0],p->getMomentum()[1], p->getMomentum()[2],p->getEnergy());
-}
-
 ZHHPostRecoMEProcessor aZHHPostRecoMEProcessor ;
 
 ZHHPostRecoMEProcessor::ZHHPostRecoMEProcessor() :
@@ -70,7 +56,7 @@ ZHHPostRecoMEProcessor::ZHHPostRecoMEProcessor() :
 	registerProcessorParameter("ZDecayMode",
         "MEM processor mode of ZDecay",
         m_ZDecayMode,
-        int(4)
+        int(5)
         );
 
 	registerProcessorParameter("HiggsMass",
@@ -150,7 +136,6 @@ void ZHHPostRecoMEProcessor::Clear()
   m_passed_preselection = 0;
   m_true_h1_decay_pdg   = 0;
 	m_true_h2_decay_pdg   = 0;
-  m_run_reco            = 0;
 
   m_true_sigma     = 0.;
   m_true_sigmall   = 0.;
@@ -258,8 +243,6 @@ void ZHHPostRecoMEProcessor::processEvent( EVENT::LCEvent *pLCEvent )
     }
 
     // True
-    m_run_reco = 1;
-
     streamlog_out(DEBUG) << "        getting true MC collection: " << m_inputMCTrueCollection << std::endl ;
     inputMCTrueCollection = pLCEvent->getCollection( m_inputMCTrueCollection );
 
