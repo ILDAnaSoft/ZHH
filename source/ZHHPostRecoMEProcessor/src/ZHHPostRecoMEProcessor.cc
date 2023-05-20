@@ -11,8 +11,8 @@
  * - MCTrueCollection<MCPARTICLE>
  * - ZDecayMode<int(5)>; defaults to µ+µ- (see ZHH decay modes when running the MEM processor)
  * - HiggsMass<float(125.)>
- * - outputFilename<string(output.root)>
- * 
+ * - outputFilename<string("output.root")>
+ * - outputTree<string("dataTree")>
 */
 
 #include "ZHHPostRecoMEProcessor.h"
