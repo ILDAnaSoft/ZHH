@@ -8,3 +8,6 @@ source/*/xml
 *.swp
 Physsim
 .npy
+*.pdf
+*.png
+*.root
