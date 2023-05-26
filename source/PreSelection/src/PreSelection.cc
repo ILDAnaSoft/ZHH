@@ -160,6 +160,13 @@ PreSelection::PreSelection() :
 				 std::string("preselection")
 				 );
 
+	registerOutputCollection(LCIO::RECONSTRUCTEDPARTICLE,
+				 "HiggsCollection",
+				 "Reconstructed Higgs collection",
+				 m_HiggsCollection,
+				 std::string("HiggsPair")
+				 );
+
 	registerOutputCollection( LCIO::LCINTVEC,
 				  "isPassed",
 				  "Output for whether preselection is passed" ,
@@ -288,6 +295,7 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
     inputPfoCollection = pLCEvent->getCollection( m_inputPfoCollection );
 
     LCCollectionVec* preselectioncol = new LCCollectionVec(LCIO::RECONSTRUCTEDPARTICLE);
+    LCCollectionVec* higgscol = new LCCollectionVec(LCIO::RECONSTRUCTEDPARTICLE);
     LCCollectionVec *ispassedcol = new LCCollectionVec(LCIO::LCINTVEC);
     LCIntVec *ispassedvec = new LCIntVec;
 
@@ -409,6 +417,19 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
 	vdijet[0] = v4(jets[perms[best_idx][0]]) + v4(jets[perms[best_idx][1]]);
 	vdijet[1] = v4(jets[perms[best_idx][2]]) + v4(jets[perms[best_idx][3]]);
 	for (int i=0; i<ndijets; i++) {
+	  ReconstructedParticleImpl* higgs = new ReconstructedParticleImpl;
+	  float momentum[3];
+	  momentum[0]= vdijet[i].Px();
+	  momentum[1]= vdijet[i].Py();
+	  momentum[2]= vdijet[i].Pz();
+	  higgs->setMomentum(momentum);
+	  higgs->setEnergy(vdijet[i].E());
+	  higgs->setType(25);
+	  higgs->setCharge(0);
+	  higgs->setMass(vdijet[i].M());
+	  higgscol->addElement(higgs);
+	}
+	for (int i=0; i<ndijets; i++) {
 	  m_dijetMass.push_back(dijetmass[i]);
 	  m_dijetMassDiff.push_back(fabs( dijetmass[i] - 125. ));
 	}
@@ -437,6 +458,7 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
     ispassedvec->push_back(passed);
     ispassedcol->addElement(ispassedvec);
     pLCEvent->addCollection(preselectioncol, m_PreSelectionCollection);
+    pLCEvent->addCollection(higgscol, m_HiggsCollection);
     pLCEvent->addCollection(ispassedcol, m_isPassed);
   }
   catch(DataNotAvailableException &e) {
