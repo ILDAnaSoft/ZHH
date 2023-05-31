@@ -44,6 +44,7 @@ class LeptonPairing : public Processor
  protected:
   double m_diLepInvMass = 91.2;
   string m_rootFile{};
+  bool m_doPhotonRecovery = false;
   bool m_fillRootTree = false;
   int m_nRun;
   int m_nEvt;

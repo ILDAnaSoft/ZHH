@@ -92,8 +92,9 @@ class ZHHllbbbbKinFit : public Processor , public TrueJet_Parser
 		FitResult performFIT( pfoVector jets,pfoVector leptons,bool traceEvent);	    
 		virtual void	getJetParameters( ReconstructedParticle* jet , float (&parameters)[ 3 ] , float (&errors)[ 3 ] );
 		virtual void	getLeptonParameters( ReconstructedParticle* lepton , float (&parameters)[ 3 ] , float (&errors)[ 3 ] );
-		std::vector<double> calculateStartZH1H2(pfoVector jets, pfoVector leptons, vector<unsigned int> perm);
+		std::vector<double> calculateInitialMasses(pfoVector jets, pfoVector leptons, vector<unsigned int> perm);
 		std::vector<double> calculatePulls(std::shared_ptr<ParticleFitObject> fittedobject, ReconstructedParticle* startobject, int type);
+		double calcChi2(shared_ptr<vector<shared_ptr<BaseFitObject>>> fitobjects);
 		virtual void	check( LCEvent * evt );
 		virtual void	end();
 		string get_recoMCTruthLink()
@@ -169,21 +170,6 @@ class ZHHllbbbbKinFit : public Processor , public TrueJet_Parser
 		std::vector<float>			m_pullLeptonInvPt_woNu{};
 		std::vector<float>			m_pullLeptonTheta_woNu{};
 		std::vector<float>			m_pullLeptonPhi_woNu{};
-		/*		int					m_FitErrorCode_wNu{};
-		float					m_ZMassBeforeFit_wNu{};
-		float					m_H1MassBeforeFit_wNu{};
-		float					m_H2MassBeforeFit_wNu{};
-		float					m_ZMassAfterFit_wNu{};
-		float					m_H1MassAfterFit_wNu{};
-		float					m_H2MassAfterFit_wNu{};
-		float					m_FitProbability_wNu{};
-		float					m_FitChi2_wNu{};
-		std::vector<float>			m_pullJetEnergy_wNu{};
-		std::vector<float>			m_pullJetTheta_wNu{};
-		std::vector<float>			m_pullJetPhi_wNu{};
-		std::vector<float>			m_pullLeptonInvPt_wNu{};
-		std::vector<float>			m_pullLeptonTheta_wNu{};
-		std::vector<float>			m_pullLeptonPhi_wNu{};*/
 		int					m_FitErrorCode{};
 		float					m_ZMassBeforeFit{};
 		float					m_H1MassBeforeFit{};
@@ -221,21 +207,6 @@ class ZHHllbbbbKinFit : public Processor , public TrueJet_Parser
 		double					H2momentum[3]{0.0};
 		double					ISREnergy{};
 		double					ISRmomentum[3]{0.0};
-		//float					Hmass_NoFit{};
-		//int					Error_code{};
-		//int					errorcode{};
-		/*float					hpull_jet_E{};
-		float					hpull_jet2_E{};
-		float					hpull_jet_th{};
-		float					hpull_jet2_th{};
-		float					hpull_jet_phi{};
-		float					hpull_jet2_phi{};
-		float					hpull_lepton_InvpT{};
-		float					hpull_lepton2_InvpT{};
-		float					hpull_lepton_th{};
-		float					hpull_lepton2_th{};
-		float					hpull_lepton_phi{};
-		float					hpull_lepton2_phi{};*/
 };
 
 #endif

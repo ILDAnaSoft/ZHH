@@ -49,8 +49,10 @@ class PreSelection : public Processor
 		std::string m_inputJetCollection{};
 		std::string m_inputPfoCollection{};
 		std::string m_PreSelectionCollection{};
+		std::string m_HiggsCollection{};
 		std::string m_outputFile{};
 		std::string m_whichPreselection{};
+		std::string m_isPassed{};
 		int m_nAskedJets{};
                 int m_nAskedIsoLeps{};
 		float m_maxdileptonmassdiff{};

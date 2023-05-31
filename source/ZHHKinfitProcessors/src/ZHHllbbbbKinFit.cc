@@ -333,7 +333,7 @@ void ZHHllbbbbKinFit::Clear()
 	m_nSLDecayTauLepton = 0;
 	m_nSLDecayTotal = 0;
 	m_nCorrectedSLD = 0;
-	m_FitErrorCode_woNu = -100;
+	m_FitErrorCode_woNu = 1;
 	m_ZMassBeforeFit_woNu = 0.0;
 	m_H1MassBeforeFit_woNu = 0.0;
 	m_H2MassBeforeFit_woNu = 0.0;
@@ -348,7 +348,7 @@ void ZHHllbbbbKinFit::Clear()
 	m_pullLeptonInvPt_woNu.clear();
 	m_pullLeptonTheta_woNu.clear();
 	m_pullLeptonPhi_woNu.clear();
-	/*m_FitErrorCode_wNu = -100;
+	/*m_FitErrorCode_wNu = 1;
 	m_ZMassBeforeFit_wNu = 0.0;
 	m_H1MassBeforeFit_wNu = 0.0;
 	m_H2MassBeforeFit_wNu = 0.0;
@@ -363,7 +363,7 @@ void ZHHllbbbbKinFit::Clear()
 	m_pullLeptonInvPt_wNu.clear();
 	m_pullLeptonTheta_wNu.clear();
 	m_pullLeptonPhi_wNu.clear();*/
-	m_FitErrorCode = -100;
+	m_FitErrorCode = 1;
 	m_ZMassBeforeFit = 0.0;
 	m_H1MassBeforeFit = 0.0;
 	m_H2MassBeforeFit = 0.0;
@@ -404,9 +404,9 @@ void ZHHllbbbbKinFit::processEvent( EVENT::LCEvent *pLCEvent )
   this->Clear();
   m_nRun = pLCEvent->getRunNumber();
   m_nEvt = pLCEvent->getEventNumber();
-  streamlog_out(MESSAGE1) << "	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
-  streamlog_out(MESSAGE1) << "	///////////////////////////////////////////////// processing event " << m_nEvt << " in run " << m_nRun << " /////////////////////////////////////////////////////////////////////" << std::endl ;
-  streamlog_out(MESSAGE1) << "	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
+  streamlog_out(MESSAGE1) << "	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
+  streamlog_out(MESSAGE1) << "	////////////////////////////////// processing event " << m_nEvt << " in run " << m_nRun << " /////////////////////////////////////////////////" << std::endl;
+  streamlog_out(MESSAGE1) << "	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
   
   LCCollection *inputJetCollection = NULL;
   LCCollection *inputLeptonCollection = NULL;
@@ -705,14 +705,18 @@ void ZHHllbbbbKinFit::processEvent( EVENT::LCEvent *pLCEvent )
   }
   streamlog_out(MESSAGE1) << endl;
 
-  //vector<double> startmasses = calculateStartZH1H2(bestJets, Leptons, perm);
-  // m_ZMassBeforeFit  = startmasses[0];
-  //m_H1MassBeforeFit = startmasses[1];
-  //m_H2MassBeforeFit = startmasses[2];
+  streamlog_out(MESSAGE1) << "ladida checking permutations: "; 
+  for (auto idx: perm) streamlog_out(MESSAGE1) << idx << " ";
+  streamlog_out(MESSAGE1) << endl;
 
-  //streamlog_out(MESSAGE1) << "Z mass prefit = " << m_ZMassBeforeFit << endl;
-  //streamlog_out(MESSAGE1) << "H1 mass prefit = " << m_H1MassBeforeFit << endl;
-  //streamlog_out(MESSAGE1) << "H2 mass prefit = " << m_H2MassBeforeFit << endl;
+  vector<double> startmasses = calculateInitialMasses(bestJets, Leptons, perm);
+  m_ZMassBeforeFit  = startmasses[0];
+  m_H1MassBeforeFit = startmasses[1];
+  m_H2MassBeforeFit = startmasses[2];
+
+  streamlog_out(MESSAGE1) << "Z mass prefit = " << m_ZMassBeforeFit << endl;
+  streamlog_out(MESSAGE1) << "H1 mass prefit = " << m_H1MassBeforeFit << endl;
+  streamlog_out(MESSAGE1) << "H2 mass prefit = " << m_H2MassBeforeFit << endl;
   streamlog_out(MESSAGE1) << "Z mass postfit = " << m_ZMassAfterFit << endl;
   streamlog_out(MESSAGE1) << "H1 mass postfit = " << m_H1MassAfterFit << endl;
   streamlog_out(MESSAGE1) << "H2 mass postfit = " << m_H2MassAfterFit << endl;
@@ -1106,10 +1110,16 @@ ZHHllbbbbKinFit::FitResult ZHHllbbbbKinFit::performFIT( pfoVector jets,
     }
 
     //perform fit: 
+    streamlog_out(MESSAGE) << "chi2 before fit" << calcChi2(fos) << endl; 
     float fitProbability = fitter->fit();
+    streamlog_out(MESSAGE) << "chi2 after fit (from fitter)" << fitter->getChi2() << endl; 
+    streamlog_out(MESSAGE) << "chi2 after fit (from calcchi2)" << (dynamic_pointer_cast<NewFitterGSL>(fitter))->calcChi2() << endl; 
+    streamlog_out(MESSAGE) << "chi2 after fit (from fitter)" << fitter->getChi2() << endl; 
+    streamlog_out(MESSAGE) << "chi2 after fit (from fitobjects)" << calcChi2(fos) << endl; 
     fitter->addConstraint( h1.get() );
     fitter->addConstraint( h2.get() );
     fitter->addConstraint( z.get() );
+    streamlog_out(MESSAGE) << "chi2 after adding helper constraints" << fitter->getChi2() << endl; 
     shared_ptr<vector<shared_ptr<BaseHardConstraint>>> constraints = make_shared<vector<shared_ptr<BaseHardConstraint>>>();
     constraints->push_back(z);
     constraints->push_back(pxc);
@@ -1275,7 +1285,7 @@ void ZHHllbbbbKinFit::getLeptonParameters( ReconstructedParticle* lepton , float
   streamlog_out(DEBUG6) << "			SigmaPhi	= " << errors[ 2 ] << std::endl ;
 }
 
-std::vector<double> ZHHllbbbbKinFit::calculateStartZH1H2(pfoVector jets, pfoVector leptons, vector<unsigned int> perm)
+std::vector<double> ZHHllbbbbKinFit::calculateInitialMasses(pfoVector jets, pfoVector leptons, vector<unsigned int> perm)
 {
   std::vector<double> masses;
   shared_ptr<vector<shared_ptr<JetFitObject>>> jfo = make_shared<vector<shared_ptr<JetFitObject>>>();
@@ -1350,6 +1360,21 @@ std::vector<double> ZHHllbbbbKinFit::calculatePulls(std::shared_ptr<ParticleFitO
     }
   }
   return pulls;
+}
+
+double ZHHllbbbbKinFit::calcChi2(shared_ptr<vector<shared_ptr<BaseFitObject>>> fitobjects) {
+  double chi2 = 0;
+  for (auto it = fitobjects->begin(); it != fitobjects->end(); ++it) {
+    shared_ptr<BaseFitObject> fo = *it;
+    assert (fo);
+    chi2 += fo->getChi2();
+  }/*
+  for (SoftConstraintIterator i = softconstraints.begin(); i != softconstraints.end(); ++i) {
+    BaseSoftConstraint *bsc = *i;
+    assert (bsc);
+    chi2 += bsc->getChi2();
+    }*/
+  return chi2;
 }
 
 void ZHHllbbbbKinFit::check( LCEvent* )

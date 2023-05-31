@@ -84,17 +84,24 @@ LeptonPairing::LeptonPairing():
 			     double(91.2)
 			     );
 
-  registerProcessorParameter(     "fillRootTree",
-				  "Fill root tree to check processor performance",
-				  m_fillRootTree,
-				  bool(true)
-				  );
+  registerProcessorParameter("doPhotonRecovery",
+			     "Do photon recovery",
+			     m_doPhotonRecovery,
+			     bool(true)
+			     );
 
-  registerProcessorParameter(     "RootFile",
-				  "Name of the output root file",
-				  m_rootFile,
-				  string("Output.root")
-				  );
+
+  registerProcessorParameter("fillRootTree",
+			     "Fill root tree to check processor performance",
+			     m_fillRootTree,
+			     bool(true)
+			     );
+
+  registerProcessorParameter("RootFile",
+			     "Name of the output root file",
+			     m_rootFile,
+			     string("Output.root")
+			     );
 }
 
 void LeptonPairing::init() {
@@ -156,7 +163,10 @@ void LeptonPairing::processEvent( EVENT::LCEvent *pLCEvent ) {
   streamlog_out(DEBUG7) << "Number of iso leptons = " << InIsoLeps << endl;
   vector< ReconstructedParticle* > LeptonPair = {};
   int _lep_type = 0;
-  Double_t fCosFSRCut = 0.99;   // the angle of BS and FSR around the direction of charged lepton
+  Double_t fCosFSRCut; // the angle of BS and FSR around the direction of charged lepton
+  if (m_doPhotonRecovery) fCosFSRCut = 0.99;
+  else fCosFSRCut = 99.;
+
   if (InIsoLeps == 2) {
     ReconstructedParticle* lepton1 = static_cast<ReconstructedParticle*>( IsoLepCollection->getElementAt( 0 ) );
     ReconstructedParticle* lepton2 = static_cast<ReconstructedParticle*>( IsoLepCollection->getElementAt( 1 ) );
@@ -201,23 +211,10 @@ void LeptonPairing::processEvent( EVENT::LCEvent *pLCEvent ) {
     // recovery of FSR and BS
     m_IsoLepsInvMass.push_back(inv_mass(LeptonPair[0], LeptonPair[1]));
     ReconstructedParticleImpl * recoLepton1 = new ReconstructedParticleImpl();
-    streamlog_out(DEBUG7) << "pre recovery" << endl;
-    streamlog_out(DEBUG7) << "lep" <<LeptonPair.at(0) << endl;
-    streamlog_out(DEBUG7) << "pfos" << PFOsWOIsoLepCollection << endl;
-    streamlog_out(DEBUG7) << "recolep" << recoLepton1 << endl;
-    streamlog_out(DEBUG7) << "cut" << fCosFSRCut << endl;
-    streamlog_out(DEBUG7) << "type" << _lep_type << endl;
-    //streamlog_out(DEBUG7) << "photons"<< photons << endl;
     doPhotonRecovery(LeptonPair[0],PFOsWOIsoLepCollection,recoLepton1,fCosFSRCut,_lep_type,photons);
     ReconstructedParticleImpl * recoLepton2 = new ReconstructedParticleImpl();
     doPhotonRecovery(LeptonPair[1],PFOsWOIsoLepCollection,recoLepton2,fCosFSRCut,_lep_type,photons);
-    streamlog_out(DEBUG7) << "post recovery" << endl;    
-    streamlog_out(DEBUG7) << "mass =" << inv_mass(recoLepton1, recoLepton2)  << endl;
     m_RecoLepsInvMass.push_back(inv_mass(recoLepton1,recoLepton2));
-    if(recoLepton1) streamlog_out(DEBUG7) << "not null" << endl;
-    if(recoLepton2) streamlog_out(DEBUG7) << "not null"<< endl;
-    streamlog_out(DEBUG7) << recoLepton1->getEnergy() << " " << recoLepton1->getType() << endl;
-    streamlog_out(DEBUG7) << recoLepton2->getEnergy() << " " << recoLepton2->getType() << endl;
     m_LepPairCol->addElement(recoLepton1);
     m_LepPairCol->addElement(recoLepton2);
   }
