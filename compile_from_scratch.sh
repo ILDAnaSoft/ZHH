@@ -14,7 +14,7 @@ compile_pkg () {
 cd $1
 mkdir -p build
 cd build
-cmake -C $ILCSOFT/ILCSoft.cmake ..
+cmake -DCMAKE_CXX_STANDARD=17 ..
 make install
 cd ../..
 }
