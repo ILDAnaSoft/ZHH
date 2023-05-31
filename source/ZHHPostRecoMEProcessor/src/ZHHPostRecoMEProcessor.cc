@@ -100,8 +100,8 @@ void ZHHPostRecoMEProcessor::init()
   streamlog_out(DEBUG) << "   init called  " << std::endl;
   this->Clear();
 
-  Double_t pol_e = this->parameters()->getFloatVal("beamPol1");
-  Double_t pol_p = this->parameters()->getFloatVal("beamPol2");
+  Double_t pol_e = -1.; // this->parameters()->getFloatVal("beamPol1");
+  Double_t pol_p = +1.; // this->parameters()->getFloatVal("beamPol2");
 
   m_nRun = 0;
   m_nEvt = 0;
@@ -209,6 +209,7 @@ void ZHHPostRecoMEProcessor::init()
   cerr << "    ZDecayMode: "<< m_ZDecayMode << "\n";
   cerr << "    Pol_e: "<< pol_e << "\n";
   cerr << "    Pol_p: "<< pol_p << "\n";
+  cerr << "    m_outputTree: " << m_outputTree << "\n";
 
   _zhh = new LCMEZHH("LCMEZHH", "ZHH", m_Hmass, pol_e, pol_p);
   _zhh->SetZDecayMode(m_ZDecayMode); // 5 (internal mapping) -> (13) PDG, muon 
@@ -434,9 +435,9 @@ void ZHHPostRecoMEProcessor::processEvent( EVENT::LCEvent *pLCEvent )
       TLorentzVector reco_l1_lortz = TLorentzVector(reco_l1->getMomentum(), reco_l1->getEnergy());
       TLorentzVector reco_l2_lortz = TLorentzVector(reco_l2->getMomentum(), reco_l2->getEnergy());
       TLorentzVector reco_h1_lortz = TLorentzVector(reco_h1->getMomentum(), reco_h1->getEnergy());
-      TLorentzVector reco_h1_lortz = TLorentzVector(reco_h2->getMomentum(), reco_h2->getEnergy());
+      TLorentzVector reco_h2_lortz = TLorentzVector(reco_h2->getMomentum(), reco_h2->getEnergy());
 
-      TLorentzVector reco_lortz[4] = {reco_l1_lortz, reco_l2_lortz, reco_h1_lortz, reco_h1_lortz};
+      TLorentzVector reco_lortz[4] = {reco_l1_lortz, reco_l2_lortz, reco_h1_lortz, reco_h2_lortz};
 
       _zhh->SetMomentumFinal(reco_lortz);
 
