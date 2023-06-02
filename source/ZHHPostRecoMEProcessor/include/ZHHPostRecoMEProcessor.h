@@ -83,6 +83,18 @@ class ZHHPostRecoMEProcessor : public Processor
 		float m_true_sigmarl{};
 		float m_true_sigmarr{};
 
+		float m_true_sigma_p1{};
+		float m_true_sigmall_p1{};
+		float m_true_sigmalr_p1{};
+		float m_true_sigmarl_p1{};
+		float m_true_sigmarr_p1{};
+
+		float m_true_sigma_p2{};
+		float m_true_sigmall_p2{};
+		float m_true_sigmalr_p2{};
+		float m_true_sigmarl_p2{};
+		float m_true_sigmarr_p2{};
+
 		float m_true_mz{};
 		float m_true_mhh{};
 		float m_true_mzhh{};

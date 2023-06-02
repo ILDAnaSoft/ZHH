@@ -125,6 +125,18 @@ void ZHHPostRecoMEProcessor::init()
   m_pTTree->Branch("true_sigmarl", &m_true_sigmarl, "true_sigmarl/F");
   m_pTTree->Branch("true_sigmarr", &m_true_sigmarr, "true_sigmarr/F");
 
+  m_pTTree->Branch("true_sigma_p1"  , &m_true_sigma_p1  , "true_sigma_p1/F");
+  m_pTTree->Branch("true_sigmall_p1", &m_true_sigmall_p1, "true_sigmall_p1/F");
+  m_pTTree->Branch("true_sigmalr_p1", &m_true_sigmalr_p1, "true_sigmalr_p1/F");
+  m_pTTree->Branch("true_sigmarl_p1", &m_true_sigmarl_p1, "true_sigmarl_p1/F");
+  m_pTTree->Branch("true_sigmarr_p1", &m_true_sigmarr_p1, "true_sigmarr_p1/F");
+
+  m_pTTree->Branch("true_sigma_p2"  , &m_true_sigma_p2  , "true_sigma_p2/F");
+  m_pTTree->Branch("true_sigmall_p2", &m_true_sigmall_p2, "true_sigmall_p2/F");
+  m_pTTree->Branch("true_sigmalr_p2", &m_true_sigmalr_p2, "true_sigmalr_p2/F");
+  m_pTTree->Branch("true_sigmarl_p2", &m_true_sigmarl_p2, "true_sigmarl_p2/F");
+  m_pTTree->Branch("true_sigmarr_p2", &m_true_sigmarr_p2, "true_sigmarr_p2/F");
+
   m_pTTree->Branch("true_mz"  , &m_true_mz  , "true_mz/F");
   m_pTTree->Branch("true_mhh" , &m_true_mhh , "true_mhh/F");
   m_pTTree->Branch("true_mzhh", &m_true_mzhh, "true_mzhh/F");
@@ -226,6 +238,18 @@ void ZHHPostRecoMEProcessor::Clear()
 
   // 1. True
   // 1.a ZHH output
+  m_true_sigma_p1     = 0.;
+  m_true_sigmall_p1   = 0.;
+  m_true_sigmalr_p1   = 0.;
+  m_true_sigmarl_p1   = 0.;
+  m_true_sigmarr_p1   = 0.;
+
+  m_true_sigma_p2     = 0.;
+  m_true_sigmall_p2   = 0.;
+  m_true_sigmalr_p2   = 0.;
+  m_true_sigmarl_p2   = 0.;
+  m_true_sigmarr_p2   = 0.;
+
   m_true_sigma     = 0.;
   m_true_sigmall   = 0.;
   m_true_sigmalr   = 0.;
@@ -370,7 +394,25 @@ void ZHHPostRecoMEProcessor::processEvent( EVENT::LCEvent *pLCEvent )
     TLorentzVector true_h2_lortz = TLorentzVector(true_h2->getMomentum(), true_h2->getEnergy());
 
     TLorentzVector true_lortz[4] = {true_l1_lortz, true_l2_lortz, true_h1_lortz, true_h2_lortz};
+    TLorentzVector true_lortz_p1[4] = {true_l1_lortz, true_l2_lortz, true_h2_lortz, true_h1_lortz}; // H1 <-> H2
+    TLorentzVector true_lortz_p2[4] = {true_l2_lortz, true_l1_lortz, true_h1_lortz, true_h2_lortz}; // L1 <-> L2
 
+    _zhh->SetMomentumFinal(true_lortz_p1);
+
+    m_true_sigmall_p1 = _zhh->GetMatrixElement2(vHelLL);
+    m_true_sigmalr_p1 = _zhh->GetMatrixElement2(vHelLR);
+    m_true_sigmarl_p1 = _zhh->GetMatrixElement2(vHelRL);
+    m_true_sigmarr_p1 = _zhh->GetMatrixElement2(vHelRR);
+    m_true_sigma_p1   = _zhh->GetMatrixElement2();
+
+    _zhh->SetMomentumFinal(true_lortz_p2);
+
+    m_true_sigmall_p2 = _zhh->GetMatrixElement2(vHelLL);
+    m_true_sigmalr_p2 = _zhh->GetMatrixElement2(vHelLR);
+    m_true_sigmarl_p2 = _zhh->GetMatrixElement2(vHelRL);
+    m_true_sigmarr_p2 = _zhh->GetMatrixElement2(vHelRR);
+    m_true_sigma_p2   = _zhh->GetMatrixElement2();
+    
     _zhh->SetMomentumFinal(true_lortz);
 
     m_true_sigmall = _zhh->GetMatrixElement2(vHelLL);

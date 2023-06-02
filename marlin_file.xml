@@ -34,6 +34,7 @@
    <Xprocessor name="MEMExampleNNHProcessor"/>  
    <Xprocessor name="MEMExampleEEHProcessor"/>
    <processor name="ZHHPostRecoMEProcessor"/>
+   <processor name="Misclustering"/>
  <!-- ========== full and DST output =======================================  -->
 <!--  <processor name="MyLCIOOutputProcessor"/>  -->
   </execute>
@@ -84,6 +85,12 @@
    <parameter name="HiggsMass" type="double" value="125.0"/>
    <parameter name="outputFilename" type="string" value="zhh_output.root"/>
    <parameter name="outputTree" type="string" value="dataTree"/>
+ </processor>
+
+ <processor name="Misclustering" type="Misclustering">
+   <parameter name="RecoJetCollection" type="string" lcioInType="ReconstructedParticle"> RefinedJets </parameter>
+   <parameter name="matchMethod" type="int" value="0"/>
+   <parameter name="outputFilename" type="string" value="mscl_output.root"/>
  </processor>
 
  <processor name="VertexFinder" type="LcfiplusProcessor">
