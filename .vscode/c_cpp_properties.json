@@ -33,11 +33,13 @@
                 "C:/DevSources/afs/desy.de/user/b/bliewert/public/ILCSoft/Physsim/include/**", // Physsim
                 "C:/DevSources/cvmfs/ilc.desy.de/key4hep/spackages/lcio/2.19/x86_64-centos7-gcc11.2.0-opt/lr4mjd4u7kmg2ugmdcvcr6vdjtrxxwwv/include/**", // LCIO
                 "C:/DevSources/cvmfs/ilc.desy.de/key4hep/spackages/marlin/1.19/x86_64-centos7-gcc11.2.0-opt/aj5n37vac5zzw4eil7raxolernp6o4vi/include/**", // Marlin
+                "C:/DevSources/cvmfs/ilc.desy.de/key4hep/spackages/marlinutil/1.17/x86_64-centos7-gcc11.2.0-opt/tfc4e34qxhplzktv6xs3lqxjsjx3uic7/include/marlinutil/**", // MarlinUtil
                 "C:/DevSources/cvmfs/ilc.desy.de/key4hep/spackages/ilcutil/1.7/x86_64-centos7-gcc11.2.0-opt/nnyawmpqncnl6tu3nfhufy4seyzdlfj2/include/**", // streamlog
                 "${workspaceFolder}/source/ZHHPostRecoMEProcessor/include/**",
                 "${workspaceFolder}/source/HdecayMode/include/**",
                 "${workspaceFolder}/source/PreSelection/include/**",
                 "${workspaceFolder}/source/LeptonPairing/include/**",
+                "${workspaceFolder}/source/Misclustering/include/**",
                 "${workspaceFolder}/source/ZHHKinfitProcessors/include/**"
             ],
             "defines": [],
