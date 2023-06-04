@@ -23,20 +23,21 @@
     <processor name="MyAIDAProcessor"/> 
     <!--  <processor name="MyTestProcessor"/>  -->
     <!-- ========== create a root file =======================================  -->
-    <Xprocessor name="InitDD4hep" />
+    <processor name="InitDD4hep" />
     <Xprocessor name="RootFileProcessor"/>  
-    <!-- ========== lepton selection =======================================  -->
-   <Xprocessor name="MEMExampleZHH_qqffHProcessor"/>
-   <Xprocessor name="MEMExampleZZHProcessor"/>
-   <Xprocessor name="MEMExampleZHHProcessor"/>   
-   <Xprocessor name="MEMExampleZHProcessor"/>  
-   <Xprocessor name="MEMExampleNNHHProcessor"/>  
-   <Xprocessor name="MEMExampleNNHProcessor"/>  
-   <Xprocessor name="MEMExampleEEHProcessor"/>
-   <processor name="ZHHPostRecoMEProcessor"/>
-   <Xprocessor name="Misclustering"/>
- <!-- ========== full and DST output =======================================  -->
-<!--  <processor name="MyLCIOOutputProcessor"/>  -->
+    <if condition="MyHdecayMode.GoodEvent">
+      <Xprocessor name="MEMExampleZHH_qqffHProcessor"/>
+      <Xprocessor name="MEMExampleZZHProcessor"/>
+      <Xprocessor name="MEMExampleZHHProcessor"/>   
+      <Xprocessor name="MEMExampleZHProcessor"/>  
+      <Xprocessor name="MEMExampleNNHHProcessor"/>  
+      <Xprocessor name="MEMExampleNNHProcessor"/>  
+      <Xprocessor name="MEMExampleEEHProcessor"/>
+      <processor name="MyTrueJet" />
+      <processor name="ZHHPostRecoMEProcessor"/>
+      <processor name="Misclustering"/>
+      <processor name="MyLCIOOutputProcessor"/>
+    </if>
   </execute>
 
  <global>
@@ -76,6 +77,56 @@
    <parameter name="DD4hepXMLFile" type="string"> /cvmfs/ilc.desy.de/sw/x86_64_gcc82_sl6/v02-01/lcgeo/v00-16-06/ILD/compact/ILD_l5_v02/ILD_l5_v02.xml </parameter>
  </processor>
 
+ <processor name="MyTrueJet" type="TrueJet">
+		<parameter name="MCParticleCollection" type="string" lcioInType="MCParticle"> MCParticlesSkimmed </parameter>
+		<parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> ERROR </parameter>
+	</processor>
+
+ <processor name="MyFastJetProcessor" type="FastJetProcessor">
+    <!--Using the FastJet library to identify jets-->
+    <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
+    <parameter name="Verbosity" type="string">MESSAGE </parameter>
+    <!--Selects the algorithm and its parameters. E.g. 'kt_algorithm 0.7' or 'ee_kt_algorithm'. For a full list of supported algorithms, see the logfile after execution.-->
+    <parameter name="algorithm" type="StringVec">ee_kt_algorithm</parameter>
+    <!--One of 'Inclusive <minPt>',_Nu 'InclusiveIterativeNJets <nrJets> <minE>', 'ExclusiveNJets <nrJets>', 'ExclusiveYCut <yCut>'. Note: not all modes are available for all algorithms.-->
+    <parameter name="clusteringMode" type="StringVec">ExclusiveNJets 2 </parameter>
+    <!--The identified jets-->
+    <parameter name="jetOut" type="string" lcioOutType="ReconstructedParticle">Durham_2Jets </parameter>
+    <!--a list of all reconstructed particles we are searching for jets in.-->
+    <parameter name="recParticleIn" type="string" lcioInType="ReconstructedParticle">PandoraPFOsWithoutIsoLep</parameter>
+    <!--parameter name="recParticleIn" type="string" lcioInType="ReconstructedParticle">PFOsWithoutOverlay</parameter-->
+    <!--a list of all reconstructed particles we are storing for jets in.-->
+    <parameter name="recParticleOut" type="string" lcioOutType="ReconstructedParticle">Durham_2JetsPFOs </parameter>
+    <!--The recombination scheme used when merging 2 particles. Usually there is no need to use anything else than 4-Vector addition: E_scheme-->
+    <parameter name="recombinationScheme" type="string">E_scheme </parameter>
+    <!--Store the list of particles that were clustered into jets in the recParticleOut collection-->
+    <parameter name="storeParticlesInJets" type="bool">true </parameter>
+    <!--Number of identified jets-->
+    <parameter name="findNrJets"> 2 </parameter>
+    <!--Prefix of identified jets-->
+    <parameter name="findNrJetsCollectionPrefix"> Jets_ </parameter>
+  </processor>
+
+<processor name="MyLCIOOutputProcessor" type="LCIOOutputProcessor">
+    <!--Writes the current event to the specified LCIO outputfile. Needs to be the last ActiveProcessor.-->
+    <!--drops the named collections from the event-->
+    <!--parameter name="DropCollectionNames" type="StringVec">TPCHits HCalHits  </parameter-->
+    <!--drops all collections of the given type from the event-->
+    <!--parameter name="DropCollectionTypes" type="StringVec">SimTrackerHit SimCalorimeterHit  </parameter-->
+    <!-- write complete objects in subset collections to the file (i.e. ignore subset flag)-->
+    <!--parameter name="FullSubsetCollections" type="StringVec">MCParticlesSkimmed  </parameter-->
+    <!--force keep of the named collections - overrules DropCollectionTypes (and DropCollectionNames)-->
+    <parameter name="KeepCollectionNames" type="StringVec"> ISOLeptons PandoraPFOsWithoutIsoLep Durham_2Jets Durham_2JetsPFOs OutputErrorFlowJets TrueJets FinalColourNeutrals InitialColourNeutrals TrueJetPFOLink TrueJetMCParticleLink FinalElementonLink InitialElementonLink FinalColourNeutralLink InitialColourNeutralLink HdecayMode IsolatedLeptons Durham_4JetsNew PFOsminusoverlay PFOsminusoverlayJets</parameter>
+        <!-- name of output file -->
+    <parameter name="LCIOOutputFile" type="string">${OutputDirectory}/slcio/${OutputBaseName}.slcio</parameter>
+    <!--write mode for output file:  WRITE_APPEND or WRITE_NEW-->
+    <parameter name="LCIOWriteMode" type="string">WRITE_NEW</parameter>
+    <!--will split output file if size in kB exceeds given value - doesn't work with APPEND and NEW-->
+    <!--parameter name="SplitFileSizekB" type="int">1992294 </parameter-->
+    <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
+    <parameter name="Verbosity" type="string">WARNING</parameter>
+  </processor>
+
 <processor name="ZHHPostRecoMEProcessor" type="ZHHPostRecoMEProcessor">
    <parameter name="LepPairCollection" type="string" lcioInType="ReconstructedParticle"> LeptonPair </parameter>
    <parameter name="HiggsPairCollection" type="string" lcioInType="ReconstructedParticle"> HiggsPair </parameter>
@@ -86,6 +137,18 @@
    <parameter name="outputFilename" type="string" value="zhh_output.root"/>
    <parameter name="outputTree" type="string" value="dataTree"/>
  </processor>
+
+  <processor name="MyHdecayMode" type="HdecayMode">
+    <!--HdecayMode identifies Higgs decay mode and cheats ISR energy-->
+    <!--Name of the Input MCParticle Collection-->
+    <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">MCParticlesSkimmed </parameter>
+    <!--Number of Higgs decays (default: 2) -->
+    <parameter name="nHiggs" type="int"> 1 </parameter>
+    <!--Names of the Output Higgs decay mode collection-->
+    <parameter name="HdecayModeCollection" type="string" lcioOutType="MCParticle">HdecayMode </parameter>
+    <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
+    <parameter name="Verbosity" type="string">MESSAGE </parameter>
+  </processor>
 
  <processor name="Misclustering" type="Misclustering">
    <parameter name="RecoJetCollection" type="string" lcioInType="ReconstructedParticle"> RefinedJets </parameter>
@@ -2107,27 +2170,6 @@ Make sure to not specify any LCIOInputFiles in the steering in order to read SUC
   <!--parameter name="ZVRESDecayChainTrackCollection" type="string">ZVRESDecayChainRPTracks </parameter-->
   <!--Name of the ZVRES Selected Jets collection-->
   <!--parameter name="ZVRESSelectedJetsCollection" type="string">ZVRESSelectedJets </parameter-->
-</processor>
-
- <processor name="MyLCIOOutputProcessor" type="LCIOOutputProcessor">
- <!--Writes the current event to the specified LCIO outputfile. Needs to be the last ActiveProcessor.-->
-  <!--drops the named collections from the event-->
-  <!--parameter name="DropCollectionNames" type="StringVec">TPCHits HCalHits  </parameter-->
-  <!--drops all collections of the given type from the event-->
-  <!--parameter name="DropCollectionTypes" type="StringVec">SimTrackerHit SimCalorimeterHit  </parameter-->
-  <!-- write complete objects in subset collections to the file (i.e. ignore subset flag)-->
-  <!--parameter name="FullSubsetCollections" type="StringVec">MCParticlesSkimmed  </parameter-->
-  <!--force keep of the named collections - overrules DropCollectionTypes (and DropCollectionNames)-->
-  <!--parameter name="KeepCollectionNames" type="StringVec">MyPreciousSimTrackerHits  </parameter-->
-  <!-- name of output file -->
-  <parameter name="LCIOOutputFile" type="string">
-    <!-- OUTPUT.slcio -->
-  </parameter>
-  <!--write mode for output file:  WRITE_APPEND or WRITE_NEW-->
-  <!--  <parameter name="LCIOWriteMode" type="string">None </parameter> -->
-  <parameter name="LCIOWriteMode" type="string"> WRITE_NEW </parameter> 
-  <!--will split output file if size in kB exceeds given value - doesn't work with APPEND and NEW-->
-  <!--parameter name="SplitFileSizekB" type="int">1992294 </parameter-->
 </processor>
 
  <processor name="MyLDCCaloDigi" type="LDCCaloDigi">
