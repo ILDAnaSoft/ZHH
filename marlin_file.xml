@@ -19,13 +19,20 @@
 
 
 <marlin xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://ilcsoft.desy.de/marlin/marlin.xsd">
+  <constants>
+    <constant name="OutputDirectory" value="." />
+    <constant name="OutputBaseName" value="ZHHAnalysis" />
+    <!--constant name="OutputBaseName" value="e2e2hhDeclusteringTrueJetsWithFixInclGluonSplittingOnlyHadronicPFOs" /-->
+    <constant name="OutputRootFile" value="${OutputBaseName}.root" />
+  </constants>
+  
   <execute>
     <processor name="MyAIDAProcessor"/> 
     <!--  <processor name="MyTestProcessor"/>  -->
     <!-- ========== create a root file =======================================  -->
-    <processor name="InitDD4hep" />
-    <Xprocessor name="RootFileProcessor"/>  
-    <if condition="MyHdecayMode.GoodEvent">
+    <Xprocessor name="InitDD4hep" />
+    <Xprocessor name="RootFileProcessor"/>
+    <!-- <if condition="MyHdecayMode.GoodEvent"> -->
       <Xprocessor name="MEMExampleZHH_qqffHProcessor"/>
       <Xprocessor name="MEMExampleZZHProcessor"/>
       <Xprocessor name="MEMExampleZHHProcessor"/>   
@@ -33,11 +40,11 @@
       <Xprocessor name="MEMExampleNNHHProcessor"/>  
       <Xprocessor name="MEMExampleNNHProcessor"/>  
       <Xprocessor name="MEMExampleEEHProcessor"/>
-      <processor name="MyTrueJet" />
+      <!-- <processor name="MyTrueJet" /> -->
       <processor name="ZHHPostRecoMEProcessor"/>
-      <processor name="Misclustering"/>
-      <processor name="MyLCIOOutputProcessor"/>
-    </if>
+      <Xprocessor name="Misclustering"/>
+      <!-- <processor name="MyLCIOOutputProcessor"/> -->
+    <!-- </if> -->
   </execute>
 
  <global>

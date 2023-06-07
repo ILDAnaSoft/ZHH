@@ -70,7 +70,7 @@ PreSelection::PreSelection() :
 	registerProcessorParameter("whichPreselection",
 				   "Which set of cuts to use in the preselection",
 				   m_whichPreselection,
-				   std::string("custom")
+				   std::string("llbbbb")
 				   );
 
         registerProcessorParameter("nJets",
@@ -455,6 +455,10 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
     ispassedparticle->setType(passed);
     preselectioncol->addElement(ispassedparticle);
     preselectioncol->parameters().setValue("isPassed", (bool)passed);
+    higgscol->parameters().setValue("h1jet1id", perms[best_idx][0]);
+    higgscol->parameters().setValue("h1jet2id", perms[best_idx][1]);
+    higgscol->parameters().setValue("h2jet1id", perms[best_idx][2]);
+    higgscol->parameters().setValue("h2jet2id", perms[best_idx][3]);
     ispassedvec->push_back(passed);
     ispassedcol->addElement(ispassedvec);
     pLCEvent->addCollection(preselectioncol, m_PreSelectionCollection);

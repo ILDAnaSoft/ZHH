@@ -5,7 +5,7 @@
     <constant name="lcgeo_DIR" value="/cvmfs/ilc.desy.de/sw/x86_64_gcc82_centos7/v02-02-02/lcgeo/v00-16-06" />
     <constant name="DetectorModel" value="ILD_l5_o1_v02" />
     <constant name="CompactFile" value="${lcgeo_DIR}/ILD/compact/${DetectorModel}/${DetectorModel}.xml" />
-    <constant name="OutputDirectory" value="/nfs/dust/ilc/user/jtorndal/PhysicsAnalysis" />
+    <constant name="OutputDirectory" value="." />
     <constant name="OutputBaseName" value="e2e2hhECMStudies" />
     <constant name="OutputRootFile" value="${OutputBaseName}.root" />
     <constant name="NumberOfHiggs" value="2" />
@@ -32,17 +32,18 @@
     <processor name="MyFastJetProcessor" condition="" />
     <processor name="JC4FT"/>
     <processor name="PreSelection"/>
-    <if condition="MyPreSelection.Passed"-->
-	<processor name="MySLDCorrection" condition="" />
-	<processor name="MyErrorFlow" condition="" />
-	<processor name="MyZHHKinFitLeptonChannel" condition="" />
-	<processor name="MyLeptonErrorAnalysis" condition="" />
-	<processor name="MyJetErrorAnalysis_woNu" condition="" />
-	<processor name="MyJetErrorAnalysis" condition="" />
+    <if condition="MyPreSelection.Passed">
+      <processor name="MySLDCorrection" condition="" />
+      <processor name="MyErrorFlow" condition="" />
+      <!-- <processor name="MyZHHKinFitLeptonChannel" condition="" /> -->
+      <!-- <processor name="MyLeptonErrorAnalysis" condition="" /> -->
+      <!-- <processor name="MyJetErrorAnalysis_woNu" condition="" /> -->
+      <!-- <processor name="MyJetErrorAnalysis" condition="" /> -->
     </if> 
     <if condition="MyHdecayMode.GoodEvent">
-	<processor name="mytruejet"/>
-	<processor name="MyMisclustering"/>
+      <processor name="mytruejet"/>
+      <processor name="MyZHHPostRecoMEProcessor"/>
+      <processor name="MyMisclustering"/>
     </if> 
     <processor name="MyLCIOOutputProcessor"/>
   </execute>
@@ -136,6 +137,17 @@
     <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
     <!--parameter name="Verbosity" type="string">DEBUG </parameter-->
   </processor>
+
+  <processor name="MyZHHPostRecoMEProcessor" type="ZHHPostRecoMEProcessor">
+   <parameter name="LepPairCollection" type="string" lcioInType="ReconstructedParticle"> LeptonPair </parameter>
+   <parameter name="HiggsPairCollection" type="string" lcioInType="ReconstructedParticle"> HiggsPair </parameter>
+   <parameter name="MCTrueCollection" type="string" lcioInType="MCParticle"> MCParticlesSkimmed </parameter>
+   <parameter name="PreSelectionCollection" type="string" lcioInType="ReconstructedParticle"> preselection </parameter>
+   <parameter name="ZDecayMode" type="int" value="5"/>
+   <parameter name="HiggsMass" type="double" value="125.0"/>
+   <parameter name="outputFilename" type="string" value="zhh_output.root"/>
+   <parameter name="outputTree" type="string" value="dataTree"/>
+ </processor>
 
   <processor name="MyAddNeutralPFOCovMatLite" type="AddNeutralPFOCovMat">
     <!--Name of the Input PFO Collection-->
@@ -325,7 +337,7 @@
 
 <processor name="JC4FT" type="LcfiplusProcessor">
     <!-- run primary and secondary vertex finders -->
-    <parameter name="Algorithms" type="stringVec"> JetClustering JetVertexRefiner FlavorTag ReadMVA</parameter>
+    <parameter name="Algorithms" type="stringVec"> JetClustering JetVertexRefiner FlavorTag ReadMVA </parameter>
 
     <!-- general parameters -->
     <parameter name="PFOCollection" type="string" value="PandoraPFOsWithoutLepPair" /> <!-- input PFO collection -->
@@ -451,8 +463,9 @@
     <!--Name of the input collections-->
     <parameter name="isolatedeptonCollection" type="string" lcioInType="ReconstructedParticle">ISOLeptons</parameter>
     <parameter name="LepPairCollection" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
+    <parameter name="HiggsCollection" type="string" lcioOutType="ReconstructedParticle"> HiggsPair </parameter>
     <parameter name="JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets</parameter>
-    <parameter name="inputPfoCollection" type="string" lcioInType="RECONSTRUCTEDPARTICLE">PandoraPFOs</parameter>
+    <parameter name="inputPfoCollection" type="string" lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
     <!--Parameters for preselection -->
     <!--predefined preselection available for llbbbb, vvbbbb, and qqbbbb-->
     <parameter name="whichPreselection"> ${WhichPreselection} </parameter>
@@ -589,7 +602,7 @@
     <parameter name="Verbosity" type="string">MESSAGE</parameter>
   </processor>
 
-  <processor name="MyZHHKinFitLeptonChannel" type="ZHHKinFitLeptonChannel">
+  <processor name="MyZHHKinFitLeptonChannel" type="ZHHllbbbbKinFit">
     <!--ZHHKinFit does a 5C fit on 4 jet events and 2 leptons (Px, Py, Pz, E, M12 = M34 (for all three permutations)) -->
     <!--Name of the input collections: isolated leptons, jets, SLD vertices, Jet-SLDvertex relations, and SLDvertex-neutrino relations -->
     <parameter name="InputIsoLeptonsCollection" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
@@ -686,7 +699,7 @@
     <!-- write complete objects in subset collections to the file (i.e. ignore subset flag)-->
     <!--parameter name="FullSubsetCollections" type="StringVec">MCParticlesSkimmed  </parameter-->
     <!--force keep of the named collections - overrules DropCollectionTypes (and DropCollectionNames)-->
-    <parameter name="KeepCollectionNames" type="StringVec"> IsolatedLeptons PandoraPFOsWithoutLepPair RefinedJets RefinedJetsPFOs OutputErrorFlowJets TrueJets FinalColourNeutrals InitialColourNeutrals TrueJetPFOLink TrueJetMCParticleLink FinalElementonLink InitialElementonLink FinalColourNeutralLink InitialColourNeutralLink HdecayMode IsolatedLeptons RefinedJets </parameter>
+    <parameter name="KeepCollectionNames" type="StringVec"> Durham_2Jets Durham_2JetsPFOs IsolatedLeptons PandoraPFOsWithoutLepPair RefinedJets RefinedJetsPFOs OutputErrorFlowJets TrueJets FinalColourNeutrals InitialColourNeutrals TrueJetPFOLink TrueJetMCParticleLink FinalElementonLink InitialElementonLink FinalColourNeutralLink InitialColourNeutralLink HdecayMode IsolatedLeptons RefinedJets </parameter>
         <!-- name of output file -->
     <parameter name="LCIOOutputFile" type="string">${OutputDirectory}/slcio/${OutputBaseName}.slcio</parameter>
     <!--write mode for output file:  WRITE_APPEND or WRITE_NEW-->
