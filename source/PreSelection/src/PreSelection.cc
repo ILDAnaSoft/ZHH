@@ -429,6 +429,13 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
 	  higgs->setMass(vdijet[i].M());
 	  higgscol->addElement(higgs);
 	}
+
+  // Save mapping of jets to HiggsPair
+  higgscol->parameters().setValue("h1jet1id", perms[best_idx][0]);
+  higgscol->parameters().setValue("h1jet2id", perms[best_idx][1]);
+  higgscol->parameters().setValue("h2jet1id", perms[best_idx][2]);
+  higgscol->parameters().setValue("h2jet2id", perms[best_idx][3]);
+
 	for (int i=0; i<ndijets; i++) {
 	  m_dijetMass.push_back(dijetmass[i]);
 	  m_dijetMassDiff.push_back(fabs( dijetmass[i] - 125. ));
@@ -455,15 +462,12 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
     ispassedparticle->setType(passed);
     preselectioncol->addElement(ispassedparticle);
     preselectioncol->parameters().setValue("isPassed", (bool)passed);
-    higgscol->parameters().setValue("h1jet1id", perms[best_idx][0]);
-    higgscol->parameters().setValue("h1jet2id", perms[best_idx][1]);
-    higgscol->parameters().setValue("h2jet1id", perms[best_idx][2]);
-    higgscol->parameters().setValue("h2jet2id", perms[best_idx][3]);
     ispassedvec->push_back(passed);
     ispassedcol->addElement(ispassedvec);
-    pLCEvent->addCollection(preselectioncol, m_PreSelectionCollection);
+    pLCEvent->removeCollection(m_HiggsCollection);
+    //pLCEvent->addCollection(preselectioncol, m_PreSelectionCollection);
     pLCEvent->addCollection(higgscol, m_HiggsCollection);
-    pLCEvent->addCollection(ispassedcol, m_isPassed);
+    //pLCEvent->addCollection(ispassedcol, m_isPassed);
   }
   catch(DataNotAvailableException &e) {
     streamlog_out(MESSAGE) << "processEvent : Input collections not found in event " << m_nEvt << std::endl;
