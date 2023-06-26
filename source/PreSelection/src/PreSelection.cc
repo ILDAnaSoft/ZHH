@@ -465,9 +465,9 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
     ispassedvec->push_back(passed);
     ispassedcol->addElement(ispassedvec);
     pLCEvent->removeCollection(m_HiggsCollection);
-    //pLCEvent->addCollection(preselectioncol, m_PreSelectionCollection);
+    pLCEvent->addCollection(preselectioncol, m_PreSelectionCollection);
     pLCEvent->addCollection(higgscol, m_HiggsCollection);
-    //pLCEvent->addCollection(ispassedcol, m_isPassed);
+    pLCEvent->addCollection(ispassedcol, m_isPassed);
   }
   catch(DataNotAvailableException &e) {
     streamlog_out(MESSAGE) << "processEvent : Input collections not found in event " << m_nEvt << std::endl;

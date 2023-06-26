@@ -62,6 +62,13 @@ Misclustering::Misclustering() : Processor("Misclustering"),
 			   string("Durham_nJets")
 			   );
 
+  registerOutputCollection(	LCIO::RECONSTRUCTEDPARTICLE,
+					"outputJetCollection",
+					"Name of output fitted jet collection",
+					m_outputJetCollection,
+					std::string("Durham_4JetsKinFit")
+				);
+
   registerInputCollection( LCIO::MCPARTICLE,
 			   "MCParticleCollection" ,
 			   "Name of the MCParticle collection"  ,
