@@ -63,11 +63,11 @@ Misclustering::Misclustering() : Processor("Misclustering"),
 			   );
 
   registerOutputCollection(	LCIO::RECONSTRUCTEDPARTICLE,
-					"outputJetCollection",
-					"Name of output fitted jet collection",
-					m_outputJetCollection,
-					std::string("Durham_4JetsKinFit")
-				);
+				"JetMatchingCollection",
+				"Name of output collection holding parameters about reco/true jet matching ",
+				m_outputJetMatchingCollection,
+				std::string("JetMatching")
+			);
 
   registerInputCollection( LCIO::MCPARTICLE,
 			   "MCParticleCollection" ,
@@ -253,6 +253,9 @@ void Misclustering::processEvent( LCEvent* pLCEvent)
 {
   this->Clear();
   LCCollection *recoJetCol{};
+
+  IMPL::LCCollectionVec* m_jetMatchingCol = new IMPL::LCCollectionVec( LCIO::RECONSTRUCTEDPARTICLE );
+
   //LCCollection *trueJetCol{};
   m_nRun = pLCEvent->getRunNumber();
   m_nEvt = pLCEvent->getEventNumber();
@@ -300,6 +303,12 @@ void Misclustering::processEvent( LCEvent* pLCEvent)
 	foundTrueJets = getMatchingByLeadingParticle(pLCEvent, recoJets, reco2truejetindex);
       }
       if (foundTrueJets) {
+		for (auto pair : reco2truejetindex) {
+			char key[12];
+			sprintf(key, "reco2true%d", pair.first);
+			m_jetMatchingCol->parameters().setValue(key, pair.second);
+		}
+
 	//Pairing of Durham jets into dijets
 	vector<vector<int>> perms = {
 	  {0, 1, 2, 3},
@@ -322,6 +331,11 @@ void Misclustering::processEvent( LCEvent* pLCEvent)
 	    recojetpermChi2 = perm;
 	  }
 	}
+	m_jetMatchingCol->parameters().setValue("h1jet1id", recojetpermChi2[0]);
+	m_jetMatchingCol->parameters().setValue("h1jet2id", recojetpermChi2[1]);
+	m_jetMatchingCol->parameters().setValue("h2jet1id", recojetpermChi2[2]);
+	m_jetMatchingCol->parameters().setValue("h2jet2id", recojetpermChi2[3]);
+
 	streamlog_out(DEBUG3) << "Matching of reco jet to true jet: { ";
 	for (auto pair : reco2truejetindex) streamlog_out(DEBUG3) << "[" << pair.first << "," << pair.second << "] ";
 	streamlog_out(DEBUG3) << "}" << endl;
@@ -434,6 +448,10 @@ void Misclustering::processEvent( LCEvent* pLCEvent)
 	  m_recodijet_energy.push_back(recodijet_v4.E());
 	  m_recodijet_theta.push_back(recodijet_v4.Theta());
 	  m_recodijet_phi.push_back(recodijet_v4.Phi());
+
+	  m_jetMatchingCol->parameters().setValue("efrac_reco", intersectionenergy/recodijetenergy);
+	  m_jetMatchingCol->parameters().setValue("efrac_true", intersectionenergy/truedijetenergy);
+
 	  //ICNs pairing
 	  vector<ReconstructedParticle*> dijet_intersection_ICNs;
 	  sort(recodijetPFOs_ICNs.begin(), recodijetPFOs_ICNs.end());
@@ -455,6 +473,9 @@ void Misclustering::processEvent( LCEvent* pLCEvent)
 	  m_recodijet_energy_ICNs.push_back(recodijet_v4_ICNs.E());
 	  m_recodijet_theta_ICNs.push_back(recodijet_v4_ICNs.Theta());
 	  m_recodijet_phi_ICNs.push_back(recodijet_v4_ICNs.Phi());
+
+	  m_jetMatchingCol->parameters().setValue("efrac_icn_reco", intersectionenergy_ICNs/recodijetenergy_ICNs);
+	  m_jetMatchingCol->parameters().setValue("efrac_icn_true", intersectionenergy_ICNs/truedijetenergy_ICNs);
 
 	  if (m_energyfrac_reco.back()>=0.95 && m_energyfrac_true.back()>=0.95) region.emplace_back("A");
 	  if (m_energyfrac_reco.back()< 0.95 && m_energyfrac_true.back()>=0.95) region.emplace_back("B");
@@ -481,6 +502,8 @@ void Misclustering::processEvent( LCEvent* pLCEvent)
       }
     }
     for (auto n: m_nrecodijetPFOs) streamlog_out(DEBUG3) << n << endl;
+
+	pLCEvent->addCollection(m_jetMatchingCol, m_outputJetMatchingCollection.c_str());
     m_pTTree->Fill();
     m_nEvtSum++;
     m_nEvt++ ;

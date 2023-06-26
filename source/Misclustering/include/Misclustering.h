@@ -126,6 +126,7 @@ class Misclustering : public Processor , public TrueJet_Parser
  private:
 
   string m_recoJetCollectionName{};
+  string m_outputJetMatchingCollection{};
   string _MCParticleColllectionName{};
   string _recoParticleCollectionName{};
   string _recoMCTruthLink{};
