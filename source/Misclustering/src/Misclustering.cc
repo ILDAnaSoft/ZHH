@@ -449,8 +449,8 @@ void Misclustering::processEvent( LCEvent* pLCEvent)
 	  m_recodijet_theta.push_back(recodijet_v4.Theta());
 	  m_recodijet_phi.push_back(recodijet_v4.Phi());
 
-	  m_jetMatchingCol->parameters().setValue("efrac_reco", intersectionenergy/recodijetenergy);
-	  m_jetMatchingCol->parameters().setValue("efrac_true", intersectionenergy/truedijetenergy);
+	  m_jetMatchingCol->parameters().setValue((i == 0) ? "efrac1_reco" : "efrac2_reco", intersectionenergy/recodijetenergy);
+	  m_jetMatchingCol->parameters().setValue((i == 0) ? "efrac1_true" : "efrac2_true", intersectionenergy/truedijetenergy);
 
 	  //ICNs pairing
 	  vector<ReconstructedParticle*> dijet_intersection_ICNs;
@@ -474,8 +474,8 @@ void Misclustering::processEvent( LCEvent* pLCEvent)
 	  m_recodijet_theta_ICNs.push_back(recodijet_v4_ICNs.Theta());
 	  m_recodijet_phi_ICNs.push_back(recodijet_v4_ICNs.Phi());
 
-	  m_jetMatchingCol->parameters().setValue("efrac_icn_reco", intersectionenergy_ICNs/recodijetenergy_ICNs);
-	  m_jetMatchingCol->parameters().setValue("efrac_icn_true", intersectionenergy_ICNs/truedijetenergy_ICNs);
+	  m_jetMatchingCol->parameters().setValue((i == 0) ? "efrac1_icn_reco" : "efrac2_icn_reco", intersectionenergy_ICNs/recodijetenergy_ICNs);
+	  m_jetMatchingCol->parameters().setValue((i == 0) ? "efrac1_icn_true" : "efrac2_icn_true", intersectionenergy_ICNs/truedijetenergy_ICNs);
 
 	  if (m_energyfrac_reco.back()>=0.95 && m_energyfrac_true.back()>=0.95) region.emplace_back("A");
 	  if (m_energyfrac_reco.back()< 0.95 && m_energyfrac_true.back()>=0.95) region.emplace_back("B");
