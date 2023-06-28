@@ -10,6 +10,11 @@
 #include <UTIL/LCRelationNavigator.h>
 #include <IMPL/ReconstructedParticleImpl.h>
 #include <iomanip>
+#include <iostream>
+#include <stdlib.h>
+
+#include <streamlog/streamlog.h>
+#include "marlin/VerbosityLevels.h"
 
 namespace isolep{
 
@@ -638,40 +643,16 @@ Int_t isSelectedByFastJet( ReconstructedParticle *pfo, LCCollection *colFastJet,
     ratioEPartEJet = ePart/eJet;
     ratioPTMJet = pPart.Pt(pJet)/mJet;
   }
-
+  
   return iFastJet;
 }
 
-void doPhotonRecovery(ReconstructedParticle *electron, LCCollection *colPFO, ReconstructedParticleImpl *recoElectron, Double_t fCosFSRCut) {
-  // recover the BS and FSR photons
-  TLorentzVector lortzElectron = TLorentzVector(electron->getMomentum(),electron->getEnergy());
-  Int_t nPFOs = colPFO->getNumberOfElements();
-  for (Int_t i=0;i<nPFOs;i++) {
-    ReconstructedParticle *recPart = dynamic_cast<ReconstructedParticle*>(colPFO->getElementAt(i));
-    if (recPart == electron) continue;
-    Bool_t isFSR = getFSRTag(electron,recPart,fCosFSRCut);
-    if (! isFSR) continue;
-    recoElectron->addParticle(recPart);
-    Bool_t isSplit = getSplitTag(electron,recPart);
-    if (isSplit) continue;
-    lortzElectron += TLorentzVector(recPart->getMomentum(),recPart->getEnergy());
-  }
-  Double_t energy = lortzElectron.E();
-  Double_t mass   = lortzElectron.M();
-  Double_t momentum[3] = {lortzElectron.Px(),lortzElectron.Py(),lortzElectron.Pz()};
-  Double_t charge = electron->getCharge();
-  recoElectron->setMomentum(momentum);
-  recoElectron->setEnergy(energy);
-  recoElectron->setMass(mass);
-  recoElectron->setCharge(charge);
-  recoElectron->setType(94);
-
-}
-
-void doPhotonRecovery(ReconstructedParticle *electron, LCCollection *colPFO, ReconstructedParticleImpl *recoElectron, Double_t fCosFSRCut, 
+void doPhotonRecovery_ZHH(ReconstructedParticle *electron, LCCollection *colPFO, ReconstructedParticleImpl *recoElectron, Double_t fCosFSRCut, 
 		      Int_t lepType, std::vector<lcio::ReconstructedParticle*> &photons) {
+  //streamlog_out(MESSAGE) << "Ladida hfskdafk" << std::endl;
   // recover the BS and FSR photons
   TLorentzVector lortzElectron = TLorentzVector(electron->getMomentum(),electron->getEnergy());
+  std::vector<float> electronCovMat = electron->getCovMatrix();
   recoElectron->addParticle(electron);
   Int_t nPFOs = colPFO->getNumberOfElements();
   for (Int_t i=0;i<nPFOs;i++) {
@@ -690,6 +671,8 @@ void doPhotonRecovery(ReconstructedParticle *electron, LCCollection *colPFO, Rec
     else if (lepType == 13) {
     }
     lortzElectron += TLorentzVector(recPart->getMomentum(),recPart->getEnergy());
+    std::transform(electronCovMat.begin(), electronCovMat.end(), recPart->getCovMatrix().begin(), 
+		   electronCovMat.begin(), std::plus<float>());
   }
   Double_t energy = lortzElectron.E();
   Double_t mass   = lortzElectron.M();
@@ -700,7 +683,11 @@ void doPhotonRecovery(ReconstructedParticle *electron, LCCollection *colPFO, Rec
   recoElectron->setMass(mass);
   recoElectron->setCharge(charge);
   recoElectron->setType(94);
+  recoElectron->setCovMatrix(electronCovMat);
 
+    for(auto e : recoElectron->getCovMatrix()) {
+      cout << "ORIGINAL COV matrix element: " << e << endl;
+    }
 }
 
 Bool_t isFoundInVector(ReconstructedParticle *pfo, std::vector<lcio::ReconstructedParticle*> &pfos) {

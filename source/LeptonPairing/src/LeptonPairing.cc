@@ -9,7 +9,10 @@
 #include "TF1.h"
 #include "TTree.h"
 
+#include <streamlog/streamlog.h>
 #include "marlin/VerbosityLevels.h"
+
+#include <algorithm>
 
 #ifdef MARLIN_USE_AIDA
 #include <marlin/AIDAProcessor.h>
@@ -211,10 +214,14 @@ void LeptonPairing::processEvent( EVENT::LCEvent *pLCEvent ) {
     // recovery of FSR and BS
     m_IsoLepsInvMass.push_back(inv_mass(LeptonPair[0], LeptonPair[1]));
     ReconstructedParticleImpl * recoLepton1 = new ReconstructedParticleImpl();
-    doPhotonRecovery(LeptonPair[0],PFOsWOIsoLepCollection,recoLepton1,fCosFSRCut,_lep_type,photons);
+    doPhotonRecovery_ZHH(LeptonPair[0],PFOsWOIsoLepCollection,recoLepton1,fCosFSRCut,_lep_type,photons);
     ReconstructedParticleImpl * recoLepton2 = new ReconstructedParticleImpl();
-    doPhotonRecovery(LeptonPair[1],PFOsWOIsoLepCollection,recoLepton2,fCosFSRCut,_lep_type,photons);
+    doPhotonRecovery_ZHH(LeptonPair[1],PFOsWOIsoLepCollection,recoLepton2,fCosFSRCut,_lep_type,photons);
     m_RecoLepsInvMass.push_back(inv_mass(recoLepton1,recoLepton2));
+    for(auto e : recoLepton1->getCovMatrix()) {
+      cout << "COV matrix element: " << e << endl;
+    }
+    
     m_LepPairCol->addElement(recoLepton1);
     m_LepPairCol->addElement(recoLepton2);
   }
