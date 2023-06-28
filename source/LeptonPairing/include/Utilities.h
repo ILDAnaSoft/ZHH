@@ -10,7 +10,6 @@
 #include <EVENT/MCParticle.h>
 #include <EVENT/ReconstructedParticle.h>
 #include <IMPL/ReconstructedParticleImpl.h>
-#include <string>
 
 #include "TROOT.h"
 #include "TVector3.h"
@@ -52,8 +51,8 @@ namespace isolep{
 		     Double_t coneEnergy[3], Double_t cosCone2, Double_t pCone2[4]);
   TLorentzVector getFSRMomentum(ReconstructedParticle *recPart, LCCollection *colPFO);
   Int_t isSelectedByFastJet( ReconstructedParticle *pfo, LCCollection *colFastJet, Double_t &ratioEPartEJet, Double_t &ratioPTMJet);
-  void doPhotonRecovery_ZHH(ReconstructedParticle *electron, LCCollection *colPFO, ReconstructedParticleImpl *recoElectron, Double_t fCosFSRCut, 
-			Int_t lepType, std::vector<lcio::ReconstructedParticle*> &photons);
+  void doPhotonRecovery(ReconstructedParticle *electron, LCCollection *colPFO, ReconstructedParticleImpl *recoElectron, Double_t fCosFSRCut = 0.999);   
+  void doPhotonRecovery(ReconstructedParticle *electron, LCCollection *colPFO, ReconstructedParticleImpl *recoElectron, Double_t fCosFSRCut, Int_t lepType, std::vector<lcio::ReconstructedParticle*> &photons);
   Bool_t isFoundInVector(ReconstructedParticle *pfo, std::vector<lcio::ReconstructedParticle*> &pfos);
   
   Double_t jetFunction( TLorentzVector lortz, float beta, float power);

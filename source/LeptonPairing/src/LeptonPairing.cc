@@ -4,7 +4,7 @@
 #include <cassert>
 #include <iostream>
 #include <iomanip>
-#include "Utilities.h"
+#include "ZHHUtilities.h"
 #include "TH2F.h"
 #include "TF1.h"
 #include "TTree.h"
@@ -24,8 +24,6 @@
 using namespace lcio ;
 using namespace marlin ;
 using namespace std ;
-
-using namespace isolep;
 
 template<class T>
 double inv_mass(T* p1, T* p2){
@@ -214,13 +212,10 @@ void LeptonPairing::processEvent( EVENT::LCEvent *pLCEvent ) {
     // recovery of FSR and BS
     m_IsoLepsInvMass.push_back(inv_mass(LeptonPair[0], LeptonPair[1]));
     ReconstructedParticleImpl * recoLepton1 = new ReconstructedParticleImpl();
-    doPhotonRecovery_ZHH(LeptonPair[0],PFOsWOIsoLepCollection,recoLepton1,fCosFSRCut,_lep_type,photons);
+    ZHH::doPhotonRecovery(LeptonPair[0],PFOsWOIsoLepCollection,recoLepton1,fCosFSRCut,_lep_type,photons);
     ReconstructedParticleImpl * recoLepton2 = new ReconstructedParticleImpl();
-    doPhotonRecovery_ZHH(LeptonPair[1],PFOsWOIsoLepCollection,recoLepton2,fCosFSRCut,_lep_type,photons);
+    ZHH::doPhotonRecovery(LeptonPair[1],PFOsWOIsoLepCollection,recoLepton2,fCosFSRCut,_lep_type,photons);
     m_RecoLepsInvMass.push_back(inv_mass(recoLepton1,recoLepton2));
-    for(auto e : recoLepton1->getCovMatrix()) {
-      cout << "COV matrix element: " << e << endl;
-    }
     
     m_LepPairCol->addElement(recoLepton1);
     m_LepPairCol->addElement(recoLepton2);
