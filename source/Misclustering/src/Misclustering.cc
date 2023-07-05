@@ -164,6 +164,18 @@ Misclustering::Misclustering() : Processor("Misclustering"),
 			    int(0)
 			    );
 
+ registerProcessorParameter("b1Type",
+				"type of Boson b1: either H/Z/W",
+				m_b1type,
+				std::string("H")
+				);
+
+ registerProcessorParameter("b2Type",
+				"type of Boson b2: either H/Z/W",
+				m_b2type,
+				std::string("H")
+				);
+
  registerProcessorParameter("outputFilename",
 			    "name of output root file",
 			    m_outputFile,
@@ -207,6 +219,10 @@ void Misclustering::init()
   m_pTTree->Branch("recodijet_phi_ICNs", &m_recodijet_phi_ICNs);
   m_pTTree->Branch("regionXX", &m_regionXX);
   m_pTTree->Branch("regionXX_ICNs", &m_regionXX_ICNs);
+
+  m_b1mass = (m_b1type == "H") ? 125. : (m_b1type == "Z" ? 91.19 : 80.38);
+  m_b2mass = (m_b2type == "H") ? 125. : (m_b2type == "Z" ? 91.19 : 80.38);
+
   streamlog_out(DEBUG) << "   init finished  " << std::endl;
 }
 
@@ -317,7 +333,7 @@ void Misclustering::processEvent( LCEvent* pLCEvent)
 	for (auto perm : perms) {
 	  float m1 = inv_mass(recoJets.at(perm[0]),recoJets.at(perm[1]));
 	  float m2 = inv_mass(recoJets.at(perm[2]),recoJets.at(perm[3]));
-	  float chi2 = (m1-125)*(m1-125)+(m2-125)*(m2-125);
+	  float chi2 = (m1-m_b1mass)*(m1-m_b1mass)+(m2-m_b2mass)*(m2-m_b2mass);
 	  if (chi2 < chi2min) {
 	    chi2min = chi2;
 	    higgs1 = m1;
@@ -326,10 +342,10 @@ void Misclustering::processEvent( LCEvent* pLCEvent)
 	  }
 	}
 
-	m_jetMatchingCol->parameters().setValue("h1jet1id", recojetpermChi2[0]);
-	m_jetMatchingCol->parameters().setValue("h1jet2id", recojetpermChi2[1]);
-	m_jetMatchingCol->parameters().setValue("h2jet1id", recojetpermChi2[2]);
-	m_jetMatchingCol->parameters().setValue("h2jet2id", recojetpermChi2[3]);
+	m_jetMatchingCol->parameters().setValue("b1jet1id", recojetpermChi2[0]);
+	m_jetMatchingCol->parameters().setValue("b1jet2id", recojetpermChi2[1]);
+	m_jetMatchingCol->parameters().setValue("b2jet1id", recojetpermChi2[2]);
+	m_jetMatchingCol->parameters().setValue("b2jet2id", recojetpermChi2[3]);
 
 	streamlog_out(DEBUG3) << "Matching of reco jet to true jet: { ";
 	for (auto pair : reco2truejetindex) streamlog_out(DEBUG3) << "[" << pair.first << "," << pair.second << "] ";
@@ -345,10 +361,10 @@ void Misclustering::processEvent( LCEvent* pLCEvent)
 	  truejetpermChi2.push_back(pair.second);
 	}
 
-	m_jetMatchingCol->parameters().setValue("h1tjet1id", truejetpermChi2[0]);
-	m_jetMatchingCol->parameters().setValue("h1tjet2id", truejetpermChi2[1]);
-	m_jetMatchingCol->parameters().setValue("h2tjet1id", truejetpermChi2[2]);
-	m_jetMatchingCol->parameters().setValue("h2tjet2id", truejetpermChi2[3]);
+	m_jetMatchingCol->parameters().setValue("b1tjet1id", truejetpermChi2[0]);
+	m_jetMatchingCol->parameters().setValue("b1tjet2id", truejetpermChi2[1]);
+	m_jetMatchingCol->parameters().setValue("b2tjet1id", truejetpermChi2[2]);
+	m_jetMatchingCol->parameters().setValue("b2tjet2id", truejetpermChi2[3]);
 
 	streamlog_out(DEBUG3) << "Pairing of reco dijets from chi2: { ";
 	for (auto idx : recojetpermChi2) streamlog_out(DEBUG3) << idx << " ";
@@ -396,10 +412,10 @@ void Misclustering::processEvent( LCEvent* pLCEvent)
 	//int nicn() { return icncol->getNumberOfElements(); };
 	// Number of initial colour neutrals
 
-	m_jetMatchingCol->parameters().setValue("recojets", (int)recojetpermChi2.size());
-	m_jetMatchingCol->parameters().setValue("truejets", (int)truejetpermChi2.size());
-	m_jetMatchingCol->parameters().setValue("recojeticns", (int)recojetpermICNs.size());
-	m_jetMatchingCol->parameters().setValue("truejeticns", (int)truejetpermICNs.size());
+	//m_jetMatchingCol->parameters().setValue("recojets", (int)recojetpermChi2.size());
+	//m_jetMatchingCol->parameters().setValue("truejets", (int)truejetpermChi2.size());
+	//m_jetMatchingCol->parameters().setValue("recojeticns", (int)recojetpermICNs.size());
+	//m_jetMatchingCol->parameters().setValue("truejeticns", (int)truejetpermICNs.size());
 
 	//For each dijet and corresponding di-Truejet, get list of PFOs and find intersection and calculate higgs masses
 	vector<const char*> region;
@@ -462,8 +478,8 @@ void Misclustering::processEvent( LCEvent* pLCEvent)
 		m_recodijet_theta.push_back(recodijet_v4.Theta());
 		m_recodijet_phi.push_back(recodijet_v4.Phi());
 
-		m_jetMatchingCol->parameters().setValue((i == 0) ? "efrac1_reco" : "efrac2_reco", intersectionenergy/recodijetenergy);
-	  	m_jetMatchingCol->parameters().setValue((i == 0) ? "efrac1_true" : "efrac2_true", intersectionenergy/truedijetenergy);
+		//m_jetMatchingCol->parameters().setValue((i == 0) ? "efrac1_reco" : "efrac2_reco", intersectionenergy/recodijetenergy);
+	  	//m_jetMatchingCol->parameters().setValue((i == 0) ? "efrac1_true" : "efrac2_true", intersectionenergy/truedijetenergy);
 
 		if (m_energyfrac_reco.back()>=0.95 && m_energyfrac_true.back()>=0.95) region.emplace_back("A");
 		if (m_energyfrac_reco.back()< 0.95 && m_energyfrac_true.back()>=0.95) region.emplace_back("B");
@@ -494,8 +510,8 @@ void Misclustering::processEvent( LCEvent* pLCEvent)
 		m_recodijet_theta_ICNs.push_back(recodijet_v4_ICNs.Theta());
 		m_recodijet_phi_ICNs.push_back(recodijet_v4_ICNs.Phi());
 
-		m_jetMatchingCol->parameters().setValue((i == 0) ? "efrac1_icn_reco" : "efrac2_icn_reco", intersectionenergy_ICNs/recodijetenergy_ICNs);
-		m_jetMatchingCol->parameters().setValue((i == 0) ? "efrac1_icn_true" : "efrac2_icn_true", intersectionenergy_ICNs/truedijetenergy_ICNs);
+		//m_jetMatchingCol->parameters().setValue((i == 0) ? "efrac1_icn_reco" : "efrac2_icn_reco", intersectionenergy_ICNs/recodijetenergy_ICNs);
+		//m_jetMatchingCol->parameters().setValue((i == 0) ? "efrac1_icn_true" : "efrac2_icn_true", intersectionenergy_ICNs/truedijetenergy_ICNs);
 
 		if (m_energyfrac_reco_ICNs.back()>=0.95 && m_energyfrac_true_ICNs.back()>=0.95) region_ICNs.emplace_back("A");
 		if (m_energyfrac_reco_ICNs.back()< 0.95 && m_energyfrac_true_ICNs.back()>=0.95) region_ICNs.emplace_back("B");
@@ -516,7 +532,7 @@ void Misclustering::processEvent( LCEvent* pLCEvent)
 		if(region.size() >= 2) {
 			string XX = string(region[0])+string(region[1]);
 			m_regionXX.push_back(dict[XX]);
-			m_jetMatchingCol->parameters().setValue("region", (int)dict[XX]);
+			//m_jetMatchingCol->parameters().setValue("region", (int)dict[XX]);
 		}
 	}
 
@@ -524,7 +540,7 @@ void Misclustering::processEvent( LCEvent* pLCEvent)
 		if(region.size() >= 2) {
 			string XX_ICNs = string(region_ICNs[0])+string(region_ICNs[1]);
 			m_regionXX_ICNs.push_back(dict[XX_ICNs]);
-			m_jetMatchingCol->parameters().setValue("region_icns", (int)dict[XX_ICNs]);
+			//m_jetMatchingCol->parameters().setValue("region_icns", (int)dict[XX_ICNs]);
 		}
 	}
 
