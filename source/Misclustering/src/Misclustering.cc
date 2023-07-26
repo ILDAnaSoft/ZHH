@@ -347,8 +347,13 @@ void Misclustering::processEvent( LCEvent* pLCEvent)
 	m_jetMatchingCol->parameters().setValue("b2jet1id", recojetpermChi2[2]);
 	m_jetMatchingCol->parameters().setValue("b2jet2id", recojetpermChi2[3]);
 
+	// Save RefinedJet to TrueJet matching
 	streamlog_out(DEBUG3) << "Matching of reco jet to true jet: { ";
-	for (auto pair : reco2truejetindex) streamlog_out(DEBUG3) << "[" << pair.first << "," << pair.second << "] ";
+	for (auto pair : reco2truejetindex) {
+		// pair.first  = RefinedJet index (running from 0 to m_nRecoJets-1, i.e. 3)
+		// pair.second = TrueJet index
+		streamlog_out(DEBUG3) << "[" << pair.first << "," << pair.second << "] ";
+	}
 	streamlog_out(DEBUG3) << "}" << endl;
 	
 	vector<int> truejetpermChi2;

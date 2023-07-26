@@ -1,6 +1,4 @@
 {
-    "cmake.sourceDirectory": "${workspaceFolder}/example_stdhep",
-    "cmake.buildDirectory": "${workspaceFolder}/example_stdhep/build",
     "C_Cpp.loggingLevel": "Debug",
     "files.associations": {
         "string": "cpp",
@@ -69,11 +67,24 @@
         "cfenv": "cpp",
         "cinttypes": "cpp",
         "typeindex": "cpp",
-        "xutility": "cpp"
+        "xutility": "cpp",
+        "condition_variable": "cpp",
+        "optional": "cpp",
+        "mutex": "cpp",
+        "variant": "cpp"
     },
     "cmake.cmakePath": "/cvmfs/ilc.desy.de/key4hep/spackages/cmake/3.23.0/x86_64-centos7-gcc11.2.0-opt/mje3q7dbcg3ot3ptvn4pzypadohlejte/bin/cmake",
     "cmake.preferredGenerators": [
         "Unix Makefiles"
     ],
-    "python.analysis.typeCheckingMode": "basic"
+    "python.analysis.typeCheckingMode": "basic",
+    "C_Cpp.errorSquiggles": "enabled",
+    "C_Cpp.intelliSenseEngine": "default",
+    "cmake.buildDirectory": "${sourceDirectory}/build",
+    "cmake.sourceDirectory": [
+        "/afs/desy.de/user/b/bliewert/public/MarlinWorkdirs/ZHH/source/LeptonPairing",
+        "/afs/desy.de/user/b/bliewert/public/MarlinWorkdirs/ZHH/source/Misclustering",
+        "/afs/desy.de/user/b/bliewert/public/MarlinWorkdirs/ZHH/source/PreSelection",
+        "/afs/desy.de/user/b/bliewert/public/MarlinWorkdirs/ZHH/source/ZHHKinfitProcessors"
+    ]
 }
