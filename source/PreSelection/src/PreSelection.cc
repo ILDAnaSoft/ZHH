@@ -200,6 +200,7 @@ void PreSelection::init()
   m_pTTree->Branch("dijetMassDiff", &m_dijetMassDiff);
   m_pTTree->Branch("dihiggsMass", &m_dihiggsMass, "dihiggsMass/F");
   m_pTTree->Branch("nbjets", &m_nbjets, "nbjets/I");
+  m_pTTree->Branch("blikelihoodness", &m_blikelihoodness);
   streamlog_out(DEBUG) << "   init finished  " << std::endl;
 
   if (m_whichPreselection == "llbbbb") {
@@ -266,6 +267,7 @@ void PreSelection::Clear()
   m_dijetMassDiff.clear();
   m_dihiggsMass = -999;
   m_nbjets = 0;
+  m_blikelihoodness.clear();
 }
 void PreSelection::processRunHeader( LCRunHeader*  /*run*/) { 
   m_nRun++ ;
@@ -354,6 +356,7 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
         //double cTagValue = FTPara[CTagID];
         //double oTagValue = FTPara[OTagID];
 	if (bTagValue>m_minblikeliness) m_nbjets++;
+	m_blikelihoodness.push_back(bTagValue);
       }	
       vector<vector<int>> perms;
       if (m_nAskedJets == 4 || (m_nAskedJets == 6 && m_nbjets == 4)) {
@@ -438,7 +441,7 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
     } //if ( m_nJets == m_nAskedJets )
 
     // ---------- PRESELECTION ----------
-      if (m_nJets != m_nAskedJets) passed = false;
+    if (m_nJets != m_nAskedJets) passed = false;
     if (m_nIsoLeps < 2 && m_nAskedIsoLeps == 2) passed = false;
     if (m_nIsoLeps > 0 && m_nAskedIsoLeps == 0) passed = false;
     if (m_dileptonMassDiff > m_maxdileptonmassdiff ) passed = false;
