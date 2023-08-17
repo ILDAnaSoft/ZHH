@@ -43,6 +43,7 @@ class HdecayMode : public Processor
 
 		std::string				m_mcParticleCollection{};
 		std::string				m_HdecayModeCollection{};
+		std::string                             m_outputFile{};
 		LCCollectionVec				*m_col_HDecayMode{};
 		int                                     _nhiggs{};
 		int					m_isDecayedTob;
@@ -57,6 +58,14 @@ class HdecayMode : public Processor
 		float					m_ISR2Px;
 		float					m_ISR2Py;
 		float					m_ISR2Pz;
+		int m_nRun;
+                int m_nEvt;
+		int m_nHdecayTob;
+		int m_nZdecayTob;
+
+		TFile *m_pTFile{};
+                TTree *m_pTTree{};
+
 };
 
 #endif

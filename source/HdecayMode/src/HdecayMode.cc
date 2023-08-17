@@ -48,6 +48,11 @@ HdecayMode::HdecayMode() :
 					"Number of Higgs decays",
 					_nhiggs,
 					(int)2.);
+	registerProcessorParameter(     "outputFilename",
+					"name of output root file",
+					m_outputFile,
+					std::string("")
+					);
 
 }
 
@@ -68,7 +73,22 @@ void HdecayMode::init()
 	m_ISR2Py = 0.;
 	m_ISR2Pz = 0.;
 	this->Clear();
+	m_nRun = 0;
+	m_nEvt = 0;
 
+	m_pTFile = new TFile(m_outputFile.c_str(),"recreate");
+	m_pTTree = new TTree("eventTree","eventTree");
+	m_pTTree->SetDirectory(m_pTFile);
+
+	m_pTTree->Branch("run", &m_nRun, "run/I");
+	m_pTTree->Branch("event", &m_nEvt, "event/I");
+	m_pTTree->Branch("nHdecayTob",&m_nHdecayTob,"nHdecayTob/I") ;
+	m_pTTree->Branch("nZdecayTob",&m_nZdecayTob,"nZdecayTob/I") ;
+
+	m_nHdecayTob = 0;
+	m_nZdecayTob = 0;	
+
+	streamlog_out(DEBUG) << "   init finished  " << std::endl;
 }
 
 void HdecayMode::Clear()
@@ -85,6 +105,10 @@ void HdecayMode::Clear()
 	m_ISR2Px = 0.;
 	m_ISR2Py = 0.;
 	m_ISR2Pz = 0.;
+
+	m_nHdecayTob = 0;
+	m_nZdecayTob = 0;	
+
 }
 
 void HdecayMode::processRunHeader()
@@ -95,6 +119,8 @@ void HdecayMode::processRunHeader()
 void HdecayMode::processEvent( LCEvent *pLCEvent ) {
   try {
     this->Clear();
+    m_nRun = pLCEvent->getRunNumber();
+    m_nEvt = pLCEvent->getEventNumber();
     const EVENT::LCCollection *mcpCollection = pLCEvent->getCollection(m_mcParticleCollection);
     streamlog_out(DEBUG) << "Processing event " << pLCEvent->getEventNumber() << std::endl;
     m_col_HDecayMode = new LCCollectionVec(LCIO::MCPARTICLE);
@@ -129,6 +155,12 @@ void HdecayMode::processEvent( LCEvent *pLCEvent ) {
 	}
       }
     }
+    m_nHdecayTob = m_isDecayedTob;
+    if (abs(dynamic_cast<EVENT::MCParticle*>(mcpCollection->getElementAt(8))->getPDG()) == 5 
+	&& (dynamic_cast<EVENT::MCParticle*>(mcpCollection->getElementAt(8))->getPDG()/dynamic_cast<EVENT::MCParticle*>(mcpCollection->getElementAt(9))->getPDG() == -1 )) {
+      m_nZdecayTob = 1;
+    }
+
     if (m_isDecayedTob + m_isDecayedToc == 2) m_isBothDecayedToHeavy ++;
     streamlog_out(DEBUG) << "ISR energy is " << m_ISR1Energy << " GeV" << std::endl;
     m_col_HDecayMode->parameters().setValue("isDecayedTob", (int)m_isDecayedTob);		
@@ -159,6 +191,15 @@ void HdecayMode::processEvent( LCEvent *pLCEvent ) {
   //if (m_isDecayedTob + m_isDecayedToc == _nhiggs) setReturnValue("GoodEvent", true);
   if (m_isDecayedTob == _nhiggs) setReturnValue("GoodEvent", true); 
   else setReturnValue( "GoodEvent" , false ) ;
+  if (m_isDecayedTob == 2) setReturnValue("bbbb", true);
+  else setReturnValue("bbbb", false);
+  if (m_isDecayedToc == 2) setReturnValue("cccc", true);
+  else setReturnValue("cccc", false);
+  if (m_isDecayedToother == 2) setReturnValue("qqqq", true);
+  else setReturnValue("qqqq", false);
+
+  m_pTTree->Fill();
+
 }
 
 void HdecayMode::check()
@@ -169,7 +210,10 @@ void HdecayMode::check()
 
 void HdecayMode::end()
 {
-
+  m_pTFile->cd();
+  m_pTTree->Write();
+  m_pTFile->Close();
+  delete m_pTFile;
 }
 
 
