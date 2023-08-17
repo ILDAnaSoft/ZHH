@@ -272,207 +272,211 @@ void Misclustering::processEvent( LCEvent* pLCEvent)
       }
     }
     streamlog_out(DEBUG3) << "Number of True Hadronic Jets(type = 1): " << m_nTrueJets << endl;
-    if ( m_nRecoJets == m_nTrueJets ) {
-      //Vector of Durham jets
-      vector<ReconstructedParticle*> recoJets; 
-      for (unsigned int i=0; i<m_nRecoJets; ++i) {
-	recoJets.push_back((ReconstructedParticle*) recoJetCol->getElementAt(i));
-      }
-      const EVENT::LCParameters& params = recoJetCol->getParameters() ;
-      m_y_45.push_back(params.getFloatVal("y_{n,n+1}"));
-      m_y_34.push_back(params.getFloatVal("y_{n-1,n}"));
-      //Vector of matched indices {i_dj, i_tj}
-      vector<pair<int,int>> reco2truejetindex;
-      bool foundTrueJets = true;
-      //Do matching 
-      if (m_matchMethod == 0) {
-	float SmallestSumCosAngle = getMatchingByAngularSpace(pLCEvent, recoJets, reco2truejetindex);
-	m_sumofangles.push_back(SmallestSumCosAngle);
-      } 
-      if (m_matchMethod == 1) {
-	foundTrueJets = getMatchingByLeadingParticle(pLCEvent, recoJets, reco2truejetindex);
-      }
-      if (foundTrueJets) {
-	//Pairing of Durham jets into dijets
-	vector<vector<int>> perms = {
-	  {0, 1, 2, 3},
-	  {0, 2, 1, 3},
-	  {0, 3, 1, 2}
-	};
-
-	float chi2min = 99999. ;
-	float higgs1 = 0. ;
-	float higgs2 = 0. ;
-	vector<int> recojetpermChi2;
-	for (auto perm : perms) {
-	  float m1 = inv_mass(recoJets.at(perm[0]),recoJets.at(perm[1]));
-	  float m2 = inv_mass(recoJets.at(perm[2]),recoJets.at(perm[3]));
-	  float chi2 = (m1-125)*(m1-125)+(m2-125)*(m2-125);
-	  if (chi2 < chi2min) {
-	    chi2min = chi2;
-	    higgs1 = m1;
-	    higgs2 = m2;
-	    recojetpermChi2 = perm;
-	  }
+    if ( m_nRecoJets != m_nTrueJets ) {
+      m_pTTree->Fill();
+      return;
+    }
+    
+    //Vector of Durham jets
+    vector<ReconstructedParticle*> recoJets; 
+    for (unsigned int i=0; i<m_nRecoJets; ++i) {
+      recoJets.push_back((ReconstructedParticle*) recoJetCol->getElementAt(i));
+    }
+    const EVENT::LCParameters& params = recoJetCol->getParameters() ;
+    m_y_45.push_back(params.getFloatVal("y_{n,n+1}"));
+    m_y_34.push_back(params.getFloatVal("y_{n-1,n}"));
+    //Vector of matched indices {i_dj, i_tj}
+    vector<pair<int,int>> reco2truejetindex;
+    bool foundTrueJets = true;
+    //Do matching 
+    if (m_matchMethod == 0) {
+      float SmallestSumCosAngle = getMatchingByAngularSpace(pLCEvent, recoJets, reco2truejetindex);
+      m_sumofangles.push_back(SmallestSumCosAngle);
+    } 
+    if (m_matchMethod == 1) {
+      foundTrueJets = getMatchingByLeadingParticle(pLCEvent, recoJets, reco2truejetindex);
+    }
+    if (foundTrueJets) {
+      //Pairing of Durham jets into dijets
+      vector<vector<int>> perms = {
+	{0, 1, 2, 3},
+	{0, 2, 1, 3},
+	{0, 3, 1, 2}
+      };
+      
+      float chi2min = 99999. ;
+      float higgs1 = 0. ;
+      float higgs2 = 0. ;
+      vector<int> recojetpermChi2;
+      for (auto perm : perms) {
+	float m1 = inv_mass(recoJets.at(perm[0]),recoJets.at(perm[1]));
+	float m2 = inv_mass(recoJets.at(perm[2]),recoJets.at(perm[3]));
+	float chi2 = (m1-125)*(m1-125)+(m2-125)*(m2-125);
+	if (chi2 < chi2min) {
+	  chi2min = chi2;
+	  higgs1 = m1;
+	  higgs2 = m2;
+	  recojetpermChi2 = perm;
 	}
-	streamlog_out(DEBUG3) << "Matching of reco jet to true jet: { ";
-	for (auto pair : reco2truejetindex) streamlog_out(DEBUG3) << "[" << pair.first << "," << pair.second << "] ";
-	streamlog_out(DEBUG3) << "}" << endl;
-	
-	vector<int> truejetpermChi2;
-	for (int i=0; i<4; i++) {
-	  int ijet = recojetpermChi2[i];
-          streamlog_out(DEBUG3) << "ijet = "<< ijet << endl;
-          auto it = std::find_if( reco2truejetindex.begin(), reco2truejetindex.end(),
-                                  [ijet](const pair<int, int>& element){ return element.first == ijet;} );
-	  auto pair = *it;
-	  truejetpermChi2.push_back(pair.second);
-	}
-	streamlog_out(DEBUG3) << "Pairing of reco dijets from chi2: { ";
-	for (auto idx : recojetpermChi2) streamlog_out(DEBUG3) << idx << " ";
-	streamlog_out(DEBUG3) << "}" << endl;
-	streamlog_out(DEBUG3) << "Pairing of true dijets from chi2: { ";
-	for (auto idx : truejetpermChi2) streamlog_out(DEBUG3) << idx << " ";
-	streamlog_out(DEBUG3) << "}" << endl;
-
-	//Pairing of di-Truejet from initial colour neutrals
-	vector<int> truejetpermICNs;
-	int nicn = trueJet->nicn();
-	streamlog_out(DEBUG3) << "number of icns = " << nicn << endl;
-	for (int i_icn = 0 ; i_icn < nicn ; i_icn++ ) {
-	  auto siblings = jets_of_initial_cn(i_icn);
-	  streamlog_out(DEBUG3) << "TrueJet pair (parent = " << pdg_icn_parent(i_icn) << "): ";
-	  for (auto tj : siblings) streamlog_out(DEBUG3) << tj << " ";
-	  streamlog_out(DEBUG3) << endl;
-	  if (pdg_icn_parent(i_icn) == 25) {
-	    for (auto tj : siblings) {
-	      if (type_jet(tj) == 1) {
-		truejetpermICNs.push_back(tj);
-	      }
+      }
+      streamlog_out(DEBUG3) << "Matching of reco jet to true jet: { ";
+      for (auto pair : reco2truejetindex) streamlog_out(DEBUG3) << "[" << pair.first << "," << pair.second << "] ";
+      streamlog_out(DEBUG3) << "}" << endl;
+      
+      vector<int> truejetpermChi2;
+      for (int i=0; i<4; i++) {
+	int ijet = recojetpermChi2[i];
+	streamlog_out(DEBUG3) << "ijet = "<< ijet << endl;
+	auto it = std::find_if( reco2truejetindex.begin(), reco2truejetindex.end(),
+				[ijet](const pair<int, int>& element){ return element.first == ijet;} );
+	auto pair = *it;
+	truejetpermChi2.push_back(pair.second);
+      }
+      streamlog_out(DEBUG3) << "Pairing of reco dijets from chi2: { ";
+      for (auto idx : recojetpermChi2) streamlog_out(DEBUG3) << idx << " ";
+      streamlog_out(DEBUG3) << "}" << endl;
+      streamlog_out(DEBUG3) << "Pairing of true dijets from chi2: { ";
+      for (auto idx : truejetpermChi2) streamlog_out(DEBUG3) << idx << " ";
+      streamlog_out(DEBUG3) << "}" << endl;
+      
+      //Pairing of di-Truejet from initial colour neutrals
+      vector<int> truejetpermICNs;
+      int nicn = trueJet->nicn();
+      streamlog_out(DEBUG3) << "number of icns = " << nicn << endl;
+      for (int i_icn = 0 ; i_icn < nicn ; i_icn++ ) {
+	auto siblings = jets_of_initial_cn(i_icn);
+	streamlog_out(DEBUG3) << "TrueJet pair (parent = " << pdg_icn_parent(i_icn) << "): ";
+	for (auto tj : siblings) streamlog_out(DEBUG3) << tj << " ";
+	streamlog_out(DEBUG3) << endl;
+	if (pdg_icn_parent(i_icn) == 25) {
+	  for (auto tj : siblings) {
+	    if (type_jet(tj) == 1) {
+	      truejetpermICNs.push_back(tj);
 	    }
 	  }
 	}
-	vector<int> recojetpermICNs;
-        for (int i=0; i<4; i++) {
-          int ijet = truejetpermICNs[i];
-          streamlog_out(DEBUG3) << "ijet = "<< ijet << endl;
-          auto it = std::find_if( reco2truejetindex.begin(), reco2truejetindex.end(),
-                                  [ijet](const pair<int, int>& element){ return element.second == ijet;} );
-	  auto pair = *it;
-          recojetpermICNs.push_back(pair.first);
-        }
-        streamlog_out(DEBUG3) << "Pairing of true dijets from ICNs: { ";
-        for (auto idx : truejetpermICNs) streamlog_out(DEBUG3) << idx << " ";
-        streamlog_out(DEBUG3) << "}" << endl;
-        streamlog_out(DEBUG3) << "Pairing of reco dijets from ICNs: { ";
-        for (auto idx : recojetpermICNs) streamlog_out(DEBUG3) << idx << " ";
-        streamlog_out(DEBUG3) << "}" << endl;
-
-	//const IntVec& jets_of_initial_cn( int iicn ); 
-	// the list of the jets initial colour-neutral iicn gives rise to
-	//int nicn() { return icncol->getNumberOfElements(); };
-	// Number of initial colour neutrals
-
-
-	//For each dijet and corresponding di-Truejet, get list of PFOs and find intersection and calculate higgs masses
-	vector<const char*> region;
-	vector<const char*> region_ICNs;
-	for (int i =0; i<2; i++){
-	  vector<ReconstructedParticle*> recodijetPFOs;
-	  vector<ReconstructedParticle*> truedijetPFOs;
-	  ROOT::Math::PxPyPzEVector recodijet_v4(0,0,0,0);
-	  vector<ReconstructedParticle*> recodijetPFOs_ICNs;
-	  vector<ReconstructedParticle*> truedijetPFOs_ICNs;
-	  ROOT::Math::PxPyPzEVector recodijet_v4_ICNs(0,0,0,0);
-	  for (int j =0; j<2; j++){
-	    //Chi2 pairing  
-	    int i_recojetChi2 = recojetpermChi2[i*2+j];
-	    int i_truejetChi2 = truejetpermChi2[i*2+j];
-	    auto jet = recoJets.at(i_recojetChi2);
-	    vector<ReconstructedParticle*> recoparticlevec = jet->getParticles();
-	    vector<ReconstructedParticle*> trueparticlevec = seen_partics(i_truejetChi2);
-	    recodijetPFOs.insert(recodijetPFOs.end(), recoparticlevec.begin(), recoparticlevec.end());
-	    truedijetPFOs.insert(truedijetPFOs.end(), trueparticlevec.begin(), trueparticlevec.end());
-	    ROOT::Math::PxPyPzEVector recojet_v4(jet->getMomentum()[0],jet->getMomentum()[1],jet->getMomentum()[2],jet->getEnergy());
-	    recodijet_v4+=recojet_v4;
-	    //ICNs pairing  
-	    int i_truejetICNs = truejetpermICNs[i*2+j];
-	    int i_recojetICNs = recojetpermICNs[i*2+j];
-	    auto jet_ICNs = recoJets.at(i_recojetICNs);
-	    vector<ReconstructedParticle*> recoparticlevec_ICNs = jet_ICNs->getParticles();
-	    vector<ReconstructedParticle*> trueparticlevec_ICNs = seen_partics(i_truejetICNs);
-	    recodijetPFOs_ICNs.insert(recodijetPFOs_ICNs.end(), recoparticlevec_ICNs.begin(), recoparticlevec_ICNs.end());
-	    truedijetPFOs_ICNs.insert(truedijetPFOs_ICNs.end(), trueparticlevec_ICNs.begin(), trueparticlevec_ICNs.end());
-	    ROOT::Math::PxPyPzEVector recojet_v4_ICNs(jet_ICNs->getMomentum()[0],jet_ICNs->getMomentum()[1],jet_ICNs->getMomentum()[2],jet_ICNs->getEnergy());
-	    recodijet_v4_ICNs+=recojet_v4_ICNs;
-	  }
-	  //Chi2 pairing
-	  vector<ReconstructedParticle*> dijet_intersection;
-	  sort(recodijetPFOs.begin(), recodijetPFOs.end());
-	  sort(truedijetPFOs.begin(), truedijetPFOs.end());
-	  set_intersection(recodijetPFOs.begin(), recodijetPFOs.end(), truedijetPFOs.begin(), truedijetPFOs.end(), back_inserter(dijet_intersection));
-	  m_nrecodijetPFOs.push_back(recodijetPFOs.size());
-	  m_ntruedijetPFOs.push_back(truedijetPFOs.size());
-	  m_overlap.push_back(float(dijet_intersection.size())/float(recodijetPFOs.size()));
-	  m_recodijetmass.push_back(inv_mass(recoJets.at(recojetpermChi2[i*2]),recoJets.at(recojetpermChi2[i*2+1])));
-	  m_truedijetmass.push_back(inv_mass(jet(truejetpermChi2[i*2]),jet(truejetpermChi2[i*2+1])));
-	  double recodijetenergy = 0;
-	  double truedijetenergy = 0;
-	  double intersectionenergy = 0;
-	  for (auto p : dijet_intersection) intersectionenergy += p->getEnergy();
-	  for (auto p : recodijetPFOs) recodijetenergy += p->getEnergy();
-	  for (auto p : truedijetPFOs) truedijetenergy += p->getEnergy();
-	  m_energyfrac_reco.push_back(intersectionenergy/recodijetenergy);
-	  m_energyfrac_true.push_back(intersectionenergy/truedijetenergy);
-	  m_recodijet_energy.push_back(recodijet_v4.E());
-	  m_recodijet_theta.push_back(recodijet_v4.Theta());
-	  m_recodijet_phi.push_back(recodijet_v4.Phi());
-	  //ICNs pairing
-	  vector<ReconstructedParticle*> dijet_intersection_ICNs;
-	  sort(recodijetPFOs_ICNs.begin(), recodijetPFOs_ICNs.end());
-	  sort(truedijetPFOs_ICNs.begin(), truedijetPFOs_ICNs.end());
-	  set_intersection(recodijetPFOs_ICNs.begin(), recodijetPFOs_ICNs.end(), truedijetPFOs_ICNs.begin(), truedijetPFOs_ICNs.end(), back_inserter(dijet_intersection_ICNs));
-	  m_nrecodijetPFOs_ICNs.push_back(recodijetPFOs_ICNs.size());
-	  m_ntruedijetPFOs_ICNs.push_back(truedijetPFOs_ICNs.size());
-	  m_overlap_ICNs.push_back(float(dijet_intersection_ICNs.size())/float(recodijetPFOs_ICNs.size()));
-	  m_recodijetmass_ICNs.push_back(inv_mass(recoJets.at(recojetpermICNs[i*2]),recoJets.at(recojetpermICNs[i*2+1])));
-	  m_truedijetmass_ICNs.push_back(inv_mass(jet(truejetpermICNs[i*2]),jet(truejetpermICNs[i*2+1])));
-	  double recodijetenergy_ICNs = 0;
-	  double truedijetenergy_ICNs = 0;
-	  double intersectionenergy_ICNs = 0;
-	  for (auto p : dijet_intersection_ICNs) intersectionenergy_ICNs += p->getEnergy();
-	  for (auto p : recodijetPFOs_ICNs) recodijetenergy_ICNs += p->getEnergy();
-	  for (auto p : truedijetPFOs_ICNs) truedijetenergy_ICNs += p->getEnergy();
-	  m_energyfrac_reco_ICNs.push_back(intersectionenergy_ICNs/recodijetenergy_ICNs);
-	  m_energyfrac_true_ICNs.push_back(intersectionenergy_ICNs/truedijetenergy_ICNs);
-	  m_recodijet_energy_ICNs.push_back(recodijet_v4_ICNs.E());
-	  m_recodijet_theta_ICNs.push_back(recodijet_v4_ICNs.Theta());
-	  m_recodijet_phi_ICNs.push_back(recodijet_v4_ICNs.Phi());
-
-	  if (m_energyfrac_reco.back()>=0.95 && m_energyfrac_true.back()>=0.95) region.emplace_back("A");
-	  if (m_energyfrac_reco.back()< 0.95 && m_energyfrac_true.back()>=0.95) region.emplace_back("B");
-	  if (m_energyfrac_reco.back()>=0.95 && m_energyfrac_true.back()< 0.95) region.emplace_back("C");
-	  if (m_energyfrac_reco.back()< 0.95 && m_energyfrac_true.back()< 0.95) region.emplace_back("D");
-	  if (m_energyfrac_reco_ICNs.back()>=0.95 && m_energyfrac_true_ICNs.back()>=0.95) region_ICNs.emplace_back("A");
-	  if (m_energyfrac_reco_ICNs.back()< 0.95 && m_energyfrac_true_ICNs.back()>=0.95) region_ICNs.emplace_back("B");
-	  if (m_energyfrac_reco_ICNs.back()>=0.95 && m_energyfrac_true_ICNs.back()< 0.95) region_ICNs.emplace_back("C");
-	  if (m_energyfrac_reco_ICNs.back()< 0.95 && m_energyfrac_true_ICNs.back()< 0.95) region_ICNs.emplace_back("D");
-	}
-	sort(region.begin(), region.end());
-	sort(region_ICNs.begin(), region_ICNs.end());
-	string XX;
-	string XX_ICNs;
-	if(region.size() >= 2) XX = string(region[0])+string(region[1]);
-	if(region.size() >= 2) XX_ICNs = string(region_ICNs[0])+string(region_ICNs[1]);
-	map<string, float> dict {
-	  {"AA",0.}, {"AB",1.}, {"AC",2.}, {"AD",3.}, {"BB",4.}, {"BC",5.}, {"BD",6.}, {"CC",7.}, {"CD",8.}, {"DD",9.}
-	};
-	//{AA,AB,AC,AD,BB,BC,BD,CC,CD,DD}
-	//{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
-	m_regionXX.push_back(dict[XX]);
-	m_regionXX_ICNs.push_back(dict[XX_ICNs]);
       }
+      vector<int> recojetpermICNs;
+      for (int i=0; i<4; i++) {
+	int ijet = truejetpermICNs[i];
+	streamlog_out(DEBUG3) << "ijet = "<< ijet << endl;
+	auto it = std::find_if( reco2truejetindex.begin(), reco2truejetindex.end(),
+				[ijet](const pair<int, int>& element){ return element.second == ijet;} );
+	auto pair = *it;
+	recojetpermICNs.push_back(pair.first);
+      }
+      streamlog_out(DEBUG3) << "Pairing of true dijets from ICNs: { ";
+      for (auto idx : truejetpermICNs) streamlog_out(DEBUG3) << idx << " ";
+      streamlog_out(DEBUG3) << "}" << endl;
+      streamlog_out(DEBUG3) << "Pairing of reco dijets from ICNs: { ";
+      for (auto idx : recojetpermICNs) streamlog_out(DEBUG3) << idx << " ";
+      streamlog_out(DEBUG3) << "}" << endl;
+      
+      //const IntVec& jets_of_initial_cn( int iicn ); 
+      // the list of the jets initial colour-neutral iicn gives rise to
+      //int nicn() { return icncol->getNumberOfElements(); };
+      // Number of initial colour neutrals
+      
+      
+      //For each dijet and corresponding di-Truejet, get list of PFOs and find intersection and calculate higgs masses
+      vector<const char*> region;
+      vector<const char*> region_ICNs;
+      for (int i =0; i<2; i++){
+	vector<ReconstructedParticle*> recodijetPFOs;
+	vector<ReconstructedParticle*> truedijetPFOs;
+	ROOT::Math::PxPyPzEVector recodijet_v4(0,0,0,0);
+	vector<ReconstructedParticle*> recodijetPFOs_ICNs;
+	vector<ReconstructedParticle*> truedijetPFOs_ICNs;
+	ROOT::Math::PxPyPzEVector recodijet_v4_ICNs(0,0,0,0);
+	for (int j =0; j<2; j++){
+	  //Chi2 pairing  
+	  int i_recojetChi2 = recojetpermChi2[i*2+j];
+	  int i_truejetChi2 = truejetpermChi2[i*2+j];
+	  auto jet = recoJets.at(i_recojetChi2);
+	  vector<ReconstructedParticle*> recoparticlevec = jet->getParticles();
+	  vector<ReconstructedParticle*> trueparticlevec = seen_partics(i_truejetChi2);
+	  recodijetPFOs.insert(recodijetPFOs.end(), recoparticlevec.begin(), recoparticlevec.end());
+	  truedijetPFOs.insert(truedijetPFOs.end(), trueparticlevec.begin(), trueparticlevec.end());
+	  ROOT::Math::PxPyPzEVector recojet_v4(jet->getMomentum()[0],jet->getMomentum()[1],jet->getMomentum()[2],jet->getEnergy());
+	  recodijet_v4+=recojet_v4;
+	  //ICNs pairing  
+	  int i_truejetICNs = truejetpermICNs[i*2+j];
+	  int i_recojetICNs = recojetpermICNs[i*2+j];
+	  auto jet_ICNs = recoJets.at(i_recojetICNs);
+	  vector<ReconstructedParticle*> recoparticlevec_ICNs = jet_ICNs->getParticles();
+	  vector<ReconstructedParticle*> trueparticlevec_ICNs = seen_partics(i_truejetICNs);
+	  recodijetPFOs_ICNs.insert(recodijetPFOs_ICNs.end(), recoparticlevec_ICNs.begin(), recoparticlevec_ICNs.end());
+	  truedijetPFOs_ICNs.insert(truedijetPFOs_ICNs.end(), trueparticlevec_ICNs.begin(), trueparticlevec_ICNs.end());
+	  ROOT::Math::PxPyPzEVector recojet_v4_ICNs(jet_ICNs->getMomentum()[0],jet_ICNs->getMomentum()[1],jet_ICNs->getMomentum()[2],jet_ICNs->getEnergy());
+	  recodijet_v4_ICNs+=recojet_v4_ICNs;
+	}
+	//Chi2 pairing
+	vector<ReconstructedParticle*> dijet_intersection;
+	sort(recodijetPFOs.begin(), recodijetPFOs.end());
+	sort(truedijetPFOs.begin(), truedijetPFOs.end());
+	set_intersection(recodijetPFOs.begin(), recodijetPFOs.end(), truedijetPFOs.begin(), truedijetPFOs.end(), back_inserter(dijet_intersection));
+	m_nrecodijetPFOs.push_back(recodijetPFOs.size());
+	m_ntruedijetPFOs.push_back(truedijetPFOs.size());
+	m_overlap.push_back(float(dijet_intersection.size())/float(recodijetPFOs.size()));
+	m_recodijetmass.push_back(inv_mass(recoJets.at(recojetpermChi2[i*2]),recoJets.at(recojetpermChi2[i*2+1])));
+	m_truedijetmass.push_back(inv_mass(jet(truejetpermChi2[i*2]),jet(truejetpermChi2[i*2+1])));
+	double recodijetenergy = 0;
+	double truedijetenergy = 0;
+	double intersectionenergy = 0;
+	for (auto p : dijet_intersection) intersectionenergy += p->getEnergy();
+	for (auto p : recodijetPFOs) recodijetenergy += p->getEnergy();
+	for (auto p : truedijetPFOs) truedijetenergy += p->getEnergy();
+	m_energyfrac_reco.push_back(intersectionenergy/recodijetenergy);
+	m_energyfrac_true.push_back(intersectionenergy/truedijetenergy);
+	m_recodijet_energy.push_back(recodijet_v4.E());
+	m_recodijet_theta.push_back(recodijet_v4.Theta());
+	m_recodijet_phi.push_back(recodijet_v4.Phi());
+	//ICNs pairing
+	vector<ReconstructedParticle*> dijet_intersection_ICNs;
+	sort(recodijetPFOs_ICNs.begin(), recodijetPFOs_ICNs.end());
+	sort(truedijetPFOs_ICNs.begin(), truedijetPFOs_ICNs.end());
+	set_intersection(recodijetPFOs_ICNs.begin(), recodijetPFOs_ICNs.end(), truedijetPFOs_ICNs.begin(), truedijetPFOs_ICNs.end(), back_inserter(dijet_intersection_ICNs));
+	m_nrecodijetPFOs_ICNs.push_back(recodijetPFOs_ICNs.size());
+	m_ntruedijetPFOs_ICNs.push_back(truedijetPFOs_ICNs.size());
+	m_overlap_ICNs.push_back(float(dijet_intersection_ICNs.size())/float(recodijetPFOs_ICNs.size()));
+	m_recodijetmass_ICNs.push_back(inv_mass(recoJets.at(recojetpermICNs[i*2]),recoJets.at(recojetpermICNs[i*2+1])));
+	m_truedijetmass_ICNs.push_back(inv_mass(jet(truejetpermICNs[i*2]),jet(truejetpermICNs[i*2+1])));
+	double recodijetenergy_ICNs = 0;
+	double truedijetenergy_ICNs = 0;
+	double intersectionenergy_ICNs = 0;
+	for (auto p : dijet_intersection_ICNs) intersectionenergy_ICNs += p->getEnergy();
+	for (auto p : recodijetPFOs_ICNs) recodijetenergy_ICNs += p->getEnergy();
+	for (auto p : truedijetPFOs_ICNs) truedijetenergy_ICNs += p->getEnergy();
+	m_energyfrac_reco_ICNs.push_back(intersectionenergy_ICNs/recodijetenergy_ICNs);
+	m_energyfrac_true_ICNs.push_back(intersectionenergy_ICNs/truedijetenergy_ICNs);
+	m_recodijet_energy_ICNs.push_back(recodijet_v4_ICNs.E());
+	m_recodijet_theta_ICNs.push_back(recodijet_v4_ICNs.Theta());
+	m_recodijet_phi_ICNs.push_back(recodijet_v4_ICNs.Phi());
+	
+	if (m_energyfrac_reco.back()>=0.95 && m_energyfrac_true.back()>=0.95) region.emplace_back("A");
+	if (m_energyfrac_reco.back()< 0.95 && m_energyfrac_true.back()>=0.95) region.emplace_back("B");
+	if (m_energyfrac_reco.back()>=0.95 && m_energyfrac_true.back()< 0.95) region.emplace_back("C");
+	if (m_energyfrac_reco.back()< 0.95 && m_energyfrac_true.back()< 0.95) region.emplace_back("D");
+	if (m_energyfrac_reco_ICNs.back()>=0.95 && m_energyfrac_true_ICNs.back()>=0.95) region_ICNs.emplace_back("A");
+	if (m_energyfrac_reco_ICNs.back()< 0.95 && m_energyfrac_true_ICNs.back()>=0.95) region_ICNs.emplace_back("B");
+	if (m_energyfrac_reco_ICNs.back()>=0.95 && m_energyfrac_true_ICNs.back()< 0.95) region_ICNs.emplace_back("C");
+	if (m_energyfrac_reco_ICNs.back()< 0.95 && m_energyfrac_true_ICNs.back()< 0.95) region_ICNs.emplace_back("D");
+      }
+      sort(region.begin(), region.end());
+      sort(region_ICNs.begin(), region_ICNs.end());
+      string XX;
+      string XX_ICNs;
+      if(region.size() >= 2) XX = string(region[0])+string(region[1]);
+      if(region.size() >= 2) XX_ICNs = string(region_ICNs[0])+string(region_ICNs[1]);
+      map<string, float> dict {
+	{"AA",0.}, {"AB",1.}, {"AC",2.}, {"AD",3.}, {"BB",4.}, {"BC",5.}, {"BD",6.}, {"CC",7.}, {"CD",8.}, {"DD",9.}
+      };
+      //{AA,AB,AC,AD,BB,BC,BD,CC,CD,DD}
+      //{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+      m_regionXX.push_back(dict[XX]);
+      m_regionXX_ICNs.push_back(dict[XX_ICNs]);
     }
+    
     for (auto n: m_nrecodijetPFOs) streamlog_out(DEBUG3) << n << endl;
     m_pTTree->Fill();
     m_nEvtSum++;
@@ -481,7 +485,7 @@ void Misclustering::processEvent( LCEvent* pLCEvent)
   catch(DataNotAvailableException &e) {
     streamlog_out(MESSAGE) << "Check : Input collections not found in event " << m_nEvt << endl;
   }
-
+  
 }
 
 float Misclustering::getMatchingByAngularSpace( EVENT::LCEvent *pLCEvent, vector<EVENT::ReconstructedParticle*> recoJets, vector<pair<int,int>> &reco2truejetindex)
