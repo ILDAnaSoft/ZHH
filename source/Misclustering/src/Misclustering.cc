@@ -560,7 +560,7 @@ void Misclustering::processEvent( LCEvent* pLCEvent)
     m_nEvtSum++;
     m_nEvt++ ;
 
-	cerr << "EVT_DONE" << endl;
+	//streamlog_out(MESSAGE) << "EVT_DONE" << endl;
   }
   catch(DataNotAvailableException &e) {
     streamlog_out(MESSAGE) << "Check : Input collections not found in event " << m_nEvt << endl;
@@ -623,7 +623,7 @@ float Misclustering::getMatchingByAngularSpace( EVENT::LCEvent *pLCEvent, vector
     streamlog_out(DEBUG2) << "True(seen) Jet Momentum[ " << trueHadronicJetIndices[ i_Jet ] << " ]: (" 
 			  << ptrueseen( trueHadronicJetIndices[ i_Jet ] )[ 0 ] << " , " 
 			  << ptrueseen( trueHadronicJetIndices[ i_Jet ] )[ 1 ] << " , "
-			  << ptrueseen( trueHadronicJetIndices[ i_Jet ] )[ 2 ] << ")" << endl;
+			  << vs( trueHadronicJetIndices[ i_Jet ] )[ 2 ] << ")" << endl;
     streamlog_out(DEBUG2) << "True(seen) Jet [ " << trueHadronicJetIndices[ i_Jet ] << " ] is matched with RecoJet [ " << matchedRecoJetIndices[i_Jet] << " ]" << endl;
 
     reco2truejetindex.push_back(make_pair(matchedRecoJetIndices[i_Jet], trueHadronicJetIndices[i_Jet]));
