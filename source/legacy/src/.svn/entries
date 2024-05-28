@@ -1,0 +1,40 @@
+8
+
+dir
+518
+https://svnsrv.desy.de/public/marlin/Marlin/tags/v00-10-06/examples/mymarlin/src
+https://svnsrv.desy.de/public/marlin
+
+
+
+2009-11-18T13:32:28.183755Z
+508
+engels
+
+
+svn:special svn:externals svn:needs-lock
+
+
+
+
+
+
+
+
+
+
+
+c3504391-c131-4fa0-ab27-66f2e3b7b5d8
+
+MyProcessor.cc
+file
+
+
+
+
+2010-01-07T09:10:00.000000Z
+cdb853c3c34a2e9ae78c7e86a61e747a
+2007-11-07T15:18:59.000000Z
+416
+gaede
+
