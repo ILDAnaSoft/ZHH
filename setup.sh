@@ -1,10 +1,12 @@
 #!/bin/bash
 
-source /cvmfs/ilc.desy.de/key4hep/setup.sh
+if [[ -z "${MARLIN_DLL}" ]]; then
+    source /cvmfs/ilc.desy.de/key4hep/setup.sh
+fi
 
-echo "Using current directory as relative path for libraries, which is ${PWD}"
+export ILD_ANASOFT_ZHH=$(pwd)
 
-export ILD_ANASOFT_ZHH=/afs/desy.de/user/b/bliewert/public/MarlinWorkdirs/ZHH
+echo "Using current directory as relative path for libraries, which is ${ILD_ANASOFT_ZHH}"
 
 export MARLIN_DLL=$MARLIN_DLL:$ILD_ANASOFT_ZHH/source/AddNeutralPFOCovMat/lib/libAddNeutralPFOCovMat.so
 export MARLIN_DLL=$MARLIN_DLL:$ILD_ANASOFT_ZHH/source/LeptonErrorAnalysis/lib/libLeptonErrorAnalysis.so
@@ -17,9 +19,9 @@ export MARLIN_DLL=$MARLIN_DLL:$ILD_ANASOFT_ZHH/source/ZHHKinfitProcessors/lib/li
 export MARLIN_DLL=$MARLIN_DLL:$ILD_ANASOFT_ZHH/source/Misclustering/lib/libMisclustering.so
 
 # MarlinReco + Legacy
-export MARLIN_DLL=$MARLIN_DLL:$ILD_ANASOFT_ZHH/source/legacy/lib/libzhhll4j.so
+# export MARLIN_DLL=$MARLIN_DLL:$ILD_ANASOFT_ZHH/source/legacy/lib/libzhhll4j.so
 
 # Other dependencies
 #export MARLIN_DLL=$MARLIN_DLL:/afs/desy.de/user/b/bliewert/public/ILCSoft/Physsim/build/lib/libPhyssim.so
 #export MARLIN_DLL=$MARLIN_DLL:/afs/desy.de/user/b/bliewert/public/yradkhorrami/SLDecayCorrection/build/lib/libSLDecayCorrection.so
-export LD_LIBRARY_PATH=$LCIO/lib64:/afs/desy.de/user/b/bliewert/public/ILCSoft/Physsim/lib:$LD_LIBRARY_PATH
+#export LD_LIBRARY_PATH=$LCIO/lib64:/afs/desy.de/user/b/bliewert/public/ILCSoft/Physsim/lib:$LD_LIBRARY_PATH
