@@ -7,9 +7,10 @@ NC='\033[0m'
 compile_pkg ()
 {
     cd $1
+    rm -rf build
     mkdir -p build
     cd build
-    cmake -DCMAKE_CXX_STANDARD=17 ..
+    cmake -DCMAKE_CXX_STANDARD=17 .. -DPython_EXECUTABLE=/cvmfs/ilc.desy.de/key4hep/releases/2023-05-23/python/3.10.10/x86_64-centos7-gcc12.3.0-opt/3hqba/bin/python
     make install || { cd ../.. ; return 1; }
     cd ../..
 }
