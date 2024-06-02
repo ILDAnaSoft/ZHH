@@ -17,6 +17,12 @@ class TTree;
 
 using namespace lcio ;
 using namespace marlin ;
+
+enum PreSelectionCodes: unsigned int
+{
+	
+};
+
 class PreSelection : public Processor
 {
 	public:
@@ -52,9 +58,11 @@ class PreSelection : public Processor
 		std::string m_HiggsCollection{};
 		std::string m_outputFile{};
 		std::string m_whichPreselection{};
-		std::string m_isPassed{};
+		std::string m_isPassedCollection{};
 		int m_nAskedJets{};
-                int m_nAskedIsoLeps{};
+        int m_nAskedIsoLeps{};
+		float m_ECM{};
+
 		float m_maxdileptonmassdiff{};
 		float m_maxdijetmassdiff{};
 		float m_mindijetmass{};
@@ -66,23 +74,29 @@ class PreSelection : public Processor
 		int m_minnbjets{};
 		float m_maxEvis{};
 		float m_minHHmass{};
-		float m_ECM{};
-                int m_nRun;
-                int m_nEvt;
+
+		int m_nRun;
+		int m_nEvt;
 		int m_nJets{};
-                int m_nIsoLeps{};
+		int m_nIsoLeps{};
+		
 		float m_missingPT{};
-                float m_Evis{};
-                float m_thrust{};
+		float m_Evis{};
+		float m_thrust{};
 		float m_dileptonMass{};
 		float m_dileptonMassDiff{};
+		
+		int m_isPassed{};
 		std::vector<float>  m_dijetMass{};
 		std::vector<float>  m_dijetMassDiff{};
 		float m_dihiggsMass{};
+		std::vector<int>  m_preselsPassedVec{};
+		int m_preselsPassedAll{};
+		int m_preselsPassedConsec{};
 		int m_nbjets{};
 
-		TFile *m_pTFile{};
-                TTree *m_pTTree{};
+		TFile *m_pTFile{};        
+		TTree *m_pTTree{};
 
 };
 

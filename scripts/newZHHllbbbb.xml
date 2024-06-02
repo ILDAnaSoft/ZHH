@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="us-ascii"?>
-<marlin xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://ilcsoft.desy.de/marlin/marlin.xsd">
+    <marlin xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://ilcsoft.desy.de/marlin/marlin.xsd">
+
     <constants>
-        <constant name="lcgeo_DIR" value="/cvmfs/ilc.desy.de/key4hep/releases/089d775cf2/k4geo/1c08affe597cf3b1c10c4e81cdbc95ab9e4a4d23=develop/x86_64-centos7-gcc12.3.0-opt/r6g2w/share/k4geo/compact" />
+        <constant name="lcgeo_DIR" value="/cvmfs/ilc.desy.de/sw/x86_64_gcc82_centos7/v02-02-02/lcgeo/v00-16-06" />
         <constant name="DetectorModel" value="ILD_l5_o1_v02" />
         <constant name="CompactFile" value="${lcgeo_DIR}/ILD/compact/${DetectorModel}/${DetectorModel}.xml" />
         <constant name="OutputDirectory" value="output" />
@@ -13,48 +14,37 @@
         <constant name="WhichPreselection" value="llbbbb"/>
         <constant name="createRootTree" value="false" />
         <constant name="displayEvent" value="false" />
-        <constant name="Verbosity" value="DEBUG"/>
-        <constant name="ILDConfigDir" value="/root/ILCSoft/ILDConfig" />
+        <constant name="Verbosity" value="SILENT"/>
     </constants>
 
     <execute>
-        <processor name="InitDD4hep" condition="" />
-        <processor name="MyAIDAProcessor" condition="" />
-        <processor name="MyAddNeutralPFOCovMatLite" condition="" />
-        <processor name="MyHdecayMode" />
-        <!-- <processor name="MySLDecayFinder" /> -->
-        <!--CheatedMCOverlay only takes MCParticles collection and not truejet for identifying overlay -->
-        <!-- <processor name="myCheatedMCOverlayRemoval" /> -->
-        <processor name="MyFastJetProcessor" condition="" />
+        <processor name="InitDD4hep" />
+        <processor name="MyAIDAProcessor" />
+        <processor name="MyAddNeutralPFOCovMatLite" />
+        <!-- <processor name="MyHdecayMode" /> -->
 
-        <!--
+        <!-- <processor name="MyFastJetProcessor" /> -->
+        <processor name="MyCheatedMCOverlayRemoval" />
+        
+        <processor name="MyThrust"/>
         <processor name="MyIsolatedLeptonTaggingProcessor" />
-        <processor name="Thrust"/>
         <processor name="MyLeptonPairing"/>
+        
         <processor name="JC4FT"/>
+
         <processor name="MyPreSelection"/>
-        <if condition="MyPreSelection.Passed">
-            <processor name="MySLDCorrection" />
-            <processor name="MyErrorFlow" />
-            <processor name="MyZHHKinFitLeptonChannel" />
-        </if> -->
-        <!--
-        <if condition="MyHdecayMode.GoodEvent">
-            <processor name="mytruejet"/>
-            <processor name="MyZHHPostRecoMEProcessor"/>
-            <processor name="MyMisclustering"/>
+        <if condition="MyPreSelection.GoodEvent">
+
         </if>
-        --> 
         <processor name="MyLCIOOutputProcessor"/>
     </execute>
 
     <global>
         <!--parameter name="LCIOInputFiles">/pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/250-SetA/4f_ZZ_hadronic/ILD_l5_o1_v02/v02-02/rv02-02.sv02-02.mILD_l5_o1_v02.E250-SetA.I500062.P4f_zz_h.eL.pR.n000.d_dstm_15122_0.slcio</parameter-->
         <parameter name="LCIOInputFiles">
+            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015806/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403011.Pe2e2qqh.eL.pR.n000.d_dstm_15806_0.slcio
             /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015806/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n000.d_dstm_15806_0.slcio
             /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015806/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n000.d_dstm_15806_1.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015806/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403002.Pe2e2hh.eR.pL.n000.d_dstm_15806_0.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015806/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403002.Pe2e2hh.eR.pL.n000.d_dstm_15806_1.slcio
             /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n000.d_dstm_15807_0.slcio
             /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n000.d_dstm_15807_1.slcio
             /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n000.d_dstm_15807_2.slcio
@@ -62,15 +52,15 @@
             /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n000.d_dstm_15807_4.slcio
             /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n000.d_dstm_15807_5.slcio
             /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n000.d_dstm_15807_6.slcio
+            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n001.d_dstm_15807_7.slcio
+            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n001.d_dstm_15807_8.slcio
+            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n001.d_dstm_15807_9.slcio
             /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n001.d_dstm_15807_10.slcio
             /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n001.d_dstm_15807_11.slcio
             /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n001.d_dstm_15807_12.slcio
             /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n001.d_dstm_15807_13.slcio
             /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n001.d_dstm_15807_14.slcio
             /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n001.d_dstm_15807_15.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n001.d_dstm_15807_7.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n001.d_dstm_15807_8.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n001.d_dstm_15807_9.slcio
             /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n002.d_dstm_15807_16.slcio
             /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n002.d_dstm_15807_17.slcio
             /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n002.d_dstm_15807_18.slcio
@@ -79,39 +69,15 @@
             /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n002.d_dstm_15807_21.slcio
             /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n002.d_dstm_15807_22.slcio
             /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n002.d_dstm_15807_23.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403002.Pe2e2hh.eR.pL.n000.d_dstm_15807_0.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403002.Pe2e2hh.eR.pL.n000.d_dstm_15807_1.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403002.Pe2e2hh.eR.pL.n000.d_dstm_15807_2.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403002.Pe2e2hh.eR.pL.n000.d_dstm_15807_3.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403002.Pe2e2hh.eR.pL.n000.d_dstm_15807_4.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403002.Pe2e2hh.eR.pL.n000.d_dstm_15807_5.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403002.Pe2e2hh.eR.pL.n000.d_dstm_15807_6.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403002.Pe2e2hh.eR.pL.n001.d_dstm_15807_10.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403002.Pe2e2hh.eR.pL.n001.d_dstm_15807_11.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403002.Pe2e2hh.eR.pL.n001.d_dstm_15807_12.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403002.Pe2e2hh.eR.pL.n001.d_dstm_15807_13.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403002.Pe2e2hh.eR.pL.n001.d_dstm_15807_14.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403002.Pe2e2hh.eR.pL.n001.d_dstm_15807_15.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403002.Pe2e2hh.eR.pL.n001.d_dstm_15807_7.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403002.Pe2e2hh.eR.pL.n001.d_dstm_15807_8.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403002.Pe2e2hh.eR.pL.n001.d_dstm_15807_9.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403002.Pe2e2hh.eR.pL.n002.d_dstm_15807_16.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403002.Pe2e2hh.eR.pL.n002.d_dstm_15807_17.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403002.Pe2e2hh.eR.pL.n002.d_dstm_15807_18.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403002.Pe2e2hh.eR.pL.n002.d_dstm_15807_19.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403002.Pe2e2hh.eR.pL.n002.d_dstm_15807_20.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403002.Pe2e2hh.eR.pL.n002.d_dstm_15807_21.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403002.Pe2e2hh.eR.pL.n002.d_dstm_15807_22.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02_nobg/v02-02-03/00015807/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403002.Pe2e2hh.eR.pL.n002.d_dstm_15807_23.slcio
         </parameter>
         <!-- limit the number of processed records (run+evt): -->
         <!--parameter name="MaxRecordNumber" value="0" /to process all events--> 
         <!--parameter name="MaxRecordNumber" value="1000" /to process 1000 events--> 
-        <parameter name="MaxRecordNumber" value="100"/>
+        <parameter name="MaxRecordNumber" value="500"/>
         <parameter name="SkipNEvents" value="0" />
         <parameter name="SupressCheck" value="false" />
         <parameter name="GearXMLFile">/cvmfs/ilc.desy.de/sw/ILDConfig/v02-02-02/StandardConfig/production/Gear/gear_ILD_l5_v02.xml</parameter>
-        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT">DEBUG</parameter>
+        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT">SILENT</parameter>
         <parameter name="RandomSeed" value="1234567890" />
         <parameter name="OutputSteeringFile" value="" />
         <parameter name="AllowToModifyEvent" value="true" />
@@ -138,6 +104,22 @@
         <!--parameter name="Verbosity" type="string">DEBUG </parameter-->
     </processor>
 
+    <processor name="MyJetConvProcessor" type="JetConvProcessor">
+        <!--JetConvProcessor does jet clustering using a PyTorch GNN network and SpectralClustering -->
+        <!--Name of the Input MCParticle Collection-->
+        <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">MCParticlesSkimmed</parameter>
+        <!--Name of the Input PFO Collection-->
+        <parameter name="inputPfoCollection" type="string" lcioInType="RECONSTRUCTEDPARTICLE">PandoraPFOsWithoutIsoLep</parameter>
+        <!--Number of jets to reconstruct (default: 2) -->
+        <parameter name="nJets" type="int"> 4 </parameter>
+        <!--Names of the output jet collection-->
+        <parameter name="torchScriptPath" type="string">/nfs/dust/ilc/user/bliewert/jet_training/model_3m/best.pt</parameter>
+        <!--Names of the output jet collection-->
+        <parameter name="outputJetCollection" type="string" lcioOutType="RECONSTRUCTEDPARTICLE">GraphJets</parameter>
+        <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
+        <parameter name="Verbosity" type="string">DEBUG</parameter>
+    </processor>
+
     <processor name="MyAddNeutralPFOCovMatLite" type="AddNeutralPFOCovMat">
         <!--Name of the Input PFO Collection-->
         <parameter name="inputPfoCollection" type="string" lcioInType="RECONSTRUCTEDPARTICLE">PandoraPFOs</parameter>
@@ -154,7 +136,7 @@
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
         <parameter name="Verbosity" type="string">SILENT</parameter>
     </processor>
-  
+
     <processor name="MyHdecayMode" type="HdecayMode">
         <!--HdecayMode identifies Higgs decay mode and cheats ISR energy-->
         <!--Name of the Input MCParticle Collection-->
@@ -164,7 +146,7 @@
         <!--Names of the Output Higgs decay mode collection-->
         <parameter name="HdecayModeCollection" type="string" lcioOutType="MCParticle">HdecayMode </parameter>
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">MESSAGE </parameter>
+        <parameter name="Verbosity" type="string">MESSAGE</parameter>
     </processor>
 
     <processor name="MySLDecayFinder" type="SLDecayFinder">
@@ -181,8 +163,29 @@
         <parameter name="Verbosity" type="string">MESSAGE</parameter>
     </processor>
 
-    <!--
-        <processor name="mytruejet" type="TrueJet">
+    <processor name="MyFastJetProcessor" type="FastJetProcessor">
+        <parameter name="algorithm" type="StringVec">kt_algorithm 1.3</parameter>
+        <parameter name="clusteringMode" type="StringVec">ExclusiveNJets 4</parameter>
+        <parameter name="recParticleIn" type="string" lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
+        <parameter name="jetOut" type="string" lcioOutType="ReconstructedParticle">FastJets4_Precluster</parameter>
+        <parameter name="recParticleOut" type="string" lcioOutType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
+        <parameter name="storeParticlesInJets" type="bool">true</parameter>
+        
+        <parameter name="recombinationScheme" type="string">E_scheme</parameter>
+        <parameter name="Verbosity" type="string">SILENT</parameter>
+    </processor>
+
+    <processor name="MyCheatedMCOverlayRemoval" type="CheatedMCOverlayRemoval">
+        <parameter name="RecoParticleCollection" type="string"  lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
+        <parameter name="MCParticleCollection" type="string"  lcioInType="MCParticle">MCParticlesSkimmed</parameter>
+        <parameter name="RecoMCTruthLink" type="string" lcioInType="LCRelation"> RecoMCTruthLink </parameter>
+        <parameter name="MCTruthRecoLink" type="string" lcioInType="LCRelation"> MCTruthRecoLink </parameter>
+        <parameter name="OutputPfoCollection" type="string" lcioOutType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
+        <parameter name="Verbosity" type="string">SILENT</parameter>
+    </processor>
+
+    <processor name="MyTrueJet" type="TrueJet">
+        <!-- These are the defaults, probably exactly what you need.-->
         <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">MCParticlesSkimmed</parameter>
         <parameter name="RecoParticleCollection" type="string"  lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
         <parameter name="RecoMCTruthLinkName" type="string" lcioInType="LCRelation"> RecoMCTruthLink </parameter>
@@ -196,52 +199,16 @@
         <parameter name="FinalColourNeutralLink" type="string" lcioOutType="LCRelation">FinalColourNeutralLink</parameter>
         <parameter name="InitialColourNeutralLink" type="string" lcioOutType="LCRelation">InitialColourNeutralLink</parameter>
         <parameter name="Verbosity" type="string">SILENT</parameter>
-    </processor> -->
-
-    <!--
-    <processor name="myCheatedMCOverlayRemoval" type="CheatedMCOverlayRemoval">
-        <parameter name="RecoParticleCollection" type="string"  lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
-        <parameter name="MCParticleCollection" type="string"  lcioInType="MCParticle">MCParticlesSkimmed</parameter>
-        <parameter name="RecoMCTruthLink" type="string" lcioInType="LCRelation"> RecoMCTruthLink </parameter>
-        <parameter name="MCTruthRecoLink" type="string" lcioInType="LCRelation"> MCTruthRecoLink </parameter>
-        <parameter name="OutputPfoCollection" type="string" lcioOutType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
-        <parameter name="Verbosity" type="string">SILENT</parameter>
-    </processor>
-    -->
-
-    <processor name="MyFastJetProcessor" type="FastJetProcessor">
-        <parameter name="algorithm" type="StringVec">kt_algorithm 1.3</parameter>
-        <parameter name="clusteringMode" type="StringVec">ExclusiveNJets 4</parameter>
-        <parameter name="recParticleIn" type="string" lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
-        <parameter name="jetOut" type="string" lcioOutType="ReconstructedParticle">FastJets4_Precluster</parameter>
-        <parameter name="recParticleOut" type="string" lcioOutType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
-        <parameter name="recombinationScheme" type="string">E_scheme</parameter>
-        <parameter name="Verbosity" type="string">SILENT</parameter>
     </processor>
 
-    <processor name="Thrust" type="ThrustReconstruction">
+    <processor name="MyThrust" type="ThrustReconstruction">
         <!--Calculates thrust axis and thrust value of event using different algorithms-->  <!--Name of collection of reconstructed particles used for thrust reconstruction-->
-        <parameter name="inputCollectionName" type="string" lcioInType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
+        <parameter name="inputCollectionName" type="string" lcioInType="ReconstructedParticle"> PFOsWithoutOverlay </parameter>
         <!--parameter name="inputCollectionName" type="string" lcioInType="ReconstructedParticle"> PandoraPFOsNew </parameter-->
         <!--Type of thrust reconstruction algorithm to be used:  1 : Tasso algorithm  2 : JetSet algorithm-->
         <parameter name="typeOfThrustFinder" type="int"> 2 </parameter>
         <parameter name="Verbosity" type="string">SILENT</parameter>
     </processor>
-
-    <!--
-    <processor name="MyFastJetProcessor_2Jets" type="FastJetProcessor">
-        <parameter name="Verbosity" type="string">MESSAGE</parameter>
-        <parameter name="algorithm" type="StringVec">ee_genkt_algorithm 1.0 1.0</parameter>
-        <parameter name="clusteringMode" type="StringVec">ExclusiveNJets 2</parameter>
-        <parameter name="jetOut" type="string" lcioOutType="ReconstructedParticle">Durham_2Jets</parameter>
-        <parameter name="recParticleIn" type="string" lcioInType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
-        <parameter name="recParticleOut" type="string" lcioOutType="ReconstructedParticle">Durham_2JetsPFOs</parameter>
-        <parameter name="recombinationScheme" type="string">E_scheme</parameter>
-        <parameter name="storeParticlesInJets" type="bool">true</parameter>
-        <parameter name="findNrJets">2</parameter>
-        <parameter name="findNrJetsCollectionPrefix">TwoJets_</parameter>
-    </processor>
-    -->
 
     <processor name="MyIsolatedLeptonTaggingProcessor" type="IsolatedLeptonTaggingProcessor">
         <!--IsolatedLeptonTaggingProcessor does whatever it does ...-->
@@ -292,7 +259,7 @@
         <!--use yoke for muon ID-->
         <parameter name="UseYokeForMuonID" type="bool">false</parameter>
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">MESSAGE</parameter>
+        <parameter name="Verbosity" type="string">SILENT</parameter>
     </processor>
 
     <processor name="MyLeptonPairing" type="LeptonPairing">
@@ -302,12 +269,13 @@
         <parameter name="PandoraPFOsWithoutLepPair" type="string" lcioOutType="ReconstructedParticle">PandoraPFOsWithoutLepPair</parameter>
         <parameter name="fillRootTree" type="bool">true</parameter>
         <parameter name="RootFile" type="string">${OutputDirectory}/${OutputBaseName}_LeptonPairing.root</parameter>
-        <parameter name="Verbosity" type="string">MESSAGE</parameter>
+        <parameter name="Verbosity" type="string">SILENT</parameter>
     </processor>
 
     <processor name="JC4FT" type="LcfiplusProcessor">
         <!-- run primary and secondary vertex finders -->
         <parameter name="Algorithms" type="stringVec"> JetClustering JetVertexRefiner FlavorTag ReadMVA </parameter>
+        <parameter name="Verbosity" type="string">SILENT</parameter>
 
         <!-- general parameters -->
         <parameter name="PFOCollection" type="string" value="PandoraPFOsWithoutLepPair" /> <!-- input PFO collection -->
@@ -347,7 +315,6 @@
         <parameter name="JetClustering.YAddedForJetLeptonVertex" type="double" value="100"/> <!-- add penalty for combining lepton and vertex -->
         <parameter name="JetClustering.YAddedForJetLeptonLepton" type="double" value="100"/> <!-- add penalty for combining leptons -->
 
-        <!-- vertex refiner parameters -->
         <parameter name="JetVertexRefiner.InputJetCollectionName" type="string" value="VertexJets" />
         <parameter name="JetVertexRefiner.OutputJetCollectionName" type="string" value="RefinedJets" />
         <parameter name="JetVertexRefiner.PrimaryVertexCollectionName" type="string" value="PrimaryVertex" />
@@ -372,7 +339,7 @@
 
         <!--parameter name="FlavorTag.WeightsDirectory" type="string" value="/afs/desy.de/user/s/skawada/sonas_work/mini-DST/lcfiweights"/--> <!-- e.g. lcfiweights/lcfiweights_6q500_v04_p00_ildl5 -->
         <!--parameter name="FlavorTag.WeightsPrefix" type="string" value="6q500_v04_p00_ildl5" /--> <!-- e.g. 6q500_v04_p00_ildl5 -->
-        <parameter name="FlavorTag.WeightsDirectory" type="string" value="${ILDConfigDir}/LCFIPlusConfig/lcfiweights"/>
+        <parameter name="FlavorTag.WeightsDirectory" type="string" value="/root/ILCSoft/ILDConfig/LCFIPlusConfig/lcfiweights"/>
         <parameter name="FlavorTag.WeightsPrefix" type="string" value="6q500_v04_p00_ildl5" />
         <parameter name="FlavorTag.BookName" type="string" value="bdt" />
         <parameter name="FlavorTag.PIDAlgo" type="string" value="lcfiplus" />
@@ -433,7 +400,7 @@
         <!--Name of the input collections-->
         <parameter name="isolatedeptonCollection" type="string" lcioInType="ReconstructedParticle">ISOLeptons</parameter>
         <parameter name="LepPairCollection" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
-        <parameter name="HiggsCollection" type="string" lcioOutType="ReconstructedParticle"> HiggsPair </parameter>
+        <parameter name="HiggsCollection" type="string" lcioOutType="ReconstructedParticle"> HiggsPair</parameter>
         <parameter name="JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets</parameter>
         <parameter name="inputPfoCollection" type="string" lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
         <!--Parameters for preselection -->
@@ -459,231 +426,36 @@
         <parameter name="Verbosity" type="string">MESSAGE </parameter>
     </processor>
 
-    <processor name="MySLDCorrection" type="SLDCorrection">
-        <!--Name of the Input MCParticle Collection-->
-        <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">MCParticlesSkimmed</parameter>
-        <!--Name of the Input PFO Collection-->
-        <parameter name="PfoCollection" type="string" lcioInType="RECONSTRUCTEDPARTICLE">PandoraPFOsWithoutLepPair</parameter>
-        <!--Name of the Input isolated lepton collection-->
-        <parameter name="isoLeptonsCollection" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
-        <!--Name of the Input Jet Collection-->
-        <parameter name="JetCollection" type="string" lcioInType="RECONSTRUCTEDPARTICLE">RefinedJets</parameter>
-        <!--Name of Primary Vertex Collection-->
-        <parameter name="PrimaryVertex" type="string" lcioInType="VERTEX">PrimaryVertex</parameter>
-        <!--Name of Primary BuildUp Collection-->
-        <parameter name="BuildUpVertex" type="string" lcioInType="VERTEX">BuildUpVertex</parameter>
-        <!--Name of input RecoMCTruthLink Collection-->
-        <parameter name="RecoMCTruthLinkCollection" type="string" lcioInType="LCRelation">RecoMCTruthLink</parameter>
-        <!--Name of input MCTruthRecoLink Collection-->
-        <parameter name="MCTruthRecoLinkCollection" type="string" lcioInType="LCRelation">MCTruthRecoLink</parameter>
-        <!--Name of semi-leptonic Neutrino collection-->
-        <parameter name="SemiLeptonicDecayVertex" type="string" lcioOutType="VERTEX">SemiLeptonicDecayVertex</parameter>
-        <!--Name of semi-leptonic Neutrino collection-->
-        <parameter name="SemiLeptonicDecayVertexRP" type="string" lcioOutType="RECONSTRUCTEDPARTICLE">SemiLeptonicDecay_RP</parameter>
-        <!--Name of Reconstructed Neutrino collection-->
-        <parameter name="ReconstructedNeutrino" type="string" lcioOutType="RECONSTRUCTEDPARTICLE">recoNeutrinos</parameter>
-        <!--Name of the JetSemiLeptonicDecayLinkName output collection-->
-        <parameter name="JetSLDLinkName" type="string" lcioOutType="LCRelation">JetSLDLink</parameter>
-        <!--Name of the SemiLeptonicDecayJetLinkName output collection-->
-        <parameter name="SLDJetLinkName" type="string" lcioOutType="LCRelation">SLDJetLink</parameter>
-        <!--Name of the trueNeutrino-reconstructedNeutrino output Link collection-->
-        <parameter name="mcNurecoNuLinkName" type="string" lcioOutType="LCRelation">mcNurecoNuLink</parameter>
-        <!--Name of the trueNeutrino-reconstructedNeutrino output Link collection-->
-        <parameter name="recoNumcNuLinkName" type="string" lcioOutType="LCRelation">recoNumcNuLink</parameter>
-        <!--Name of the SemiLeptonicDecayNeutrinoLinkName output collection-->
-        <parameter name="NuSLDLinkName" type="string" lcioOutType="LCRelation">NuSLDLink</parameter>
-        <!--Name of the NeutrinoSemiLeptonicDecayLinkName output collection-->
-        <parameter name="SLDNuLinkName" type="string" lcioOutType="LCRelation">SLDNuLink</parameter>
-        <!--do correction for semi-leptonic decays of B-Hadrons? YES: true , NO: false-->
-        <parameter name="includeBSLD" type="bool">true</parameter>
-        <!--do correction for semi-leptonic decays of C-Hadrons? YES: true , NO: false-->
-        <parameter name="includeCSLD" type="bool">false</parameter>
-        <!--do correction for semi-leptonic decays of Tau-Leptons? YES: true , NO: false-->
-        <parameter name="includeTSLD" type="bool">false</parameter>
-        <!--Cheat semi-leptonic decays lepton from MCTruth-->
-        <parameter name="cheatSLDLeptons" type="bool">true</parameter>
-        <!--Cheat FourMomentum of lepton in semi-leptonic decays-->
-        <parameter name="cheatLepton4momentum" type="bool">false</parameter>
-        <!--Cheat Flight direction of mother hadron-->
-        <parameter name="cheatFlightDirection" type="bool">false</parameter>
-        <!--Scenario for finding flight direction of mother hadron: 1 = default , 2 = assign jet axis , 3 = assign flight direction of leading particle in the jet-->
-        <parameter name="vertexingScenario" type="int">4</parameter>
-        <!--Number of iterations for correcting flight direction of CHARGED parent hadron-->
-        <parameter name="nIterFlightDirCorrection" type="int">1</parameter>
-        <!--Cheat Particle ID for Charged Decay Products-->
-        <parameter name="cheatPVAcharged" type="bool">false</parameter>
-        <!--Cosine of Acceptance angle for charged PFOs to be assigned to the semi-leptonic decay when lepton is in 2nd vertex-->
-        <parameter name="chargedCosAcceptanceAngleSLD4" type="float">0.5</parameter>
-        <!--Cosine of Acceptance angle for charged PFOs to be assigned to the semi-leptonic decay when lepton is with 3rd vertex-->
-        <parameter name="chargedCosAcceptanceAngleSLD5" type="float">0.5</parameter>
-        <!--Cheat FourMomentum of charged visibles in semi-leptonic decays-->
-        <parameter name="cheatCharged4momentum" type="bool">false</parameter>
-        <!--Cheat Particle ID for Neutral Decay Products-->
-        <parameter name="cheatPVAneutral" type="bool">false</parameter>
-        <!--Cosine of Acceptance angle for neutral PFOs to be assigned to the semi-leptonic decay -->
-        <parameter name="neutralCosAcceptanceAngle" type="float">0.5</parameter>
-        <!--Cheat FourMomentum of Neutral visibles in semi-leptonic decays-->
-        <parameter name="cheatNeutral4momentum" type="bool">false</parameter>
-        <!--Cut on Invariant mass of visible charged decay products for semi-leptonic decay of B-Hadron when leptin is in 2nd vertex-->
-        <parameter name="BSLDChargedSLD4InvMassCut" type="float">1.65</parameter>
-        <!--Cut on Invariant mass of visible charged decay products for semi-leptonic decay of B-Hadron when leptin is with 3rd vertex-->
-        <parameter name="BSLDChargedSLD5InvMassCut" type="float">1.70</parameter>
-        <!--Cut on Invariant mass of visible neutral decay products for semi-leptonic decay of B-Hadron when leptin is in 2nd vertex-->
-        <parameter name="BSLDNeutralSLD4InvMassCut" type="float">1.88</parameter>
-        <!--Cut on Invariant mass of visible neutral decay products for semi-leptonic decay of B-Hadron when leptin is with 3rd vertex-->
-        <parameter name="BSLDNeutralSLD5InvMassCut" type="float">2.0</parameter>
-        <!--Cut on Invariant mass of visible charged decay products for semi-leptonic decay of C-Hadron when leptin is in 2nd vertex-->
-        <parameter name="CSLDChargedSLD4InvMassCut" type="float">0.00</parameter>
-        <!--Cut on Invariant mass of visible charged decay products for semi-leptonic decay of C-Hadron when leptin is with 3rd vertex-->
-        <parameter name="CSLDChargedSLD5InvMassCut" type="float">0.00</parameter>
-        <!--Cut on Invariant mass of visible neutral decay products for semi-leptonic decay of C-Hadron when leptin is in 2nd vertex-->
-        <parameter name="CSLDNeutralSLD4InvMassCut" type="float">0.0</parameter>
-        <!--Cut on Invariant mass of visible neutral decay products for semi-leptonic decay of C-Hadron when leptin is with 3rd vertex-->
-        <parameter name="CSLDNeutralSLD5InvMassCut" type="float">0.0</parameter>
-        <!--0: get 4p from linked track/cluster to MCP, 1: get 4p from PFO with linked track/cluster, 2: get 4p from linked PFO-->
-        <parameter name="recoFourMomentumOfVisibles" type="int">2</parameter>
-        <!--Display recoLepton, downstraem vertex and RP and reconstructed secondary vertex in Event Display-->
-        <parameter name="displayEvent" type="bool">${displayEvent}</parameter>
-        <!--Whether create root file for new pfo collection or not true:create / false: do not create-->
-        <parameter name="fillRootTree" type="bool">${createRootTree}</parameter>
-        <!--Name of the output root file-->
-        <parameter name="RootFile" type="string">${OutputDirectory}/${OutputBaseName}_SLDCorrection.root</parameter>
-        <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">WARNING</parameter>
-    </processor>
-
     <processor name="MyErrorFlow" type="ErrorFlow">
-        <!--PfoAnalysis analyses output of PandoraPFANew-->
-        <!--Names of input pfo collection-->
-        <parameter name="InputPFOCollection" type="string" lcioInType="ReconstructedParticle">RefinedJets</parameter>
-        <!--Names of output collection-->
-        <parameter name="OutputPFOCollection" type="string" lcioOutType="ReconstructedParticle">OutputErrorFlowJets</parameter>
-        <!--whether use full CovMat for neutral PFOs or use only energy uncertainty-->
-        <parameter name="useFullCovMatforNeutrals" type="bool">true</parameter>
-        <!--Enable/disable confusion term to be added to covariance matrix-->
-        <parameter name="EnableConfusionTerm" type="bool">true</parameter>
-        <!--Enable/disable Propagating uncertainty due to confusion to the Momentum components-->
-        <parameter name="PropagateConfusion2Mom" type="bool">true</parameter>
-        <!-- A correction factor to be multiplied to angular uncertainties of Photons -->
-        <parameter name="CovMatFactorPhotons" type="double">1.3</parameter>
-        <!-- A correction factor to be multiplied to angular uncertainties of Neutral Hadrons -->
-        <parameter name="CovMatFactorNeutralHadrons" type="double">1.8</parameter>
-        <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">MESSAGE</parameter>
+    <!--PfoAnalysis analyses output of PandoraPFANew-->
+    <!--Names of input pfo collection-->
+    <parameter name="InputPFOCollection" type="string" lcioInType="ReconstructedParticle">RefinedJets</parameter>
+    <!--Names of output collection-->
+    <parameter name="OutputPFOCollection" type="string" lcioOutType="ReconstructedParticle">OutputErrorFlowJets</parameter>
+    <!--whether use full CovMat for neutral PFOs or use only energy uncertainty-->
+    <parameter name="useFullCovMatforNeutrals" type="bool">true</parameter>
+    <!--Enable/disable confusion term to be added to covariance matrix-->
+    <parameter name="EnableConfusionTerm" type="bool">true</parameter>
+    <!--Enable/disable Propagating uncertainty due to confusion to the Momentum components-->
+    <parameter name="PropagateConfusion2Mom" type="bool">true</parameter>
+    <!-- A correction factor to be multiplied to angular uncertainties of Photons -->
+    <parameter name="CovMatFactorPhotons" type="double">1.3</parameter>
+    <!-- A correction factor to be multiplied to angular uncertainties of Neutral Hadrons -->
+    <parameter name="CovMatFactorNeutralHadrons" type="double">1.8</parameter>
+    <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
+    <parameter name="Verbosity" type="string">MESSAGE</parameter>
     </processor>
-
-    <processor name="MyZHHKinFitLeptonChannel" type="ZHHllbbbbKinFit">
-        <!--ZHHKinFit does a 5C fit on 4 jet events and 2 leptons (Px, Py, Pz, E, M12 = M34 (for all three permutations)) -->
-        <!--Name of the input collections: isolated leptons, jets, SLD vertices, Jet-SLDvertex relations, and SLDvertex-neutrino relations -->
-        <parameter name="InputIsoLeptonsCollection" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
-        <parameter name="JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets</parameter>
-        <parameter name="SLDVertexCollection" type="string" lcioInType="Vertex">SemiLeptonicDecayVertex</parameter>
-        <parameter name="JetSLDRelationCollection" type="string" lcioInType="LCRelation">JetSLDLink</parameter>
-        <parameter name="SLDNeutrinoRelationCollection" type="string" lcioInType="LCRelation">SLDNuLink</parameter>
-        <parameter name="recoNumcNuLinkName" type="string" lcioInType="LCRelation">recoNumcNuLink</parameter>
-        <!-- center-of-mass energy (default: 500.) -->
-        <parameter name="ECM" type="float"> 500. </parameter>
-        <!-- maximum energy (=|p_z|) for a single ISR photon  (default: 125.6) -->
-        <parameter name="ISRPzMax" type="float"> 125.6 </parameter>
-        <!-- include ISR in fit hypothesis?    0: false >0: true (default) -->
-        <parameter name="includeISR" type="bool">true</parameter>
-        <!-- 0 = OPALFitter, 1 = NewFitter, 2 = NewtonFitter (default: 0) -->
-        <parameter name="fitter" type="int"> 0 </parameter>
-        <!-- name of fit hypothesis: MH, ZHH, ZZH, equal mass (default)-->
-        <parameter name="fithypothesis">MH</parameter>
-        <!-- name of Output root file -->
-        <parameter name="outputFilename">${OutputDirectory}/${OutputBaseName}_Kinfit.root</parameter>
-        <!-- Factor for scaling up inverse pT error for leptons (default: 1)-->
-        <parameter name="SigmaInvPtScaleFactor" type="float"> 1.1 </parameter>
-        <!-- Factor for scaling up energy error for jets (default: 1)-->
-        <parameter name="SigmaEnergyScaleFactor" type="float"> 1.5 </parameter>
-        <!-- Factor for scaling up angular errors jets (default: 1)-->
-        <parameter name="SigmaAnglesScaleFactor" type="float"> 1.3 </parameter>
-        <!-- set true if every event should be traced in DEBUG mode (default: false) -->
-        <parameter name="traceall" type="bool"> false </parameter>
-        <!-- number of individual event to be traced (default: -1) -->
-        <parameter name="ievttrace" type="int"> -1 </parameter>
-        <!-- Matching true jet with reco jet: TRUE = jets with closest angle are matched , FALSE = jets containing same leading particle are matched-->
-        <!-- Name of output collection-->
-        <parameter name="outputLeptonCollection" type="string" lcioOutType="ReconstructedParticle">LeptonsKinFit</parameter>
-        <parameter name="outputJetCollection" type="string" lcioOutType="ReconstructedParticle">JetsKinFit</parameter>
-        <parameter name="outputLeptonCollection" type="string" lcioOutType="ReconstructedParticle">LeptonsPreFit</parameter>
-        <parameter name="outputJetCollection" type="string" lcioOutType="ReconstructedParticle">JetsPreFit</parameter>
-        <parameter name="LeptonPullsOutputCollection" type="string" lcioOutType="LCFloatVec">LeptonPulls</parameter>
-        <parameter name="JetPullsOutputCollection" type="string" lcioOutType="LCFloatVec">JetPulls</parameter>
-        <!--parameter name="LeptonPullsOutputColection" type="string" lcioOutType="LCFloatVec">LeptonPulls</parameter-->
-        <!--parameter name="JetPullsOutputColection" type="string" lcioOutType="LCFloatVec">JetPulls</parameter-->
-        <!--parameter name="StartOutputCollection" type="string" lcioOutType="ReconstructedParticle">StartReco</parameter-->
-        <!-- verbosity level - DEBUG only works if compiled in debug mode! -->
-        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> SILENT  </parameter>
-    </processor>
-  
-    <processor name="MyLeptonErrorAnalysis" type="LeptonErrorAnalysis">
-        <!--Name of the input collections-->
-        <parameter name="RecoParticleCollection" type="string" lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
-        <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">MCParticlesSkimmed</parameter>
-        <parameter name="inputIsolepCollection" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
-        <parameter name="TrackMCTruthLinkCollection" type="string" lcioInType="LCRelation">MarlinTrkTracksMCTruthLink</parameter>
-        <parameter name="MCTruthTrackLinkCollection" type="string" lcioInType="LCRelation">MCTruthMarlinTrkTracksLink</parameter>
-        <!--Name of the output collections-->
-        <parameter name="LeptonResidualsOutputCollection" type="string" lcioOutType="LCFloatVec">LeptonResiduals</parameter>
-        <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">MESSAGE</parameter>
-    </processor>
-
-    <processor name="MyJetErrorAnalysis_woNu" type="JetErrorAnalysis">
-        <!--Name of the input reconstructed Jet collection-->
-        <parameter name="RecoJetCollection" type="string" lcioInType="ReconstructedParticle">RefinedJets</parameter>
-        <parameter name="matchMethod" type="int">0</parameter>
-        <!--Name of the output collections-->
-        <parameter name="JetResidualsOutputCollection" type="string" lcioOutType="LCFloatVec">JetResiduals_woNu</parameter>
-        <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">WARNING</parameter>
-    </processor>
-
-    <processor name="MyJetErrorAnalysis" type="JetErrorAnalysis">
-        <!--Name of the input reconstructed Jet collection-->
-        <parameter name="RecoJetCollection" type="string" lcioInType="ReconstructedParticle">JetsKinFit</parameter>
-        <parameter name="matchMethod" type="int">0</parameter>
-        <!--Name of the output collections-->
-        <parameter name="JetResidualsOutputCollection" type="string" lcioOutType="LCFloatVec">JetResiduals </parameter>
-        <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">WARNING</parameter>
-    </processor>
-
-    <processor name="MyMisclustering" type="Misclustering">
-        <!--Name of the input reconstructed Jet collection-->
-        <parameter name="RecoJetCollection" type="string" lcioInType="ReconstructedParticle">RefinedJets</parameter>
-        <parameter name="JetMatchingCollection" type="string" lcioOutType="ReconstructedParticle">JetMatching</parameter>
-        <parameter name="matchMethod" type="int">0</parameter>
-        <parameter name="outputFilename" type="string">${OutputDirectory}/${OutputBaseName}_Misclustering.root</parameter>
-        <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">DEBUG</parameter>
-    </processor>
-
-    <!--
-    <processor name="MyZHHPostRecoMEProcessor" type="ZHHPostRecoMEProcessor">
-        <parameter name="LepPairCollection" type="string" lcioInType="ReconstructedParticle"> LeptonPair </parameter>
-        <parameter name="HiggsPairCollection" type="string" lcioInType="ReconstructedParticle"> HiggsPair </parameter>
-        <parameter name="MCTrueCollection" type="string" lcioInType="MCParticle"> MCParticlesSkimmed </parameter>
-        <parameter name="PreSelectionCollection" type="string" lcioInType="ReconstructedParticle"> preselection </parameter>
-        <parameter name="ZDecayMode" type="int" value="5"/>
-        <parameter name="HiggsMass" type="double" value="125.0"/>
-        <parameter name="outputFilename" type="string">${OutputDirectory}/${OutputBaseName}_ZHHPostRecoME.root</parameter>
-        <parameter name="outputTree" type="string" value="dataTree"/>
-    </processor>
-    -->
 
     <processor name="MyLCIOOutputProcessor" type="LCIOOutputProcessor">
         <!--Writes the current event to the specified LCIO outputfile. Needs to be the last ActiveProcessor.-->
         <!--drops the named collections from the event-->
-        <parameter name="DropCollectionNames" type="StringVec"> BuildUpVertex BuildUpVertex_RP BuildUpVertex_V0 BuildUpVertex_V0_RP GammaGammaCandidateEtaPrimes GammaGammaCandidateEtas GammaGammaCandidatePi0s MCTruthMarlinTrkTracksLink MCTruthClusterLink MarlinTrkTracks MarlinTrkTracksKaon MarlinTrkTracksMCTruthLink MarlinTrkTracksProton PandoraClusters PandoraPFO_updatedNeutralPFOs PandoraPFOsWithoutIsoLep PrimaryVertex PrimaryVertex_RP RefinedJets_rel RefinedJets_vtx RefinedJets_vtx_RP RefinedVertex_RP V0RecoParticles V0Vertices VertexJets </parameter>
+        <parameter name="DropCollectionNames" type="StringVec"> BuildUpVertex BuildUpVertex_RP BuildUpVertex_V0 BuildUpVertex_V0_RP GammaGammaCandidateEtaPrimes GammaGammaCandidateEtas GammaGammaCandidatePi0s MCTruthMarlinTrkTracksLink MCTruthClusterLink MarlinTrkTracks MarlinTrkTracksKaon MarlinTrkTracksMCTruthLink MarlinTrkTracksProton PFOsWithoutOverlay PandoraClusters PandoraPFO_updatedNeutralPFOs PandoraPFOsWithoutIsoLep PrimaryVertex PrimaryVertex_RP RefinedJets_rel RefinedJets_vtx RefinedJets_vtx_RP RefinedVertex_RP V0RecoParticles V0Vertices VertexJets DistilledPFOs GammaGammaParticles DurhamJetsPFOs Durham_2JetsPFOs PandoraPFOsWithoutLepPair </parameter>
         <!--drops all collections of the given type from the event-->
         <!--parameter name="DropCollectionTypes" type="StringVec">SimTrackerHit SimCalorimeterHit  </parameter-->
         <!-- write complete objects in subset collections to the file (i.e. ignore subset flag)-->
         <!--parameter name="FullSubsetCollections" type="StringVec">MCParticlesSkimmed  </parameter-->
         <!--force keep of the named collections - overrules DropCollectionTypes (and DropCollectionNames)-->
-        <parameter name="KeepCollectionNames" type="StringVec"> IsolatedLeptons ISOLeptons PFOsWithoutOverlay FastJets4_Precluster PandoraPFOsWithoutLepPair RefinedJets RefinedJetsPFOs OutputErrorFlowJets TrueJets FinalColourNeutrals InitialColourNeutrals TrueJetPFOLink TrueJetMCParticleLink FinalElementonLink InitialElementonLink FinalColourNeutralLink InitialColourNeutralLink HdecayMode IsolatedLeptons RefinedJets </parameter>
+        <parameter name="KeepCollectionNames" type="StringVec"> FastJets4_Precluster Durham_2Jets IsolatedLeptons ISOLeptons PandoraPFOsWithoutLepPair RefinedJets RefinedJetsPFOs OutputErrorFlowJets TrueJets FinalColourNeutrals InitialColourNeutrals TrueJetPFOLink TrueJetMCParticleLink FinalElementonLink InitialElementonLink FinalColourNeutralLink InitialColourNeutralLink HdecayMode IsolatedLeptons preselection JetMatching </parameter>
         <!-- name of output file -->
         <parameter name="LCIOOutputFile" type="string">${OutputDirectory}/${OutputBaseName}.slcio</parameter>
         <!--write mode for output file:  WRITE_APPEND or WRITE_NEW-->
