@@ -18,11 +18,6 @@ class TTree;
 using namespace lcio ;
 using namespace marlin ;
 
-enum PreSelectionCodes: unsigned int
-{
-	
-};
-
 class PreSelection : public Processor
 {
 	public:
@@ -59,6 +54,7 @@ class PreSelection : public Processor
 		std::string m_outputFile{};
 		std::string m_whichPreselection{};
 		std::string m_isPassedCollection{};
+
 		int m_nAskedJets{};
         int m_nAskedIsoLeps{};
 		float m_ECM{};
@@ -77,20 +73,23 @@ class PreSelection : public Processor
 
 		int m_nRun;
 		int m_nEvt;
+		int m_errorCode;
+
 		int m_nJets{};
 		int m_nIsoLeps{};
-		
 		float m_missingPT{};
 		float m_Evis{};
 		float m_thrust{};
 		float m_dileptonMass{};
 		float m_dileptonMassDiff{};
+		float m_chi2min{};
 		
 		int m_isPassed{};
 		std::vector<float>  m_dijetMass{};
 		std::vector<float>  m_dijetMassDiff{};
 		float m_dihiggsMass{};
 		std::vector<int>  m_preselsPassedVec{};
+		std::string m_process{};
 		int m_preselsPassedAll{};
 		int m_preselsPassedConsec{};
 		int m_nbjets{};

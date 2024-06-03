@@ -15,6 +15,7 @@
                 "${workspaceFolder}/source/PreSelection/include/**",
                 "${workspaceFolder}/source/LeptonPairing/include/**",
                 "${workspaceFolder}/source/ZHHKinfitProcessors/include/**",
+                "${workspaceFolder}/source/FinalStateRecorder/include/**",
             ],
             "defines": [],
             "compilerPath": "/cvmfs/ilc.desy.de/key4hep/spackages/gcc/11.2.0/x86_64-centos7-gcc4.8.5-opt/7isdlpuoi7cbcsugpa2hzuqhh5zgeapj/bin/g++",

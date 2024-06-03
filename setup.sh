@@ -19,6 +19,7 @@ export MARLIN_DLL=$MARLIN_DLL:/root/ILCSoft/MarlinReco/Analysis/SLDCorrection/li
 #export MARLIN_DLL=$MARLIN_DLL:$ILD_ANASOFT_ZHH/source/JetErrorAnalysis/lib/libJetErrorAnalysis.so
 #export MARLIN_DLL=$MARLIN_DLL:$ILD_ANASOFT_ZHH/source/ZHHKinfitProcessors/lib/libZHHKinfitProcessors.so
 #export MARLIN_DLL=$MARLIN_DLL:$ILD_ANASOFT_ZHH/source/Misclustering/lib/libMisclustering.so
+export MARLIN_DLL=$MARLIN_DLL:$ILD_ANASOFT_ZHH/source/FinalStateRecorder/lib/libFinalStateRecorder.so
 
 # MarlinReco + Legacy
 # export MARLIN_DLL=$MARLIN_DLL:$ILD_ANASOFT_ZHH/source/legacy/lib/libzhhll4j.so

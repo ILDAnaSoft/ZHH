@@ -147,12 +147,12 @@ PreSelection::PreSelection() :
 				   m_ECM,
 				   float(500.f)
 				   );
-	
-  registerProcessorParameter("outputFilename",
-	  "name of output root file",
-	  m_outputFile,
-	  std::string("")
-	  );
+
+  	registerProcessorParameter("outputFilename",
+				"name of output root file",
+				m_outputFile,
+				std::string("")
+				);
 
 	registerOutputCollection(LCIO::RECONSTRUCTEDPARTICLE,
 				 "PreSelectionCollection",
@@ -186,7 +186,7 @@ void PreSelection::init()
 	m_nEvt = 0;
 
 	m_pTFile = new TFile(m_outputFile.c_str(),"recreate");
-	m_pTTree = new TTree("eventTree","eventTree");
+	m_pTTree = new TTree("eventTree", "eventTree");
 	m_pTTree->SetDirectory(m_pTFile);
 
 	m_pTTree->Branch("run", &m_nRun, "run/I");
@@ -198,6 +198,7 @@ void PreSelection::init()
 	m_pTTree->Branch("thrust", &m_thrust, "thrust/F") ;
 	m_pTTree->Branch("dileptonMass", &m_dileptonMass, "dileptonMass/F") ;
 	m_pTTree->Branch("dileptonMassDiff", &m_dileptonMassDiff, "dileptonMassDiff/F") ;
+	m_pTTree->Branch("dijetChi2min", &m_chi2min, "dijetChi2min/F");
 	m_pTTree->Branch("dijetMass", &m_dijetMass);
 	m_pTTree->Branch("dijetMassDiff", &m_dijetMassDiff);
 	m_pTTree->Branch("dihiggsMass", &m_dihiggsMass, "dihiggsMass/F");
@@ -207,6 +208,7 @@ void PreSelection::init()
 	m_pTTree->Branch("preselsPassedAll", &m_preselsPassedAll);
 	m_pTTree->Branch("preselsPassedConsec", &m_preselsPassedConsec);
 	m_pTTree->Branch("preselPassed", &m_isPassed);
+	m_pTTree->Branch("process", &m_process);
 
 	streamlog_out(DEBUG) << "   init finished  " << std::endl;
 
@@ -257,24 +259,28 @@ void PreSelection::init()
 
 void PreSelection::Clear() 
 {
-  streamlog_out(DEBUG) << "   Clear called  " << std::endl;
-  
-  m_nJets = 0;
-  m_nIsoLeps = 0;
-  m_missingPT = -999.;
-  m_Evis  = -999.;
-  m_thrust = -999.;
-  m_dileptonMass = -999.;
-  m_dileptonMassDiff = -999.;
-  m_dijetMass.clear();
-  m_dijetMassDiff.clear();
-  m_dihiggsMass = -999;
-  m_nbjets = 0;
+	streamlog_out(DEBUG) << "   Clear called  " << std::endl;
 
-  m_preselsPassedVec.clear();
-  m_preselsPassedAll = 0;
-  m_preselsPassedConsec = 0;
-  m_isPassed = 0;
+	m_errorCode = 0;
+
+	m_nJets = 0;
+	m_nIsoLeps = 0;
+	m_missingPT = -999.;
+	m_Evis  = -999.;
+	m_thrust = -999.;
+	m_dileptonMass = -999.;
+	m_dileptonMassDiff = -999.;
+	m_dijetMass.clear();
+	m_dijetMassDiff.clear();
+	m_dihiggsMass = -999;
+	m_nbjets = 0;
+	m_chi2min = 99999.;
+
+	m_preselsPassedVec.clear();
+	m_preselsPassedAll = 0;
+	m_preselsPassedConsec = 0;
+	m_isPassed = 0;
+	m_process = "";
 }
 void PreSelection::processRunHeader( LCRunHeader*  /*run*/) { 
 	m_nRun++ ;
@@ -411,22 +417,22 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
 			int nperm = perms.size();
 
 			if (nperm != 0)  {
-				float chi2min = 99999. ;
 				ndijets = 2;
 				vector<float> dijetmass{-999., -999.};
-				unsigned int best_idx;
+				unsigned int best_idx = 0;
 
 				for (int i=0; i < nperm; i++) {
 					float m1 = inv_mass(jets[perms[i][0]], jets[perms[i][1]]);
 					float m2 = inv_mass(jets[perms[i][2]], jets[perms[i][3]]);
 					float chi2 = (m1-125)*(m1-125)+(m2-125)*(m2-125);
-					if (chi2 < chi2min) {
-						chi2min = chi2;
+					if (chi2 < m_chi2min) {
+						m_chi2min = chi2;
 						dijetmass[0] = m1;
 						dijetmass[1] = m2;
 						best_idx = i;
 					}
 				}
+
 				TLorentzVector vdijet[2];
 				vdijet[0] = v4(jets[perms[best_idx][0]]) + v4(jets[perms[best_idx][1]]);
 				vdijet[1] = v4(jets[perms[best_idx][2]]) + v4(jets[perms[best_idx][3]]);
@@ -479,12 +485,11 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
 		m_preselsPassedAll = std::accumulate(m_preselsPassedVec.begin(), m_preselsPassedVec.end(), 0); // 
 		m_isPassed = m_preselsPassedAll == m_preselsPassedVec.size(); // Passed if passed all
 
-		// Check if all presels passed consecutively
+		// Check how many presels passed consecutively
 		for (unsigned int i=0; i < m_preselsPassedVec.size(); i++) {
 			if (m_preselsPassedVec[i]) {
 				m_preselsPassedConsec++;
 			} else {
-				m_preselsPassedConsec = 0;
 				break;
 			}
 		}
@@ -500,9 +505,12 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
 		pLCEvent->addCollection(preselectioncol, m_PreSelectionCollection);
 		pLCEvent->addCollection(higgscol, m_HiggsCollection);
 		pLCEvent->addCollection(ispassedcol, m_isPassedCollection);
+
 	} catch(DataNotAvailableException &e) {
 		streamlog_out(MESSAGE) << "processEvent : Input collections not found in event " << m_nEvt << std::endl;
 	}
+
+	m_process = pLCEvent->getParameters().getStringVal("processName");
 
 	if (m_isPassed)
 		setReturnValue("GoodEvent", true);
