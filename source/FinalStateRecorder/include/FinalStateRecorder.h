@@ -41,7 +41,7 @@ std::map<std::string, std::vector<int>> const FinalStateMap {
     { "qqqqh", { 1, 8, 9, 10, 11, 12 }},
     
     // 2f_Z_hadronic
-    { "ff", { 0, 9, 10 }} // z(8) f f | processName: z_h0 
+    { "z_h0", { 0, 9, 10 }} // z(8) f f | processName: z_h0 
 };
 
 

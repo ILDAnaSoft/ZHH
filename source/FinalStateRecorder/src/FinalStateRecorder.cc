@@ -98,7 +98,7 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 			// Final state data for other particles
 			for (size_t i = 1; i < fs_metadata.size() - n_higgs; i++) {
 				mcParticle = dynamic_cast<EVENT::MCParticle*>(inputMCParticleCollection->getElementAt(fs_metadata[i]));
-				m_final_states.push_back(abs((mcParticle->getDaughters()[0])->getPDG()));
+				m_final_states.push_back(abs(mcParticle->getPDG()));
 			}
 
 			// Final state data for Higgs particles
@@ -135,5 +135,4 @@ void FinalStateRecorder::end()
 	m_pTFile->Close();
 
 	delete m_pTFile;
-	delete m_pTTree;
 }

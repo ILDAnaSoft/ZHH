@@ -12,6 +12,8 @@ Physsim
 *.png
 *.root
 *.slcio
+*/test/*
 test*.ipynb
 view*.ipynb
 Ranlux.coonf
+*.pyc

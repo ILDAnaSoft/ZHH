@@ -531,5 +531,6 @@ void PreSelection::end()
 	m_pTFile->cd();
 	m_pTTree->Write();
 	m_pTFile->Close();
+	
 	delete m_pTFile;
 }
