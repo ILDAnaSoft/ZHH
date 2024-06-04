@@ -1,14 +1,21 @@
 # coding: utf-8
 
-from zhh import get_raw_files
+"""
+Law example tasks to demonstrate HTCondor workflows at NAF.
+
+The actual payload of the tasks is rather trivial.
+"""
+
+
+import six
 import law
 
-# import our "framework" tasks
-from analysis.framework import HTCondorWorkflow
-from phc.tasks import ShellTask
-import os.path as osp
 
-class Preselection(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
+# import our "framework" tasks
+from analysis.framework import Task, HTCondorWorkflow
+
+
+class CreateChars(Task, HTCondorWorkflow, law.LocalWorkflow):
     """
     Simple task that has a trivial payload: converting integers into ascii characters. The task is
     designed to be a workflow with 26 branches. Each branch creates one character (a-z) and saves
@@ -25,28 +32,62 @@ class Preselection(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     single *branch task* rather than the workflow. Branch tasks are always executed locally.
     """
 
-    def create_branch_map(self) -> dict[int, str]:
+    def create_branch_map(self):
         # map branch indexes to ascii numbers from 97 to 122 ("a" to "z")
-        arr = get_raw_files()
-        
-        # as test: only first three entries
-        arr = arr[:3]
-        
-        res = { k: v for k, v in zip(list(range(len(arr))), arr) }
-        
-        return res #{i: num for i, num in enumerate(range(97, 122 + 1))}
+        return {i: num for i, num in enumerate(range(97, 122 + 1))}
 
     def output(self):
         # it's best practice to encode the branch number into the output target
-        return self.local_target(f'{self.branch}/zhh_FinalStates.root')
+        return self.local_target("output_{}.json".format(self.branch))
 
-    def build_command(self, fallback_level):
-        output_root = osp.dirname(str(self.output().path))
-        
-        cmd =  f'source /afs/desy.de/user/b/bliewert/public/MarlinWorkdirs/ZHH/setup.sh'
-        cmd += f' && mkdir output'
-        cmd += f' && Marlin $REPO_ROOT/scripts/newZHHllbbbb.xml --global.MaxRecordNumber=0 --global.LCIOInputFiles={self.branch_map[self.branch]} >> /afs/desy.de/user/b/bliewert/public/MarlinWorkdirs/ZHH/{self.branch}.out'
-        cmd += f' && mv output {output_root}/{self.branch}'
+    def run(self):
+        # the branch data holds the integer number to convert
+        num = self.branch_data
 
-        return cmd
+        # actual payload: convert to char
+        char = chr(num)
 
+        # use target formatters (implementing dump and load, based on the file extension)
+        # to write the output target
+        output = self.output()
+        output.dump({"num": num, "char": char})
+
+
+class CreateAlphabet(Task):
+    """
+    This task requires the CreateChars workflow and extracts the created characters to write the
+    alphabet into a text file.
+    """
+
+    def requires(self):
+        # req() is defined on all tasks and handles the passing of all parameter values that are
+        # common between the required task and the instance (self)
+        # note that the workflow is required (branch -1, the default), not the particular branch
+        # tasks (branches [0, 26))
+        return CreateChars.req(self)
+
+    def output(self):
+        # output a plain text file
+        return self.local_target("alphabet.txt")
+
+    def run(self):
+        # since we require the workflow and not the branch tasks (see above), self.input() points
+        # to the output of the workflow, which contains the output of its branches in a target
+        # collection, stored - of course - in "collection"
+        inputs = self.input()["collection"].targets
+
+        # loop over all targets in the collection, load the json data, and append the character
+        # to the alphabet
+        alphabet = ""
+        for inp in six.itervalues(inputs):
+            alphabet += inp.load()["char"]
+
+        # again, dump the alphabet string into the output file
+        output = self.output()
+        output.dump(alphabet + "\n")
+
+        # some status message
+        # publish_message not only prints the message to stdout, but sends it to the scheduler
+        # where it will become visible in the browser visualization
+        alphabet = "".join(law.util.colored(c, color="random") for c in alphabet)
+        self.publish_message("\nbuilt alphabet: {}\n".format(alphabet))
