@@ -17,6 +17,25 @@ import law
 # so we need to explicitly load it
 law.contrib.load("htcondor")
 
+class Task(law.Task):
+    """
+    Base task that we use to force a version parameter on all inheriting tasks, and that provides
+    some convenience methods to create local file and directory targets at the default data path.
+    """
+
+    version = luigi.Parameter()
+
+    def store_parts(self):
+        return (self.__class__.__name__, self.version)
+
+    def local_path(self, *path):
+        # DATA_PATH is defined in setup.sh
+        parts = ("$DATA_PATH",) + self.store_parts() + path
+        return os.path.join(*parts)
+
+    def local_target(self, *path):
+        return law.LocalFileTarget(self.local_path(*path))
+
 class HTCondorWorkflow(law.htcondor.HTCondorWorkflow):
     """
     Batch systems are typically very heterogeneous by design, and so is HTCondor. Law does not aim
