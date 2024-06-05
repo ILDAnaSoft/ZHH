@@ -28,12 +28,14 @@ class Preselection(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         #return self.local_target(f'{self.branch}/zhh_FinalStates.root')
 
     def build_command(self, fallback_level):
-        #output_root = osp.dirname(str(self.output().path))
+        output_root = osp.dirname(str(self.output()[0].path))
         
         cmd =  f'source /afs/desy.de/user/b/bliewert/public/MarlinWorkdirs/ZHH/setup.sh'
         cmd += f' && mkdir -p output'
         cmd += f' && Marlin $REPO_ROOT/scripts/newZHHllbbbb.xml --global.MaxRecordNumber=100 --global.LCIOInputFiles={self.branch_map[self.branch]}'
-        cmd += f' && mv output {self.branch}'
+        cmd += f' && mv output/* {output_root}'
+        
+        #self.output().path
 
         return cmd
 
