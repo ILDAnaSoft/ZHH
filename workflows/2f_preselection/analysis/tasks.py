@@ -35,7 +35,7 @@ class Preselection(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         cmd =  f'source /afs/desy.de/user/b/bliewert/public/MarlinWorkdirs/ZHH/setup.sh'
         cmd += f' && mkdir -p output'
         cmd += f' && Marlin $REPO_ROOT/scripts/newZHHllbbbb.xml --global.MaxRecordNumber=100 --global.LCIOInputFiles={self.branch_map[self.branch]}'
-        cmd += f' && mv output/* {output_root}'
+        cmd += f' && mkdir -p {output_root} && mv output/* {output_root}'
         
         #self.output().path
 
