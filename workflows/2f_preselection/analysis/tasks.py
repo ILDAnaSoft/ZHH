@@ -1,5 +1,6 @@
 # coding: utf-8
 
+import law.util
 from zhh import get_raw_files
 import law
 import luigi
@@ -21,12 +22,12 @@ class Preselection(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     def create_branch_map(self) -> dict[int, str]:
         arr = get_raw_files()
         
-        # for debugging: only first three entries
+        # for debugging: only first two entries
         if self.nmax > 0:
-            arr = arr[:self.nmax]
+            arr = arr[:min(self.nmax, len(arr))]
         
         if self.debug:
-            arr = arr[:3]
+            arr = arr[:2]
         
         res = { k: v for k, v in zip(list(range(len(arr))), arr) }
         
@@ -37,7 +38,6 @@ class Preselection(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
             self.local_target(f'{self.branch}/zhh_FinalStates.root'),
             self.local_target(f'{self.branch}/zhh_Preselection.root')
         ])
-        #return self.local_target(f'{self.branch}/zhh_FinalStates.root')
 
     def build_command(self, fallback_level):
         output_root = osp.dirname(str(self.output()[0].path))
@@ -66,13 +66,15 @@ class CreatePlots(BaseTask):
         # since we require the workflow and not the branch tasks (see above), self.input() points
         # to the output of the workflow, which contains the output of its branches in a target
         # collection, stored - of course - in "collection"
-        inputs = self.input()["collection"].targets
+        inputs = self.input()['collection'].targets
         
         files = []
-        for inp_col in inputs:
-            for inp in inp_col:
-                if inp.path.endsWith('PreSelection.root'):
-                    files.append(inp.path)
+        for input_coll in inputs.values():
+            for key, input in input_coll._iter_flat():
+                path = input[0].path
+                print(path)
+                if path.endswith('Preselection.root'):
+                    files.append(path)
 
         vecs = []
         for f in files:
@@ -82,7 +84,10 @@ class CreatePlots(BaseTask):
         vecs = np.concatenate(vecs)
             
         figs = plot_preselection_pass(vecs)
+        
+        # Create intermediate directories and save plots
+        self.output().parent.touch()
         export_figures(self.output().path, figs)
-
-        # again, dump the alphabet string into the output file
+        
+        # Status message
         self.publish_message(f'exported {len(figs)} plots to {self.output().path}')
