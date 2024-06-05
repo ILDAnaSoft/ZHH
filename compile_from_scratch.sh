@@ -16,7 +16,7 @@ compile_pkg ()
 
 cd source
 
-for module_to_compile in AddNeutralPFOCovMat CheatedMCOverlayRemoval HdecayMode JetErrorAnalysis LeptonErrorAnalysis LeptonPairing PreSelection ZHHKinfitProcessors Misclustering
+for module_to_compile in AddNeutralPFOCovMat CheatedMCOverlayRemoval FinalStateRecorder HdecayMode JetErrorAnalysis LeptonErrorAnalysis LeptonPairing PreSelection ZHHKinfitProcessors Misclustering
 do
     compile_pkg $module_to_compile && echo "${GREEN}+++ Successfully compiled $module_to_compile +++${NC}" || { echo "${RED}!!! Error [$?] while trying to compile $module_to_compile !!!${NC}"; cd ..; return 1; }
 done
