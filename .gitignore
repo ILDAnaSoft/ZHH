@@ -12,6 +12,7 @@ Physsim
 *.png
 *.root
 *.slcio
+.law
 */test/*
 test*.ipynb
 view*.ipynb
