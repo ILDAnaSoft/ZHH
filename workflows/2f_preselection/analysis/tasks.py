@@ -3,6 +3,7 @@
 import law.util
 from zhh import get_raw_files
 import law
+from law.util import flatten
 import luigi
 
 # import our "framework" tasks
@@ -34,10 +35,10 @@ class Preselection(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         return res
 
     def output(self):
-        return self.target_collection([
+        return [
             self.local_target(f'{self.branch}/zhh_FinalStates.root'),
             self.local_target(f'{self.branch}/zhh_Preselection.root')
-        ])
+        ]
 
     def build_command(self, fallback_level):
         output_root = osp.dirname(str(self.output()[0].path))
@@ -63,30 +64,26 @@ class CreatePlots(BaseTask):
         return self.local_target("plots.pdf")
 
     def run(self):
-        # since we require the workflow and not the branch tasks (see above), self.input() points
-        # to the output of the workflow, which contains the output of its branches in a target
-        # collection, stored - of course - in "collection"
+        # Get targets of dependendies and get the file paths of relevant files 
         inputs = self.input()['collection'].targets
         
         files = []
-        for input_coll in inputs.values():
-            for key, input in input_coll._iter_flat():
-                path = input[0].path
-                print(path)
-                if path.endswith('Preselection.root'):
-                    files.append(path)
-
+        for input in flatten(inputs):
+            if input.path.endswith('Preselection.root'):
+                files.append(input.path)
+                
+        # Extract columns using uproot
         vecs = []
         for f in files:
             d = ur.open(f)['eventTree']
             vecs.append(np.array(d['preselsPassedVec'].array()))
             
         vecs = np.concatenate(vecs)
-            
+        
+        # Create the plots and save them to
         figs = plot_preselection_pass(vecs)
         
-        # Create intermediate directories and save plots
-        self.output().parent.touch()
+        self.output().parent.touch() # Create intermediate directories and save plots    
         export_figures(self.output().path, figs)
         
         # Status message
