@@ -11,11 +11,15 @@ import os.path as osp
 
 class Preselection(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     debug = luigi.BoolParameter(default=False)
+    nmax = luigi.IntParameter(default=100)
     
     def create_branch_map(self) -> dict[int, str]:
         arr = get_raw_files()
         
         # for debugging: only first three entries
+        if self.nmax > 0:
+            arr = arr[:self.nmax]
+        
         if self.debug:
             arr = arr[:3]
         
