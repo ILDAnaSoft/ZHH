@@ -30,6 +30,8 @@ class Preselection(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     def build_command(self, fallback_level):
         output_root = osp.dirname(str(self.output()[0].path))
         
+        print(f'Output Root: {output_root}')
+        
         cmd =  f'source /afs/desy.de/user/b/bliewert/public/MarlinWorkdirs/ZHH/setup.sh'
         cmd += f' && mkdir -p output'
         cmd += f' && Marlin $REPO_ROOT/scripts/newZHHllbbbb.xml --global.MaxRecordNumber=100 --global.LCIOInputFiles={self.branch_map[self.branch]}'
