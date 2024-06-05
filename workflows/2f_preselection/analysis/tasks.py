@@ -37,7 +37,7 @@ class Preselection(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     def output(self):
         return [
             self.local_target(f'{self.branch}/zhh_FinalStates.root'),
-            self.local_target(f'{self.branch}/zhh_Preselection.root')
+            self.local_target(f'{self.branch}/zhh_PreSelection.root')
         ]
 
     def build_command(self, fallback_level):
@@ -69,7 +69,7 @@ class CreatePlots(BaseTask):
         
         files = []
         for input in flatten(inputs):
-            if input.path.endswith('Preselection.root'):
+            if input.path.endswith('PreSelection.root'):
                 files.append(input.path)
                 
         # Extract columns using uproot
