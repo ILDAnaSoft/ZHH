@@ -313,7 +313,7 @@
 
         <!--parameter name="FlavorTag.WeightsDirectory" type="string" value="/afs/desy.de/user/s/skawada/sonas_work/mini-DST/lcfiweights"/--> <!-- e.g. lcfiweights/lcfiweights_6q500_v04_p00_ildl5 -->
         <!--parameter name="FlavorTag.WeightsPrefix" type="string" value="6q500_v04_p00_ildl5" /--> <!-- e.g. 6q500_v04_p00_ildl5 -->
-        <parameter name="FlavorTag.WeightsDirectory" type="string" value="/afs/desy.de/user/b/bliewert/ILCSoft/ILDConfig/LCFIPlusConfig/lcfiweights"/>
+        <parameter name="FlavorTag.WeightsDirectory" type="string" value="/afs/desy.de/user/b/bliewert/public/ILCSoft/ILDConfig/LCFIPlusConfig/lcfiweights"/>
         <parameter name="FlavorTag.WeightsPrefix" type="string" value="6q500_v04_p00_ildl5" />
         <parameter name="FlavorTag.BookName" type="string" value="bdt" />
         <parameter name="FlavorTag.PIDAlgo" type="string" value="lcfiplus" />
