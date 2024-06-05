@@ -6,7 +6,12 @@ import luigi
 
 # import our "framework" tasks
 from analysis.framework import HTCondorWorkflow
-from phc.tasks import ShellTask
+from phc.tasks import ShellTask, BaseTask
+from zhh import plot_preselection_pass
+from phc import export_figures
+
+import numpy as np
+import uproot as ur
 import os.path as osp
 
 class Preselection(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
@@ -44,3 +49,40 @@ class Preselection(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
 
         return cmd
 
+
+class CreatePlots(BaseTask):
+    """
+    This task requires the Preselection workflow and extracts the created data to create plots.
+    """
+
+    def requires(self):
+        return Preselection.req(self)
+
+    def output(self):
+        # output a plain text file
+        return self.local_target("plots.pdf")
+
+    def run(self):
+        # since we require the workflow and not the branch tasks (see above), self.input() points
+        # to the output of the workflow, which contains the output of its branches in a target
+        # collection, stored - of course - in "collection"
+        inputs = self.input()["collection"].targets
+        
+        files = []
+        for inp_col in inputs:
+            for inp in inp_col:
+                if inp.path.endsWith('PreSelection.root'):
+                    files.append(inp.path)
+
+        vecs = []
+        for f in files:
+            d = ur.open(f)['eventTree']
+            vecs.append(np.array(d['preselsPassedVec'].array()))
+            
+        vecs = np.concatenate(vecs)
+            
+        figs = plot_preselection_pass(vecs)
+        export_figures(self.output().path, figs)
+
+        # again, dump the alphabet string into the output file
+        self.publish_message(f'exported {len(figs)} plots to {self.output().path}')
