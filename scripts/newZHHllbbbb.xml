@@ -47,7 +47,7 @@
         <!-- limit the number of processed records (run+evt): -->
         <!--parameter name="MaxRecordNumber" value="0" /to process all events--> 
         <!--parameter name="MaxRecordNumber" value="1000" /to process 1000 events--> 
-        <parameter name="MaxRecordNumber" value="500"/>
+        <parameter name="MaxRecordNumber" value="200"/>
         <parameter name="SkipNEvents" value="0" />
         <parameter name="SupressCheck" value="false" />
         <parameter name="GearXMLFile">/cvmfs/ilc.desy.de/sw/ILDConfig/v02-02-02/StandardConfig/production/Gear/gear_ILD_l5_v02.xml</parameter>
@@ -313,7 +313,7 @@
 
         <!--parameter name="FlavorTag.WeightsDirectory" type="string" value="/afs/desy.de/user/s/skawada/sonas_work/mini-DST/lcfiweights"/--> <!-- e.g. lcfiweights/lcfiweights_6q500_v04_p00_ildl5 -->
         <!--parameter name="FlavorTag.WeightsPrefix" type="string" value="6q500_v04_p00_ildl5" /--> <!-- e.g. 6q500_v04_p00_ildl5 -->
-        <parameter name="FlavorTag.WeightsDirectory" type="string" value="/afs/desy.de/user/b/bliewert/ILCSoft/ILDConfig/LCFIPlusConfig/lcfiweights"/>
+        <parameter name="FlavorTag.WeightsDirectory" type="string" value="/afs/desy.de/user/b/bliewert/public/ILCSoft/ILDConfig/LCFIPlusConfig/lcfiweights"/>
         <parameter name="FlavorTag.WeightsPrefix" type="string" value="6q500_v04_p00_ildl5" />
         <parameter name="FlavorTag.BookName" type="string" value="bdt" />
         <parameter name="FlavorTag.PIDAlgo" type="string" value="lcfiplus" />
