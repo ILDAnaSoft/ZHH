@@ -36,17 +36,19 @@ class Preselection(ShellTask, law.LocalWorkflow):
 
     def output(self):
         return [
-            self.local_target(f'{self.branch}/zhh_FinalStates.root'),
-            self.local_target(f'{self.branch}/zhh_PreSelection.root')
+            self.local_target(f'{self.branch}_zhh_FinalStates.root'),
+            self.local_target(f'{self.branch}_zhh_PreSelection.root')
         ]
 
     def build_command(self, fallback_level):
-        output_root = osp.dirname(str(self.output()[0].path))
+        temp_files = self.output()
         
         cmd =  f'source $REPO_ROOT/setup.sh'
         cmd += f' && mkdir -p output'
-        cmd += f' && Marlin $REPO_ROOT/scripts/newZHHllbbbb.xml {"" if (self.debug == True) else "--global.MaxRecordNumber=0 "}--global.LCIOInputFiles={self.branch_map[self.branch]}'
-        cmd += f' && mkdir -p {output_root} && mv output/* {output_root}'
+        cmd += f' && Marlin $REPO_ROOT/scripts/newZHHllbbbb.xml {"" if (self.debug == True) else "--global.MaxRecordNumber=0 "}--global.LCIOInputFiles={self.branch_map[self.branch]}' # --constant.OutputBaseName={self.branch}_zhh'
+        cmd += f' && mv output/zhh_FinalStates.root {temp_files[0].path}'
+        cmd += f' && mv output/zhh_PreSelection.root {temp_files[1].path}'
+        #cmd += f' && mkdir -p {output_root} && mv output/* {output_root}'
 
         return cmd
 

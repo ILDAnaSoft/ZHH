@@ -34,7 +34,7 @@
 
         <processor name="MyPreSelection"/>
         <processor name="MyFinalStateRecorder"/>
-        <processor name="MyLCIOOutputProcessor"/>
+        <!-- <processor name="MyLCIOOutputProcessor"/> -->
     </execute>
 
     <global>
