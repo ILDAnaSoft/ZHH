@@ -90,6 +90,7 @@ class CreatePlots(BaseTask):
         # Status message
         self.publish_message(f'exported {len(figs)} plots to {self.output().path}')
 
+
 class SetupPackages(ShellTask, ForcibleTask, law.LocalWorkflow):
     packages = ['AddNeutralPFOCovMat', 'CheatedMCOverlayRemoval', 'LeptonPairing', 'HdecayMode', 'PreSelection', 'FinalStateRecorder']
     
