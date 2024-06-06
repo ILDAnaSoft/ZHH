@@ -10,11 +10,11 @@ if [[ -z "${MARLIN_DLL}" ]]; then
 fi
 
 if [[ -z "${REPO_ROOT}" ]]; then
-    export REPO_ROOT="/afs/desy.de/user/b/bliewert/public/ZHH"
+    export REPO_ROOT="$HOME/public/MarlinWorkdirs/ZHH"
 fi
 
 if [[ -z "${ILCSOFT_ROOT}" ]]; then
-    export ILCSOFT_ROOT="/afs/desy.de/user/b/bliewert/public/ILCSoft"
+    export ILCSOFT_ROOT="$HOME/public/ILCSoft"
 fi
 
 echo "Relative library path set to ${REPO_ROOT}"

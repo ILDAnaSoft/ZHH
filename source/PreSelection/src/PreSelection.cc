@@ -470,9 +470,16 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
 		m_preselsPassedVec.push_back(m_nIsoLeps == m_nAskedIsoLeps);
 		m_preselsPassedVec.push_back(m_dileptonMassDiff <= m_maxdileptonmassdiff );
 
-		for (unsigned int i=0; i < ndijets; i++) {
-			m_preselsPassedVec.push_back(m_dijetMassDiff[i] <= m_maxdijetmassdiff) ;
-			m_preselsPassedVec.push_back(m_dijetMass[i] <= m_maxdijetmass && m_dijetMass[i] >= m_mindijetmass);
+		if (ndijets == 2) {
+			for (unsigned int i=0; i < ndijets; i++) {
+				m_preselsPassedVec.push_back(m_dijetMassDiff[i] <= m_maxdijetmassdiff) ;
+				m_preselsPassedVec.push_back(m_dijetMass[i] <= m_maxdijetmass && m_dijetMass[i] >= m_mindijetmass);
+			}
+		} else {
+			m_preselsPassedVec.push_back(-1);
+			m_preselsPassedVec.push_back(-1);
+			m_preselsPassedVec.push_back(-1);
+			m_preselsPassedVec.push_back(-1);
 		}
 
 		m_preselsPassedVec.push_back(m_missingPT <= m_maxmissingPT && m_missingPT >= m_minmissingPT);

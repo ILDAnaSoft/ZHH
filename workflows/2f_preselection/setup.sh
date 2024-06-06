@@ -1,15 +1,19 @@
 #!/usr/bin/env bash
 
 action() {
+    export ILCSOFT_ROOT="$HOME/public/ILCSoft"
+    export REPO_ROOT="$HOME/public/MarlinWorkdirs/ZHH"
+    export DATA_PATH="/nfs/dust/ilc/user/bliewert/zhh"
+
     local CONDA_ENV_NAME="py311"
     local ON_NAF="false"
+
     if [[ $( cat /etc/hostname ) == *"desy.de"* ]]; then
         ON_NAF="true"
         local CONDA_ROOT="/nfs/dust/ilc/user/bliewert/miniconda3"
-        export ILCSOFT_ROOT="/root/ILCSoft"
     else
-        local CONDA_ROOT="${HOME}/miniforge3"
-        export ILCSOFT_ROOT="/afs/desy.de/user/b/bliewert/public/ILCSoft"
+        local CONDA_ROOT="$HOME/miniforge3"
+        
     fi
     conda activate $CONDA_ROOT/envs/$CONDA_ENV_NAME
 
@@ -22,8 +26,6 @@ action() {
     export LAW_CONFIG_FILE="${this_dir}/law.cfg"
 
     export ANALYSIS_PATH="${this_dir}"
-    export DATA_PATH="/nfs/dust/ilc/user/bliewert/zhh"
-    export REPO_ROOT="/afs/desy.de/user/b/bliewert/public/MarlinWorkdirs/ZHH"
 
     source "$( law completion )" ""
 }
