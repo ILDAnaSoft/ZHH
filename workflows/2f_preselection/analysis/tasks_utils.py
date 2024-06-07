@@ -45,11 +45,10 @@ class CheckDirectories(BaseTask):
         
         result = ''
         for path in paths:
-            path = self.branch_data
             status = "HEALTHY"
             
             try: # Try reading the first 100 bytes
-                with open(self.branch_data, 'r') as f:
+                with open(path, 'r') as f:
                     f.read(100)
             except OSError as e:
                 status = "MISSING"
