@@ -8,9 +8,8 @@ import luigi
 
 # import our "framework" tasks
 from analysis.framework import HTCondorWorkflow
-from phc.tasks import ShellTask, BaseTask
 from zhh import plot_preselection_pass
-from phc import export_figures, ForcibleTask
+from phc import export_figures, ShellTask, BaseTask, ForcibleTask
 
 import numpy as np
 import uproot as ur
@@ -93,22 +92,3 @@ class CreatePlots(BaseTask):
         self.publish_message(f'exported {len(figs)} plots to {self.output().path}')
 
 
-class SetupPackages(ShellTask, ForcibleTask, law.LocalWorkflow):
-    packages = ['AddNeutralPFOCovMat', 'CheatedMCOverlayRemoval', 'LeptonPairing', 'HdecayMode', 'PreSelection', 'FinalStateRecorder']
-    
-    def output(self):
-        return self.local_target('build_complete')
-    
-    def create_branch_map(self) -> dict[int, str]:
-        return { k: self.packages[k] for k in range(len(self.packages)) }
-    
-    def complete(self):
-        package = self.branch_data
-        return (not self.force) and (osp.isfile(f'$REPO_ROOT/source/{package}/lib/lib{package}.so'))
-    
-    def build_command(self, fallback_level):
-        package = self.branch_data
-        
-        cmd = f"""(source $REPO_ROOT/setup.sh &&{f' rm -rf "$REPO_ROOT/source/{package}/build" && rm -rf "$REPO_ROOT/source/{package}/lib" &&' if self.force else ''} mkdir -p "$REPO_ROOT/source/{package}/build" && cd "$REPO_ROOT/source/{package}/build" && ( if [ ! -f "$REPO_ROOT/source/{package}/lib/lib{package}.so" ]; then cmake .. && make install; fi ) && mkdir -p $(dirname "{self.output().path}") && touch "{self.output().path}" ) || exit 11"""
-
-        return cmd
