@@ -1,3 +1,4 @@
+import numpy as np
 import luigi
 import law
 import os.path as osp
@@ -32,6 +33,7 @@ class CheckDirectories(BaseTask, law.LocalWorkflow):
         '/pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/*/ILD_l5_*/v02-*/*/*.slcio'
     ]
     debug = luigi.BoolParameter(default=False)
+    results = [] # np.empty(n, dtype=[('status', 'i'), ('path', 'U255') ] )
     
     def output(self):
         return self.local_target('report.txt')
@@ -47,16 +49,18 @@ class CheckDirectories(BaseTask, law.LocalWorkflow):
         return paths
     
     def run(self):
-        id = self.branch
         path = self.branch_data
-        result = "HEALTHY"
+        status = "HEALTHY"
         
-        try:
+        try: # Try reading the first 100 bytes
             with open(self.branch_data, 'r') as f:
                 f.read(100)
         except OSError as e:
-            result = "MISSING"
+            status = "MISSING"
         except Exception as e:
-            result = "UNKNOWN"
+            status = "UNKNOWN"
         
-        self.output().dump(f'{id},{result},{path}\n')
+        self.results.append((status, path))
+        
+        if len(self.results) == len(self.branch_map):
+            self.output().dump(f'{self.results[i][0]},{self.results[i][1]}\n' for i in range(len(self.results)) )
