@@ -63,4 +63,5 @@ class CheckDirectories(BaseTask, law.LocalWorkflow):
         self.results.append((status, path))
         
         if len(self.results) == len(self.branch_map):
-            self.output().dump(f'{self.results[i][0]},{self.results[i][1]}\n' for i in range(len(self.results)) )
+            result = '\n'.join([f'{self.results[i][0]},{self.results[i][1]}' for i in range(len(self.results))])
+            self.output().dump(result)
