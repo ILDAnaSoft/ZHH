@@ -58,6 +58,5 @@ class CheckDirectories(BaseTask, law.LocalWorkflow):
             result = "MISSING"
         except Exception as e:
             result = "UNKNOWN"
-            
-        with open(self.output().path, 'a') as f:
-            f.write(f'{id},{result},{path}\n')
+        
+        self.output().dump(f'{id},{result},{path}\n')
