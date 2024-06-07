@@ -27,41 +27,35 @@ class SetupPackages(ShellTask, ForcibleTask, law.LocalWorkflow):
 
 # /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/
 
-class CheckDirectories(BaseTask, law.LocalWorkflow):
+class CheckDirectories(BaseTask):
     search_masks = [
         '/pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/*/ILD_l5_*/v02-*/*.slcio',
         '/pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/*/ILD_l5_*/v02-*/*/*.slcio'
     ]
     debug = luigi.BoolParameter(default=False)
-    results = [] # np.empty(n, dtype=[('status', 'i'), ('path', 'U255') ] )
     
     def output(self):
         return self.local_target('report.txt')
     
-    def create_branch_map(self) -> dict[int, str]:
+    def run(self):
         paths = glob(self.search_masks[0]) + glob(self.search_masks[1])
         paths.sort()
         if self.debug:
             paths = paths[:10]
         
-        paths = { k: paths[k] for k in range(len(paths)) }
-        
-        return paths
-    
-    def run(self):
-        path = self.branch_data
-        status = "HEALTHY"
-        
-        try: # Try reading the first 100 bytes
-            with open(self.branch_data, 'r') as f:
-                f.read(100)
-        except OSError as e:
-            status = "MISSING"
-        except Exception as e:
-            status = "UNKNOWN"
-        
-        self.results.append((status, path))
-        
-        if len(self.results) == len(self.branch_map):
-            result = '\n'.join([f'{self.results[i][0]},{self.results[i][1]}' for i in range(len(self.results))])
-            self.output().dump(result)
+        result = ''
+        for path in paths:
+            path = self.branch_data
+            status = "HEALTHY"
+            
+            try: # Try reading the first 100 bytes
+                with open(self.branch_data, 'r') as f:
+                    f.read(100)
+            except OSError as e:
+                status = "MISSING"
+            except Exception as e:
+                status = "UNKNOWN"
+            
+            result += f'{status},{path}\n'
+            
+        self.output().dump(result)
