@@ -15,7 +15,7 @@ import numpy as np
 import uproot as ur
 import os.path as osp
 
-class Preselection(ShellTask, law.LocalWorkflow):
+class Preselection(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     debug = luigi.BoolParameter(default=False)
     nmax = luigi.IntParameter(default=100)
     
