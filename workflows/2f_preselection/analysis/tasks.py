@@ -15,7 +15,7 @@ import numpy as np
 import uproot as ur
 import os.path as osp
 
-class Preselection(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
+class Preselection(ShellTask, law.LocalWorkflow):
     debug = luigi.BoolParameter(default=False)
     nmax = luigi.IntParameter(default=100)
     
@@ -43,11 +43,9 @@ class Preselection(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         temp_files = self.output()
         
         cmd =  f'source $REPO_ROOT/setup.sh'
-        cmd += f' && mkdir -p output'
-        cmd += f' && Marlin $REPO_ROOT/scripts/newZHHllbbbb.xml {"" if (self.debug == True) else "--global.MaxRecordNumber=0 "}--global.LCIOInputFiles={self.branch_map[self.branch]}' # --constant.OutputBaseName={self.branch}_zhh'
-        cmd += f' && mv output/zhh_FinalStates.root {temp_files[0].path}'
-        cmd += f' && mv output/zhh_PreSelection.root {temp_files[1].path}'
-        #cmd += f' && mkdir -p {output_root} && mv output/* {output_root}'
+        cmd += f' && Marlin $REPO_ROOT/scripts/newZHHllbbbb.xml {"" if (self.debug == True) else "--global.MaxRecordNumber=0 "}--global.LCIOInputFiles={self.branch_map[self.branch]} --constant.OutputDirectory=.' # --constant.OutputBaseName={self.branch}_zhh'
+        cmd += f' && mv zhh_FinalStates.root {temp_files[0].path}'
+        cmd += f' && mv zhh_PreSelection.root {temp_files[1].path}'
 
         return cmd
 

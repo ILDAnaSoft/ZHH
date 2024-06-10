@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 
 action() {
+    # Configuration
     export ILCSOFT_ROOT="$HOME/public/ILCSoft"
     export REPO_ROOT="$HOME/public/MarlinWorkdirs/ZHH"
     export DATA_PATH="/nfs/dust/ilc/user/bliewert/zhh"
 
     local CONDA_ENV_NAME="py311"
+
+    # All this should be automatic (except for CONDA_ROOT)
     local ON_NAF="false"
 
     if [[ $( cat /etc/hostname ) == *"desy.de"* ]]; then
