@@ -73,7 +73,10 @@
         "mutex": "cpp",
         "variant": "cpp",
         "TMVAClassification_Fisher.class.C": "cpp",
-        "TMVAClassification_MLP.class.C": "cpp"
+        "TMVAClassification_MLP.class.C": "cpp",
+        "codecvt": "cpp",
+        "forward_list": "cpp",
+        "valarray": "cpp"
     },
     "cmake.cmakePath": "/cvmfs/ilc.desy.de/key4hep/spackages/cmake/3.23.0/x86_64-centos7-gcc11.2.0-opt/mje3q7dbcg3ot3ptvn4pzypadohlejte/bin/cmake",
     "cmake.preferredGenerators": [

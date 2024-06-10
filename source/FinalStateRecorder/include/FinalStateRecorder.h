@@ -5,20 +5,33 @@
 #include "IMPL/LCCollectionVec.h"
 #include "lcio.h"
 #include <string>
+#include <fstream>
 #include <TFile.h>
 #include <TTree.h>
 #include <vector>
 #include "TLorentzVector.h"
+#include "nlohmann/json.hpp"
+
 class TFile;
 class TTree;
 
 using namespace lcio ;
 using namespace marlin ;
+using jsonf = nlohmann::json;
 
 enum ERROR_CODES: unsigned int {
+	UNINITIALIZED = 9999,
 	OK = 0,
 	COLLECTION_NOT_FOUND = 1,
 	PROCESS_NOT_FOUND = 2
+};
+
+// If the final state is a ZHH, the channel is given by the decay channel of the Z boson (else NONE)
+enum ZHH_CHANNEL: unsigned int {
+	NONE = 0,
+	LEPTONIC = 1,
+	NEUTRINO = 2,
+	HADRONIC = 3
 };
 
 std::map<std::string, std::vector<int>> const FinalStateMap {
@@ -73,17 +86,29 @@ class FinalStateRecorder : public Processor
 		/** Input collection name.
 		 */
 		std::string m_mcParticleCollection{};
-		std::string m_outputFile{};
+		std::string m_outputJsonFile{};
+		std::string m_outputRootFile{};
 
 		int m_nRun;
 		int m_nEvt;
+
+		int m_errorCode = ERROR_CODES::UNINITIALIZED;
+		std::vector<int> m_final_states{};
+		std::string m_final_state_string{};
 		std::string m_process{};
-		std::vector<int> m_final_states;
+		int m_zhh_channel{};
+		int m_n_higgs{};
+		
+		
 
-		int m_errorCode;
+		
 
-		TFile *m_pTFile{};        
+		// Output ROOT file
+		TFile *m_pTFile{};
 		TTree *m_pTTree{};
+
+		// Output JSON file
+		jsonf m_jsonFile{};
 
 };
 

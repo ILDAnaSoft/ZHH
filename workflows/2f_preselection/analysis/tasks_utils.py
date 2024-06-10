@@ -28,11 +28,15 @@ class SetupPackages(ShellTask, ForcibleTask, law.LocalWorkflow):
 # /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/
 
 class CheckDirectories(BaseTask):
-    search_masks = [
-        '/pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/*/ILD_l5_*/v02-*/*.slcio',
-        '/pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/*/ILD_l5_*/v02-*/*/*.slcio'
-    ]
     debug = luigi.BoolParameter(default=False)
+    type = luigi.ChoiceParameter(choices=['dst-merged', 'sim', 'rec'], default='dst-merged')
+    root_dir = luigi.Parameter(default='mc-opt-3')
+    
+    def search_masks(self):
+        return [
+            f'/pnfs/desy.de/ilc/prod/ilc/{self.root_dir}/ild/{self.type}/500-TDR_ws/*/ILD_l5_*/v02-*/*.slcio',
+            f'/pnfs/desy.de/ilc/prod/ilc/{self.root_dir}/ild/{self.type}/500-TDR_ws/*/ILD_l5_*/v02-*/*/*.slcio'
+        ]
     
     def output(self):
         return self.local_target('report.txt')
@@ -45,15 +49,15 @@ class CheckDirectories(BaseTask):
         
         result = ''
         for path in paths:
-            status = "HEALTHY"
+            status = 'HEALTHY'
             
             try: # Try reading the first 100 bytes
                 with open(path, 'r') as f:
                     f.read(100)
             except OSError as e:
-                status = "MISSING"
+                status = 'MISSING'
             except Exception as e:
-                status = "UNKNOWN"
+                status = 'UNKNOWN'
             
             result += f'{status},{path}\n'
             

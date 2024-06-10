@@ -12,7 +12,7 @@
 
 using namespace lcio ;
 using namespace marlin ;
-using namespace std ;
+using jsonf = nlohmann::json;
 
 FinalStateRecorder aFinalStateRecorder ;
 
@@ -33,10 +33,16 @@ FinalStateRecorder::FinalStateRecorder() :
 				std::string("MCParticle")
 				);
 
-  	registerProcessorParameter("outputFilename",
+  	registerProcessorParameter("outputRootFilename",
 				"name of output root file",
-				m_outputFile,
+				m_outputRootFile,
 				std::string("FinalStates.root")
+				);
+
+	registerProcessorParameter("outputJsonFilename",
+				"name of output json file",
+				m_outputJsonFile,
+				std::string("FinalStates.json")
 				);
 }
 
@@ -48,15 +54,19 @@ void FinalStateRecorder::init()
 	m_nRun = 0;
 	m_nEvt = 0;
 
-	m_pTFile = new TFile(m_outputFile.c_str(),"recreate");
+	m_pTFile = new TFile(m_outputRootFile.c_str(),"recreate");
 	m_pTTree = new TTree("eventTree", "eventTree");
 	m_pTTree->SetDirectory(m_pTFile);
 
 	m_pTTree->Branch("run", &m_nRun, "run/I");
 	m_pTTree->Branch("event", &m_nEvt, "event/I");
-	m_pTTree->Branch("errorCode", &m_errorCode, "errorCode/I");
+
+	m_pTTree->Branch("error_code", &m_errorCode);
 	m_pTTree->Branch("final_states", &m_final_states);
+	m_pTTree->Branch("final_state_string", &m_final_state_string);
 	m_pTTree->Branch("process", &m_process);
+	m_pTTree->Branch("zhh_channel", &m_zhh_channel);
+	m_pTTree->Branch("n_higgs", &m_n_higgs);
 
 	streamlog_out(DEBUG) << "   init finished  " << std::endl;
 }
@@ -66,8 +76,11 @@ void FinalStateRecorder::Clear()
 	streamlog_out(DEBUG) << "   Clear called  " << std::endl;
 
 	m_errorCode = ERROR_CODES::OK;
-	m_process = "";
 	m_final_states.clear();
+	m_final_state_string = "";
+	m_process = "";
+	m_zhh_channel = ZHH_CHANNEL::NONE;
+	m_n_higgs = 0;
 }
 void FinalStateRecorder::processRunHeader( LCRunHeader*  /*run*/) { 
 	m_nRun++ ;
@@ -75,9 +88,16 @@ void FinalStateRecorder::processRunHeader( LCRunHeader*  /*run*/) {
 
 void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 {
+	// Initialize JSON metadata file
+	if (m_errorCode == ERROR_CODES::UNINITIALIZED) {
+		m_jsonFile["beamPol1"] = pLCEvent->getParameters().getFloatVal("beamPol1");
+		m_jsonFile["beamPol2"] = pLCEvent->getParameters().getFloatVal("beamPol2");
+		m_jsonFile["crossSection"] = pLCEvent->getParameters().getFloatVal("crossSection");
+	}
+
 	this->Clear();
 
-	streamlog_out(DEBUG) << "processing event: " << pLCEvent->getEventNumber() << "  in run: " << pLCEvent->getRunNumber() << endl;
+	streamlog_out(DEBUG) << "processing event: " << pLCEvent->getEventNumber() << "  in run: " << pLCEvent->getRunNumber() << std::endl;
 
 	m_nRun = pLCEvent->getRunNumber();
 	m_nEvt = pLCEvent->getEventNumber();
@@ -108,8 +128,19 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 				for (unsigned int j = 0; j < mcParticle->getDaughters().size(); j++) {
 					m_final_states.push_back(abs((mcParticle->getDaughters()[j])->getPDG()));
 				}
+
+				m_final_state_string += "H";
+				m_n_higgs++;
 			}
 			
+			// Set final_state_string
+			if (m_process == "e1e1hh" || m_process == "e2e2hh" || m_process == "e3e3hh")
+				m_final_state_string = ZHH_CHANNEL::LEPTONIC;
+			else if (m_process == "n1n1hh" || m_process == "n23n23hh")
+				m_final_state_string = ZHH_CHANNEL::NEUTRINO;
+			else if (m_process == "qqhh")
+				m_final_state_string = ZHH_CHANNEL::HADRONIC;
+
 		} else {
 			m_errorCode = ERROR_CODES::PROCESS_NOT_FOUND;
 		}
@@ -130,9 +161,14 @@ void FinalStateRecorder::check()
 
 void FinalStateRecorder::end()
 {
+	// Write ROOT file
 	m_pTFile->cd();
 	m_pTTree->Write();
 	m_pTFile->Close();
 
 	delete m_pTFile;
+
+	// Write JSON metadata file
+	std::ofstream file(m_outputJsonFile);
+	file << m_jsonFile;
 }
