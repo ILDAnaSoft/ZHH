@@ -18,6 +18,16 @@ class TTree;
 using namespace lcio ;
 using namespace marlin ;
 
+// If the final state is a ZHH (with H -> bbar), the channel is given by the decay channel of the Z boson (else OTHER)
+// NONE is for initialization only and should not occur in practice
+enum EVENT_CATEGORY_ZHH: unsigned int {
+	NONE = 0,
+	OTHER = 1,
+	LEPTONIC = 11,
+	NEUTRINO = 21,
+	HADRONIC = 31
+};
+
 class PreSelection : public Processor
 {
 	public:

@@ -463,7 +463,7 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
 				}
 				m_dihiggsMass = (vdijet[0]+vdijet[1]).M();
 			}
-		} //if ( m_nJets == m_nAskedJets )
+		}
 
 		// ---------- PRESELECTION ----------
 		m_preselsPassedVec.push_back(m_nJets == m_nAskedJets);
