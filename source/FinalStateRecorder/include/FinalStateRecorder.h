@@ -29,13 +29,75 @@ enum ERROR_CODES: unsigned int {
 // If the final state is a ZHH (with H -> bbar), the channel is given by the decay channel of the Z boson (else OTHER)
 // NONE is for initialization only and should not occur in practice
 enum EVENT_CATEGORY_ZHH: unsigned int {
-	NONE = 0,
-	OTHER = 1,
+	OTHER = 0,
 	LEPTONIC = 11,
 	NEUTRINO = 21,
 	HADRONIC = 31
 };
 
+// Map processes to integers
+std::map<std::string, std::vector<int>> const FinalStateMap {
+	// 1st number: process ID
+	// 2nd number: number of fermions in final state
+	// 3rd number: number of Higgs bosons (their daughter PDGs are inferred)
+	// 	following numbers: position in the MCParticle collection
+	//  if Higgs bosons are present, their position is given at the end of the vector
+	
+	// Process ID
+	// 1st digit: 1 for di-higgs, 2 for single Higgs, 3 for other
+	// 2nd+3rd digit: see event categorization
+	// 4th digit: flavor or other differentiation (e.g. s/t-channel etc.)
+
+	// Processes including two Higgs bosons
+    { "e1e1hh",    { 1111, 2, 2, 8, 9, 10, 11 }}, // e- e+ h h
+    { "e2e2hh",    { 1112, 2, 8, 9, 10, 11 }}, // mu- mu+ h h
+    { "e3e3hh",    { 1113, 2, 8, 9, 10, 11 }}, // tau- tau+ h h
+
+    { "n1n1hh",    { 1311, 2, 2, 8, 9, 10, 11 }}, // nue anti-nue h h
+    { "n23n23hh",  { 1312, 2, 2, 8, 9, 10, 11 }}, // nu(mu/tau) anti-nu(mu/tau) hh
+    { "qqhh",      { 1511, 2, 2, 8, 9, 10, 11 }},
+    
+	// Background events
+	// Processes including one Higgs boson
+    { "e1e1qqh",   { 2161, 4, 1, 8, 9, 10, 11, 12 }}, // e- e+ q q h
+    { "e2e2qqh",   { 2162, 4, 1, 8, 9, 10, 11, 12 }}, // mu- mu+ q q h
+    { "e3e3qqh",   { 2162, 4, 1, 8, 9, 10, 11, 12 }}, // tau- tau+ q q h
+    { "n1n1qqh",   { 2341, 4, 1, 8, 9, 10, 11, 12 }}, // nue anti-nue q q h
+    { "n23n23qqh", { 2342, 4, 1, 8, 9, 10, 11, 12 }}, // nu(mu/tau) anti-nu(mu/tau) q q h    
+    { "qqqqh",     { 2520, 4, 1, 8, 9, 10, 11, 12 }},
+
+	// Processes without a Higgs boson
+	// Two fermion processes
+	{ "2f_z_l",        { 3170, 2, 0, 6, 7 }},
+	{ "2f_z_h",        { 3570, 2, 0, 6, 7 }},
+	{ "2f_z_nung",     { 3350, 2, 0, 6, 7 }},
+	{ "2f_z_bhabhag",  { 3171, 2, 0, 6, 7 }},
+	{ "2f_z_bhabhagg", { 3172, 2, 0, 6, 7 }},
+    
+	// Four fermion final states
+	{ "4f_zz_l",      { 3181, 4, 0, 6, 7, 8, 9 }},
+	{ "4f_zz_h",      { 3581, 4, 0, 6, 7, 8, 9 }},
+	{ "4f_zz_sl",     { 3191, 4, 0, 6, 7, 8, 9 }},
+	{ "4f_sze_l",     { 3182, 4, 0, 6, 7, 8, 9 }}, // ?
+	{ "4f_sze_sl",    { 3192, 4, 0, 6, 7, 8, 9 }}, // ?
+	{ "4f_sznu_l",    { 3201, 4, 0, 6, 7, 8, 9 }}, // ?
+	{ "4f_sznu_sl",   { 3360, 4, 0, 6, 7, 8, 9 }}, // ? ONLY with vvqq?
+
+	{ "4f_ww_l",      { 3183, 4, 0, 6, 7, 8, 9 }},
+	{ "4f_ww_h",      { 3582, 4, 0, 6, 7, 8, 9 }},
+	{ "4f_ww_sl",     { 3193, 4, 0, 6, 7, 8, 9 }},
+	{ "4f_sw_l",      { 3184, 4, 0, 6, 7, 8, 9 }}, // ?
+	{ "4f_sw_sl",     { 3194, 4, 0, 6, 7, 8, 9 }}, // ?
+
+	{ "4f_zzorww_l",  { 3185, 4, 0, 6, 7, 8, 9 }}, // ?
+	{ "4f_zzorww_h",  { 3583, 4, 0, 6, 7, 8, 9 }}, // ?
+	{ "4f_szeorsw_l", { 3202, 4, 0, 6, 7, 8, 9 }}, // ?
+
+    // 2f_Z_hadronic (only in new production sample; however with some generator level cuts)
+    { "z_h0", { 3371, 2, 0, 9, 10 }} // z(8) f f | processName: z_h0 
+};
+
+// Event categorization
 enum EVENT_CATEGORY_TRUE: unsigned int {
 	OTHER = 0,
 	
@@ -49,26 +111,31 @@ enum EVENT_CATEGORY_TRUE: unsigned int {
 	llbbbb = 15,
 	llqqH = 16,
 	ll = 17,
+	llll = 18,
+	llqq = 19,
+	llvv = 20,
 
 	// NEUTRINO
-	OTHER_VV = 20,
-	vvHH = 21, // vvbbbb (ZHH signal)
+	OTHER_VV = 30,
+	vvHH = 31, // vvbbbb (ZHH signal)
 
-	vvbb = 22,
-	vvbbbb = 23,
-	vvqqH = 24,
-	vv = 25,
+	vvbb = 32,
+	vvbbbb = 33,
+	vvqqH = 34,
+	vv = 35,
+	vvqq = 36,
 
 	// HADRONIC
-	OTHER_QQ = 30,
-	qqHH = 31, // qqbbbb (ZHH signal)
+	OTHER_QQ = 50,
+	qqHH = 51, // qqbbbb (ZHH signal)
 
-	qqqqH = 32,
-	qqbbbb = 33,
-	bbbb = 34,
-	ttZ = 35,
-	ttbb = 36,
-	qq = 37,
+	qqqqH = 52,
+	qqbbbb = 53,
+	bbbb = 54,
+	ttZ = 55,
+	ttbb = 56,
+	qq = 57,
+	qqqq = 58,
 	
 	// ttbar -> lvbbqq [t->Wb, W->lv/qq, b->bb]
 	// so far not accounted: ttbar -> llvvbb (two leptonically decaying W bosons)
@@ -77,18 +144,18 @@ enum EVENT_CATEGORY_TRUE: unsigned int {
 	// => 2xW -> qqbar 67% * 67% = 44.89% (two hadronic decays)
 	// => 2xW -> lv 33% * 33% = 10.89% (two leptonic decays)
 	// rest: 44.22% (one hadronic, one leptonic decay)
-	OTHER_TTBAR = 40,
-	evbbqq = 41,
-	μvbbqq = 42,
-	𝜏vbbqq = 43,
+	OTHER_TTBAR = 70,
+	evbbqq = 71,
+	μvbbqq = 72,
+	𝜏vbbqq = 73,
 
 	// tt/WWZ -> bbqqqq
 	// for tt: tt -> bbqqqq : 2x [t->Wb; W->qq]
 	// for WWZ: WWZ -> bbqqqq : 2x [W->qq; Z->bb]
-	OTHER_FULL_HADRONIC = 50,
-	bbcssc = 51,
-	bbuddu = 52,
-	bbcsdu = 53	
+	OTHER_FULL_HADRONIC = 80,
+	bbcssc = 81,
+	bbuddu = 82,
+	bbcsdu = 83	
 };
 
 // Must match ordering in m_final_state_counts of FinalStateRecorder
@@ -109,29 +176,6 @@ std::vector<unsigned int> PDG_NUMBERING {
 	23, // Z
 	24, // W
 	25 // h
-};
-
-std::map<std::string, std::vector<int>> const FinalStateMap {
-	// First digit: number of Higgs bosons (their daughter PDGs are inferred)
-    // hh / sig: ZHH
-    { "e1e1hh", { 2, 8, 9, 10, 11 }}, // e- e+ h h
-    { "e2e2hh", { 2, 8, 9, 10, 11 }}, // mu- mu+ h h
-    { "e3e3hh", { 2, 8, 9, 10, 11 }}, // tau- tau+
-    { "n1n1hh", { 2, 8, 9, 10, 11 }}, // nue anti-nue h h
-    { "n23n23hh", { 2, 8, 9, 10, 11 }}, // nu(mu/tau) anti-nu(mu/tau) hh
-    { "qqhh", { 2, 8, 9, 10, 11 }},
-    
-    // hh / bkg: ZZH
-    { "e1e1qqh", { 1, 8, 9, 10, 11, 12 }}, // e- e+ q q h
-    { "e2e2qqh", { 1, 8, 9, 10, 11, 12 }}, // mu- mu+ q q h
-    { "e3e3qqh", { 1, 8, 9, 10, 11, 12 }}, // tau- tau+ q q h
-    { "n1n1qqh", { 1, 8, 9, 10, 11, 12 }}, // nue anti-nue q q h
-    { "n23n23qqh", { 1, 8, 9, 10, 11, 12 }}, // nu(mu/tau) anti-nu(mu/tau) q q h    
-    
-    { "qqqqh", { 1, 8, 9, 10, 11, 12 }},
-    
-    // 2f_Z_hadronic
-    { "z_h0", { 0, 9, 10 }} // z(8) f f | processName: z_h0 
 };
 
 class FinalStateRecorder : public Processor
@@ -192,10 +236,11 @@ class FinalStateRecorder : public Processor
 		};
 		std::string m_final_state_string{};
 		
-		std::string m_process{};
+		int m_process{};
 		int m_event_category{};
-		int m_n_higgs{};	
-
+		int m_event_category_zhh{};
+		int m_n_fermion{};
+		int m_n_higgs{};
 
 		// Output ROOT file
 		TFile *m_pTFile{};

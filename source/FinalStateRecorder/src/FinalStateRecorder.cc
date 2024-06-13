@@ -14,8 +14,14 @@ using namespace lcio ;
 using namespace marlin ;
 using jsonf = nlohmann::json;
 
-bool haveSameParent(MCParticle* p1, MCParticle* p2) {
-	return false;
+int* evaluate_process_string(std::string process) {
+	int result[3] = {
+		0, // n_fermions
+		0, // n_higgs
+		EVENT_PROCESS::OTHER // process id
+	};
+	
+	return result;
 }
 
 FinalStateRecorder aFinalStateRecorder ;
@@ -72,6 +78,7 @@ void FinalStateRecorder::init()
 	m_pTTree->Branch("final_state_string", &m_final_state_string);
 	m_pTTree->Branch("process", &m_process);
 	m_pTTree->Branch("event_category", &m_event_category);
+	m_pTTree->Branch("event_category_zhh", &m_event_category_zhh);
 	m_pTTree->Branch("n_higgs", &m_n_higgs);
 
 	streamlog_out(DEBUG) << "   init finished  " << std::endl;
@@ -89,8 +96,10 @@ void FinalStateRecorder::Clear()
 	for (auto const& [key, value] : m_final_state_counts)
 		m_final_state_counts[key] = 0;
 
-	m_process = "";
+	m_process = 0;
 	m_event_category = EVENT_CATEGORY_TRUE::OTHER;
+	m_event_category_zhh = EVENT_CATEGORY_ZHH::OTHER;
+	m_n_fermion = 0;
 	m_n_higgs = 0;
 }
 void FinalStateRecorder::processRunHeader( LCRunHeader*  /*run*/) { 
@@ -113,7 +122,10 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 	m_nRun = pLCEvent->getRunNumber();
 	m_nEvt = pLCEvent->getEventNumber();
 	m_nEvtSum++;
-	m_process = pLCEvent->getParameters().getStringVal("processName");
+
+	// Extract process meta data
+	int* process_meta = evaluate_process_string(pLCEvent->getParameters().getStringVal("processName"));
+	
 
 	LCCollection *inputMCParticleCollection{};
 
