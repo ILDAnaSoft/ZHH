@@ -14,14 +14,18 @@ using namespace lcio ;
 using namespace marlin ;
 using jsonf = nlohmann::json;
 
-int* evaluate_process_string(std::string process) {
-	int result[3] = {
-		0, // n_fermions
-		0, // n_higgs
-		EVENT_PROCESS::OTHER // process id
-	};
-	
-	return result;
+std::vector<int> find_process_meta(std::string process) {
+	std::vector<int> res;
+
+	if (ProcessMap.find(process) != ProcessMap.end()) {
+		res = ProcessMap.at(process);
+	} else {
+		res.push_back(PROCESS_INVALID);
+		res.push_back(PROCESS_INVALID);
+		res.push_back(PROCESS_INVALID);
+	}
+
+	return res;
 }
 
 FinalStateRecorder aFinalStateRecorder ;
@@ -76,9 +80,12 @@ void FinalStateRecorder::init()
 	m_pTTree->Branch("final_states", &m_final_states);
 	m_pTTree->Branch("final_states_h_decay", &m_final_states_h_decay);
 	m_pTTree->Branch("final_state_string", &m_final_state_string);
+	m_pTTree->Branch("final_state_counts", &m_final_state_counts);
+
 	m_pTTree->Branch("process", &m_process);
 	m_pTTree->Branch("event_category", &m_event_category);
 	m_pTTree->Branch("event_category_zhh", &m_event_category_zhh);
+	m_pTTree->Branch("n_fermion", &m_n_fermion);
 	m_pTTree->Branch("n_higgs", &m_n_higgs);
 
 	streamlog_out(DEBUG) << "   init finished  " << std::endl;
@@ -96,9 +103,9 @@ void FinalStateRecorder::Clear()
 	for (auto const& [key, value] : m_final_state_counts)
 		m_final_state_counts[key] = 0;
 
-	m_process = 0;
 	m_event_category = EVENT_CATEGORY_TRUE::OTHER;
 	m_event_category_zhh = EVENT_CATEGORY_ZHH::OTHER;
+	m_process = 0;
 	m_n_fermion = 0;
 	m_n_higgs = 0;
 }
@@ -124,23 +131,21 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 	m_nEvtSum++;
 
 	// Extract process meta data
-	int* process_meta = evaluate_process_string(pLCEvent->getParameters().getStringVal("processName"));
-	
-
-	LCCollection *inputMCParticleCollection{};
+	std::vector<int> fs_metadata = find_process_meta(pLCEvent->getParameters().getStringVal("processName"));
 
 	try {
 		streamlog_out(DEBUG0) << "        getting jet collection: " << m_mcParticleCollection << std::endl ;
-		inputMCParticleCollection = pLCEvent->getCollection( m_mcParticleCollection );
+		LCCollection *inputMCParticleCollection = pLCEvent->getCollection( m_mcParticleCollection );
 
-		if (FinalStateMap.find(m_process) != FinalStateMap.end()) {
-			std::vector<int> fs_metadata = FinalStateMap.at(m_process);
-			m_n_higgs = fs_metadata[0];
+		if (fs_metadata[0] != PROCESS_INVALID) {
+			m_process = fs_metadata[0];
+			m_n_fermion = fs_metadata[1];
+			m_n_higgs = fs_metadata[2];
 
 			const EVENT::MCParticle *mcParticle;
 
 			// Final state data for other particles
-			for (size_t i = 1; i < fs_metadata.size() - m_n_higgs; i++) {
+			for (size_t i = 3; i < fs_metadata.size() - m_n_higgs; i++) {
 				mcParticle = dynamic_cast<EVENT::MCParticle*>(inputMCParticleCollection->getElementAt(fs_metadata[i]));
 				m_final_states.push_back(abs(mcParticle->getPDG()));
 			}
@@ -155,14 +160,6 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 
 				m_final_states.push_back(25);
 			}
-			
-			// Set ZHH event category
-			if (m_process == "e1e1hh" || m_process == "e2e2hh" || m_process == "e3e3hh")
-				m_event_category = EVENT_CATEGORY_ZHH::LEPTONIC;
-			else if (m_process == "n1n1hh" || m_process == "n23n23hh")
-				m_event_category = EVENT_CATEGORY_ZHH::NEUTRINO;
-			else if (m_process == "qqhh")
-				m_event_category = EVENT_CATEGORY_ZHH::HADRONIC;
 
 			// Set specific event category
 			// Collect counts of final state particles
@@ -173,22 +170,33 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 			}
 
 			// Classify first leptonic, then neutrino, then hadronic channels
-			size_t n_fs = m_final_states.size();
 			// 1 Leptonic states
-			if ( n_fs >= 4 ) {
+			if ( m_n_fermion >= 4 ) {
 				if ( m_n_higgs == 1 ) {
 					if ( m_final_state_counts["e"] == 2 || m_final_state_counts["μ"] == 2 || m_final_state_counts["τ"] == 2 ) {
 						m_event_category = EVENT_CATEGORY_TRUE::μμbb;
 					}
 				}
 			}
+			
+			// Set ZHH event category
+			if (m_process >= 1111 && m_process <= 1113) {
+				m_event_category_zhh = EVENT_CATEGORY_ZHH::LEPTONIC;
+				m_event_category = EVENT_CATEGORY_TRUE::llHH;
+			} else if (m_process == 1311 || m_process == 1312) {
+				m_event_category_zhh = EVENT_CATEGORY_ZHH::NEUTRINO;
+				m_event_category = EVENT_CATEGORY_TRUE::vvHH;
+			} else if (m_process == 1511) {
+				m_event_category_zhh = EVENT_CATEGORY_ZHH::HADRONIC;
+				m_event_category = EVENT_CATEGORY_TRUE::qqHH;
+			} else {
+				// other event categories
+				if (m_n_higgs == 1) {
+					if (m_process == ) {
+						
+					}
 
-			switch (m_final_states.size()) {
-				case 4:
-					break;
-				
-				default:
-					break;
+				}
 			}
 
 		} else {

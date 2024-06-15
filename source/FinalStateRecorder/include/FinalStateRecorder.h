@@ -36,7 +36,48 @@ enum EVENT_CATEGORY_ZHH: unsigned int {
 };
 
 // Map processes to integers
-std::map<std::string, std::vector<int>> const FinalStateMap {
+enum PROCESS_ID: unsigned int{
+	e1e1hh = 1111,
+	e2e2hh = 1112,
+	e3e3hh = 1113,
+
+	n1n1hh = 1311,
+	n23n23hh = 1312,
+	qqhh = 1511,
+
+	e1e1qqh = 2161,
+	e2e2qqh = 2162,
+	e3e3qqh = 2163,
+	n1n1qqh = 2341,
+	n23n23qqh = 2342,
+	qqqqh = 2520,
+
+	f2_z_l = 3170,
+	f2_z_h = 3570,
+	f2_z_nung = 3350,
+	f2_z_bhabhag = 3171,
+	f2_z_bhabhagg = 3172,
+
+	f4_zz_l = 3181,
+	f4_zz_h = 3581,
+	f4_zz_sl = 3191,
+	f4_sze_l = 3182,
+	f4_sze_sl = 3192,
+	f4_sznu_l = 3201,
+	f4_sznu_sl = 3360,
+
+	f4_ww_l = 3183,
+	f4_ww_h = 3582,
+	f4_ww_sl = 3193,
+	f4_sw_l = 3184,
+	f4_sw_sl = 3194,
+
+	f4_zzorww_l = 3185,
+	f4_zzorww_h = 3583,
+	f4_szeorsw_l = 3202,
+};
+
+std::map<std::string, std::vector<int>> const ProcessMap {
 	// 1st number: process ID
 	// 2nd number: number of fermions in final state
 	// 3rd number: number of Higgs bosons (their daughter PDGs are inferred)
@@ -49,39 +90,39 @@ std::map<std::string, std::vector<int>> const FinalStateMap {
 	// 4th digit: flavor or other differentiation (e.g. s/t-channel etc.)
 
 	// Processes including two Higgs bosons
-    { "e1e1hh",    { 1111, 2, 2, 8, 9, 10, 11 }}, // e- e+ h h
-    { "e2e2hh",    { 1112, 2, 8, 9, 10, 11 }}, // mu- mu+ h h
-    { "e3e3hh",    { 1113, 2, 8, 9, 10, 11 }}, // tau- tau+ h h
+    { "e1e1hh",    { PROCESS_ID::e1e1hh, 2, 2, 8, 9, 10, 11 }}, // e- e+ h h
+    { "e2e2hh",    { PROCESS_ID::e2e2hh, 2, 8, 9, 10, 11 }}, // mu- mu+ h h
+    { "e3e3hh",    { PROCESS_ID::e3e3hh, 2, 8, 9, 10, 11 }}, // tau- tau+ h h
 
-    { "n1n1hh",    { 1311, 2, 2, 8, 9, 10, 11 }}, // nue anti-nue h h
-    { "n23n23hh",  { 1312, 2, 2, 8, 9, 10, 11 }}, // nu(mu/tau) anti-nu(mu/tau) hh
-    { "qqhh",      { 1511, 2, 2, 8, 9, 10, 11 }},
+    { "n1n1hh",    { PROCESS_ID::n1n1hh  , 2, 2, 8, 9, 10, 11 }}, // nue anti-nue h h
+    { "n23n23hh",  { PROCESS_ID::n23n23hh, 2, 2, 8, 9, 10, 11 }}, // nu(mu/tau) anti-nu(mu/tau) hh
+    { "qqhh",      { PROCESS_ID::qqhh    , 2, 2, 8, 9, 10, 11 }},
     
 	// Background events
 	// Processes including one Higgs boson
-    { "e1e1qqh",   { 2161, 4, 1, 8, 9, 10, 11, 12 }}, // e- e+ q q h
-    { "e2e2qqh",   { 2162, 4, 1, 8, 9, 10, 11, 12 }}, // mu- mu+ q q h
-    { "e3e3qqh",   { 2162, 4, 1, 8, 9, 10, 11, 12 }}, // tau- tau+ q q h
-    { "n1n1qqh",   { 2341, 4, 1, 8, 9, 10, 11, 12 }}, // nue anti-nue q q h
-    { "n23n23qqh", { 2342, 4, 1, 8, 9, 10, 11, 12 }}, // nu(mu/tau) anti-nu(mu/tau) q q h    
-    { "qqqqh",     { 2520, 4, 1, 8, 9, 10, 11, 12 }},
+    { "e1e1qqh",   { PROCESS_ID::e1e1qqh, 4, 1, 8, 9, 10, 11, 12 }}, // e- e+ q q h
+    { "e2e2qqh",   { PROCESS_ID::e2e2qqh, 4, 1, 8, 9, 10, 11, 12 }}, // mu- mu+ q q h
+    { "e3e3qqh",   { PROCESS_ID::e3e3qqh, 4, 1, 8, 9, 10, 11, 12 }}, // tau- tau+ q q h
+    { "n1n1qqh",   { PROCESS_ID::n1n1qqh, 4, 1, 8, 9, 10, 11, 12 }}, // nue anti-nue q q h
+    { "n23n23qqh", { PROCESS_ID::n23n23qqh, 4, 1, 8, 9, 10, 11, 12 }}, // nu(mu/tau) anti-nu(mu/tau) q q h    
+    { "qqqqh",     { PROCESS_ID::qqqqh, 4, 1, 8, 9, 10, 11, 12 }},
 
 	// Processes without a Higgs boson
 	// Two fermion processes
-	{ "2f_z_l",        { 3170, 2, 0, 6, 7 }},
-	{ "2f_z_h",        { 3570, 2, 0, 6, 7 }},
-	{ "2f_z_nung",     { 3350, 2, 0, 6, 7 }},
-	{ "2f_z_bhabhag",  { 3171, 2, 0, 6, 7 }},
-	{ "2f_z_bhabhagg", { 3172, 2, 0, 6, 7 }},
+	{ "2f_z_l",        { PROCESS_ID::f2_z_l       , 2, 0, 6, 7 }},
+	{ "2f_z_h",        { PROCESS_ID::f2_z_h       , 2, 0, 6, 7 }},
+	{ "2f_z_nung",     { PROCESS_ID::f2_z_nung    , 2, 0, 6, 7 }},
+	{ "2f_z_bhabhag",  { PROCESS_ID::f2_z_bhabhag , 2, 0, 6, 7 }},
+	{ "2f_z_bhabhagg", { PROCESS_ID::f2_z_bhabhagg, 2, 0, 6, 7 }},
     
 	// Four fermion final states
-	{ "4f_zz_l",      { 3181, 4, 0, 6, 7, 8, 9 }},
-	{ "4f_zz_h",      { 3581, 4, 0, 6, 7, 8, 9 }},
-	{ "4f_zz_sl",     { 3191, 4, 0, 6, 7, 8, 9 }},
-	{ "4f_sze_l",     { 3182, 4, 0, 6, 7, 8, 9 }}, // ?
-	{ "4f_sze_sl",    { 3192, 4, 0, 6, 7, 8, 9 }}, // ?
-	{ "4f_sznu_l",    { 3201, 4, 0, 6, 7, 8, 9 }}, // ?
-	{ "4f_sznu_sl",   { 3360, 4, 0, 6, 7, 8, 9 }}, // ? ONLY with vvqq?
+	{ "4f_zz_l",      { PROCESS_ID::f4_zz_l   , 4, 0, 6, 7, 8, 9 }},
+	{ "4f_zz_h",      { PROCESS_ID::f4_zz_h   , 4, 0, 6, 7, 8, 9 }},
+	{ "4f_zz_sl",     { PROCESS_ID::f4_zz_sl  , 4, 0, 6, 7, 8, 9 }},
+	{ "4f_sze_l",     { PROCESS_ID::f4_sze_l  , 4, 0, 6, 7, 8, 9 }}, // ?
+	{ "4f_sze_sl",    { PROCESS_ID::f4_sze_sl , 4, 0, 6, 7, 8, 9 }}, // ?
+	{ "4f_sznu_l",    { PROCESS_ID::f4_sznu_l , 4, 0, 6, 7, 8, 9 }}, // ?
+	{ "4f_sznu_sl",   { PROCESS_ID::f4_sznu_sl, 4, 0, 6, 7, 8, 9 }}, // ? ONLY with vvqq?
 
 	{ "4f_ww_l",      { 3183, 4, 0, 6, 7, 8, 9 }},
 	{ "4f_ww_h",      { 3582, 4, 0, 6, 7, 8, 9 }},
@@ -93,9 +134,14 @@ std::map<std::string, std::vector<int>> const FinalStateMap {
 	{ "4f_zzorww_h",  { 3583, 4, 0, 6, 7, 8, 9 }}, // ?
 	{ "4f_szeorsw_l", { 3202, 4, 0, 6, 7, 8, 9 }}, // ?
 
+	// Five fermion final states
+	// { "ea_lvvvv",     {  }},
+
     // 2f_Z_hadronic (only in new production sample; however with some generator level cuts)
     { "z_h0", { 3371, 2, 0, 9, 10 }} // z(8) f f | processName: z_h0 
 };
+
+int PROCESS_INVALID = -999;
 
 // Event categorization
 enum EVENT_CATEGORY_TRUE: unsigned int {
