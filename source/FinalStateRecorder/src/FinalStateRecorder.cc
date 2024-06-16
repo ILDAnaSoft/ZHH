@@ -23,6 +23,7 @@ std::vector<int> find_process_meta(std::string process) {
 		res.push_back(PROCESS_INVALID);
 		res.push_back(PROCESS_INVALID);
 		res.push_back(PROCESS_INVALID);
+		res.push_back(PROCESS_INVALID);
 	}
 
 	return res;
@@ -141,11 +142,12 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 			m_process = fs_metadata[0];
 			m_n_fermion = fs_metadata[1];
 			m_n_higgs = fs_metadata[2];
+			m_event_category = fs_metadata[3];
 
 			const EVENT::MCParticle *mcParticle;
 
 			// Final state data for other particles
-			for (size_t i = 3; i < fs_metadata.size() - m_n_higgs; i++) {
+			for (size_t i = 4; i < fs_metadata.size() - m_n_higgs; i++) {
 				mcParticle = dynamic_cast<EVENT::MCParticle*>(inputMCParticleCollection->getElementAt(fs_metadata[i]));
 				m_final_states.push_back(abs(mcParticle->getPDG()));
 			}
@@ -180,25 +182,14 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 			}
 			
 			// Set ZHH event category
-			if (m_process >= 1111 && m_process <= 1113) {
+			if (m_process >= PROCESS_ID::e1e1hh && m_process <= PROCESS_ID::e2e2hh) {
 				m_event_category_zhh = EVENT_CATEGORY_ZHH::LEPTONIC;
-				m_event_category = EVENT_CATEGORY_TRUE::llHH;
-			} else if (m_process == 1311 || m_process == 1312) {
+			} else if (m_process == PROCESS_ID::n1n1hh || m_process == PROCESS_ID::n23n23hh) {
 				m_event_category_zhh = EVENT_CATEGORY_ZHH::NEUTRINO;
-				m_event_category = EVENT_CATEGORY_TRUE::vvHH;
-			} else if (m_process == 1511) {
+			} else if (m_process == PROCESS_ID::qqhh) {
 				m_event_category_zhh = EVENT_CATEGORY_ZHH::HADRONIC;
-				m_event_category = EVENT_CATEGORY_TRUE::qqHH;
-			} else {
-				// other event categories
-				if (m_n_higgs == 1) {
-					if (m_process == ) {
-						
-					}
-
-				}
 			}
-
+			
 		} else {
 			m_errorCode = ERROR_CODES::PROCESS_NOT_FOUND;
 		}

@@ -90,49 +90,49 @@ std::map<std::string, std::vector<int>> const ProcessMap {
 	// 4th digit: flavor or other differentiation (e.g. s/t-channel etc.)
 
 	// Processes including two Higgs bosons
-    { "e1e1hh",    { PROCESS_ID::e1e1hh, 2, 2, 8, 9, 10, 11 }}, // e- e+ h h
-    { "e2e2hh",    { PROCESS_ID::e2e2hh, 2, 8, 9, 10, 11 }}, // mu- mu+ h h
-    { "e3e3hh",    { PROCESS_ID::e3e3hh, 2, 8, 9, 10, 11 }}, // tau- tau+ h h
+    { "e1e1hh",    { PROCESS_ID::e1e1hh, EVENT_CATEGORY_TRUE::llHH, 2, 2, 8, 9, 10, 11 }}, // e- e+ h h
+    { "e2e2hh",    { PROCESS_ID::e2e2hh, EVENT_CATEGORY_TRUE::llHH, 2, 8, 9, 10, 11 }}, // mu- mu+ h h
+    { "e3e3hh",    { PROCESS_ID::e3e3hh, EVENT_CATEGORY_TRUE::llHH, 2, 8, 9, 10, 11 }}, // tau- tau+ h h
 
-    { "n1n1hh",    { PROCESS_ID::n1n1hh  , 2, 2, 8, 9, 10, 11 }}, // nue anti-nue h h
-    { "n23n23hh",  { PROCESS_ID::n23n23hh, 2, 2, 8, 9, 10, 11 }}, // nu(mu/tau) anti-nu(mu/tau) hh
-    { "qqhh",      { PROCESS_ID::qqhh    , 2, 2, 8, 9, 10, 11 }},
+    { "n1n1hh",    { PROCESS_ID::n1n1hh  , EVENT_CATEGORY_TRUE::vvHH, 2, 2, 8, 9, 10, 11 }}, // nue anti-nue h h
+    { "n23n23hh",  { PROCESS_ID::n23n23hh, EVENT_CATEGORY_TRUE::vvHH, 2, 2, 8, 9, 10, 11 }}, // nu(mu/tau) anti-nu(mu/tau) hh
+    { "qqhh",      { PROCESS_ID::qqhh    , EVENT_CATEGORY_TRUE::qqHH, 2, 2, 8, 9, 10, 11 }},
     
 	// Background events
 	// Processes including one Higgs boson
-    { "e1e1qqh",   { PROCESS_ID::e1e1qqh, 4, 1, 8, 9, 10, 11, 12 }}, // e- e+ q q h
-    { "e2e2qqh",   { PROCESS_ID::e2e2qqh, 4, 1, 8, 9, 10, 11, 12 }}, // mu- mu+ q q h
-    { "e3e3qqh",   { PROCESS_ID::e3e3qqh, 4, 1, 8, 9, 10, 11, 12 }}, // tau- tau+ q q h
-    { "n1n1qqh",   { PROCESS_ID::n1n1qqh, 4, 1, 8, 9, 10, 11, 12 }}, // nue anti-nue q q h
-    { "n23n23qqh", { PROCESS_ID::n23n23qqh, 4, 1, 8, 9, 10, 11, 12 }}, // nu(mu/tau) anti-nu(mu/tau) q q h    
-    { "qqqqh",     { PROCESS_ID::qqqqh, 4, 1, 8, 9, 10, 11, 12 }},
+    { "e1e1qqh",   { PROCESS_ID::e1e1qqh  , EVENT_CATEGORY_TRUE::llqqH, 4, 1, 8, 9, 10, 11, 12 }}, // e- e+ q q h
+    { "e2e2qqh",   { PROCESS_ID::e2e2qqh  , EVENT_CATEGORY_TRUE::llqqH, 4, 1, 8, 9, 10, 11, 12 }}, // mu- mu+ q q h
+    { "e3e3qqh",   { PROCESS_ID::e3e3qqh  , EVENT_CATEGORY_TRUE::llqqH, 4, 1, 8, 9, 10, 11, 12 }}, // tau- tau+ q q h
+    { "n1n1qqh",   { PROCESS_ID::n1n1qqh  , EVENT_CATEGORY_TRUE::vvqqH, 4, 1, 8, 9, 10, 11, 12 }}, // nue anti-nue q q h
+    { "n23n23qqh", { PROCESS_ID::n23n23qqh, EVENT_CATEGORY_TRUE::vvqqH, 4, 1, 8, 9, 10, 11, 12 }}, // nu(mu/tau) anti-nu(mu/tau) q q h    
+    { "qqqqh",     { PROCESS_ID::qqqqh    , EVENT_CATEGORY_TRUE::qqqqH, 4, 1, 8, 9, 10, 11, 12 }},
 
 	// Processes without a Higgs boson
 	// Two fermion processes
-	{ "2f_z_l",        { PROCESS_ID::f2_z_l       , 2, 0, 6, 7 }},
-	{ "2f_z_h",        { PROCESS_ID::f2_z_h       , 2, 0, 6, 7 }},
-	{ "2f_z_nung",     { PROCESS_ID::f2_z_nung    , 2, 0, 6, 7 }},
-	{ "2f_z_bhabhag",  { PROCESS_ID::f2_z_bhabhag , 2, 0, 6, 7 }},
-	{ "2f_z_bhabhagg", { PROCESS_ID::f2_z_bhabhagg, 2, 0, 6, 7 }},
+	{ "2f_z_l",        { PROCESS_ID::f2_z_l       , EVENT_CATEGORY_TRUE::ll, 2, 0, 6, 7 }},
+	{ "2f_z_h",        { PROCESS_ID::f2_z_h       , EVENT_CATEGORY_TRUE::qq, 2, 0, 6, 7 }},
+	{ "2f_z_nung",     { PROCESS_ID::f2_z_nung    , EVENT_CATEGORY_TRUE::vv, 2, 0, 6, 7 }},
+	{ "2f_z_bhabhag",  { PROCESS_ID::f2_z_bhabhag , EVENT_CATEGORY_TRUE::ll, 2, 0, 6, 7 }},
+	{ "2f_z_bhabhagg", { PROCESS_ID::f2_z_bhabhagg, EVENT_CATEGORY_TRUE::ll, 2, 0, 6, 7 }},
     
 	// Four fermion final states
-	{ "4f_zz_l",      { PROCESS_ID::f4_zz_l   , 4, 0, 6, 7, 8, 9 }},
-	{ "4f_zz_h",      { PROCESS_ID::f4_zz_h   , 4, 0, 6, 7, 8, 9 }},
-	{ "4f_zz_sl",     { PROCESS_ID::f4_zz_sl  , 4, 0, 6, 7, 8, 9 }},
-	{ "4f_sze_l",     { PROCESS_ID::f4_sze_l  , 4, 0, 6, 7, 8, 9 }}, // ?
-	{ "4f_sze_sl",    { PROCESS_ID::f4_sze_sl , 4, 0, 6, 7, 8, 9 }}, // ?
-	{ "4f_sznu_l",    { PROCESS_ID::f4_sznu_l , 4, 0, 6, 7, 8, 9 }}, // ?
-	{ "4f_sznu_sl",   { PROCESS_ID::f4_sznu_sl, 4, 0, 6, 7, 8, 9 }}, // ? ONLY with vvqq?
+	{ "4f_zz_l",      { PROCESS_ID::f4_zz_l   , EVENT_CATEGORY_TRUE::llll, 4, 0, 6, 7, 8, 9 }},
+	{ "4f_zz_h",      { PROCESS_ID::f4_zz_h   , EVENT_CATEGORY_TRUE::qqqq, 4, 0, 6, 7, 8, 9 }},
+	{ "4f_zz_sl",     { PROCESS_ID::f4_zz_sl  , EVENT_CATEGORY_TRUE::llqq, 4, 0, 6, 7, 8, 9 }},
+	{ "4f_sze_l",     { PROCESS_ID::f4_sze_l  , EVENT_CATEGORY_TRUE::llll, 4, 0, 6, 7, 8, 9 }}, // ?
+	{ "4f_sze_sl",    { PROCESS_ID::f4_sze_sl , EVENT_CATEGORY_TRUE::llqq, 4, 0, 6, 7, 8, 9 }}, // ?
+	{ "4f_sznu_l",    { PROCESS_ID::f4_sznu_l , EVENT_CATEGORY_TRUE::llvv, 4, 0, 6, 7, 8, 9 }}, // ?
+	{ "4f_sznu_sl",   { PROCESS_ID::f4_sznu_sl, EVENT_CATEGORY_TRUE::vvqq, 4, 0, 6, 7, 8, 9 }}, // ? ONLY with vvqq?
 
-	{ "4f_ww_l",      { 3183, 4, 0, 6, 7, 8, 9 }},
-	{ "4f_ww_h",      { 3582, 4, 0, 6, 7, 8, 9 }},
-	{ "4f_ww_sl",     { 3193, 4, 0, 6, 7, 8, 9 }},
-	{ "4f_sw_l",      { 3184, 4, 0, 6, 7, 8, 9 }}, // ?
-	{ "4f_sw_sl",     { 3194, 4, 0, 6, 7, 8, 9 }}, // ?
+	{ "4f_ww_l",      { PROCESS_ID::f4_ww_l , EVENT_CATEGORY_TRUE::llll, 4, 0, 6, 7, 8, 9 }},
+	{ "4f_ww_h",      { PROCESS_ID::f4_ww_h , EVENT_CATEGORY_TRUE::qqqq, 4, 0, 6, 7, 8, 9 }},
+	{ "4f_ww_sl",     { PROCESS_ID::f4_ww_sl, EVENT_CATEGORY_TRUE::llqq, 4, 0, 6, 7, 8, 9 }},
+	{ "4f_sw_l",      { PROCESS_ID::f4_sw_l , EVENT_CATEGORY_TRUE::llll, 4, 0, 6, 7, 8, 9 }}, // ?
+	{ "4f_sw_sl",     { PROCESS_ID::f4_sw_sl, EVENT_CATEGORY_TRUE::llqq, 4, 0, 6, 7, 8, 9 }}, // ?
 
-	{ "4f_zzorww_l",  { 3185, 4, 0, 6, 7, 8, 9 }}, // ?
-	{ "4f_zzorww_h",  { 3583, 4, 0, 6, 7, 8, 9 }}, // ?
-	{ "4f_szeorsw_l", { 3202, 4, 0, 6, 7, 8, 9 }}, // ?
+	{ "4f_zzorww_l",  { PROCESS_ID::f4_zzorww_l , EVENT_CATEGORY_TRUE::llll, 4, 0, 6, 7, 8, 9 }}, // ?
+	{ "4f_zzorww_h",  { PROCESS_ID::f4_zzorww_h , EVENT_CATEGORY_TRUE::qqqq, 4, 0, 6, 7, 8, 9 }}, // ?
+	{ "4f_szeorsw_l", { PROCESS_ID::f4_szeorsw_l, EVENT_CATEGORY_TRUE::llll, 4, 0, 6, 7, 8, 9 }}, // ?
 
 	// Five fermion final states
 	// { "ea_lvvvv",     {  }},
