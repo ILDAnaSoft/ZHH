@@ -35,7 +35,8 @@ FinalStateRecorder::FinalStateRecorder() :
 
   Processor("FinalStateRecorder"),
   m_nRun(0),
-  m_nEvt(0)
+  m_nEvt(0),
+  m_nEvtSum(0)
 
 {
 
@@ -66,10 +67,6 @@ void FinalStateRecorder::init()
 	streamlog_out(DEBUG) << "   init called  " << std::endl;
 	this->Clear();
 
-	m_nRun = 0;
-	m_nEvt = 0;
-	m_nEvtSum = 0;
-
 	m_pTFile = new TFile(m_outputRootFile.c_str(),"recreate");
 	m_pTTree = new TTree("eventTree", "eventTree");
 	m_pTTree->SetDirectory(m_pTFile);
@@ -80,7 +77,6 @@ void FinalStateRecorder::init()
 	m_pTTree->Branch("error_code", &m_errorCode);
 	m_pTTree->Branch("final_states", &m_final_states);
 	m_pTTree->Branch("final_states_h_decay", &m_final_states_h_decay);
-	m_pTTree->Branch("final_state_string", &m_final_state_string);
 	m_pTTree->Branch("final_state_counts", &m_final_state_counts);
 
 	m_pTTree->Branch("process", &m_process);
@@ -100,15 +96,15 @@ void FinalStateRecorder::Clear()
 	m_final_states.clear();
 	m_final_states_h_decay.clear();
 
-	m_final_state_string = "";
 	for (auto const& [key, value] : m_final_state_counts)
 		m_final_state_counts[key] = 0;
 
-	m_event_category = EVENT_CATEGORY_TRUE::OTHER;
-	m_event_category_zhh = EVENT_CATEGORY_ZHH::OTHER;
 	m_process = 0;
 	m_n_fermion = 0;
 	m_n_higgs = 0;
+
+	m_event_category = EVENT_CATEGORY_TRUE::OTHER;
+	m_event_category_zhh = EVENT_CATEGORY_ZHH::OTHER;
 }
 void FinalStateRecorder::processRunHeader( LCRunHeader*  /*run*/) { 
 	m_nRun++ ;

@@ -19,63 +19,135 @@ using namespace lcio ;
 using namespace marlin ;
 using jsonf = nlohmann::json;
 
-enum ERROR_CODES: unsigned int {
-	UNINITIALIZED = 9999,
-	OK = 0,
-	COLLECTION_NOT_FOUND = 1,
-	PROCESS_NOT_FOUND = 2
+struct ERROR_CODES {
+	enum Values: int {
+		UNINITIALIZED = 9999,
+		OK = 0,
+		COLLECTION_NOT_FOUND = 1,
+		PROCESS_NOT_FOUND = 2
+	};
 };
 
 // If the final state is a ZHH (with H -> bbar), the channel is given by the decay channel of the Z boson (else OTHER)
 // NONE is for initialization only and should not occur in practice
-enum EVENT_CATEGORY_ZHH: unsigned int {
-	OTHER = 0,
-	LEPTONIC = 11,
-	NEUTRINO = 21,
-	HADRONIC = 31
+struct EVENT_CATEGORY_ZHH {
+	enum Values: int {
+		OTHER = 0,
+		LEPTONIC = 11,
+		NEUTRINO = 21,
+		HADRONIC = 31
+	};
 };
 
 // Map processes to integers
-enum PROCESS_ID: unsigned int{
-	e1e1hh = 1111,
-	e2e2hh = 1112,
-	e3e3hh = 1113,
+struct PROCESS_ID {
+	enum Values: int{
+		e1e1hh = 1111,
+		e2e2hh = 1112,
+		e3e3hh = 1113,
 
-	n1n1hh = 1311,
-	n23n23hh = 1312,
-	qqhh = 1511,
+		n1n1hh = 1311,
+		n23n23hh = 1312,
+		qqhh = 1511,
 
-	e1e1qqh = 2161,
-	e2e2qqh = 2162,
-	e3e3qqh = 2163,
-	n1n1qqh = 2341,
-	n23n23qqh = 2342,
-	qqqqh = 2520,
+		e1e1qqh = 2161,
+		e2e2qqh = 2162,
+		e3e3qqh = 2163,
+		n1n1qqh = 2341,
+		n23n23qqh = 2342,
+		qqqqh = 2520,
 
-	f2_z_l = 3170,
-	f2_z_h = 3570,
-	f2_z_nung = 3350,
-	f2_z_bhabhag = 3171,
-	f2_z_bhabhagg = 3172,
+		f2_z_l = 3170,
+		f2_z_h = 3570,
+		f2_z_nung = 3350,
+		f2_z_bhabhag = 3171,
+		f2_z_bhabhagg = 3172,
 
-	f4_zz_l = 3181,
-	f4_zz_h = 3581,
-	f4_zz_sl = 3191,
-	f4_sze_l = 3182,
-	f4_sze_sl = 3192,
-	f4_sznu_l = 3201,
-	f4_sznu_sl = 3360,
+		f4_zz_l = 3181,
+		f4_zz_h = 3581,
+		f4_zz_sl = 3191,
+		f4_sze_l = 3182,
+		f4_sze_sl = 3192,
+		f4_sznu_l = 3201,
+		f4_sznu_sl = 3360,
 
-	f4_ww_l = 3183,
-	f4_ww_h = 3582,
-	f4_ww_sl = 3193,
-	f4_sw_l = 3184,
-	f4_sw_sl = 3194,
+		f4_ww_l = 3183,
+		f4_ww_h = 3582,
+		f4_ww_sl = 3193,
+		f4_sw_l = 3184,
+		f4_sw_sl = 3194,
 
-	f4_zzorww_l = 3185,
-	f4_zzorww_h = 3583,
-	f4_szeorsw_l = 3202,
+		f4_zzorww_l = 3185,
+		f4_zzorww_h = 3583,
+		f4_szeorsw_l = 3202
+	};
 };
+
+int PROCESS_INVALID = -999;
+
+// Event categorization
+struct EVENT_CATEGORY_TRUE {
+	enum Values: int {
+		OTHER = 0,
+		
+		// LEPTONIC
+		OTHER_LL = 10,
+		llHH = 11, // llbbbb (ZHH signal)
+
+		eebb = 12,
+		μμbb = 13,
+		𝜏𝜏bb = 14,
+		llbbbb = 15,
+		llqqH = 16,
+		ll = 17,
+		llll = 18,
+		llqq = 19,
+		llvv = 20,
+
+		// NEUTRINO
+		OTHER_VV = 30,
+		vvHH = 31, // vvbbbb (ZHH signal)
+
+		vvbb = 32,
+		vvbbbb = 33,
+		vvqqH = 34,
+		vv = 35,
+		vvqq = 36,
+
+		// HADRONIC
+		OTHER_QQ = 50,
+		qqHH = 51, // qqbbbb (ZHH signal)
+
+		qqqqH = 52,
+		qqbbbb = 53,
+		bbbb = 54,
+		ttZ = 55,
+		ttbb = 56,
+		qq = 57,
+		qqqq = 58,
+		
+		// ttbar -> lvbbqq [t->Wb, W->lv/qq, b->bb]
+		// so far not accounted: ttbar -> llvvbb (two leptonically decaying W bosons)
+		// reason: https://tikz.net/sm_decay_piechart/
+		// W -> qqbar 67%; W -> lv 33%
+		// => 2xW -> qqbar 67% * 67% = 44.89% (two hadronic decays)
+		// => 2xW -> lv 33% * 33% = 10.89% (two leptonic decays)
+		// rest: 44.22% (one hadronic, one leptonic decay)
+		OTHER_TTBAR = 70,
+		evbbqq = 71,
+		μvbbqq = 72,
+		𝜏vbbqq = 73,
+
+		// tt/WWZ -> bbqqqq
+		// for tt: tt -> bbqqqq : 2x [t->Wb; W->qq]
+		// for WWZ: WWZ -> bbqqqq : 2x [W->qq; Z->bb]
+		OTHER_FULL_HADRONIC = 80,
+		bbcssc = 81,
+		bbuddu = 82,
+		bbcsdu = 83
+	};
+};
+
 
 std::map<std::string, std::vector<int>> const ProcessMap {
 	// 1st number: process ID
@@ -141,69 +213,6 @@ std::map<std::string, std::vector<int>> const ProcessMap {
     { "z_h0", { 3371, 2, 0, 9, 10 }} // z(8) f f | processName: z_h0 
 };
 
-int PROCESS_INVALID = -999;
-
-// Event categorization
-enum EVENT_CATEGORY_TRUE: unsigned int {
-	OTHER = 0,
-	
-	// LEPTONIC
-	OTHER_LL = 10,
-	llHH = 11, // llbbbb (ZHH signal)
-
-	eebb = 12,
-	μμbb = 13,
-	𝜏𝜏bb = 14,
-	llbbbb = 15,
-	llqqH = 16,
-	ll = 17,
-	llll = 18,
-	llqq = 19,
-	llvv = 20,
-
-	// NEUTRINO
-	OTHER_VV = 30,
-	vvHH = 31, // vvbbbb (ZHH signal)
-
-	vvbb = 32,
-	vvbbbb = 33,
-	vvqqH = 34,
-	vv = 35,
-	vvqq = 36,
-
-	// HADRONIC
-	OTHER_QQ = 50,
-	qqHH = 51, // qqbbbb (ZHH signal)
-
-	qqqqH = 52,
-	qqbbbb = 53,
-	bbbb = 54,
-	ttZ = 55,
-	ttbb = 56,
-	qq = 57,
-	qqqq = 58,
-	
-	// ttbar -> lvbbqq [t->Wb, W->lv/qq, b->bb]
-	// so far not accounted: ttbar -> llvvbb (two leptonically decaying W bosons)
-	// reason: https://tikz.net/sm_decay_piechart/
-	// W -> qqbar 67%; W -> lv 33%
-	// => 2xW -> qqbar 67% * 67% = 44.89% (two hadronic decays)
-	// => 2xW -> lv 33% * 33% = 10.89% (two leptonic decays)
-	// rest: 44.22% (one hadronic, one leptonic decay)
-	OTHER_TTBAR = 70,
-	evbbqq = 71,
-	μvbbqq = 72,
-	𝜏vbbqq = 73,
-
-	// tt/WWZ -> bbqqqq
-	// for tt: tt -> bbqqqq : 2x [t->Wb; W->qq]
-	// for WWZ: WWZ -> bbqqqq : 2x [W->qq; Z->bb]
-	OTHER_FULL_HADRONIC = 80,
-	bbcssc = 81,
-	bbuddu = 82,
-	bbcsdu = 83	
-};
-
 // Must match ordering in m_final_state_counts of FinalStateRecorder
 std::vector<unsigned int> PDG_NUMBERING {
 	1, // d
@@ -257,7 +266,7 @@ class FinalStateRecorder : public Processor
 
 		int m_nRun;
 		int m_nEvt;
-		int m_nEvtSum;
+		int m_nEvtSum{};
 
 		int m_errorCode = ERROR_CODES::UNINITIALIZED;
 		std::vector<int> m_final_states{};
@@ -280,8 +289,7 @@ class FinalStateRecorder : public Processor
 			{ "W", 0 },
 			{ "h", 0 }
 		};
-		std::string m_final_state_string{};
-		
+
 		int m_process{};
 		int m_event_category{};
 		int m_event_category_zhh{};
