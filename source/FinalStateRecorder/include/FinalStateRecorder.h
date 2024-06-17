@@ -24,7 +24,8 @@ struct ERROR_CODES {
 		UNINITIALIZED = 9999,
 		OK = 0,
 		COLLECTION_NOT_FOUND = 1,
-		PROCESS_NOT_FOUND = 2
+		PROCESS_NOT_FOUND = 2,
+		UNKNOWN_ERROR = 3,
 	};
 };
 
@@ -210,27 +211,7 @@ std::map<std::string, std::vector<int>> const ProcessMap {
 	// { "ea_lvvvv",     {  }},
 
     // 2f_Z_hadronic (only in new production sample; however with some generator level cuts)
-    { "z_h0", { 3371, 2, 0, 9, 10 }} // z(8) f f | processName: z_h0 
-};
-
-// Must match ordering in m_final_state_counts of FinalStateRecorder
-std::vector<unsigned int> PDG_NUMBERING {
-	1, // d
-	2, // u
-	3, // s
-	4, // c
-	5, // b
-	6, // t
-	11, // e
-	12, // ve
-	13, // μ
-	14, // vμ
-	15, // τ
-	16, // vτ
-	22, // γ
-	23, // Z
-	24, // W
-	25 // h
+    { "z_h0", { PROCESS_ID::f2_z_h, EVENT_CATEGORY_TRUE::qq, 2, 0, 9, 10 }} // z(8) f f | processName: z_h0 
 };
 
 class FinalStateRecorder : public Processor
@@ -266,28 +247,28 @@ class FinalStateRecorder : public Processor
 
 		int m_nRun;
 		int m_nEvt;
-		int m_nEvtSum{};
-
-		int m_errorCode = ERROR_CODES::UNINITIALIZED;
+		int m_nEvtSum;
+		int m_errorCode;
+		
 		std::vector<int> m_final_states{};
 		std::vector<int> m_final_states_h_decay{};
-		std::map<std::string, int> m_final_state_counts { // this must match the order in PDG_NUMBERING
-			{ "d", 0 },
-			{ "u", 0 },
-			{ "s", 0 },
-			{ "c", 0 },
-			{ "b", 0 },
-			{ "t", 0 },
-			{ "e", 0 },
-			{ "ve", 0 },
-			{ "μ", 0 },
-			{ "vμ", 0 },
-			{ "τ", 0 },
-			{ "vτ", 0 },
-			{ "γ", 0 },
-			{ "Z", 0 },
-			{ "W", 0 },
-			{ "h", 0 }
+		std::map<int, int> m_final_state_counts {
+			{ 1, 0 }, // d
+			{ 2, 0 }, // u
+			{ 3, 0 }, // s
+			{ 4, 0 }, // c
+			{ 5, 0 }, // b
+			{ 6, 0 }, // t
+			{ 11, 0 }, // e
+			{ 12, 0 }, // ve
+			{ 13, 0 }, // µ
+			{ 14, 0 }, // vµ
+			{ 15, 0 }, // tau
+			{ 16, 0 }, // vtau
+			{ 22, 0 }, // γ
+			{ 23, 0 }, // Z
+			{ 24, 0 }, // W
+			{ 25, 0 } // h
 		};
 
 		int m_process{};

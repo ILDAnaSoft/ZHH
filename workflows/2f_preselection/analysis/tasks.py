@@ -35,7 +35,9 @@ class Preselection(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
 
     def output(self):
         return [
-            self.local_target(f'{self.branch}_PreSelection.root'),
+            self.local_target(f'{self.branch}_PreSelection_llHH.root'),
+            self.local_target(f'{self.branch}_PreSelection_vvHH.root'),
+            self.local_target(f'{self.branch}_PreSelection_qqHH.root'),
             self.local_target(f'{self.branch}_FinalStates.root'),
             self.local_target(f'{self.branch}_FinalStateMeta.json')
         ]
@@ -45,9 +47,11 @@ class Preselection(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         
         cmd =  f'source $REPO_ROOT/setup.sh'
         cmd += f' && Marlin $REPO_ROOT/scripts/newZHHllbbbb.xml {"" if (self.debug == True) else "--global.MaxRecordNumber=0 "}--global.LCIOInputFiles={self.branch_map[self.branch]} --constant.OutputDirectory=.' # --constant.OutputBaseName={self.branch}_zhh'
-        cmd += f' && mv zhh_PreSelection.root {temp_files[0].path}'
-        cmd += f' && mv zhh_FinalStates.root {temp_files[1].path}'
-        cmd += f' && mv zhh_FinalStateMeta.json {temp_files[1].path}'
+        cmd += f' && mv zhh_PreSelection_llHH.root {temp_files[0].path}'
+        cmd += f' && mv zhh_PreSelection_vvHH.root {temp_files[1].path}'
+        cmd += f' && mv zhh_PreSelection_qqHH.root {temp_files[2].path}'
+        cmd += f' && mv zhh_FinalStates.root {temp_files[3].path}'
+        cmd += f' && mv zhh_FinalStateMeta.json {temp_files[4].path}'
 
         return cmd
 

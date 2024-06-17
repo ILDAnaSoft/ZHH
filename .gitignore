@@ -18,3 +18,4 @@ test*.ipynb
 view*.ipynb
 Ranlux.coonf
 *.pyc
+*.json

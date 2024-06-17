@@ -36,7 +36,8 @@ FinalStateRecorder::FinalStateRecorder() :
   Processor("FinalStateRecorder"),
   m_nRun(0),
   m_nEvt(0),
-  m_nEvtSum(0)
+  m_nEvtSum(0),
+  m_errorCode(ERROR_CODES::UNINITIALIZED)
 
 {
 
@@ -92,7 +93,7 @@ void FinalStateRecorder::Clear()
 {
 	streamlog_out(DEBUG) << "   Clear called  " << std::endl;
 
-	m_errorCode = ERROR_CODES::OK;
+	m_errorCode = ERROR_CODES::UNKNOWN_ERROR;
 	m_final_states.clear();
 	m_final_states_h_decay.clear();
 
@@ -136,9 +137,9 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 
 		if (fs_metadata[0] != PROCESS_INVALID) {
 			m_process = fs_metadata[0];
-			m_n_fermion = fs_metadata[1];
-			m_n_higgs = fs_metadata[2];
-			m_event_category = fs_metadata[3];
+			m_event_category = fs_metadata[1];
+			m_n_fermion = fs_metadata[2];
+			m_n_higgs = fs_metadata[3];
 
 			const EVENT::MCParticle *mcParticle;
 
@@ -146,6 +147,7 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 			for (size_t i = 4; i < fs_metadata.size() - m_n_higgs; i++) {
 				mcParticle = dynamic_cast<EVENT::MCParticle*>(inputMCParticleCollection->getElementAt(fs_metadata[i]));
 				m_final_states.push_back(abs(mcParticle->getPDG()));
+				m_final_state_counts[abs(mcParticle->getPDG())]++;
 			}
 
 			// Final state data for Higgs children
@@ -158,24 +160,6 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 
 				m_final_states.push_back(25);
 			}
-
-			// Set specific event category
-			// Collect counts of final state particles
-			size_t n_it = 0;
-			for (auto const& [key, value] : m_final_state_counts) {
-				m_final_state_counts[key] = count(m_final_states.begin(), m_final_states.end(), PDG_NUMBERING[n_it]);
-				n_it++;
-			}
-
-			// Classify first leptonic, then neutrino, then hadronic channels
-			// 1 Leptonic states
-			if ( m_n_fermion >= 4 ) {
-				if ( m_n_higgs == 1 ) {
-					if ( m_final_state_counts["e"] == 2 || m_final_state_counts["μ"] == 2 || m_final_state_counts["τ"] == 2 ) {
-						m_event_category = EVENT_CATEGORY_TRUE::μμbb;
-					}
-				}
-			}
 			
 			// Set ZHH event category
 			if (m_process >= PROCESS_ID::e1e1hh && m_process <= PROCESS_ID::e2e2hh) {
@@ -186,6 +170,7 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 				m_event_category_zhh = EVENT_CATEGORY_ZHH::HADRONIC;
 			}
 			
+			m_errorCode = ERROR_CODES::OK;
 		} else {
 			m_errorCode = ERROR_CODES::PROCESS_NOT_FOUND;
 		}
