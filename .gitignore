@@ -19,3 +19,4 @@ view*.ipynb
 Ranlux.coonf
 *.pyc
 *.json
+*.npy

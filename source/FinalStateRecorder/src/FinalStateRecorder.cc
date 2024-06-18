@@ -141,7 +141,7 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 			m_n_fermion = fs_metadata[2];
 			m_n_higgs = fs_metadata[3];
 
-			const EVENT::MCParticle *mcParticle;
+			EVENT::MCParticle *mcParticle;
 
 			// Final state data for other particles
 			for (size_t i = 4; i < fs_metadata.size() - m_n_higgs; i++) {

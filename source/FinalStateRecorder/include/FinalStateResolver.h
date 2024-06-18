@@ -20,16 +20,15 @@ struct RESOLVER_ERRORS {
 class FinalStateResolver {
     protected:
         int m_process;
-        std::vector<int> m_allowed_values;
+        int m_event_category;
 
         /* data */
     public:
-        FinalStateResolver(int process, std::vector<int> allowed_values);
+        FinalStateResolver(int process_id, int event_category);
         ~FinalStateResolver();
         
-        virtual std::vector<int> m_resolve(EVENT::LCEvent *pLCEvent);
-        
-        std::vector<int> resolveEvent(EVENT::LCEvent *pLCEvent);
+        virtual std::vector<int> resolve_event(LCCollection *mcp_collection);
+        int pdg_of_particle(EVENT::LCObject* particle);
 };
 
 #endif
