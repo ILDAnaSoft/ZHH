@@ -5,6 +5,7 @@
 #include "IMPL/LCCollectionVec.h"
 #include "lcio.h"
 #include "vector"
+#include "string"
 
 using namespace lcio ;
 using namespace marlin ;
@@ -19,16 +20,22 @@ struct RESOLVER_ERRORS {
 
 class FinalStateResolver {
     protected:
-        int m_process;
+        std::string m_process_name;
+        int m_process_id;
         int m_event_category;
 
-        /* data */
+        // Helper functions
+        int pdg_of_particle(EVENT::LCObject* particle);
+        std::vector<int> pdgs_of_nth_hadronic_decay(LCCollection *mcp_collection, int n);
+        std::vector<int> pdgs_of_nth_leptonic_decay(LCCollection *mcp_collection, int n);
+        std::vector<int> pdgs_of_nth_semilept_decay(LCCollection *mcp_collection, int n);
+
     public:
-        FinalStateResolver(int process_id, int event_category);
+        FinalStateResolver(std::string process_name, int process_id, int event_category);
         ~FinalStateResolver();
         
         virtual std::vector<int> resolve_event(LCCollection *mcp_collection);
-        int pdg_of_particle(EVENT::LCObject* particle);
+
 };
 
 #endif
