@@ -19,6 +19,7 @@ struct EVENT_CATEGORY_ZHH {
 // Map processes to integers
 struct PROCESS_ID {
 	enum Values: int{
+		// ffhh
 		e1e1hh = 1111,
 		e2e2hh = 1112,
 		e3e3hh = 1113,
@@ -27,6 +28,7 @@ struct PROCESS_ID {
 		n23n23hh = 1312,
 		qqhh = 1511,
 
+		// ffffh
 		e1e1qqh = 2161,
 		e2e2qqh = 2162,
 		e3e3qqh = 2163,
@@ -34,12 +36,14 @@ struct PROCESS_ID {
 		n23n23qqh = 2342,
 		qqqqh = 2520,
 
+		// ff
 		f2_z_l = 3170,
 		f2_z_h = 3570,
 		f2_z_nung = 3350,
 		f2_z_bhabhag = 3171,
 		f2_z_bhabhagg = 3172,
 
+		// ffff
 		f4_zz_l = 3181,
 		f4_zz_h = 3581,
 		f4_zz_sl = 3191,
@@ -57,6 +61,10 @@ struct PROCESS_ID {
 		f4_zzorww_l = 3185,
 		f4_zzorww_h = 3583,
 		f4_szeorsw_l = 3202
+
+		// fffff
+
+		// ffffff
 	};
 };
 
@@ -125,6 +133,9 @@ struct EVENT_CATEGORY_TRUE {
 	};
 };
 
+bool vec_contains(std::vector<int> vec, int num) {
+	return (std::find(vec.begin(), vec.end(), num) != vec.end());
+};
 
 std::map<std::string, std::vector<int>> const ProcessMap {
 	// 1st number: process ID

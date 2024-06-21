@@ -20,6 +20,21 @@ int FinalStateResolver::pdg_of_particle(EVENT::LCObject* particle) {
     return (dynamic_cast<EVENT::MCParticle*>(particle))->getPDG();
 };
 
+std::vector<int> FinalStateResolver::pdgs_of_daughter_particles(EVENT::LCObject* particle) {
+    return pdgs_of_daughter_particles((EVENT::MCParticle*)particle);
+};
+
+std::vector<int> FinalStateResolver::pdgs_of_daughter_particles(EVENT::MCParticle* particle) {
+    std::vector<int> res;
+    auto daughters = particle->getDaughters();
+
+    for (int i = 0; i < daughters.size(); i++)
+        res.push_back(abs(daughters[i]->getPDG()));
+
+    return res;
+};
+
+
 std::vector<int> FinalStateResolver::pdgs_of_nth_hadronic_decay(LCCollection *mcp_collection, int n) {
     std::vector<int> res;
 

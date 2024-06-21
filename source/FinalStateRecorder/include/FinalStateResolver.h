@@ -14,7 +14,9 @@ struct RESOLVER_ERRORS {
     enum Values: unsigned int {
         OK = 0,
         UNKNOWN_ERROR = 1,
-        UNALLOWED_VALUES = 2
+        UNALLOWED_VALUES = 2,
+        UNEXPECTED_CHILDREN = 20,
+        HIGGS_NOT_FOUND = 30,
     };
 };
 
@@ -23,9 +25,13 @@ class FinalStateResolver {
         std::string m_process_name;
         int m_process_id;
         int m_event_category;
+        void assert(bool check) { if (!check) { throw RESOLVER_ERRORS::UNKNOWN_ERROR; }; };
+        void assert(bool check, int err) { if (!check) { throw err; }; };
 
         // Helper functions
         int pdg_of_particle(EVENT::LCObject* particle);
+        std::vector<int> pdgs_of_daughter_particles(EVENT::LCObject* particle);
+        std::vector<int> pdgs_of_daughter_particles(EVENT::MCParticle* particle);
         std::vector<int> pdgs_of_nth_hadronic_decay(LCCollection *mcp_collection, int n);
         std::vector<int> pdgs_of_nth_leptonic_decay(LCCollection *mcp_collection, int n);
         std::vector<int> pdgs_of_nth_semilept_decay(LCCollection *mcp_collection, int n);
@@ -33,6 +39,10 @@ class FinalStateResolver {
     public:
         FinalStateResolver(std::string process_name, int process_id, int event_category);
         ~FinalStateResolver();
+
+        std::string get_process_name() { return m_process_name; };
+        int get_process_id() { return m_process_id; };
+        int get_event_category() { return m_event_category; };
         
         virtual std::vector<int> resolve_event(LCCollection *mcp_collection);
 
