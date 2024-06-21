@@ -1,3 +1,7 @@
+#ifndef FinalStates_ffffhh_h
+#define FinalStates_ffffhh_h 1
+
+
 #include "FinalStateResolver.h"
 #include "IMPL/LCCollectionVec.h"
 #include <EVENT/MCParticle.h>
@@ -64,5 +68,4 @@ class n1n1qqh : public ffffh {
 class n23n23qqh : public ffffh {
     public: n23n23qqh(): ffffh( "n23n23qqh", PROCESS_ID::n23n23qqh, EVENT_CATEGORY_TRUE::vvqqH, vector{14,16,18,1,2,3,4,5} ) {}; };
 
-
-
+#endif
