@@ -3,12 +3,13 @@
 
 #include "marlin/Processor.h"
 #include "IMPL/LCCollectionVec.h"
+#include "EVENT/MCParticle.h"
 #include "lcio.h"
 #include "vector"
 #include "string"
 
-using namespace lcio ;
-using namespace marlin ;
+using namespace lcio;
+using namespace marlin;
 
 struct RESOLVER_ERRORS {
     enum Values: unsigned int {
@@ -25,20 +26,21 @@ class FinalStateResolver {
         std::string m_process_name;
         int m_process_id;
         int m_event_category;
-        void assert(bool check) { if (!check) { throw RESOLVER_ERRORS::UNKNOWN_ERROR; }; };
-        void assert(bool check, int err) { if (!check) { throw err; }; };
+        void assert_true(bool check) { if (!check) { throw RESOLVER_ERRORS::UNKNOWN_ERROR; }; };
+        void assert_true(bool check, int err) { if (!check) { throw err; }; };
 
         // Helper functions
         int pdg_of_particle(EVENT::LCObject* particle);
         std::vector<int> pdgs_of_daughter_particles(EVENT::LCObject* particle);
         std::vector<int> pdgs_of_daughter_particles(EVENT::MCParticle* particle);
+
         std::vector<int> pdgs_of_nth_hadronic_decay(LCCollection *mcp_collection, int n);
         std::vector<int> pdgs_of_nth_leptonic_decay(LCCollection *mcp_collection, int n);
         std::vector<int> pdgs_of_nth_semilept_decay(LCCollection *mcp_collection, int n);
 
     public:
         FinalStateResolver(std::string process_name, int process_id, int event_category);
-        ~FinalStateResolver();
+        virtual ~FinalStateResolver() = default;
 
         std::string get_process_name() { return m_process_name; };
         int get_process_id() { return m_process_id; };

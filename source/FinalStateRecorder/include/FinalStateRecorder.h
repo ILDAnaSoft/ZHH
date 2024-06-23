@@ -34,8 +34,8 @@ struct ERROR_CODES {
 class FinalStateRecorder : public Processor
 {
 	private:
-		FinalStateResolver* m_resolver;
-		void register_resolver(FinalStateResolver *resolver) { m_resolver = resolver; m_resolvers[resolver->get_process_name()] = resolver;  };
+		void register_process(FinalStateResolver* resolver) { m_resolvers[resolver->get_process_name()] = resolver;  };
+		std::map<std::string, FinalStateResolver*> m_resolvers{};
 
 	public:
 
@@ -65,7 +65,6 @@ class FinalStateRecorder : public Processor
 		std::string m_mcParticleCollection{};
 		std::string m_outputJsonFile{};
 		std::string m_outputRootFile{};
-		std::map<std::string, FinalStateResolver*> m_resolvers{};
 
 		int m_nRun;
 		int m_nEvt;

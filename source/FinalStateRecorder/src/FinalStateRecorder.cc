@@ -1,4 +1,5 @@
 #include "FinalStateRecorder.h"
+#include "FinalStates.h"
 #include <iostream>
 #include <vector>
 #include <numeric>
@@ -85,6 +86,13 @@ void FinalStateRecorder::init()
 	m_pTTree->Branch("event_category_zhh", &m_event_category_zhh);
 	m_pTTree->Branch("n_fermion", &m_n_fermion);
 	m_pTTree->Branch("n_higgs", &m_n_higgs);
+
+	// Register final physics process / final state resolvers
+	this->register_process(new ll());
+	this->register_process(new qq());
+	this->register_process(new vv());
+	this->register_process(new ee1());
+	this->register_process(new ee2());
 
 	streamlog_out(DEBUG) << "   init finished  " << std::endl;
 }

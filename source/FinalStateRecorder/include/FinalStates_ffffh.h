@@ -9,7 +9,7 @@
 
 using namespace std;
 
-class ffffh: public FinalStateResolver {
+class ffffh: FinalStateResolver {
     protected:
         vector<int> m_z_decay_filter;
 
@@ -26,16 +26,20 @@ class ffffh: public FinalStateResolver {
             MCParticle* f3 = (MCParticle*)mcp_collection->getElementAt(10);
             MCParticle* f4 = (MCParticle*)mcp_collection->getElementAt(11);
 
-            assert(vec_contains(m_z_decay_filter, abs(f1->getPDG())) && vec_contains(m_z_decay_filter, abs(f2->getPDG())), RESOLVER_ERRORS::UNALLOWED_VALUES);
+            assert_true(
+                vec_contains(m_z_decay_filter, abs(f1->getPDG())) &&
+                vec_contains(m_z_decay_filter, abs(f2->getPDG())) &&
+                vec_contains(m_z_decay_filter, abs(f3->getPDG())) &&
+                vec_contains(m_z_decay_filter, abs(f4->getPDG())), RESOLVER_ERRORS::UNALLOWED_VALUES);
 
             // Get H-decayed fermions
             MCParticle* h1 = (MCParticle*)mcp_collection->getElementAt(12);
 
-            assert(h1->getPDG() == 25, RESOLVER_ERRORS::HIGGS_NOT_FOUND);
+            assert_true(h1->getPDG() == 25, RESOLVER_ERRORS::HIGGS_NOT_FOUND);
 
             vector<int> d1 = pdgs_of_daughter_particles(h1);
 
-            assert(d1.size() == 2, RESOLVER_ERRORS::UNEXPECTED_CHILDREN);            
+            assert_true(d1.size() == 2, RESOLVER_ERRORS::UNEXPECTED_CHILDREN);            
 
             return vector<int>{
                 f1->getPDG(),
