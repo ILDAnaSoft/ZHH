@@ -10,7 +10,7 @@ using namespace std;
 
 class ff: public FinalStateResolver {
     protected:
-        vector<int> m_final_state_filter;
+        vector<int> m_final_state_filter{};
 
     public:
         // Set process ID and event category
@@ -19,19 +19,19 @@ class ff: public FinalStateResolver {
         };
 
         vector<int> m_resolve(LCCollection *mcp_collection) {
-            // Get final state fermions
-            MCParticle* f1 = (MCParticle*)mcp_collection->getElementAt(8);
-            MCParticle* f2 = (MCParticle*)mcp_collection->getElementAt(9);
+    // Get final state fermions
+    MCParticle* f1 = (MCParticle*)mcp_collection->getElementAt(8);
+    MCParticle* f2 = (MCParticle*)mcp_collection->getElementAt(9);
 
-            assert_true(
-                vec_contains(m_final_state_filter, abs(f1->getPDG())) &&
-                vec_contains(m_final_state_filter, abs(f2->getPDG())), RESOLVER_ERRORS::UNALLOWED_VALUES);
+    assert_true(
+        vec_contains(m_final_state_filter, abs(f1->getPDG())) &&
+        vec_contains(m_final_state_filter, abs(f2->getPDG())), RESOLVER_ERRORS::UNALLOWED_VALUES);
 
-            return vector<int>{
-                f1->getPDG(),
-                f2->getPDG(),
-            };
-        };
+    return vector<int>{
+        f1->getPDG(),
+        f2->getPDG(),
+    };
+};
 
 };
 

@@ -1,9 +1,8 @@
 #include "FinalStateResolver.h"
 #include <EVENT/MCParticle.h>
-#include "common.h"
 
-using namespace marlin ;
-using namespace lcio ;
+using namespace marlin;
+using namespace lcio;
 
 FinalStateResolver::FinalStateResolver(
     std::string process_name,
@@ -14,7 +13,7 @@ FinalStateResolver::FinalStateResolver(
     m_process_id = process_id;
     m_event_category = event_category;
 };
-
+FinalStateResolver::~FinalStateResolver() {};
 
 int FinalStateResolver::pdg_of_particle(EVENT::LCObject* particle) {
     return (dynamic_cast<EVENT::MCParticle*>(particle))->getPDG();

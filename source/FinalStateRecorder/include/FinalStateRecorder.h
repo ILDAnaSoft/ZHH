@@ -11,13 +11,12 @@
 #include <vector>
 #include "nlohmann/json.hpp"
 #include "FinalStateResolver.h"
-#include "common.h"
 
 class TFile;
 class TTree;
 
-using namespace lcio ;
-using namespace marlin ;
+using namespace lcio;
+using namespace marlin;
 using jsonf = nlohmann::json;
 
 struct ERROR_CODES {

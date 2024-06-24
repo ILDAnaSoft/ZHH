@@ -40,13 +40,13 @@ class FinalStateResolver {
 
     public:
         FinalStateResolver(std::string process_name, int process_id, int event_category);
-        virtual ~FinalStateResolver() = default;
+        virtual ~FinalStateResolver();
 
         std::string get_process_name() { return m_process_name; };
         int get_process_id() { return m_process_id; };
         int get_event_category() { return m_event_category; };
         
-        virtual std::vector<int> resolve_event(LCCollection *mcp_collection);
+        virtual std::vector<int> m_resolve(LCCollection *mcp_collection) = 0;
 
 };
 
