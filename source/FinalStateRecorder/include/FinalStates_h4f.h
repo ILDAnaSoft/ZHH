@@ -1,6 +1,5 @@
-#ifndef FinalStates_ffffhh_h
-#define FinalStates_ffffhh_h 1
-
+#ifndef FinalStates_ffffh_h
+#define FinalStates_ffffh_h 1
 
 #include "FinalStateResolver.h"
 #include "IMPL/LCCollectionVec.h"
@@ -9,7 +8,7 @@
 
 using namespace std;
 
-class ffffh: FinalStateResolver {
+class ffffh: public FinalStateResolver {
     protected:
         vector<int> m_z_decay_filter;
 

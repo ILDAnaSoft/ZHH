@@ -87,12 +87,51 @@ void FinalStateRecorder::init()
 	m_pTTree->Branch("n_fermion", &m_n_fermion);
 	m_pTTree->Branch("n_higgs", &m_n_higgs);
 
-	// Register final physics process / final state resolvers
+	// Register physics processes / final state resolvers
+	// hh2f
+	this->register_process(new e1e1hh());
+	this->register_process(new e2e2hh());
+	this->register_process(new e3e3hh());
+	this->register_process(new qqhh());
+	this->register_process(new n1n1hh());
+	this->register_process(new n23n23hh());
+
+	// h2f
+	this->register_process(new e1e1qqh());
+	this->register_process(new e2e2qqh());
+	this->register_process(new e3e3qqh());
+	this->register_process(new qqqqh());
+	this->register_process(new n1n1qqh());
+	this->register_process(new n23n23qqh());
+
+	// 2f
 	this->register_process(new ll());
 	this->register_process(new qq());
 	this->register_process(new vv());
 	this->register_process(new ee1());
 	this->register_process(new ee2());
+
+	// 4f
+	this->register_process(new llll_zz());
+	this->register_process(new qqqq_zz());
+	this->register_process(new llqq_zz());
+	this->register_process(new llll_ww());
+	this->register_process(new qqqq_ww());
+	this->register_process(new llqq_ww());
+	this->register_process(new llll_zzorww());
+	this->register_process(new qqqq_zzorww());
+	this->register_process(new llll_sw());
+	this->register_process(new llqq_sw());
+	this->register_process(new llll_sze());
+	this->register_process(new llqq_sze());
+	this->register_process(new llvv_sznu());
+	this->register_process(new vvqq_sznu());
+	this->register_process(new llvv_szeorsw());
+
+	// 5f
+
+	// 6f
+	
 
 	streamlog_out(DEBUG) << "   init finished  " << std::endl;
 }
