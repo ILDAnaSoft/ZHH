@@ -14,7 +14,7 @@ class ffff: public FinalStateResolver {
 
     public:
         // Set process ID and event category
-        ffff( string process_name, int process_id, int event_category, vector<int> z_decay_filter ): FinalStateResolver( process_name, process_id, event_category ) {
+        ffff( string process_name, int process_id, int event_category, vector<int> z_decay_filter ): FinalStateResolver( process_name, process_id, event_category, 4, 0 ) {
             m_z_decay_filter = z_decay_filter;
         };
 

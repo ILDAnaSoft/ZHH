@@ -7,11 +7,15 @@ using namespace lcio;
 FinalStateResolver::FinalStateResolver(
     std::string process_name,
     int process_id,
-    int event_category
+    int event_category,
+    int n_fermions,
+    int n_higgs
 ){
     m_process_name = process_name;
     m_process_id = process_id;
     m_event_category = event_category;
+    m_n_fermions = n_fermions;
+    m_n_higgs = n_higgs;
 };
 FinalStateResolver::~FinalStateResolver() {};
 

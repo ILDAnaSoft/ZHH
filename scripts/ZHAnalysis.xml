@@ -24,7 +24,7 @@
   <global>
     <!--parameter name="LCIOInputFiles">/pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/250-SetA/4f_ZZ_hadronic/ILD_l5_o1_v02/v02-02/rv02-02.sv02-02.mILD_l5_o1_v02.E250-SetA.I500062.P4f_zz_h.eL.pR.n000.d_dstm_15122_0.slcio</parameter-->
     <parameter name="LCIOInputFiles">
-      /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/250-SetA/higgs/ILD_l5_o1_v02/v02-02/rv02-02.sv02-02.mILD_l5_o1_v02.E250-SetA.I402003.Pe2e2h.eL.pR.n000.d_dstm_15090_2.slcio
+      /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/250-SetA/higgs/ILD_l5_o1_v02/v02-02/rv02-02.sv02-02.mILD_l5_o1_v02.E250-SetA.I402001.Pe1e1h.eL.pR.n000.d_dstm_15089_0.slcio
     </parameter>
     <!-- limit the number of processed records (run+evt): -->
     <!--parameter name="MaxRecordNumber" value="0" /to process all events--> 

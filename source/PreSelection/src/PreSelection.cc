@@ -201,6 +201,7 @@ void PreSelection::init()
 	m_pTTree->Branch("dijetChi2min", &m_chi2min, "dijetChi2min/F");
 	m_pTTree->Branch("dijetMass", &m_dijetMass);
 	m_pTTree->Branch("dijetMassDiff", &m_dijetMassDiff);
+	m_pTTree->Branch("bTags", &m_bTagValues);
 	m_pTTree->Branch("dihiggsMass", &m_dihiggsMass, "dihiggsMass/F");
 	m_pTTree->Branch("nbjets", &m_nbjets, "nbjets/I");
 
@@ -272,6 +273,7 @@ void PreSelection::Clear()
 	m_dileptonMassDiff = -999.;
 	m_dijetMass.clear();
 	m_dijetMassDiff.clear();
+	m_bTagValues.clear();
 	m_dihiggsMass = -999;
 	m_nbjets = 0;
 	m_chi2min = 99999.;
@@ -369,9 +371,11 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
 				const ParticleIDImpl& FTImpl = dynamic_cast<const ParticleIDImpl&>(FTHan.getParticleID(jets[i],_FTAlgoID));
 				const FloatVec& FTPara = FTImpl.getParameters();
 				double bTagValue = FTPara[BTagID];
+				m_bTagValues.push_back(bTagValue);
 				//double cTagValue = FTPara[CTagID];
 				//double oTagValue = FTPara[OTagID];
-				if (bTagValue>m_minblikeliness) m_nbjets++;
+
+				if (bTagValue > m_minblikeliness) m_nbjets++;
 			}
 
 			vector<vector<int>> perms;

@@ -14,7 +14,7 @@ class ff: public FinalStateResolver {
 
     public:
         // Set process ID and event category
-        ff( string process_name, int process_id, int event_category, vector<int> final_state_filter ): FinalStateResolver( process_name, process_id, event_category ) {
+        ff( string process_name, int process_id, int event_category, vector<int> final_state_filter ): FinalStateResolver( process_name, process_id, event_category, 2, 0 ) {
             m_final_state_filter = final_state_filter;
         };
 

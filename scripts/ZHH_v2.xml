@@ -652,7 +652,7 @@
     <processor name="MyFinalStateRecorder" type="FinalStateRecorder">
         <!--MyFinalStateRecorder identified events that have passed the preselection-->
         <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">MCParticle</parameter>
-        <parameter name="MCParticleCollectionNew" type="string" lcioInType="MCParticle">MCParticlesSkimmed</parameter>
+        <parameter name="MCParticleCollectionAlt" type="string" lcioInType="MCParticle">MCParticlesSkimmed</parameter>
         <parameter name="outputRootFilename" type="string">${OutputDirectory}/${OutputBaseName}_FinalStates.root</parameter>
         <parameter name="outputJsonFilename" type="string">${OutputDirectory}/${OutputBaseName}_FinalStateMeta.json</parameter>
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->

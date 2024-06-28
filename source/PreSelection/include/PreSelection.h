@@ -95,8 +95,12 @@ class PreSelection : public Processor
 		float m_chi2min{};
 		
 		int m_isPassed{};
-		std::vector<float>  m_dijetMass{};
-		std::vector<float>  m_dijetMassDiff{};
+
+		// Event values for improving/investigating preselection efficiency
+		std::vector<float> m_dijetMass{};
+		std::vector<float> m_dijetMassDiff{};
+		std::vector<double> m_bTagValues{};
+		
 		float m_dihiggsMass{};
 		std::vector<int>  m_preselsPassedVec{};
 		std::string m_process{};
