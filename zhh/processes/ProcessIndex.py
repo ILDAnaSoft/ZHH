@@ -33,6 +33,8 @@ class ProcessIndex:
                  root_path:str,
                  reindex:bool=True):
         
+        print(f'asdfasdfasdf')
+        
         # Load existing index
         self.processes = pd.DataFrame(columns=self.columns_processes)
         self.results = pd.DataFrame(columns=self.columns_results)
@@ -53,6 +55,7 @@ class ProcessIndex:
         meta_files = glob(root_path + '/*.json')
         
         for file in meta_files:
+            print(file)
             process, result = read_meta_file(file)
             
             if not (process.process_id in self.processes['processId'].values):
