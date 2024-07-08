@@ -163,6 +163,8 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 		m_crossSection = pLCEvent->getParameters().getFloatVal("crossSection");
 		m_crossSection_err = pLCEvent->getParameters().getFloatVal("crossSectionError");
 		m_eventWeight = pLCEvent->getWeight();
+		m_process_id = pLCEvent->getParameters().getIntVal("processID");
+		m_process_name = pLCEvent->getParameters().getStringVal("processName");
 	}
 
 	this->clear();
@@ -254,6 +256,8 @@ void FinalStateRecorder::end()
 	m_jsonFile["crossSection"] = m_crossSection;
 	m_jsonFile["crossSectionError"] = m_crossSection_err;
 	m_jsonFile["eventWeight"] = m_eventWeight;
+	m_jsonFile["processId"] = m_process_id;
+	m_jsonFile["processName"] = m_process_name;
 
 	std::ofstream file(m_outputJsonFile);
 	file << m_jsonFile;

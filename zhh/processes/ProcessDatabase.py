@@ -1,5 +1,6 @@
 import sqlite3 as sqlite
 from glob import glob
+import json
 import os.path as osp
 import os
 
@@ -13,6 +14,23 @@ class ProcessDatabase():
         
         self.conn = sqlite.connect(db_path)
         self.cursor = self.conn.cursor()
+        
+    def fill(self):
+        if osp.isdir(self.root_path):
+            meta_files = glob(self.root_path + '/*.json')
+            
+            for file in meta_files:
+                try:
+                    with open(file, 'r') as f:
+                        meta = json.load(f)
+                        
+                        
+                    print(f'Processed {file}')
+                except:
+                    print(f'Error reading {file}')
+        else:
+            raise ValueError('root_path is not a valid directory.')
+        
 
     def __del__(self):
         self.conn.close()
