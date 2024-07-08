@@ -15,21 +15,6 @@ using namespace lcio ;
 using namespace marlin ;
 using jsonf = nlohmann::json;
 
-std::vector<int> find_process_meta(std::string process) {
-	std::vector<int> res;
-
-	if (ProcessMap.find(process) != ProcessMap.end()) {
-		res = ProcessMap.at(process);
-	} else {
-		res.push_back(PROCESS_INVALID);
-		res.push_back(PROCESS_INVALID);
-		res.push_back(PROCESS_INVALID);
-		res.push_back(PROCESS_INVALID);
-	}
-
-	return res;
-}
-
 FinalStateRecorder aFinalStateRecorder ;
 
 FinalStateRecorder::FinalStateRecorder() :
@@ -38,8 +23,12 @@ FinalStateRecorder::FinalStateRecorder() :
   m_nRun(0),
   m_nEvt(0),
   m_nEvtSum(0),
-  m_errorCode(ERROR_CODES::UNINITIALIZED)
-
+  m_beamPol1(0.),
+  m_beamPol2(0.),
+  m_crossSection(0.),
+  m_crossSection_err(0.),
+  m_errorCode(ERROR_CODES::UNINITIALIZED),
+  m_eventWeight(1.)
 {
 
 	_description = "FinalStateRecorder writes relevant observables to root-file " ;
@@ -74,7 +63,7 @@ FinalStateRecorder::FinalStateRecorder() :
 void FinalStateRecorder::init()
 {
 	streamlog_out(DEBUG) << "   init called  " << std::endl;
-	this->Clear();
+	this->clear();
 
 	m_pTFile = new TFile(m_outputRootFile.c_str(),"recreate");
 	m_pTTree = new TTree("eventTree", "eventTree");
@@ -85,7 +74,6 @@ void FinalStateRecorder::init()
 
 	m_pTTree->Branch("error_code", &m_errorCode);
 	m_pTTree->Branch("final_states", &m_final_states);
-	m_pTTree->Branch("final_states_h_decay", &m_final_states_h_decay);
 	m_pTTree->Branch("final_state_counts", &m_final_state_counts);
 
 	m_pTTree->Branch("process", &m_process);
@@ -143,13 +131,12 @@ void FinalStateRecorder::init()
 	streamlog_out(DEBUG) << "   init finished  " << std::endl;
 }
 
-void FinalStateRecorder::Clear() 
+void FinalStateRecorder::clear() 
 {
-	streamlog_out(DEBUG) << "   Clear called  " << std::endl;
+	streamlog_out(DEBUG) << "   clear called  " << std::endl;
 
 	m_errorCode = ERROR_CODES::UNKNOWN_ERROR;
 	m_final_states.clear();
-	m_final_states_h_decay.clear();
 
 	for (auto const& [key, value] : m_final_state_counts)
 		m_final_state_counts[key] = 0;
@@ -167,23 +154,28 @@ void FinalStateRecorder::processRunHeader( LCRunHeader*  /*run*/) {
 
 void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 {
+	pLCEvent->getWeight();
+
 	// Initialize JSON metadata file
-	if (m_errorCode == ERROR_CODES::UNINITIALIZED) {
-		m_jsonFile["beamPol1"] = pLCEvent->getParameters().getFloatVal("beamPol1");
-		m_jsonFile["beamPol2"] = pLCEvent->getParameters().getFloatVal("beamPol2");
-		m_jsonFile["crossSection"] = pLCEvent->getParameters().getFloatVal("crossSection");
+	if (m_nEvt == 0) {
+		m_beamPol1 = pLCEvent->getParameters().getFloatVal("Pol0");
+		m_beamPol2 = pLCEvent->getParameters().getFloatVal("Pol1");
+		m_crossSection = pLCEvent->getParameters().getFloatVal("crossSection");
+		m_crossSection_err = pLCEvent->getParameters().getFloatVal("crossSectionError");
+		m_eventWeight = pLCEvent->getWeight();
 	}
 
-	this->Clear();
+	this->clear();
 
 	streamlog_out(DEBUG) << "processing event: " << pLCEvent->getEventNumber() << "  in run: " << pLCEvent->getRunNumber() << std::endl;
-
+	
 	m_nRun = pLCEvent->getRunNumber();
 	m_nEvt = pLCEvent->getEventNumber();
 	m_nEvtSum++;
 
 	// Extract process meta data
-	std::vector<int> fs_metadata = find_process_meta(pLCEvent->getParameters().getStringVal("processName"));
+	std::string process = pLCEvent->getParameters().getStringVal("processName");
+	std::vector<int> fs_metadata = find_process_meta(process);
 
 	try {
 		LCCollection *inputMCParticleCollection;
@@ -195,30 +187,26 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 			inputMCParticleCollection = pLCEvent->getCollection( m_mcParticleCollectionAlt );
 		}
 
-		if (fs_metadata[0] != PROCESS_INVALID) {
-			m_process = fs_metadata[0];
-			m_event_category = fs_metadata[1];
-			m_n_fermion = fs_metadata[2];
-			m_n_higgs = fs_metadata[3];
+		if (m_resolvers.find(process) != m_resolvers.end()) {
+			FinalStateResolver* resolver = m_resolvers.at(process);
 
-			EVENT::MCParticle *mcParticle;
+			m_process = resolver->get_process_id();
+			m_event_category = resolver->get_event_category();
+			m_n_fermion = resolver->get_n_fermions();
+			m_n_higgs = resolver->get_n_higgs();
 
-			// Final state data for other particles
-			for (size_t i = 4; i < fs_metadata.size() - m_n_higgs; i++) {
-				mcParticle = dynamic_cast<EVENT::MCParticle*>(inputMCParticleCollection->getElementAt(fs_metadata[i]));
-				m_final_states.push_back(abs(mcParticle->getPDG()));
-				m_final_state_counts[abs(mcParticle->getPDG())]++;
-			}
+			// Get final state information
+			m_final_states = resolver->m_resolve(inputMCParticleCollection);
 
-			// Final state data for Higgs children
-			for (size_t i = fs_metadata.size() - m_n_higgs; i < fs_metadata.size(); i++) {
-				mcParticle = dynamic_cast<EVENT::MCParticle*>(inputMCParticleCollection->getElementAt(fs_metadata[i]));
+			for (size_t i = 0; i < m_final_states.size(); i++) {
+				int particle_pdg = abs(m_final_states[i]);
 
-				for (unsigned int j = 0; j < mcParticle->getDaughters().size(); j++) {
-					m_final_states_h_decay.push_back(abs((mcParticle->getDaughters()[j])->getPDG()));
+				if (m_final_state_counts.find(abs(particle_pdg)) != m_final_state_counts.end()) {
+					m_final_state_counts[particle_pdg]++;
+				} else {
+					throw ERROR_CODES::UNALLOWED_VALUES;
 				}
-
-				m_final_states.push_back(25);
+				
 			}
 			
 			// Set ZHH event category
@@ -259,8 +247,34 @@ void FinalStateRecorder::end()
 	delete m_pTFile;
 
 	// Write JSON metadata file
+	m_jsonFile["run"] = m_nRun;
 	m_jsonFile["nEvtSum"] = m_nEvtSum;
+	m_jsonFile["polElectron"] = m_beamPol1;
+	m_jsonFile["polPositron"] = m_beamPol2;
+	m_jsonFile["crossSection"] = m_crossSection;
+	m_jsonFile["crossSectionError"] = m_crossSection_err;
+	m_jsonFile["eventWeight"] = m_eventWeight;
 
 	std::ofstream file(m_outputJsonFile);
 	file << m_jsonFile;
+}
+
+std::vector<int> FinalStateRecorder::find_process_meta(std::string process) {
+	std::vector<int> res;
+
+	if (m_resolvers.find(process) != m_resolvers.end()) {
+		FinalStateResolver* resolver = m_resolvers.at(process);
+
+		res.push_back(resolver->get_process_id());
+		res.push_back(resolver->get_event_category());
+		res.push_back(resolver->get_n_fermions());
+		res.push_back(resolver->get_n_higgs());
+	} else {
+		res.push_back(PROCESS_INVALID);
+		res.push_back(PROCESS_INVALID);
+		res.push_back(PROCESS_INVALID);
+		res.push_back(PROCESS_INVALID);
+	}
+
+	return res;
 }

@@ -21,11 +21,12 @@ using jsonf = nlohmann::json;
 
 struct ERROR_CODES {
 	enum Values: int {
-		UNINITIALIZED = 9999,
+		UNINITIALIZED = -1,
 		OK = 0,
-		COLLECTION_NOT_FOUND = 1,
-		PROCESS_NOT_FOUND = 2,
-		UNKNOWN_ERROR = 3,
+		COLLECTION_NOT_FOUND = 6001,
+		PROCESS_NOT_FOUND = 6002,
+		UNKNOWN_ERROR = 6003,
+		UNALLOWED_VALUES = 6004,
 	};
 };
 
@@ -35,6 +36,14 @@ class FinalStateRecorder : public Processor
 	private:
 		void register_process(FinalStateResolver* resolver) { m_resolvers[resolver->get_process_name()] = resolver;  };
 		std::map<std::string, FinalStateResolver*> m_resolvers{};
+		std::vector<int> find_process_meta(std::string process);
+
+		float m_beamPol1{};
+		float m_beamPol2{};
+		float m_crossSection{};
+		float m_crossSection_err{};
+		float m_eventWeight{};
+		int m_processId{};
 
 	public:
 
@@ -46,8 +55,9 @@ class FinalStateRecorder : public Processor
 		virtual ~FinalStateRecorder() = default;
 		FinalStateRecorder(const FinalStateRecorder&) = delete;
 		FinalStateRecorder& operator=(const FinalStateRecorder&) = delete;
+		
 		virtual void init();
-		virtual void Clear();
+		virtual void clear();
 		virtual void processRunHeader( LCRunHeader*  /*run*/);
 		virtual void processEvent( EVENT::LCEvent *pLCEvent );
 		virtual void check();
@@ -72,7 +82,6 @@ class FinalStateRecorder : public Processor
 		int m_errorCode;
 		
 		std::vector<int> m_final_states{};
-		std::vector<int> m_final_states_h_decay{};
 		std::map<int, int> m_final_state_counts {
 			{ 1, 0 }, // d
 			{ 2, 0 }, // u

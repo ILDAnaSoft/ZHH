@@ -12,8 +12,6 @@
         <constant name="NumberOfJets" value="4" />
         <constant name="WhichPreselection" value="llbbbb"/>
         <constant name="ECM" value="500."/>
-        <constant name="createRootTree" value="false" />
-        <constant name="displayEvent" value="false" />
         <constant name="Verbosity" value="SILENT"/>
     </constants>
 
