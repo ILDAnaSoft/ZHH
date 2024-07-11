@@ -88,5 +88,3 @@ class ProcessIndex:
         if log: print(f'Saving results index {results_path}')
         self.results.to_csv(results_path)
         
-if __name__ == "__main__":
-    a = ProcessIndex('/root/public/MarlinWorkdirs/ZHH/output')

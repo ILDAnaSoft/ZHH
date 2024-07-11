@@ -163,7 +163,7 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 		m_crossSection = pLCEvent->getParameters().getFloatVal("crossSection");
 		m_crossSection_err = pLCEvent->getParameters().getFloatVal("crossSectionError");
 		m_eventWeight = pLCEvent->getWeight();
-		m_process_id = pLCEvent->getParameters().getIntVal("processID");
+		m_process_id = pLCEvent->getParameters().getIntVal("ProcessID");
 		m_process_name = pLCEvent->getParameters().getStringVal("processName");
 	}
 
