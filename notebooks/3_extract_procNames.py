@@ -6,7 +6,6 @@ import json
 
 SAMPLE_ROOT = '/pnfs/desy.de/ilc/prod/ilc/ild/copy/dst-merged/500-TDR_ws'
 REPO_ROOT = '/afs/desy.de/user/b/bliewert/public/MarlinWorkdirs/ZHH'
-DATA_ROOT = '/afs/desy.de/user/b/bliewert/public/MarlinWorkdirs/ZHH/output/data.txt'
 
 all_files:list[str] = []
 checked_files:dict[str,dict] = {}
@@ -17,21 +16,21 @@ def get_all_files():
 
 def save_index():
     global checked_files, checked_processes
-    with open(f'{REPO_ROOT}/checked_files.txt', 'w') as f:
+    with open(f'{REPO_ROOT}/notebooks/checked_files.txt', 'w') as f:
         json.dump(checked_files, f, ensure_ascii=False, indent='\t')
         
-    with open(f'{REPO_ROOT}/checked_processes.txt', 'w') as f:
+    with open(f'{REPO_ROOT}/notebooks/checked_processes.txt', 'w') as f:
         json.dump(checked_processes, f, ensure_ascii=False, indent='\t')
 
 def load_index():
     global checked_files, checked_processes
-    with open(f'{REPO_ROOT}/checked_files.txt', 'r') as f:
+    with open(f'{REPO_ROOT}/notebooks/checked_files.txt', 'r') as f:
         checked_files = json.load(f)
         
-    with open(f'{checked_processes}/checked_processes.txt', 'r') as f:
+    with open(f'{checked_processes}/notebooks/checked_processes.txt', 'r') as f:
         checked_processes = json.load(f)
 
-if osp.isfile(f'{REPO_ROOT}/checked_files.txt'):
+if osp.isfile(f'{REPO_ROOT}/notebooks/checked_files.txt'):
     load_index()
 
 all_files = list(set(get_all_files()) - set(checked_files.keys()))
