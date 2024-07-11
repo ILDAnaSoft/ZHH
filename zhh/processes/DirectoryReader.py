@@ -25,7 +25,7 @@ def read_meta_file(meta_file:str)->tuple[Process,MarlinResult]:
         prename = prename[0]
         kwargs_result = {
             'process': process,
-            'run_id': meta['runId'],
+            'run_id': meta['run'],
             'n_events': meta['nEvtSum'],
             
             'final_state_meta_path': meta_file,

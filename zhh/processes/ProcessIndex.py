@@ -31,9 +31,8 @@ class ProcessIndex:
     
     def __init__(self,
                  root_path:str,
-                 reindex:bool=True):
-        
-        print(f'asdfasdfasdf')
+                 reindex:bool=True,
+                 log:bool=True):
         
         # Load existing index
         self.processes = pd.DataFrame(columns=self.columns_processes)
@@ -47,42 +46,47 @@ class ProcessIndex:
             
             if osp.isfile(path):
                 if reindex:
+                    if log: print(f'Removing index {df}')
                     os.remove(path)
-                    
-                self[df] = pd.read_csv(path)
+                else:
+                    self[df] = pd.read_csv(path)
         
         # Find all files
         meta_files = glob(root_path + '/*.json')
         
         for file in meta_files:
-            print(file)
+            if log: print(f'Reading meta file {file}')
             process, result = read_meta_file(file)
             
             if not (process.process_id in self.processes['processId'].values):
                 self.processes = df_append(self.processes, {
-                    'processId': process.process_id,
-                    'processName': process.process_name,
-                    'polElectron': process.pol_electron,
-                    'polPositron': process.pol_positron,
-                    'crossSection': process.cross_section,
-                    'crossSectionError': process.cross_section_err
+                    'processId': [process.process_id],
+                    'processName': [process.process_name],
+                    'polElectron': [process.pol_electron],
+                    'polPositron': [process.pol_positron],
+                    'crossSection': [process.cross_section],
+                    'crossSectionError': [process.cross_section_err]
                 })
             else:
                 self.processes['nEventsTot'][self.processes['processId'] == process.process_id] += result.n_events
             
             if not (result.run_id in self.results['runId'].values):
                 self.results = df_append(self.results, {
-                    'runId': result.run_id,
-                    'nEvents': result.n_events,
-                    'fsMetaPath': result.final_state_meta_path,
-                    'fsPath': result.final_state_path,
-                    'preselHHllPath': result.zhh_presel_llhh_path,
-                    'preselHHvvPath': result.zhh_presel_vvhh_path,
-                    'preselHHqqPath': result.zhh_presel_qqhh_path
+                    'runId': [result.run_id],
+                    'nEvents': [result.n_events],
+                    'fsMetaPath': [result.final_state_meta_path],
+                    'fsPath': [result.final_state_path],
+                    'preselHHllPath': [result.zhh_presel_llhh_path],
+                    'preselHHvvPath': [result.zhh_presel_vvhh_path],
+                    'preselHHqqPath': [result.zhh_presel_qqhh_path]
                 })
             
         # Save index
+        if log: print(f'Saving process index {process_path}')
         self.processes.to_csv(process_path)
+        
+        if log: print(f'Saving results index {results_path}')
         self.results.to_csv(results_path)
         
-a = ProcessIndex('/root/public/MarlinWorkdirs/ZHH/output')
+if __name__ == "__main__":
+    a = ProcessIndex('/root/public/MarlinWorkdirs/ZHH/output')
