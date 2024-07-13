@@ -52,6 +52,7 @@ class FinalStateResolver {
         int get_n_higgs() { return m_n_higgs; };
         
         virtual std::vector<int> m_resolve(LCCollection *mcp_collection) = 0;
+        //virtual int m_get_category(LCCollection *mcp_collection) = 0;
 
 };
 

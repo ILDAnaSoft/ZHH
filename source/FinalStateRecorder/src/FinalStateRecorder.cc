@@ -183,7 +183,76 @@ void FinalStateRecorder::init()
 	this->register_process(new f5_ea_lvvvv());
 
 	// 6f
+	this->register_process(new f6_ttbar_yycyyc());
+	this->register_process(new f6_ttbar_yyvlyx());
+	this->register_process(new f6_ttbar_yyxylv());
+	this->register_process(new f6_ttbar_yyuyyu());
+	this->register_process(new f6_ttbar_yyuyyc());
+	this->register_process(new f6_ttbar_yyxyev());
+	this->register_process(new f6_ttbar_yyvllv());
+	this->register_process(new f6_ttbar_yyvelv());
+	this->register_process(new f6_ttbar_yycyyu());
+	this->register_process(new f6_ttbar_yyveyx());
+	this->register_process(new f6_ttbar_yyvlev());
+	this->register_process(new f6_ttbar_yyveev());
+
+	this->register_process(new f6_yyyyZ_yyyyee());
+	this->register_process(new f6_yyyyZ_eeeexx());
+	this->register_process(new f6_yyyyZ_eeeell());
+	this->register_process(new f6_yyyyZ_eeeeyy());
+	this->register_process(new f6_yyyyZ_eellyy());
+	this->register_process(new f6_yyyyZ_yyyyyy());
+	this->register_process(new f6_yyyyZ_llllee());
+	this->register_process(new f6_yyyyZ_yyyyll());
+	this->register_process(new f6_yyyyZ_yyyyvv());
+	this->register_process(new f6_yyyyZ_eellxx());
+	this->register_process(new f6_yyyyZ_eeeeee());
+
+	this->register_process(new f6_vvWW_vvxyyx());
+	this->register_process(new f6_vvWW_vvxylv());
+	this->register_process(new f6_vvWW_vvveev());
+	this->register_process(new f6_vvWW_vvveyx());
+	this->register_process(new f6_vvWW_vvvlyx());
+	this->register_process(new f6_vvWW_vvvllv());
+	this->register_process(new f6_vvWW_vvxyev());
+	this->register_process(new f6_vvWW_vvvlev());
+	this->register_process(new f6_vvWW_vvvelv());
+
+	this->register_process(new f6_eeWW_eeveev());
+	this->register_process(new f6_eeWW_eexyyx());
+	this->register_process(new f6_eeWW_eevlev());
+	this->register_process(new f6_eeWW_eexyev());
+	this->register_process(new f6_eeWW_eeveyx());
+	this->register_process(new f6_eeWW_eevllv());
+	this->register_process(new f6_eeWW_eevlyx());
+	this->register_process(new f6_eeWW_eexylv());
+	this->register_process(new f6_eeWW_eevelv());
+
+	this->register_process(new f6_xxWW_xxveyx());
+	this->register_process(new f6_xxWW_xxxyyx());
+	this->register_process(new f6_xxWW_xxxylv());
+	this->register_process(new f6_xxWW_xxvlyx());
+	this->register_process(new f6_xxWW_xxveev());
+	this->register_process(new f6_xxWW_xxvelv());
+	this->register_process(new f6_xxWW_xxxyev());
+	this->register_process(new f6_xxWW_xxvllv());
+	this->register_process(new f6_xxWW_xxvlev());
+
+	this->register_process(new f6_xxxxZ_xxxxee());
+	this->register_process(new f6_xxxxZ_vvvvyy());
+	this->register_process(new f6_xxxxZ_xxxxvv());
+	this->register_process(new f6_xxxxZ_xxxxxx());
+	this->register_process(new f6_xxxxZ_xxxxll());
+	this->register_process(new f6_xxxxZ_vvvvxx());
 	
+	this->register_process(new f6_llWW_llxylv());
+	this->register_process(new f6_llWW_llveyx());
+	this->register_process(new f6_llWW_llvlev());
+	this->register_process(new f6_llWW_llvelv());
+	this->register_process(new f6_llWW_llvlyx());
+	this->register_process(new f6_llWW_llxyev());
+	this->register_process(new f6_llWW_llxyyx());
+	this->register_process(new f6_llWW_llvllv());
 
 	streamlog_out(DEBUG) << "   init finished  " << std::endl;
 }
