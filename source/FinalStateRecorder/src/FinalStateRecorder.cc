@@ -40,13 +40,6 @@ FinalStateRecorder::FinalStateRecorder() :
 				std::string("MCParticle")
 				);
 
-	registerInputCollection(LCIO::MCPARTICLE,
-				"MCParticleCollectionAlt" ,
-				"Name of an alternative MCParticle collection in case MCParticleCollection is not found"  ,
-				m_mcParticleCollectionAlt,
-				std::string("MCParticlesSkimmed")
-				);
-
   	registerProcessorParameter("outputRootFilename",
 				"name of output root file",
 				m_outputRootFile,
@@ -244,7 +237,7 @@ void FinalStateRecorder::init()
 	this->register_process(new f6_xxxxZ_xxxxxx());
 	this->register_process(new f6_xxxxZ_xxxxll());
 	this->register_process(new f6_xxxxZ_vvvvxx());
-	
+
 	this->register_process(new f6_llWW_llxylv());
 	this->register_process(new f6_llWW_llveyx());
 	this->register_process(new f6_llWW_llvlev());
@@ -307,13 +300,9 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 
 	try {
 		LCCollection *inputMCParticleCollection;
-		try {
-			streamlog_out(DEBUG0) << "        getting jet collection: " << m_mcParticleCollection << std::endl ;
-			inputMCParticleCollection = pLCEvent->getCollection( m_mcParticleCollection );
-		} catch(DataNotAvailableException &e) {
-			streamlog_out(DEBUG0) << "        jet collection not found. using alternative collection: " << m_mcParticleCollectionAlt << std::endl ;
-			inputMCParticleCollection = pLCEvent->getCollection( m_mcParticleCollectionAlt );
-		}
+
+		streamlog_out(DEBUG0) << "        getting jet collection: " << m_mcParticleCollection << std::endl ;
+		inputMCParticleCollection = pLCEvent->getCollection( m_mcParticleCollection );
 
 		if (m_resolvers.find(process) != m_resolvers.end()) {
 			FinalStateResolver* resolver = m_resolvers.at(process);

@@ -73,7 +73,6 @@ class FinalStateRecorder : public Processor
 		/** Input collection name.
 		 */
 		std::string m_mcParticleCollection{};
-		std::string m_mcParticleCollectionAlt{};
 		std::string m_outputJsonFile{};
 		std::string m_outputRootFile{};
 

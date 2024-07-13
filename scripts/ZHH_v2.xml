@@ -10,7 +10,7 @@
         <constant name="OutputRootFile" value="${OutputBaseName}.root" />
         <constant name="NumberOfHiggs" value="2" />
         <constant name="NumberOfJets" value="4" />
-        <constant name="WhichPreselection" value="llbbbb"/>
+        <constant name="MCParticleCollectionName" value="MCParticle" />
         <constant name="ECM" value="500."/>
         <constant name="Verbosity" value="SILENT"/>
     </constants>
@@ -19,6 +19,7 @@
         <processor name="InitDD4hep" />
         <processor name="MyAIDAProcessor" />
         <processor name="MyAddNeutralPFOCovMatLite" />
+        <!-- MyHdecayMode does not work with old samples due to legacy sample name -->
         <!-- <processor name="MyHdecayMode" /> -->
 
         <processor name="MyFastJetProcessor" />
@@ -91,7 +92,7 @@
     <processor name="MyJetConvProcessor" type="JetConvProcessor">
         <!--JetConvProcessor does jet clustering using a PyTorch GNN network and SpectralClustering -->
         <!--Name of the Input MCParticle Collection-->
-        <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">MCParticlesSkimmed</parameter>
+        <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
         <!--Name of the Input PFO Collection-->
         <parameter name="inputPfoCollection" type="string" lcioInType="RECONSTRUCTEDPARTICLE">PandoraPFOsWithoutIsoLep</parameter>
         <!--Number of jets to reconstruct (default: 2) -->
@@ -124,7 +125,7 @@
     <processor name="MyHdecayMode" type="HdecayMode">
         <!--HdecayMode identifies Higgs decay mode and cheats ISR energy-->
         <!--Name of the Input MCParticle Collection-->
-        <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">MCParticlesSkimmed </parameter>
+        <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
         <!--Number of Higgs decays (default: 2) -->
         <parameter name="nHiggs" type="int"> ${NumberOfHiggs} </parameter>
         <!--Names of the Output Higgs decay mode collection-->
@@ -138,7 +139,7 @@
         <!--Names of input pfo collection-->
         <parameter name="PfoCollection" type="string" lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
         <!--Names of mc particle collection-->
-        <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">MCParticlesSkimmed</parameter>
+        <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
         <!--Names of semi-leptonic decay collection-->
         <parameter name="SemiLeptonicDecays" type="string" lcioInType="MCParticle">SemiLeptonicDecays</parameter>
         <!--Name of the output root file-->
@@ -161,7 +162,7 @@
 
     <processor name="MyCheatedMCOverlayRemoval" type="CheatedMCOverlayRemoval">
         <parameter name="RecoParticleCollection" type="string"  lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
-        <parameter name="MCParticleCollection" type="string"  lcioInType="MCParticle">MCParticlesSkimmed</parameter>
+        <parameter name="MCParticleCollection" type="string"  lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
         <parameter name="RecoMCTruthLink" type="string" lcioInType="LCRelation"> RecoMCTruthLink </parameter>
         <parameter name="MCTruthRecoLink" type="string" lcioInType="LCRelation"> MCTruthRecoLink </parameter>
         <parameter name="OutputPfoCollection" type="string" lcioOutType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
@@ -170,7 +171,7 @@
 
     <processor name="MyTrueJet" type="TrueJet">
         <!-- These are the defaults, probably exactly what you need.-->
-        <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">MCParticlesSkimmed</parameter>
+        <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
         <parameter name="RecoParticleCollection" type="string"  lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
         <parameter name="RecoMCTruthLinkName" type="string" lcioInType="LCRelation"> RecoMCTruthLink </parameter>
         <parameter name="TrueJets" type="string"  lcioOutType="ReconstructedParticle">TrueJets</parameter>
@@ -649,8 +650,7 @@
 
     <processor name="MyFinalStateRecorder" type="FinalStateRecorder">
         <!--MyFinalStateRecorder identified events that have passed the preselection-->
-        <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">MCParticle</parameter>
-        <parameter name="MCParticleCollectionAlt" type="string" lcioInType="MCParticle">MCParticlesSkimmed</parameter>
+        <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
         <parameter name="outputRootFilename" type="string">${OutputDirectory}/${OutputBaseName}_FinalStates.root</parameter>
         <parameter name="outputJsonFilename" type="string">${OutputDirectory}/${OutputBaseName}_FinalStateMeta.json</parameter>
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
@@ -664,7 +664,7 @@
         <!--drops all collections of the given type from the event-->
         <!--parameter name="DropCollectionTypes" type="StringVec">SimTrackerHit SimCalorimeterHit  </parameter-->
         <!-- write complete objects in subset collections to the file (i.e. ignore subset flag)-->
-        <!--parameter name="FullSubsetCollections" type="StringVec">MCParticlesSkimmed  </parameter-->
+        <!--parameter name="FullSubsetCollections" type="StringVec">${MCParticleCollectionName}</parameter-->
         <!--force keep of the named collections - overrules DropCollectionTypes (and DropCollectionNames)-->
         <parameter name="KeepCollectionNames" type="StringVec"> FastJets4_Precluster Durham_2Jets IsolatedLeptons ISOLeptons PandoraPFOsWithoutLepPair RefinedJets RefinedJetsPFOs OutputErrorFlowJets TrueJets FinalColourNeutrals InitialColourNeutrals TrueJetPFOLink TrueJetMCParticleLink FinalElementonLink InitialElementonLink FinalColourNeutralLink InitialColourNeutralLink HdecayMode IsolatedLeptons preselection JetMatching </parameter>
         <!-- name of output file -->
