@@ -124,9 +124,66 @@ void FinalStateRecorder::init()
 	this->register_process(new llvv_szeorsw());
 
 	// 5f
+	this->register_process(new f5_ae_eeevv());
+	this->register_process(new f5_ea_eyyyy());
+	this->register_process(new f5_ae_elevv());
+	this->register_process(new f5_ae_eyyyy());
+	this->register_process(new f5_ea_exxxx());
+	this->register_process(new f5_ae_evvxx());
+	this->register_process(new f5_ae_eeeyy());
+	this->register_process(new f5_ae_eevxy());
+	this->register_process(new f5_ae_lvvyy());
+	this->register_process(new f5_ea_eeevv());
+	this->register_process(new f5_ea_ellxx());
+	this->register_process(new f5_ae_eeeee());
+	this->register_process(new f5_ea_elvxy());
+	this->register_process(new f5_ea_evvyy());
+	this->register_process(new f5_ea_evlxy());
+	this->register_process(new f5_ae_ellvv());
+	this->register_process(new f5_ea_vxyyy());
+	this->register_process(new f5_ea_eeexx());
+	this->register_process(new f5_ae_ellll());
+	this->register_process(new f5_ae_eeell());
+	this->register_process(new f5_ae_ellxx());
+	this->register_process(new f5_ae_elvxy());
+	this->register_process(new f5_ae_vxxxy());
+	this->register_process(new f5_ae_exxxx());
+	this->register_process(new f5_ea_eelvv());
+	this->register_process(new f5_ea_eeeee());
+	this->register_process(new f5_ae_evvvv());
+	this->register_process(new f5_ea_lvvyy());
+	this->register_process(new f5_ae_evvyy());
+	this->register_process(new f5_ea_exxyy());
+	this->register_process(new f5_ea_eevxy());
+	this->register_process(new f5_ea_eeeyy());
+	this->register_process(new f5_ea_ellyy());
+	this->register_process(new f5_ea_vxxxy());
+	this->register_process(new f5_ae_vvvxy());
+	this->register_process(new f5_ea_vvvxy());
+	this->register_process(new f5_ae_ellyy());
+	this->register_process(new f5_ea_evvvv());
+	this->register_process(new f5_ae_exxyy());
+	this->register_process(new f5_ae_evlxy());
+	this->register_process(new f5_ae_vxyyy());
+	this->register_process(new f5_ae_lllvv());
+	this->register_process(new f5_ae_eelvv());
+	this->register_process(new f5_ae_lvvxx());
+	this->register_process(new f5_ea_ellvv());
+	this->register_process(new f5_ae_evexy());
+	this->register_process(new f5_ea_ellll());
+	this->register_process(new f5_ea_elevv());
+	this->register_process(new f5_ea_eeell());
+	this->register_process(new f5_ae_lvvvv());
+	this->register_process(new f5_ea_evexy());
+	this->register_process(new f5_ae_eeexx());
+	this->register_process(new f5_ea_lllvv());
+	this->register_process(new f5_ea_evvxx());
+	this->register_process(new f5_ea_llvxy());
+	this->register_process(new f5_ae_llvxy());
+	this->register_process(new f5_ea_lvvvv());
 
 	// 6f
-
+	
 
 	streamlog_out(DEBUG) << "   init finished  " << std::endl;
 }

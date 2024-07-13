@@ -37,13 +37,13 @@ class ff: public FinalStateResolver {
 
 
 class ll : public ff {
-    public: ll(): ff( "2f_z_l", PROCESS_ID::f2_z_l, EVENT_CATEGORY_TRUE::ll, vector{11,13,15,17} ) {}; };
+    public: ll(): ff( "2f_z_l", PROCESS_ID::f2_z_l, EVENT_CATEGORY_TRUE::ll, vector{11,13,15} ) {}; };
 
 class qq : public ff {
     public: qq(): ff( "2f_z_h", PROCESS_ID::f2_z_h, EVENT_CATEGORY_TRUE::qq, vector{1,2,3,4,5} ) {}; };
 
 class vv : public ff {
-    public: vv(): ff( "2f_z_nung", PROCESS_ID::f2_z_nung, EVENT_CATEGORY_TRUE::vv, vector{12, 14,16,18} ) {}; };
+    public: vv(): ff( "2f_z_nung", PROCESS_ID::f2_z_nung, EVENT_CATEGORY_TRUE::vv, vector{12,14,16} ) {}; };
 
 class ee1 : public ff {
     public: ee1(): ff( "2f_z_bhabhag", PROCESS_ID::f2_z_bhabhag, EVENT_CATEGORY_TRUE::ll, vector{11} ) {}; };
