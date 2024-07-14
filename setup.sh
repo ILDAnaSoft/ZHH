@@ -10,14 +10,19 @@ if [[ -z "${MARLIN_DLL}" ]]; then
 fi
 
 if [[ -z "${REPO_ROOT}" ]]; then
-    export REPO_ROOT="$HOME/public/MarlinWorkdirs/ZHH"
+    export REPO_ROOT="/afs/desy.de/user/b/bliewert/public/MarlinWorkdirs/ZHH"
 fi
 
 if [[ -z "${ILCSOFT_ROOT}" ]]; then
-    export ILCSOFT_ROOT="$HOME/public/ILCSoft"
+    export ILCSOFT_ROOT="/afs/desy.de/user/b/bliewert/public/ILCSoft"
 fi
 
 echo "Relative library path set to ${REPO_ROOT}"
+
+# Starting July 2024, libnsl.so.1 cannot be found. They seem to be not available on batch nodes only, but are present on the local machines
+# as a temporary workaround, we use a clone of the lib64 directory from the WGS node (they use nearly the same version)
+#export MARLIN_DLL=$(echo "$MARLIN_DLL" | sed "s~/cvmfs/ilc.desy.de/key4hep/releases/2023-05-23/pandoraanalysis/2.0.1/x86_64-centos7-gcc12.3.0-opt/oqkyr/lib/libPandoraAnalysis.so:~~g")
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/nfs/dust/ilc/user/bliewert/lib64
 
 export MARLIN_DLL=$MARLIN_DLL:$REPO_ROOT/source/AddNeutralPFOCovMat/lib/libAddNeutralPFOCovMat.so
 #export MARLIN_DLL=$MARLIN_DLL:$REPO_ROOT/source/LeptonErrorAnalysis/lib/libLeptonErrorAnalysis.so

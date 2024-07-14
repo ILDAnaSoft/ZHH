@@ -1,4 +1,6 @@
 from glob import glob
+from typing import Optional, Union
+from .util import is_readable
 
 pdg_map = {
     1: 'd',
@@ -33,10 +35,60 @@ pdg_groups = {
     'q': [ 1, 2, 3, 4, 5, 6 ]
 }
 
-def get_raw_files(process:str = '2f_Z_hadronic') -> list[str]:
-    arr = glob(f"/pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/{process}/ILD_l5_o1_v02/v02-02-03/*/*/*.slcio")
+default_processes = [
+    '2f_Z_bhabhaNg',
+    '2f_Z_hadronic',
+    '2f_Z_nuNg',
+    '2f_Z_bhabhag',
+    '2f_Z_leptonic',
+    '4f_ZZWWMix_hadronic',
+    '4f_singleW_leptonic',
+    '4f_singleZee_semileptonic',
+    '4f_WW_hadronic',
+    '4f_singleZee_leptonic',
+    '4f_ZZ_semileptonic',
+    '4f_singleW_semileptonic',
+    '4f_singleZsingleWMix_leptonic',
+    '4f_ZZWWMix_leptonic',
+    '4f_WW_semileptonic',
+    '4f_ZZ_hadronic',
+    '4f_singleZnunu_leptonic',
+    '4f_singleZnunu_semileptonic',
+    '4f_lowmee_singleZee_leptonic',
+    '4f_ZZ_leptonic',
+    '4f_lowmee_singleZsingleWMix_leptonic',
+    '4f_WW_leptonic',
+    '5f',
+    '6f_ttbar',
+    '6f_yyyyZ',
+    '6f_vvWW',
+    '6f_eeWW',
+    '6f_xxWW',
+    '6f_xxxxZ',
+    '6f_llWW']
+
+
+def get_raw_files(processes:Optional[Union[str,list[str]]]=None, debug:bool=True) -> list[str]:
+    if processes is None:
+        processes = default_processes
+    elif isinstance(processes, str):
+        processes = [processes]
+    
+    arr = []
+    for process in processes:
+        carr = glob(f"/pnfs/desy.de/ilc/prod/ilc/ild/copy/dst-merged/500-TDR_ws/{process}/ILD_l5_o1_v02/**/*.slcio", recursive=True)
+        
+        if debug:
+            arr += [carr[0]]
+        else:
+            arr += carr
+        
     arr.sort()
     
     return arr
 
-
+#if __name__ == '__main__':
+#    f = get_raw_files()
+#    print(len(f))
+#    for a in f:
+#        print(a)
