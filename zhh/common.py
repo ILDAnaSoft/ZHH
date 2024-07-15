@@ -1,6 +1,5 @@
 from glob import glob
 from typing import Optional, Union
-from .util import is_readable
 
 pdg_map = {
     1: 'd',
@@ -68,7 +67,20 @@ default_processes = [
     '6f_llWW']
 
 
-def get_raw_files(processes:Optional[Union[str,list[str]]]=None, debug:bool=True) -> list[str]:
+def get_raw_files(processes:Optional[Union[str,list[str]]]=None,
+                  debug:bool=False,
+                  filters:Optional[list[str]]=['eL.pR', 'eR.pL']) -> list[str]:
+    """Gets the full paths to mc-opt-3 sample files
+
+    Args:
+        processes (Optional[Union[str,list[str]]], optional): sub-folders to look in. if None, default_processes(). Defaults to None.
+        debug (bool, optional): if True, only one file per process (and filter, if given) will be output. Defaults to False.
+        filters (Optional[list[str]], optional): logically disjoint filter sets. Defaults to ['eL.pR', 'eR.pL'].
+
+    Returns:
+        list[str]: _description_
+    """
+    
     if processes is None:
         processes = default_processes
     elif isinstance(processes, str):
@@ -77,9 +89,29 @@ def get_raw_files(processes:Optional[Union[str,list[str]]]=None, debug:bool=True
     arr = []
     for process in processes:
         carr = glob(f"/pnfs/desy.de/ilc/prod/ilc/ild/copy/dst-merged/500-TDR_ws/{process}/ILD_l5_o1_v02/**/*.slcio", recursive=True)
+        carr.sort()
         
+        if filters is not None:
+            carr_temp = []
+            for c in carr:
+                if any(map(c.__contains__, filters)):
+                    carr_temp.append(c)
+                    
+            carr = carr_temp
+                
         if debug:
-            arr += [carr[0]]
+            if filters is None:
+                # Use any first element if no filters given
+                if len(carr) > 0:
+                    arr += [carr[0]]
+            else:
+                # Find one (the first) element per filter in the other case
+                for f in filters:
+                    for c in carr:
+                        if f in c:
+                            arr += [c]
+                            break
+                
         else:
             arr += carr
         
@@ -88,7 +120,7 @@ def get_raw_files(processes:Optional[Union[str,list[str]]]=None, debug:bool=True
     return arr
 
 #if __name__ == '__main__':
-#    f = get_raw_files()
+#    f = get_raw_files(debug=True)
 #    print(len(f))
 #    for a in f:
 #        print(a)

@@ -17,14 +17,9 @@ import os.path as osp
 
 class Preselection(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     debug = luigi.BoolParameter(default=False)
-    nmax = luigi.IntParameter(default=0)
     
     def create_branch_map(self) -> dict[int, str]:
         arr = get_raw_files(debug=self.debug)
-        
-        # for debugging: only first two entries
-        if self.nmax > 0:
-            arr = arr[:min(self.nmax, len(arr))]
         
         res = { k: v for k, v in zip(list(range(len(arr))), arr) }
         
@@ -44,7 +39,7 @@ class Preselection(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         temp_files = self.output()
         
         cmd =  f'source $REPO_ROOT/setup.sh'
-        cmd += f' && Marlin $REPO_ROOT/scripts/ZHH_v2.xml --global.MaxRecordNumber=0 --global.LCIOInputFiles={self.branch_map[self.branch]} --constant.OutputDirectory=.' # --constant.OutputBaseName={self.branch}_zhh'
+        cmd += f' && Marlin $REPO_ROOT/scripts/ZHH_v2.xml --global.MaxRecordNumber={"1000" if self.debug else "0"} --global.LCIOInputFiles={self.branch_map[self.branch]} --constant.OutputDirectory=.' # --constant.OutputBaseName={self.branch}_zhh'
         cmd += f' && mv zhh_PreSelection_llHH.root {temp_files[0].path}'
         cmd += f' && mv zhh_PreSelection_vvHH.root {temp_files[1].path}'
         cmd += f' && mv zhh_PreSelection_qqHH.root {temp_files[2].path}'
