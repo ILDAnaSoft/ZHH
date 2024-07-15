@@ -36,7 +36,6 @@ class FinalStateRecorder : public Processor
 	private:
 		void register_process(FinalStateResolver* resolver) { m_resolvers[resolver->get_process_name()] = resolver;  };
 		std::map<std::string, FinalStateResolver*> m_resolvers{};
-		std::vector<int> find_process_meta(std::string process);
 
 		float m_beamPol1{};
 		float m_beamPol2{};

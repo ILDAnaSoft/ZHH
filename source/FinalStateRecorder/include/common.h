@@ -202,7 +202,7 @@ struct EVENT_CATEGORY_TRUE {
 		llHH = 11, // llbbbb (ZHH signal)
 
 		eebb = 12,
-		μμbb = 13,
+		µµbb = 13,
 		𝜏𝜏bb = 14,
 		llbbbb = 15,
 		llqqH = 16,
@@ -245,16 +245,17 @@ struct EVENT_CATEGORY_TRUE {
 		// rest: 44.22% (one hadronic, one leptonic decay)
 		OTHER_TTBAR = 70,
 		evbbqq = 71,
-		μvbbqq = 72,
+		µvbbqq = 72,
 		𝜏vbbqq = 73,
 
 		// tt/WWZ -> bbqqqq
 		// for tt: tt -> bbqqqq : 2x [t->Wb; W->qq]
 		// for WWZ: WWZ -> bbqqqq : 2x [W->qq; Z->bb]
 		OTHER_FULL_HADRONIC = 80,
-		bbcssc = 81,
-		bbuddu = 82,
-		bbcsdu = 83,
+		bbqqqq = 81,
+		bbcssc = 82,
+		bbuddu = 83,
+		bbcsdu = 84,
 
 		OTHER_EVENTS = 90,
 		f5_any = 91,
@@ -275,8 +276,8 @@ struct PDG {
 		t = 6,
 		e = 11,
 		ve = 12,
-		μ = 13,
-		vμ = 14,
+		µ = 13,
+		vµ = 14,
 		𝜏 = 15,
 		v𝜏 = 16
 	};

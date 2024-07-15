@@ -39,6 +39,29 @@ class ffff: public FinalStateResolver {
             };
         };
 
+        int get_event_category(std::map<int, int> m_final_state_counts) {
+            if (m_final_state_counts[PDG::b] == 2) {
+                if (m_final_state_counts[PDG::e] == 2)
+                    return EVENT_CATEGORY_TRUE::eebb;
+                else if (m_final_state_counts[PDG::µ] == 2)
+                    return EVENT_CATEGORY_TRUE::µµbb;
+                else if (m_final_state_counts[PDG::𝜏] == 2)
+                    return EVENT_CATEGORY_TRUE::𝜏𝜏bb;
+                else if (m_final_state_counts[PDG::t] == 2)
+                    return EVENT_CATEGORY_TRUE::ttbb;
+                else if (
+                    m_final_state_counts[PDG::ve] +
+                    m_final_state_counts[PDG::vµ] +
+                    m_final_state_counts[PDG::v𝜏] == 2)
+                    return EVENT_CATEGORY_TRUE::vvbb;
+
+            } else if (m_final_state_counts[PDG::b] == 4) {
+                return EVENT_CATEGORY_TRUE::bbbb;
+            }
+
+            return m_event_category;
+        };
+
 };
 
 class llll_zz : public ffff {

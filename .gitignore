@@ -17,6 +17,8 @@ Physsim
 test*.ipynb
 view*.ipynb
 Ranlux.coonf
+*.csv
+*_local.*
 *.pyc
 *.json
 *.npy

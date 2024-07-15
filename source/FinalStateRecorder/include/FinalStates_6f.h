@@ -40,6 +40,64 @@ class f6: public FinalStateResolver {
             };
         };
 
+        int get_event_category(std::map<int, int> m_final_state_counts) {
+            int non_b =
+                m_final_state_counts[PDG::u] +
+                m_final_state_counts[PDG::d] +
+                m_final_state_counts[PDG::c] +
+                m_final_state_counts[PDG::s] +
+                m_final_state_counts[PDG::t];
+
+            int charged_leps =
+                m_final_state_counts[PDG::e] +
+                m_final_state_counts[PDG::µ] +
+                m_final_state_counts[PDG::𝜏];
+
+            int neutrinos =
+                m_final_state_counts[PDG::ve] +
+                m_final_state_counts[PDG::vµ] +
+                m_final_state_counts[PDG::v𝜏];
+
+            // bb
+            if (m_final_state_counts[PDG::b] == 2) {
+                // qq
+                if (non_b == 2) {
+                    if (m_final_state_counts[PDG::e] == 1 &&
+                        m_final_state_counts[PDG::ve] == 1)
+                        return EVENT_CATEGORY_TRUE::evbbqq;
+                    else if (m_final_state_counts[PDG::µ] == 1 &&
+                        m_final_state_counts[PDG::vµ] == 1)
+                        return EVENT_CATEGORY_TRUE::µvbbqq;
+                    else if (m_final_state_counts[PDG::𝜏] == 1 &&
+                        m_final_state_counts[PDG::v𝜏] == 1)
+                        return EVENT_CATEGORY_TRUE::𝜏vbbqq;
+                } else if (non_b == 4) {
+                    if (m_final_state_counts[PDG::s] + m_final_state_counts[PDG::c] == 4)
+                        return EVENT_CATEGORY_TRUE::bbcssc;
+                    else if (
+                        m_final_state_counts[PDG::c] + 
+                        m_final_state_counts[PDG::s] +
+                        m_final_state_counts[PDG::d]+
+                        m_final_state_counts[PDG::u] == 4)
+                        return EVENT_CATEGORY_TRUE::bbcsdu;
+                    else if (m_final_state_counts[PDG::u] + m_final_state_counts[PDG::d] == 4)
+                        return EVENT_CATEGORY_TRUE::bbuddu;
+                    else
+                        return EVENT_CATEGORY_TRUE::bbqqqq;
+                }
+
+            } else if (m_final_state_counts[PDG::b] == 4) {
+                if (charged_leps == 2)
+                    return EVENT_CATEGORY_TRUE::llbbbb;
+                else if (neutrinos == 2)
+                    return EVENT_CATEGORY_TRUE::vvbbbb;
+                else if (non_b == 2)
+                    return EVENT_CATEGORY_TRUE::qqbbbb;
+            }
+
+            return m_event_category;
+        };
+
 };
 
 class f6_ttbar_yycyyc : public f6 {

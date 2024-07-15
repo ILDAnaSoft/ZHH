@@ -29,8 +29,14 @@ class FinalStateResolver {
         int m_n_fermions;
         int m_n_higgs;
 
-        void assert_true(bool check) { if (!check) { throw RESOLVER_ERRORS::UNKNOWN_ERROR; }; };
-        void assert_true(bool check, int err) { if (!check) { throw err; }; };
+        void assert_true(bool check) {
+            if (!check) {
+                throw RESOLVER_ERRORS::UNKNOWN_ERROR;
+            }; };
+        void assert_true(bool check, int err) {
+            if (!check) {
+                throw err;
+            }; };
 
         // Helper functions
         int pdg_of_particle(EVENT::LCObject* particle);
@@ -47,7 +53,7 @@ class FinalStateResolver {
 
         std::string get_process_name() { return m_process_name; };
         int get_process_id() { return m_process_id; };
-        int get_event_category() { return m_event_category; };
+        int get_event_category(std::map<int, int> m_final_state_counts) { return m_event_category; };
         int get_n_fermions() { return m_n_fermions; };
         int get_n_higgs() { return m_n_higgs; };
         
