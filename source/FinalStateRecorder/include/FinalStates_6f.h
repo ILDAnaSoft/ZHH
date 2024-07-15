@@ -87,10 +87,10 @@ class f6: public FinalStateResolver {
                 }
 
             } else if (m_final_state_counts[PDG::b] == 4) {
-                if (charged_leps == 2)
-                    return EVENT_CATEGORY_TRUE::llbbbb;
-                else if (neutrinos == 2)
+                if (neutrinos == 2)
                     return EVENT_CATEGORY_TRUE::vvbbbb;
+                else if (charged_leps + neutrinos == 2)
+                    return EVENT_CATEGORY_TRUE::llbbbb;
                 else if (non_b == 2)
                     return EVENT_CATEGORY_TRUE::qqbbbb;
             }

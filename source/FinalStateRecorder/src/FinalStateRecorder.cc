@@ -220,6 +220,7 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 				m_errorCode = ERROR_CODES::OK;
 			} catch (int err) {
 				std::cerr << "Encountered exception in run " << m_nRun << " (process " << m_process << ") at event " << m_nEvt << std::endl ;
+				throw err;
 			}
 
 		} else {
