@@ -4,10 +4,12 @@
 # -> $ILCSOFT_ROOT/MarlinReco/Analysis/SLDCorrection/lib/libSLDCorrection.so
 # -> most ZHH processors
 
+while [ ! -z $CONDA_PREFIX ]; do conda deactivate; done
+
 if [[ -z "${MARLIN_DLL}" ]]; then
     # source /cvmfs/ilc.desy.de/key4hep/releases/2023-05-23/key4hep-stack/2023-05-24/x86_64-centos7-gcc12.3.0-opt/7emhu/setup.sh
     # source /cvmfs/sw.hsf.org/key4hep/setup.sh
-    source /cvmfs/sw.hsf.org/key4hep/setup.sh -r 2024-03-10
+    source /cvmfs/sw.hsf.org/key4hep/setup.sh -r 2023-11-23
     # source /cvmfs/ilc.desy.de/key4hep/setup.sh
 fi
 
@@ -26,12 +28,21 @@ if [[ $MARLIN_DLL != *"libFinalStateRecorder"* ]]; then
     # As a temporary (?) workaround, we use a clone of the lib64 directory from the WGS node (they use nearly the same version)
     #export MARLIN_DLL=$(echo "$MARLIN_DLL" | sed "s~/cvmfs/ilc.desy.de/key4hep/releases/2023-05-23/pandoraanalysis/2.0.1/x86_64-centos7-gcc12.3.0-opt/oqkyr/lib/libPandoraAnalysis.so:~~g")
     export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/nfs/dust/ilc/user/bliewert/lib64
+    
+    # CheatedMCOverlayRemoval NOT working right now (segfaults)
+    #export MARLIN_DLL=$MARLIN_DLL:$REPO_ROOT/source/CheatedMCOverlayRemoval/lib/libCheatedMCOverlayRemoval.so
+
+    # Debugging LCFIPlus
+    # 2024-03-10
+    #export MARLIN_DLL=$(echo $MARLIN_DLL | sed -e "s#cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-centos7-gcc12.2.0-opt/lcfiplus/0.10.1-ff6lg4#root/public/DevLocal/LCFIPlus#g")
+    
+    # 2023-11-23
+    #export MARLIN_DLL=$(echo $MARLIN_DLL | sed -e "s#cvmfs/sw.hsf.org/key4hep/releases/2023-11-23/x86_64-centos7-gcc12.2.0-opt/lcfiplus/0.10.1-z7amkm#root/public/DevLocal/LCFIPlus#g")    
 
     export MARLIN_DLL=$MARLIN_DLL:$REPO_ROOT/source/AddNeutralPFOCovMat/lib/libAddNeutralPFOCovMat.so
     #export MARLIN_DLL=$MARLIN_DLL:$REPO_ROOT/source/LeptonErrorAnalysis/lib/libLeptonErrorAnalysis.so
-    export MARLIN_DLL=$MARLIN_DLL:$REPO_ROOT/source/CheatedMCOverlayRemoval/lib/libCheatedMCOverlayRemoval.so
     export MARLIN_DLL=$MARLIN_DLL:$REPO_ROOT/source/LeptonPairing/lib/libLeptonPairing.so
-    export MARLIN_DLL=$MARLIN_DLL:$REPO_ROOT/source/HdecayMode/lib/libHdecayMode.so
+    #export MARLIN_DLL=$MARLIN_DLL:$REPO_ROOT/source/HdecayMode/lib/libHdecayMode.so
     export MARLIN_DLL=$MARLIN_DLL:$REPO_ROOT/source/PreSelection/lib/libPreSelection.so
     #export MARLIN_DLL=$MARLIN_DLL:$ILCSOFT_ROOT/MarlinReco/Analysis/SLDCorrection/lib/libSLDCorrection.so
     #export MARLIN_DLL=$MARLIN_DLL:$REPO_ROOT/source/JetErrorAnalysis/lib/libJetErrorAnalysis.so
