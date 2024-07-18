@@ -69,13 +69,13 @@ default_processes = [
 
 def get_raw_files(processes:Optional[Union[str,list[str]]]=None,
                   debug:bool=False,
-                  filters:Optional[list[str]]=['eL.pR', 'eR.pL']) -> list[str]:
+                  groups:Optional[list[str]]=['eL.pL', 'eL.pR', 'eR.pL', 'eR.pR']) -> list[str]:
     """Gets the full paths to mc-opt-3 sample files
 
     Args:
         processes (Optional[Union[str,list[str]]], optional): sub-folders to look in. if None, default_processes(). Defaults to None.
         debug (bool, optional): if True, only one file per process (and filter, if given) will be output. Defaults to False.
-        filters (Optional[list[str]], optional): logically disjoint filter sets. Defaults to ['eL.pR', 'eR.pL'].
+        groups (Optional[list[str]], optional): logically disjoint filter sets. Defaults to ['eL.pL', 'eL.pR', 'eR.pL', 'eR.pR'].
 
     Returns:
         list[str]: _description_
@@ -91,22 +91,22 @@ def get_raw_files(processes:Optional[Union[str,list[str]]]=None,
         carr = glob(f"/pnfs/desy.de/ilc/prod/ilc/ild/copy/dst-merged/500-TDR_ws/{process}/ILD_l5_o1_v02/**/*.slcio", recursive=True)
         carr.sort()
         
-        if filters is not None:
+        if groups is not None:
             carr_temp = []
             for c in carr:
-                if any(map(c.__contains__, filters)):
+                if any(map(c.__contains__, groups)):
                     carr_temp.append(c)
                     
             carr = carr_temp
                 
         if debug:
-            if filters is None:
-                # Use any first element if no filters given
+            if groups is None:
+                # Use any first element if no groups given
                 if len(carr) > 0:
                     arr += [carr[0]]
             else:
                 # Find one (the first) element per filter in the other case
-                for f in filters:
+                for f in groups:
                     for c in carr:
                         if f in c:
                             arr += [c]

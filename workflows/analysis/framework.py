@@ -49,6 +49,9 @@ class HTCondorWorkflow(law.htcondor.HTCondorWorkflow):
         config.render_variables["REPO_ROOT"] = os.getenv("REPO_ROOT")
 
         # copy the entire environment
-        config.custom_content.append(("getenv", "true"))
+        config.custom_content.append(('getenv', 'true'))
+        #config.custom_content.append(('request_cpus', '1'))
+        config.custom_content.append(('request_memory', '4000 Mb'))
+        config.custom_content.append(('requirements', 'Machine =!= LastRemoteHost'))
 
         return config
