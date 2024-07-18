@@ -7,7 +7,7 @@
 if [[ -z "${MARLIN_DLL}" ]]; then
     # source /cvmfs/ilc.desy.de/key4hep/releases/2023-05-23/key4hep-stack/2023-05-24/x86_64-centos7-gcc12.3.0-opt/7emhu/setup.sh
     # source /cvmfs/sw.hsf.org/key4hep/setup.sh
-    source /cvmfs/sw.hsf.org/key4hep/setup.sh -r 2024-04-12
+    source /cvmfs/sw.hsf.org/key4hep/setup.sh -r 2024-03-10
     # source /cvmfs/ilc.desy.de/key4hep/setup.sh
 fi
 

@@ -2,7 +2,7 @@
     <marlin xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://ilcsoft.desy.de/marlin/marlin.xsd">
 
     <constants>
-        <constant name="lcgeo_DIR" value="/cvmfs/ilc.desy.de/sw/x86_64_gcc82_centos7/v02-02-02/lcgeo/v00-16-06" />
+        <constant name="lcgeo_DIR" value="/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-centos7-gcc12.2.0-opt/k4geo/0.20-e42drs/share/k4geo" />
         <constant name="DetectorModel" value="ILD_l5_o1_v02" />
         <constant name="CompactFile" value="${lcgeo_DIR}/ILD/compact/${DetectorModel}/${DetectorModel}.xml" />
         <constant name="OutputDirectory" value="output" />
@@ -45,24 +45,19 @@
     </execute>
 
     <global>
-        <!--parameter name="LCIOInputFiles">/pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/250-SetA/4f_ZZ_hadronic/ILD_l5_o1_v02/v02-02/rv02-02.sv02-02.mILD_l5_o1_v02.E250-SetA.I500062.P4f_zz_h.eL.pR.n000.d_dstm_15122_0.slcio</parameter-->
         <parameter name="LCIOInputFiles">
-            <!-- /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/2f_Z_hadronic/ILD_l5_o1_v02/v02-02-03/00015902/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02.E500-TDR_ws.I500259.P2f_z_h.eL.pR.n000.d_dstm_15902_0.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02/v02-02-03/00015747/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02.E500-TDR_ws.I403009.Pqqhh.eL.pR.n019.d_dstm_15747_156.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02/v02-02-03/00015747/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02.E500-TDR_ws.I403020.Pqqqqh.eR.pL.n008.d_dstm_15747_73.slcio -->
+            /pnfs/desy.de/ilc/prod/ilc/ild/copy/dst-merged/500-TDR_ws/2f_Z_hadronic/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I250114.P2f_z_h.eL.pR.n001.d_dstm_10410_0.slcio
             /pnfs/desy.de/ilc/prod/ilc/ild/copy/dst-merged/500-TDR_ws/6f_vvWW/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I108596.Pvvveev.eL.pR.n001.d_dstm_10354_0.slcio
-            <!-- /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/2f_Z_bhabhag/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I250101.P2f_z_bhabhag.eL.pL.n001.d_dstm_10366_0.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/2f_Z_hadronic/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I250114.P2f_z_h.eL.pR.n001.d_dstm_10410_0.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/2f_Z_leptonic/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I250106.P2f_z_l.eL.pR.n001.d_dstm_10255_0.slcio
-            /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/2f_Z_nuNg/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I250130.P2f_z_nung.eL.pR.n001.d_dstm_10589_0.slcio -->
+             <!--
+             /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02/v02-02-03/00015739/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n000.d_dstm_15739_0.slcio
+             -->
         </parameter>
         <!-- limit the number of processed records (run+evt): -->
         <!--parameter name="MaxRecordNumber" value="0" /to process all events--> 
         <!--parameter name="MaxRecordNumber" value="1000" /to process 1000 events--> 
-        <parameter name="MaxRecordNumber" value="1000"/>
+        <parameter name="MaxRecordNumber" value="100"/>
         <parameter name="SkipNEvents" value="0" />
         <parameter name="SupressCheck" value="false" />
-        <parameter name="GearXMLFile">/cvmfs/ilc.desy.de/sw/ILDConfig/v02-02-02/StandardConfig/production/Gear/gear_ILD_l5_v02.xml</parameter>
         <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT">SILENT</parameter>
         <parameter name="RandomSeed" value="1234567890" />
         <parameter name="OutputSteeringFile" value="" />
@@ -88,22 +83,6 @@
         <parameter name="FileType" type="string">root</parameter>
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
         <!--parameter name="Verbosity" type="string">DEBUG </parameter-->
-    </processor>
-
-    <processor name="MyJetConvProcessor" type="JetConvProcessor">
-        <!--JetConvProcessor does jet clustering using a PyTorch GNN network and SpectralClustering -->
-        <!--Name of the Input MCParticle Collection-->
-        <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
-        <!--Name of the Input PFO Collection-->
-        <parameter name="inputPfoCollection" type="string" lcioInType="RECONSTRUCTEDPARTICLE">PandoraPFOsWithoutIsoLep</parameter>
-        <!--Number of jets to reconstruct (default: 2) -->
-        <parameter name="nJets" type="int"> 4 </parameter>
-        <!--Names of the output jet collection-->
-        <parameter name="torchScriptPath" type="string">/nfs/dust/ilc/user/bliewert/jet_training/model_3m/best.pt</parameter>
-        <!--Names of the output jet collection-->
-        <parameter name="outputJetCollection" type="string" lcioOutType="RECONSTRUCTEDPARTICLE">GraphJets</parameter>
-        <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">DEBUG</parameter>
     </processor>
 
     <processor name="MyAddNeutralPFOCovMatLite" type="AddNeutralPFOCovMat">
