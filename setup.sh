@@ -4,7 +4,7 @@
 # -> $ILCSOFT_ROOT/MarlinReco/Analysis/SLDCorrection/lib/libSLDCorrection.so
 # -> most ZHH processors
 
-while [ ! -z $CONDA_PREFIX ]; do conda deactivate; done
+#while [ ! -z $CONDA_PREFIX ]; do conda deactivate; done
 
 if [[ -z "${MARLIN_DLL}" ]]; then
     # source /cvmfs/ilc.desy.de/key4hep/releases/2023-05-23/key4hep-stack/2023-05-24/x86_64-centos7-gcc12.3.0-opt/7emhu/setup.sh
