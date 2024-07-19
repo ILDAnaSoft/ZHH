@@ -75,10 +75,10 @@ class FinalStateRecorder : public Processor
 		std::string m_outputJsonFile{};
 		std::string m_outputRootFile{};
 
-		int m_nRun;
-		int m_nEvt;
-		int m_nEvtSum;
-		int m_errorCode;
+		int m_n_run;
+		int m_n_evt;
+		int m_n_evt_sum;
+		int m_error_code;
 		
 		std::vector<int> m_final_states{};
 		std::map<int, int> m_final_state_counts {

@@ -26,10 +26,10 @@ FinalStateRecorder::FinalStateRecorder() :
   m_crossSection_err(0.),
   m_eventWeight(1.),
   m_process_id(0),
-  m_nRun(0),
-  m_nEvt(0),
-  m_nEvtSum(0),
-  m_errorCode(ERROR_CODES::UNINITIALIZED),
+  m_n_run(0),
+  m_n_evt(0),
+  m_n_evt_sum(0),
+  m_error_code(ERROR_CODES::UNINITIALIZED),
   m_process(0),
   m_event_category(EVENT_CATEGORY_TRUE::OTHER),
   m_event_category_zhh(EVENT_CATEGORY_ZHH::OTHER),
@@ -68,10 +68,10 @@ void FinalStateRecorder::init()
 	m_pTTree = new TTree("eventTree", "eventTree");
 	m_pTTree->SetDirectory(m_pTFile);
 
-	m_pTTree->Branch("run", &m_nRun, "run/I");
-	m_pTTree->Branch("event", &m_nEvt, "event/I");
+	m_pTTree->Branch("run", &m_n_run, "run/I");
+	m_pTTree->Branch("event", &m_n_evt, "event/I");
 
-	m_pTTree->Branch("error_code", &m_errorCode);
+	m_pTTree->Branch("error_code", &m_error_code);
 	m_pTTree->Branch("final_states", &m_final_states);
 	m_pTTree->Branch("final_state_counts", &m_final_state_counts);
 
@@ -123,8 +123,130 @@ void FinalStateRecorder::init()
 	this->register_process(new llvv_szeorsw());
 
 	// 5f
+	this->register_process(new f5_ae_eeevv());
+	this->register_process(new f5_ea_eyyyy());
+	this->register_process(new f5_ae_elevv());
+	this->register_process(new f5_ae_eyyyy());
+	this->register_process(new f5_ea_exxxx());
+	this->register_process(new f5_ae_evvxx());
+	this->register_process(new f5_ae_eeeyy());
+	this->register_process(new f5_ae_eevxy());
+	this->register_process(new f5_ae_lvvyy());
+	this->register_process(new f5_ea_eeevv());
+	this->register_process(new f5_ea_ellxx());
+	this->register_process(new f5_ae_eeeee());
+	this->register_process(new f5_ea_elvxy());
+	this->register_process(new f5_ea_evvyy());
+	this->register_process(new f5_ea_evlxy());
+	this->register_process(new f5_ae_ellvv());
+	this->register_process(new f5_ea_vxyyy());
+	this->register_process(new f5_ea_eeexx());
+	this->register_process(new f5_ae_ellll());
+	this->register_process(new f5_ae_eeell());
+	this->register_process(new f5_ae_ellxx());
+	this->register_process(new f5_ae_elvxy());
+	this->register_process(new f5_ae_vxxxy());
+	this->register_process(new f5_ae_exxxx());
+	this->register_process(new f5_ea_eelvv());
+	this->register_process(new f5_ea_eeeee());
+	this->register_process(new f5_ae_evvvv());
+	this->register_process(new f5_ea_lvvyy());
+	this->register_process(new f5_ae_evvyy());
+	this->register_process(new f5_ea_exxyy());
+	this->register_process(new f5_ea_eevxy());
+	this->register_process(new f5_ea_eeeyy());
+	this->register_process(new f5_ea_ellyy());
+	this->register_process(new f5_ea_vxxxy());
+	this->register_process(new f5_ae_vvvxy());
+	this->register_process(new f5_ea_vvvxy());
+	this->register_process(new f5_ae_ellyy());
+	this->register_process(new f5_ea_evvvv());
+	this->register_process(new f5_ae_exxyy());
+	this->register_process(new f5_ae_evlxy());
+	this->register_process(new f5_ae_vxyyy());
+	this->register_process(new f5_ae_lllvv());
+	this->register_process(new f5_ae_eelvv());
+	this->register_process(new f5_ae_lvvxx());
+	this->register_process(new f5_ea_ellvv());
+	this->register_process(new f5_ae_evexy());
+	this->register_process(new f5_ea_ellll());
+	this->register_process(new f5_ea_elevv());
+	this->register_process(new f5_ea_eeell());
+	this->register_process(new f5_ae_lvvvv());
+	this->register_process(new f5_ea_evexy());
+	this->register_process(new f5_ae_eeexx());
+	this->register_process(new f5_ea_lllvv());
+	this->register_process(new f5_ea_evvxx());
+	this->register_process(new f5_ea_llvxy());
+	this->register_process(new f5_ae_llvxy());
+	this->register_process(new f5_ea_lvvvv());
 
 	// 6f
+	this->register_process(new f6_ttbar_yycyyc());
+	this->register_process(new f6_ttbar_yyvlyx());
+	this->register_process(new f6_ttbar_yyxylv());
+	this->register_process(new f6_ttbar_yyuyyu());
+	this->register_process(new f6_ttbar_yyuyyc());
+	this->register_process(new f6_ttbar_yyxyev());
+	this->register_process(new f6_ttbar_yyvllv());
+	this->register_process(new f6_ttbar_yyvelv());
+	this->register_process(new f6_ttbar_yycyyu());
+	this->register_process(new f6_ttbar_yyveyx());
+	this->register_process(new f6_ttbar_yyvlev());
+	this->register_process(new f6_ttbar_yyveev());
+	this->register_process(new f6_yyyyZ_yyyyee());
+	this->register_process(new f6_yyyyZ_eeeexx());
+	this->register_process(new f6_yyyyZ_eeeell());
+	this->register_process(new f6_yyyyZ_eeeeyy());
+	this->register_process(new f6_yyyyZ_eellyy());
+	this->register_process(new f6_yyyyZ_yyyyyy());
+	this->register_process(new f6_yyyyZ_llllee());
+	this->register_process(new f6_yyyyZ_yyyyll());
+	this->register_process(new f6_yyyyZ_yyyyvv());
+	this->register_process(new f6_yyyyZ_eellxx());
+	this->register_process(new f6_yyyyZ_eeeeee());
+	this->register_process(new f6_vvWW_vvxyyx());
+	this->register_process(new f6_vvWW_vvxylv());
+	this->register_process(new f6_vvWW_vvveev());
+	this->register_process(new f6_vvWW_vvveyx());
+	this->register_process(new f6_vvWW_vvvlyx());
+	this->register_process(new f6_vvWW_vvvllv());
+	this->register_process(new f6_vvWW_vvxyev());
+	this->register_process(new f6_vvWW_vvvlev());
+	this->register_process(new f6_vvWW_vvvelv());
+	this->register_process(new f6_eeWW_eeveev());
+	this->register_process(new f6_eeWW_eexyyx());
+	this->register_process(new f6_eeWW_eevlev());
+	this->register_process(new f6_eeWW_eexyev());
+	this->register_process(new f6_eeWW_eeveyx());
+	this->register_process(new f6_eeWW_eevllv());
+	this->register_process(new f6_eeWW_eevlyx());
+	this->register_process(new f6_eeWW_eexylv());
+	this->register_process(new f6_eeWW_eevelv());
+	this->register_process(new f6_xxWW_xxveyx());
+	this->register_process(new f6_xxWW_xxxyyx());
+	this->register_process(new f6_xxWW_xxxylv());
+	this->register_process(new f6_xxWW_xxvlyx());
+	this->register_process(new f6_xxWW_xxveev());
+	this->register_process(new f6_xxWW_xxvelv());
+	this->register_process(new f6_xxWW_xxxyev());
+	this->register_process(new f6_xxWW_xxvllv());
+	this->register_process(new f6_xxWW_xxvlev());
+	this->register_process(new f6_xxxxZ_xxxxee());
+	this->register_process(new f6_xxxxZ_vvvvyy());
+	this->register_process(new f6_xxxxZ_xxxxvv());
+	this->register_process(new f6_xxxxZ_xxxxxx());
+	this->register_process(new f6_xxxxZ_xxxxll());
+	this->register_process(new f6_xxxxZ_vvvvxx());
+	this->register_process(new f6_llWW_llxylv());
+	this->register_process(new f6_llWW_llveyx());
+	this->register_process(new f6_llWW_llvlev());
+	this->register_process(new f6_llWW_llvelv());
+	this->register_process(new f6_llWW_llvlyx());
+	this->register_process(new f6_llWW_llxyev());
+	this->register_process(new f6_llWW_llxyyx());
+	this->register_process(new f6_llWW_llvllv());
+
 
 
 	streamlog_out(DEBUG) << "   init finished  " << std::endl;
@@ -134,7 +256,7 @@ void FinalStateRecorder::clear()
 {
 	streamlog_out(DEBUG) << "   clear called  " << std::endl;
 
-	m_errorCode = ERROR_CODES::UNKNOWN_ERROR;
+	m_error_code = ERROR_CODES::UNKNOWN_ERROR;
 	m_final_states.clear();
 
 	for (auto const& [key, value] : m_final_state_counts)
@@ -148,7 +270,7 @@ void FinalStateRecorder::clear()
 	m_event_category_zhh = EVENT_CATEGORY_ZHH::OTHER;
 }
 void FinalStateRecorder::processRunHeader( LCRunHeader*  /*run*/) { 
-	m_nRun++ ;
+	m_n_run++ ;
 } 
 
 void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
@@ -156,7 +278,7 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 	pLCEvent->getWeight();
 
 	// Initialize JSON metadata file
-	if (m_nEvt == 0) {
+	if (m_n_evt == 0) {
 		m_beamPol1 = pLCEvent->getParameters().getFloatVal("Pol0");
 		m_beamPol2 = pLCEvent->getParameters().getFloatVal("Pol1");
 		m_crossSection = pLCEvent->getParameters().getFloatVal("crossSection");
@@ -170,9 +292,9 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 
 	streamlog_out(DEBUG) << "processing event: " << pLCEvent->getEventNumber() << "  in run: " << pLCEvent->getRunNumber() << std::endl;
 	
-	m_nRun = pLCEvent->getRunNumber();
-	m_nEvt = pLCEvent->getEventNumber();
-	m_nEvtSum++;
+	m_n_run = pLCEvent->getRunNumber();
+	m_n_evt = pLCEvent->getEventNumber();
+	m_n_evt_sum++;
 
 	// Extract process meta data
 	std::string process = pLCEvent->getParameters().getStringVal("processName");
@@ -200,7 +322,7 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 					if (m_final_state_counts.find(abs(particle_pdg)) != m_final_state_counts.end()) {
 						m_final_state_counts[particle_pdg]++;
 					} else {
-						std::cerr << "Encountered unallowed final state particle " << particle_pdg << " in run " << m_nRun << " (process " << m_process << ") at event " << m_nEvt << std::endl ;
+						std::cerr << "Encountered unallowed final state particle " << particle_pdg << " in run " << m_n_run << " (process " << m_process << ") at event " << m_n_evt << std::endl ;
 						throw ERROR_CODES::UNALLOWED_VALUES;
 					}
 					
@@ -217,19 +339,19 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 
 				m_event_category = resolver->get_event_category(m_final_state_counts);
 
-				m_errorCode = ERROR_CODES::OK;
+				m_error_code = ERROR_CODES::OK;
 			} catch (int err) {
-				std::cerr << "Encountered exception in run " << m_nRun << " (process " << m_process << ") at event " << m_nEvt << std::endl ;
+				std::cerr << "Encountered exception in run " << m_n_run << " (process " << m_process << ") at event " << m_n_evt << std::endl ;
 				throw err;
 			}
 
 		} else {
-			m_errorCode = ERROR_CODES::PROCESS_NOT_FOUND;
+			m_error_code = ERROR_CODES::PROCESS_NOT_FOUND;
 		}
 
 	} catch(DataNotAvailableException &e) {
-		m_errorCode = ERROR_CODES::COLLECTION_NOT_FOUND;
-		streamlog_out(MESSAGE) << "processEvent : Input collections not found in event " << m_nEvt << std::endl;
+		m_error_code = ERROR_CODES::COLLECTION_NOT_FOUND;
+		streamlog_out(MESSAGE) << "processEvent : Input collections not found in event " << m_n_evt << std::endl;
 	}
 
 	m_pTTree->Fill();
@@ -251,8 +373,8 @@ void FinalStateRecorder::end()
 	delete m_pTFile;
 
 	// Write JSON metadata file
-	m_jsonFile["run"] = m_nRun;
-	m_jsonFile["nEvtSum"] = m_nEvtSum;
+	m_jsonFile["run"] = m_n_run;
+	m_jsonFile["nEvtSum"] = m_n_evt_sum;
 	m_jsonFile["polElectron"] = m_beamPol1;
 	m_jsonFile["polPositron"] = m_beamPol2;
 	m_jsonFile["crossSection"] = m_crossSection;

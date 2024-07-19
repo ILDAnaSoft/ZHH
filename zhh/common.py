@@ -29,12 +29,7 @@ pdg_map = {
     3122: 'Lambda',    
 }
 
-pdg_groups = {
-    'l': [ 11, 12, 13, 14, 15, 16 ],
-    'q': [ 1, 2, 3, 4, 5, 6 ]
-}
-
-default_processes = [
+default_locations = [
     '2f_Z_bhabhaNg',
     '2f_Z_hadronic',
     '2f_Z_nuNg',
@@ -64,16 +59,17 @@ default_processes = [
     '6f_eeWW',
     '6f_xxWW',
     '6f_xxxxZ',
-    '6f_llWW']
+    '6f_llWW',
+    'hh']
 
 
-def get_raw_files(processes:Optional[Union[str,list[str]]]=None,
+def get_raw_files(locations:Optional[Union[str,list[str]]]=None,
                   debug:bool=False,
                   groups:Optional[list[str]]=['eL.pL', 'eL.pR', 'eR.pL', 'eR.pR']) -> list[str]:
     """Gets the full paths to mc-opt-3 sample files
 
     Args:
-        processes (Optional[Union[str,list[str]]], optional): sub-folders to look in. if None, default_processes(). Defaults to None.
+        locations (Optional[Union[str,list[str]]], optional): sub-folders to look in. if None, default_locations(). Defaults to None.
         debug (bool, optional): if True, only one file per process (and filter, if given) will be output. Defaults to False.
         groups (Optional[list[str]], optional): logically disjoint filter sets. Defaults to ['eL.pL', 'eL.pR', 'eR.pL', 'eR.pR'].
 
@@ -81,14 +77,15 @@ def get_raw_files(processes:Optional[Union[str,list[str]]]=None,
         list[str]: _description_
     """
     
-    if processes is None:
-        processes = default_processes
-    elif isinstance(processes, str):
-        processes = [processes]
+    if locations is None:
+        locations = default_locations
+    elif isinstance(locations, str):
+        locations = [locations]
     
     arr = []
-    for process in processes:
-        carr = glob(f"/pnfs/desy.de/ilc/prod/ilc/ild/copy/dst-merged/500-TDR_ws/{process}/ILD_l5_o1_v02/**/*.slcio", recursive=True)
+    for location in locations:
+        root_location = '/pnfs/desy.de/ilc/prod/ilc/mc-2020/ild' if location == 'hh' else '/pnfs/desy.de/ilc/prod/ilc/ild/copy'
+        carr = glob(f"{root_location}/dst-merged/500-TDR_ws/{location}/ILD_l5_o1_v02/**/*.slcio", recursive=True)
         carr.sort()
         
         if groups is not None:
