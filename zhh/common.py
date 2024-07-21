@@ -81,11 +81,28 @@ def get_raw_files(locations:Optional[Union[str,list[str]]]=None,
         locations = default_locations
     elif isinstance(locations, str):
         locations = [locations]
+        
+    # Handle hh sample (including hh and qqh + others) separately
+    if 'hh' in locations:
+        locations.remove('hh')
+        for loc in ['Pe1e1hh', 'Pe2e2hh', 'Pe3e3hh',
+                    'Pe1e1qqh', 'Pe2e2qqh', 'Pe3e3qqh',
+                    'Pn1n1hh', 'Pn23n23hh',
+                    'Pn1n1qqh', 'Pn23n23qqh',
+                    'Pqqhh',
+                    'Pqqqqh']:
+            locations.append(f'hh:{loc}')
     
     arr = []
     for location in locations:
-        root_location = '/pnfs/desy.de/ilc/prod/ilc/mc-2020/ild' if location == 'hh' else '/pnfs/desy.de/ilc/prod/ilc/ild/copy'
-        carr = glob(f"{root_location}/dst-merged/500-TDR_ws/{location}/ILD_l5_o1_v02/**/*.slcio", recursive=True)
+        root_location = '/pnfs/desy.de/ilc/prod/ilc/ild/copy'
+        
+        if location.startswith('hh:'):
+            root_location = '/pnfs/desy.de/ilc/prod/ilc/mc-2020/ild'
+            carr = glob(f"{root_location}/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02/**/*.{location.replace('hh:', '')}.*.slcio", recursive=True)
+        else:
+            carr = glob(f"{root_location}/dst-merged/500-TDR_ws/{location}/ILD_l5_o1_v02/**/*.slcio", recursive=True)
+            
         carr.sort()
         
         if groups is not None:

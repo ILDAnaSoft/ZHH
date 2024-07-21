@@ -94,6 +94,7 @@ class FinalStateRecorder : public Processor
 			{ 14, 0 }, // vµ
 			{ 15, 0 }, // tau
 			{ 16, 0 }, // vtau
+			{ 21, 0 }, // g
 			{ 22, 0 }, // γ
 			{ 23, 0 }, // Z
 			{ 24, 0 }, // W

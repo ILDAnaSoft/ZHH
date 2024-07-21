@@ -40,10 +40,11 @@ class Preselection(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         src_file = str(self.branch_map[self.branch])
         
         # Check if sample belongs to new or old MC production to change MCParticleCollectionName
-        mcp_col_name = 'MCParticle' if '/hh/' in src_file else 'MCParticlesSkimmed'
+        mcp_col_name = 'MCParticlesSkimmed' if '/hh/' in src_file else 'MCParticle'
         
         cmd =  f'source $REPO_ROOT/setup.sh'
-        cmd += f' && Marlin $REPO_ROOT/scripts/ZHH_v2.xml --global.MaxRecordNumber={"1000" if self.debug else "0"} --global.LCIOInputFiles={src_file} --constant.OutputDirectory=. --MCParticleCollectionName={mcp_col_name}'
+        cmd += f' && echo "Starting Marlin at $(date)"'
+        cmd += f' && Marlin $REPO_ROOT/scripts/ZHH_v2.xml --global.MaxRecordNumber={"1000" if self.debug else "0"} --global.LCIOInputFiles={src_file} --constant.OutputDirectory=. --constant.MCParticleCollectionName={mcp_col_name}'
         cmd += f' && mv zhh_PreSelection_llHH.root {temp_files[0].path}'
         cmd += f' && mv zhh_PreSelection_vvHH.root {temp_files[1].path}'
         cmd += f' && mv zhh_PreSelection_qqHH.root {temp_files[2].path}'

@@ -26,7 +26,17 @@ make install
 If you compile a freshly cloned copy from scratch, you _might_ want to use the `compile_from_scratch.sh` script.
 For that you need to `source` it from the top level directory of the repository. It saves some typing, that's all.
 
-### How to run the analysis
+### Running the analysis
+The luigi analysis framework (LAW) is used to orchestrate the execution of batch jobs. To setup law, ```cd``` into ```workflows``` and ```source setup.sh```.
+
+To run the preselection analysis, use
+
 ```shell
-Marlin scripts/ZHHllbbbbAnalysis.xml
+law run Preselection --version v1 --transfer-logs --Preselection-poll-interval=15sec --Preselection-debug
+```
+
+### How to run parts of the analysis
+
+```shell
+Marlin scripts/ZHH_v2.xml
 ```
