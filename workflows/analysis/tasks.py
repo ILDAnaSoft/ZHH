@@ -8,7 +8,7 @@ import luigi
 
 # import our "framework" tasks
 from analysis.framework import HTCondorWorkflow
-from zhh import plot_preselection_pass
+from zhh import plot_preselection_pass, is_readable
 from phc import export_figures, ShellTask, BaseTask, ForcibleTask
 
 import numpy as np
@@ -20,6 +20,7 @@ class Preselection(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     
     def create_branch_map(self) -> dict[int, str]:
         arr = get_raw_files(debug=self.debug)
+        arr = list(filter(is_readable, arr))
         
         res = { k: v for k, v in zip(list(range(len(arr))), arr) }
         
