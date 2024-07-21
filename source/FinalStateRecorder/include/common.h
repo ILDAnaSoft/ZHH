@@ -52,6 +52,8 @@ struct PROCESS_ID {
 		f4_sze_sl = 3192,
 		f4_sznu_l = 3201,
 		f4_sznu_sl = 3360,
+		f4_szee_lmee = 3186,
+		f4_szsw_lmee = 3187,
 
 		f4_ww_l = 3183,
 		f4_ww_h = 3582,

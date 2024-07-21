@@ -107,6 +107,8 @@ void FinalStateRecorder::init()
 
 	// 4f
 	this->register_process(new llll_zz());
+	this->register_process(new llll_szee_lmee());
+	this->register_process(new llll_szsw_lmee());
 	this->register_process(new qqqq_zz());
 	this->register_process(new llqq_zz());
 	this->register_process(new llll_ww());

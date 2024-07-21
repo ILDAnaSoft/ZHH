@@ -61,13 +61,13 @@ class e3e3hh : public ffhh {
     public: e3e3hh(): ffhh( "e3e3hh", PROCESS_ID::e3e3hh, EVENT_CATEGORY_TRUE::llHH, vector{15} ) {}; };
 
 class qqhh : public ffhh {
-    public: qqhh(): ffhh( "qqhh", PROCESS_ID::qqhh, EVENT_CATEGORY_TRUE::qqHH, vector{1,2,3,4,5} ) {}; };
+    public: qqhh(): ffhh( "qqhh", PROCESS_ID::qqhh, EVENT_CATEGORY_TRUE::qqHH, vector{1,2,3,4,5,6} ) {}; };
 
 class n1n1hh : public ffhh {
     public: n1n1hh(): ffhh( "n1n1hh", PROCESS_ID::n1n1hh, EVENT_CATEGORY_TRUE::vvHH, vector{12} ) {}; };
 
 class n23n23hh : public ffhh {
-    public: n23n23hh(): ffhh( "n23n23hh", PROCESS_ID::n23n23hh, EVENT_CATEGORY_TRUE::vvHH, vector{14} ) {}; };
+    public: n23n23hh(): ffhh( "n23n23hh", PROCESS_ID::n23n23hh, EVENT_CATEGORY_TRUE::vvHH, vector{14, 16} ) {}; };
 
 
 #endif

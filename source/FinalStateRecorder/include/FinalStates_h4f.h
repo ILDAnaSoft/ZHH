@@ -54,21 +54,21 @@ class ffffh: public FinalStateResolver {
 
 
 class e1e1qqh : public ffffh {
-    public: e1e1qqh(): ffffh( "e1e1qqh", PROCESS_ID::e1e1qqh, EVENT_CATEGORY_TRUE::llqqH, vector{11,1,2,3,4,5} ) {}; };
+    public: e1e1qqh(): ffffh( "e1e1qqh", PROCESS_ID::e1e1qqh, EVENT_CATEGORY_TRUE::llqqH, vector{11,1,2,3,4,5,6} ) {}; };
 
 class e2e2qqh : public ffffh {
-    public: e2e2qqh(): ffffh( "e2e2qqh", PROCESS_ID::e2e2qqh, EVENT_CATEGORY_TRUE::llqqH, vector{13,1,2,3,4,5} ) {}; };
+    public: e2e2qqh(): ffffh( "e2e2qqh", PROCESS_ID::e2e2qqh, EVENT_CATEGORY_TRUE::llqqH, vector{13,1,2,3,4,5,6} ) {}; };
 
 class e3e3qqh : public ffffh {
-    public: e3e3qqh(): ffffh( "e3e3qqh", PROCESS_ID::e3e3qqh, EVENT_CATEGORY_TRUE::llqqH, vector{15,1,2,3,4,5} ) {}; };
+    public: e3e3qqh(): ffffh( "e3e3qqh", PROCESS_ID::e3e3qqh, EVENT_CATEGORY_TRUE::llqqH, vector{15,1,2,3,4,5,6} ) {}; };
 
 class qqqqh : public ffffh {
-    public: qqqqh(): ffffh( "qqqqh", PROCESS_ID::qqqqh, EVENT_CATEGORY_TRUE::qqqqH, vector{1,2,3,4,5} ) {}; };
+    public: qqqqh(): ffffh( "qqqqh", PROCESS_ID::qqqqh, EVENT_CATEGORY_TRUE::qqqqH, vector{1,2,3,4,5,6} ) {}; };
 
 class n1n1qqh : public ffffh {
-    public: n1n1qqh(): ffffh( "n1n1qqh", PROCESS_ID::n1n1qqh, EVENT_CATEGORY_TRUE::vvqqH, vector{12,1,2,3,4,5} ) {}; };
+    public: n1n1qqh(): ffffh( "n1n1qqh", PROCESS_ID::n1n1qqh, EVENT_CATEGORY_TRUE::vvqqH, vector{12,1,2,3,4,5,6} ) {}; };
 
 class n23n23qqh : public ffffh {
-    public: n23n23qqh(): ffffh( "n23n23qqh", PROCESS_ID::n23n23qqh, EVENT_CATEGORY_TRUE::vvqqH, vector{14,16,18,1,2,3,4,5} ) {}; };
+    public: n23n23qqh(): ffffh( "n23n23qqh", PROCESS_ID::n23n23qqh, EVENT_CATEGORY_TRUE::vvqqH, vector{14,16,1,2,3,4,5,6} ) {}; };
 
 #endif
