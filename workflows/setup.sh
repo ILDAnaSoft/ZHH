@@ -8,7 +8,7 @@ action() {
 
     # All this should be automatic (except for CONDA_ROOT)
 
-    if [[ $( cat /etc/hostname ) == *"desy.de"* ]]; then
+    if [ -e "/afs/desy.de/group/flc" ]; then
         local ON_NAF="true"
         local CONDA_ROOT="/nfs/dust/ilc/user/bliewert/miniconda3"
         local CONDA_ENV_NAME="graphjet_pyg"

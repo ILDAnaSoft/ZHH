@@ -21,8 +21,8 @@
         <!-- MyHdecayMode does not work with old samples due to legacy sample name -->
         <!-- <processor name="MyHdecayMode" /> -->
 
-        <processor name="MyFastJetProcessor" />
-        <!-- <processor name="MyCheatedMCOverlayRemoval" /> -->
+        <!-- <processor name="MyFastJetProcessor" /> -->
+        <processor name="MyCheatedMCOverlayRemoval" />
         <processor name="MyThrust"/>
         
         <!--
@@ -46,11 +46,9 @@
 
     <global>
         <parameter name="LCIOInputFiles">
+            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02/v02-02-03/00015739/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n000.d_dstm_15739_0.slcio
             /pnfs/desy.de/ilc/prod/ilc/ild/copy/dst-merged/500-TDR_ws/2f_Z_hadronic/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I250114.P2f_z_h.eL.pR.n001.d_dstm_10410_1.slcio
             /pnfs/desy.de/ilc/prod/ilc/ild/copy/dst-merged/500-TDR_ws/6f_vvWW/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I108596.Pvvveev.eL.pR.n001.d_dstm_10354_0.slcio
-             <!--
-             /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02/v02-02-03/00015739/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n000.d_dstm_15739_0.slcio
-             -->
         </parameter>
         <!-- limit the number of processed records (run+evt): -->
         <!--parameter name="MaxRecordNumber" value="0" /to process all events--> 
@@ -143,8 +141,8 @@
     <processor name="MyCheatedMCOverlayRemoval" type="CheatedMCOverlayRemoval">
         <parameter name="RecoParticleCollection" type="string"  lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
         <parameter name="MCParticleCollection" type="string"  lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
-        <parameter name="RecoMCTruthLink" type="string" lcioInType="LCRelation"> RecoMCTruthLink </parameter>
-        <parameter name="MCTruthRecoLink" type="string" lcioInType="LCRelation"> MCTruthRecoLink </parameter>
+        <parameter name="RecoMCTruthLink" type="string" lcioInType="LCRelation">RecoMCTruthLink</parameter>
+        <parameter name="MCTruthRecoLink" type="string" lcioInType="LCRelation">MCTruthRecoLink</parameter>
         <parameter name="OutputPfoCollection" type="string" lcioOutType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
         <parameter name="Verbosity" type="string">SILENT</parameter>
     </processor>
@@ -280,7 +278,7 @@
         <parameter name="JetClustering.YAddedForJetLeptonVertex" type="double" value="100"/> <!-- add penalty for combining lepton and vertex -->
         <parameter name="JetClustering.YAddedForJetLeptonLepton" type="double" value="100"/> <!-- add penalty for combining leptons -->
 
-        <parameter name="JetVertexRefiner.InputJetCollectionName" type="string" value="VertexJets" />
+        <parameter name="JetVertexRefiner.InputJetCollectionName" type="string" value="VertexJets_ll" />
         <parameter name="JetVertexRefiner.OutputJetCollectionName" type="string" value="RefinedJets_ll" />
         <parameter name="JetVertexRefiner.PrimaryVertexCollectionName" type="string" value="PrimaryVertex" />
         <parameter name="JetVertexRefiner.InputVertexCollectionName" type="string" value="BuildUpVertex" />
@@ -299,7 +297,7 @@
 
         <!-- FlavorTag parameters -->
         <parameter name="PrimaryVertexCollectionName" type="string" value="PrimaryVertex" />
-        <parameter name="FlavorTag.JetCollectionName" type="string" value="RefinedJets" />
+        <parameter name="FlavorTag.JetCollectionName" type="string" value="RefinedJets_ll" />
         <parameter name="MakeNtuple.AuxiliaryInfo" type="int" value="-1" />
 
         <!--parameter name="FlavorTag.WeightsDirectory" type="string" value="/afs/desy.de/user/s/skawada/sonas_work/mini-DST/lcfiweights"/--> <!-- e.g. lcfiweights/lcfiweights_6q500_v04_p00_ildl5 -->
@@ -403,7 +401,7 @@
         <parameter name="JetClustering.YAddedForJetLeptonVertex" type="double" value="100"/> <!-- add penalty for combining lepton and vertex -->
         <parameter name="JetClustering.YAddedForJetLeptonLepton" type="double" value="100"/> <!-- add penalty for combining leptons -->
 
-        <parameter name="JetVertexRefiner.InputJetCollectionName" type="string" value="VertexJets" />
+        <parameter name="JetVertexRefiner.InputJetCollectionName" type="string" value="VertexJets_vv" />
         <parameter name="JetVertexRefiner.OutputJetCollectionName" type="string" value="RefinedJets_vv" />
         <parameter name="JetVertexRefiner.PrimaryVertexCollectionName" type="string" value="PrimaryVertex" />
         <parameter name="JetVertexRefiner.InputVertexCollectionName" type="string" value="BuildUpVertex" />
@@ -422,7 +420,7 @@
 
         <!-- FlavorTag parameters -->
         <parameter name="PrimaryVertexCollectionName" type="string" value="PrimaryVertex" />
-        <parameter name="FlavorTag.JetCollectionName" type="string" value="RefinedJets" />
+        <parameter name="FlavorTag.JetCollectionName" type="string" value="RefinedJets_vv" />
         <parameter name="MakeNtuple.AuxiliaryInfo" type="int" value="-1" />
 
         <!--parameter name="FlavorTag.WeightsDirectory" type="string" value="/afs/desy.de/user/s/skawada/sonas_work/mini-DST/lcfiweights"/--> <!-- e.g. lcfiweights/lcfiweights_6q500_v04_p00_ildl5 -->
@@ -526,7 +524,7 @@
         <parameter name="JetClustering.YAddedForJetLeptonVertex" type="double" value="100"/> <!-- add penalty for combining lepton and vertex -->
         <parameter name="JetClustering.YAddedForJetLeptonLepton" type="double" value="100"/> <!-- add penalty for combining leptons -->
 
-        <parameter name="JetVertexRefiner.InputJetCollectionName" type="string" value="VertexJets" />
+        <parameter name="JetVertexRefiner.InputJetCollectionName" type="string" value="VertexJets_qq" />
         <parameter name="JetVertexRefiner.OutputJetCollectionName" type="string" value="RefinedJets_qq" />
         <parameter name="JetVertexRefiner.PrimaryVertexCollectionName" type="string" value="PrimaryVertex" />
         <parameter name="JetVertexRefiner.InputVertexCollectionName" type="string" value="BuildUpVertex" />
@@ -545,7 +543,7 @@
 
         <!-- FlavorTag parameters -->
         <parameter name="PrimaryVertexCollectionName" type="string" value="PrimaryVertex" />
-        <parameter name="FlavorTag.JetCollectionName" type="string" value="RefinedJets" />
+        <parameter name="FlavorTag.JetCollectionName" type="string" value="RefinedJets_qq" />
         <parameter name="MakeNtuple.AuxiliaryInfo" type="int" value="-1" />
 
         <!--parameter name="FlavorTag.WeightsDirectory" type="string" value="/afs/desy.de/user/s/skawada/sonas_work/mini-DST/lcfiweights"/--> <!-- e.g. lcfiweights/lcfiweights_6q500_v04_p00_ildl5 -->

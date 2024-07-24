@@ -45,7 +45,20 @@ class Preselection(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         
         cmd =  f'source $REPO_ROOT/setup.sh'
         cmd += f' && echo "Starting Marlin at $(date)"'
-        cmd += f' && Marlin $REPO_ROOT/scripts/ZHH_v2.xml --global.MaxRecordNumber={"1000" if self.debug else "0"} --global.LCIOInputFiles={src_file} --constant.OutputDirectory=. --constant.MCParticleCollectionName={mcp_col_name}'
+        
+        src_txt_target = self.local_path(str(self.branch) + "_Source.txt")
+        root_files = ['PreSelection_llHH.root', 'PreSelection_vvHH.root', 'PreSelection_qqHH.root', 'FinalStates.root']
+        for suffix in ['FinalStateMeta.json'] + root_files:
+            target_path = self.local_path(str(self.branch) + "_" + suffix)
+            cmd += f' && (if [[ ! -f {src_txt_target} && -f {target_path} ]]; then rm {target_path}; fi)'
+        
+        cmd += f' && ( Marlin $REPO_ROOT/scripts/ZHH_v2.xml --global.MaxRecordNumber={"20" if self.debug else "0"} --global.LCIOInputFiles={src_file} --constant.OutputDirectory=. --constant.MCParticleCollectionName={mcp_col_name} || true )'
+        cmd += f' && echo "Finished Marlin at $(date)"'
+        
+        # is_root_readable
+        for suffix in root_files:
+            cmd += f' && is_root_readable ./zhh_{suffix}'
+        
         cmd += f' && mv zhh_PreSelection_llHH.root {temp_files[0].path}'
         cmd += f' && mv zhh_PreSelection_vvHH.root {temp_files[1].path}'
         cmd += f' && mv zhh_PreSelection_qqHH.root {temp_files[2].path}'
@@ -54,7 +67,6 @@ class Preselection(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         cmd += f' && echo "{self.branch_map[self.branch]}" >> {temp_files[5].path}'
 
         return cmd
-
 
 class CreatePlots(BaseTask):
     """

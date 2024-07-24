@@ -67,11 +67,11 @@ class ffff: public FinalStateResolver {
 class llll_zz : public ffff {
     public: llll_zz(): ffff( "4f_zz_l", PROCESS_ID::f4_zz_l, EVENT_CATEGORY_TRUE::llll, vector{11,12,13,14,15,16} ) {}; };
 
-class llll_szee_lmee : public ffff {
-    public: llll_szee_lmee(): ffff( "4f_lowmee_singleZee_leptonic", PROCESS_ID::f4_szee_lmee, EVENT_CATEGORY_TRUE::llll, vector{11,12,13,14,15,16} ) {}; };
+class llll_szee_lmee : public ffff { // 4f_lowmee_singleZee_leptonic
+    public: llll_szee_lmee(): ffff( "4f_lowmee_sze_l", PROCESS_ID::f4_szee_lmee, EVENT_CATEGORY_TRUE::llll, vector{11,12,13,14,15,16} ) {}; };
 
-class llll_szsw_lmee : public ffff {
-    public: llll_szsw_lmee(): ffff( "4f_lowmee_singleZsingleWMix_lept", PROCESS_ID::f4_szsw_lmee, EVENT_CATEGORY_TRUE::llll, vector{11,12,13,14,15,16} ) {}; };
+class llll_szsw_lmee : public ffff { // 4f_lowmee_singleZsingleWMix_lept
+    public: llll_szsw_lmee(): ffff( "4f_lowmee_szeorsw_l", PROCESS_ID::f4_szsw_lmee, EVENT_CATEGORY_TRUE::llll, vector{11,12,13,14,15,16} ) {}; };
 
 class qqqq_zz : public ffff {
     public: qqqq_zz(): ffff( "4f_zz_h", PROCESS_ID::f4_zz_h, EVENT_CATEGORY_TRUE::qqqq, vector{1,2,3,4,5,6} ) {}; };
