@@ -1,10 +1,20 @@
-import seaborn as sns
-import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
 from typing import Optional, List
 import numpy as np
 
-def plot_preselection_pass(vecs:np.ndarray) -> List[Optional[Figure]]:
+def plot_preselection_pass(vecs:np.ndarray) -> List:
+    """_summary_
+
+    Args:
+        vecs (np.ndarray): _description_
+
+    Returns:
+        List: list of figures
+    """
+    
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+    from matplotlib.figure import Figure
+
     bars = list(range(len(vecs.T) + 1))
     vals = [len(vecs)]
 

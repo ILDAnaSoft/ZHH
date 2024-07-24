@@ -163,17 +163,18 @@ def get_preselection_passes(
     version:str='v1')->np.ndarray:
     
     dtype = [
-        ('proc', '<U32'),
+        ('process', '<U60'),
         ('pol_e', 'i'),
         ('pol_p', 'i'),
         ('n_gen', 'i'),
         ('cross_sec', 'f'),
-        ('cross_sec_err', 'i'),
+        ('cross_sec_err', 'f'),
         ('n_pass_llhh', 'i'),
         ('n_pass_vvhh', 'i'),
         ('n_pass_qqhh', 'i'),
         ('weight', 'f'),
-        ('id', '<U40')]
+        ('proc_pol', '<U64'),
+        ('branch', 'i')]
 
     results = np.empty(0, dtype=dtype)
     finished = glob(f'{DATA_ROOT}/*_Source.txt')
@@ -204,7 +205,7 @@ def get_preselection_passes(
             
             if not procpol in results['id']:
                 results = np.append(results, [np.array([
-                    (proc, pol[0], pol[1], n_gen, meta['crossSection'], meta['crossSectionError'], 0, 0, 0, 0., procpol)
+                    (proc, pol[0], pol[1], n_gen, meta['crossSection'], meta['crossSectionError'], 0, 0, 0, 0., procpol, int(branch))
                 ], dtype=dtype)])
             else:
                 results['n_gen'][results['id'] == procpol] += n_gen

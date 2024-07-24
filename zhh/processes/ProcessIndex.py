@@ -3,88 +3,117 @@ from glob import glob
 from typing import Optional
 import json, os, csv
 import os.path as osp
-import pandas as pd
+import numpy as np
 
-from zhh.processes.DirectoryReader import read_meta_file
-from zhh.util import df_append
+from tqdm.auto import tqdm
+from zhh.util import is_readable
+from zhh.analysis import get_pol_key
 
 class ProcessIndex:
-    process_index: str = 'processes.csv'
-    results_index: str = 'results.csv'
+    process_index: str = 'processes.json'
+    samples_index: str = 'samples.json'
     
-    columns_processes = ['processId', 'processName',
-                         'polElectron', 'polPositron',
-                         'crossSection', 'crossSectionError',
-                         'nEventsTot']
-    
-    columns_results = ['runId', 'nEvents',
-                       'fsMetaPath', 'fsPath',
-                       'preselHHllPath', 'preselHHvvPath', 'preselHHqqPath']
-    
-    def __setitem__(self, key:str, value:pd.DataFrame):
-        if key == 'processes':
-            self.processes = value
-        elif key == 'results':
-            self.results = value
-        else:
-            raise KeyError(f'Unknown key <{key}>')
+    dtype_sample = [
+        ('run_id', 'i'),
+        ('process', '<U60'),
+        ('proc_pol', '<U64'),
+        ('n_events', 'i'),
+        ('pol_e', 'i'),
+        ('pol_p', 'i'),
+        ('location', '<U512'),]
+
+    dtype_process = [
+        ('process', '<U60'),
+        ('proc_pol', '<U64'),
+        ('pol_e', 'i'),
+        ('pol_p', 'i'),
+        
+        ('cross_sec', 'f'),
+        ('cross_sec_err', 'f'),
+        ('generator_id', 'i')]
     
     def __init__(self,
-                 root_path:str,
-                 reindex:bool=True,
-                 log:bool=True):
+                 PROCESS_INDEX:str,
+                 SAMPLE_INDEX:str,
+                 RAW_FILE_LIST:list[str]):
         
-        # Load existing index
-        self.processes = pd.DataFrame(columns=self.columns_processes)
-        self.results = pd.DataFrame(columns=self.columns_results)
+        self.PROCESS_INDEX = PROCESS_INDEX
+        self.SAMPLE_INDEX = SAMPLE_INDEX
+        self.RAW_FILE_LIST = RAW_FILE_LIST
+        self.STATE = 0
         
-        process_path = osp.join(root_path, self.process_index)
-        results_path = osp.join(root_path, self.results_index)
+        if osp.isfile(PROCESS_INDEX) and osp.isfile(SAMPLE_INDEX):
+            self.processes = np.load(PROCESS_INDEX)
+            self.samples = np.load(SAMPLE_INDEX)
+        else:
+            self.samples = np.empty(0, dtype=self.dtype_sample)
+            self.processes = np.empty(0, dtype=self.dtype_process)
         
-        for df, path in (('processes', process_path),
-                         ('results', results_path)):
+    def load(self,
+             CHUNK_SIZE:int=0,
+             pbar:bool=True):
+        
+        from pyLCIO import IOIMPL
+        
+        remaining_files = list(set(self.RAW_FILE_LIST) - set(self.samples['location']))
+
+        if CHUNK_SIZE > 0:
+            ci = 0
+            chunk = []
+
+            while ci < len(remaining_files):
+                file = remaining_files[ci]
+                ci += 1
+                if is_readable(file):
+                    chunk.append(file)
+                    
+                    if len(chunk) == CHUNK_SIZE:
+                        break
+            remaining_files = chunk                
+        else:
+            remaining_files = list(filter(is_readable, remaining_files))
+
+        for location in (progress := tqdm(remaining_files, disable=not pbar)):
+            progress.set_description(f'Reading file {location}')
             
-            if osp.isfile(path):
-                if reindex:
-                    if log: print(f'Removing index {df}')
-                    os.remove(path)
-                else:
-                    self[df] = pd.read_csv(path)
-        
-        # Find all files
-        meta_files = glob(root_path + '/*.json')
-        
-        for file in meta_files:
-            if log: print(f'Reading meta file {file}')
-            process, result = read_meta_file(file)
+            reader = IOIMPL.LCFactory.getInstance().createLCReader()
+            reader.open(location)
             
-            if not (process.process_id in self.processes['processId'].values):
-                self.processes = df_append(self.processes, {
-                    'processId': [process.process_id],
-                    'processName': [process.process_name],
-                    'polElectron': [process.pol_electron],
-                    'polPositron': [process.pol_positron],
-                    'crossSection': [process.cross_section],
-                    'crossSectionError': [process.cross_section_err]
-                })
-            else:
-                self.processes['nEventsTot'][self.processes['processId'] == process.process_id] += result.n_events
+            event = reader.readNextEvent()
+            params = event.getParameters()
             
-            if not (result.run_id in self.results['runId'].values):
-                self.results = df_append(self.results, {
-                    'runId': [result.run_id],
-                    'nEvents': [result.n_events],
-                    'fsMetaPath': [result.final_state_meta_path],
-                    'fsPath': [result.final_state_path],
-                    'preselHHllPath': [result.zhh_presel_llhh_path],
-                    'preselHHvvPath': [result.zhh_presel_vvhh_path],
-                    'preselHHqqPath': [result.zhh_presel_qqhh_path]
-                })
+            file_meta = {
+                'process': params.getStringVal('processName'),
+                'nEvtSum': reader.getNumberOfEvents(),
+                'run': event.getRunNumber(),
+                'beamPol1': params.getFloatVal('Pol0'),
+                'beamPol2': params.getFloatVal('Pol1'),
+                'crossSection': params.getFloatVal('crossSection'),
+                'crossSection_err': params.getFloatVal('crossSectionError'),
+                'process_id': params.getIntVal('ProcessID'),
+            }
             
-        # Save index
-        if log: print(f'Saving process index {process_path}')
-        self.processes.to_csv(process_path)
-        
-        if log: print(f'Saving results index {results_path}')
-        self.results.to_csv(results_path)
-        
+            reader.close()
+                
+            pol_em, pol_ep = file_meta['beamPol1'], file_meta['beamPol2']
+            process = file_meta['process']
+            
+            proc_pol = f'{process}_{get_pol_key(pol_em, pol_ep)}'
+            
+            if not proc_pol in self.processes['proc_pol']:
+                cx, cx_err = file_meta['crossSection'], file_meta['crossSection_err']
+                self.processes = np.append(self.processes, [np.array([
+                    (process, proc_pol, pol_em, pol_ep, cx, cx_err, file_meta['process_id'])
+                ], dtype=self.dtype_process)])
+                
+            run_id = file_meta['run']
+            if not location in self.samples['location']:
+                self.samples = np.append(self.samples, [np.array([
+                    (run_id, process, proc_pol, file_meta['nEvtSum'], pol_em, pol_ep, location)
+                ], dtype=self.dtype_sample)])
+                
+            self.save()
+
+    def save(self):
+        np.save(self.SAMPLE_INDEX, self.samples)
+        np.save(self.PROCESS_INDEX, self.processes)

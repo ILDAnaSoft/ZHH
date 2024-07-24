@@ -8,7 +8,7 @@
 
 if ! command -v conda &> /dev/null
 then
-    echo "Sourcing conda"
+    echo "Making conda available (not sourcing any environment)..."
     source /afs/desy.de/user/b/bliewert/.zshrc
 fi
 

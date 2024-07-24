@@ -18,6 +18,9 @@ import os.path as osp
 class Preselection(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     debug = luigi.BoolParameter(default=False)
     
+    def requires(self):
+        return Preselection.req(self)
+    
     def create_branch_map(self) -> dict[int, str]:
         arr = get_raw_files(debug=self.debug)
         arr = list(filter(is_readable, arr))
@@ -67,6 +70,18 @@ class Preselection(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         cmd += f' && echo "{self.branch_map[self.branch]}" >> {temp_files[5].path}'
 
         return cmd
+
+class CreateIndex(BaseTask):
+    """
+    This task creates two indeces: An index of available SLCIO sample files with information about the file location, number of events, physics process and polarization + an index containing all encountered physics processes for each polarization and their cross section-section values 
+    """
+    
+    def output(self):
+        return [
+            self.local_target('processes.json'),
+            self.local_target('samples.json')
+        ]
+    
 
 class CreatePlots(BaseTask):
     """
