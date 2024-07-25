@@ -70,7 +70,7 @@ def get_runtime_analysis(DATA_ROOT:Optional[str]=None,
     return results
 
 def get_adjusted_time_per_event(runtime_analysis:np.ndarray,
-                                 divide_by_min:bool=True,
+                                 normalize_by_min:bool=True,
                                  MAX_CAP:Optional[float]=None,
                                  MIN_CAP:Optional[float]=None):
     unique_processes = np.unique(runtime_analysis['process'])
@@ -94,7 +94,7 @@ def get_adjusted_time_per_event(runtime_analysis:np.ndarray,
         results[i] = np.array([ (process, tAvg, n_processed, tPE) ], dtype=dtype)
         i += 1
         
-    if divide_by_min:
+    if normalize_by_min:
         results['tPE'] *= 1/results['tPE'].min()
         
     if MAX_CAP is not None:
