@@ -8,7 +8,7 @@ import luigi
 
 # import our "framework" tasks
 from analysis.framework import HTCondorWorkflow
-from zhh import plot_preselection_pass, is_readable, ProcessIndex
+from zhh import plot_preselection_pass, is_readable, ProcessIndex, get_adjusted_time_per_event, get_runtime_analysis, get_sample_chunk_splits
 from phc import export_figures, ShellTask, BaseTask, ForcibleTask
 
 from typing import Optional
@@ -23,6 +23,9 @@ class PreselectionAbstract(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         reqs = super().workflow_requires()
         reqs['raw_index'] = CreateRawIndex.req(self)
         
+        if not self.debug:
+            reqs['preselection_chunks'] = CreatePreselectionChunks.req(self)
+        
         return reqs
     
     @law.dynamic_workflow_condition
@@ -31,7 +34,8 @@ class PreselectionAbstract(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         # the decorator will trigger a run of workflow_requires beforehand
         if len(self.input()) > 0:
             # here: self.input() refers to the outputs of tasks defined in workflow_requires()
-            return self.input()["raw_index"][0].exists() and self.input()["raw_index"][1].exists()
+            return all(elem.exists() for elem in flatten(self.input()))
+            #return self.input()["raw_index"][0].exists() and self.input()["raw_index"][1].exists()
         else:
             return True
     
@@ -39,19 +43,28 @@ class PreselectionAbstract(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     def create_branch_map(self) -> dict[int, str]:
         samples = np.load(self.input()['raw_index'][1].path)
         
-        # arr = get_raw_files(debug=self.debug)
-        # arr = list(filter(is_readable, arr))
-        # res = { k: v for k, v in zip(list(range(len(arr))), arr) }
-        
-        selection = samples[np.lexsort((samples['location'], samples['proc_pol']))]
-        if self.debug:
-            arr = []
-            for proc_pol in np.unique(selection['proc_pol']):
-                arr.append(selection[np.where(selection['proc_pol'] == proc_pol)[0][0]]['location'])
-        else:
-            arr = list(samples['location'])
+        if 'preselection_chunks' in self.input():
+            sample_chunk_splits = self.input()['preselection_chunks'].load()
+            res = {}
+            i = 0
             
-        res = { k: v for k, v in zip(list(range(len(arr))), arr) }
+            for comb in sample_chunk_splits:
+                res[i] = (comb['location'], comb['chunk_start'], comb['chunk_size'])
+                i += 1
+        else: 
+            # arr = get_raw_files(debug=self.debug)
+            # arr = list(filter(is_readable, arr))
+            # res = { k: v for k, v in zip(list(range(len(arr))), arr) }
+            
+            selection = samples[np.lexsort((samples['location'], samples['proc_pol']))]
+            if self.debug:
+                arr = []
+                for proc_pol in np.unique(selection['proc_pol']):
+                    arr.append(selection[np.where(selection['proc_pol'] == proc_pol)[0][0]]['location'])
+            else:
+                arr = list(samples['location'])
+                
+            res = { k: v for k, v in zip(list(range(len(arr))), arr) }
         
         return res
 
@@ -68,7 +81,16 @@ class PreselectionAbstract(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
 
     def build_command(self, fallback_level):
         temp_files = self.output()
-        src_file = str(self.branch_map[self.branch])
+        src = self.branch_map[self.branch]
+        
+        if isinstance(src, tuple):
+            src_file = src[0]
+            n_events_skip = src[1]
+            n_events_max = src[2]
+        else:
+            src_file = str(src)
+            n_events_skip = 0
+            n_events_max = 20 if self.debug else 0
         
         # Check if sample belongs to new or old MC production to change MCParticleCollectionName
         mcp_col_name = 'MCParticlesSkimmed' if '/hh/' in src_file else 'MCParticle'
@@ -80,12 +102,12 @@ class PreselectionAbstract(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         root_files = ['PreSelection_llHH.root', 'PreSelection_vvHH.root', 'PreSelection_qqHH.root', 'FinalStates.root']
         for suffix in ['FinalStateMeta.json'] + root_files:
             target_path = self.local_path(str(self.branch) + "_" + suffix)
-            cmd += f' && (if [[ ! -f {src_txt_target} && -f {target_path} ]]; then rm {target_path}; fi)'
+            cmd += f' && (if [[ ! -f {src_txt_target} && -f {target_path} ]]; then rm {target_path}; fi)' # should not be necessary as we're writing to a temp file anyway
         
-        cmd += f' && ( Marlin $REPO_ROOT/scripts/ZHH_v2.xml --global.MaxRecordNumber={"20" if self.debug else "0"} --global.LCIOInputFiles={src_file} --constant.OutputDirectory=. --constant.MCParticleCollectionName={mcp_col_name} || true )'
+        cmd += f' && ( Marlin $REPO_ROOT/scripts/ZHH_v2.xml --global.MaxRecordNumber={str(n_events_max)} --global.LCIOInputFiles={src_file} --global.SkipNEvents={str(n_events_skip)} --constant.OutputDirectory=. --constant.MCParticleCollectionName={mcp_col_name} || true )'
         cmd += f' && echo "Finished Marlin at $(date)"'
         
-        # is_root_readable
+        # is_root_readable (necessary because CheatedMCOverlayRemoval crashes Marlin before it can properly exit, see above)
         for suffix in root_files:
             cmd += f' && is_root_readable ./zhh_{suffix}'
         
@@ -99,7 +121,7 @@ class PreselectionAbstract(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         return cmd
     
 class PreselectionRuntime(PreselectionAbstract):
-    """Generates a runtime analysis for each proc_pol combination
+    """Generates a runtime analysis for each proc_pol combination, essentially by running in debug mode
 
     Args:
         PreselectionAbstract (_type_): _description_
@@ -108,12 +130,29 @@ class PreselectionRuntime(PreselectionAbstract):
 
 class PreselectionFinal(PreselectionAbstract):
     debug = False # luigi.BoolParameter(default=False)
+
+class CreatePreselectionChunks(BaseTask):
+    def requires(self):
+        return [
+            CreateRawIndex.req(self),
+            PreselectionRuntime.req(self)
+        ]
+
+    def output(self):
+        return self.local_target('chunks.npy', format=luigi.format.Nop)
     
-    def workflow_requires(self):
-        reqs = super().workflow_requires()
-        reqs['presel_runtime'] = PreselectionRuntime.req(self)
+    def run(self):
+        SAMPLE_INDEX = self.input()[0][1].path
+        DATA_ROOT = osp.dirname(self.input()[1]['collection'][0][0].path)
         
-        return reqs   
+        with self.output().open('wb') as file:
+            runtime_analysis = get_runtime_analysis(DATA_ROOT)
+            atp = get_adjusted_time_per_event(runtime_analysis, True, 5, 2)
+            chunk_splits = get_sample_chunk_splits(np.load(SAMPLE_INDEX), atp)
+            
+            np.save(file, chunk_splits)
+        
+        self.publish_message(f'Compiled preselection chunks')
 
 class CreateRawIndex(BaseTask):
     """
@@ -141,7 +180,7 @@ class CreatePlots(BaseTask):
     """
 
     def requires(self):
-        return Preselection.req(self)
+        return PreselectionFinal.req(self)
 
     def output(self):
         # output a plain text file

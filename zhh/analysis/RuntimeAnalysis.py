@@ -5,8 +5,7 @@ from dateutil import parser
 from typing import Union, Optional
 
 def evaluate_runtime(DATA_ROOT:str,
-                     branch:Union[int,str],
-                     MARLIN_STARTUP_TIME:int=15):
+                     branch:Union[int,str]):
     branch = int(branch)
     
     with open(f'{DATA_ROOT}/{branch}_Source.txt') as file:
@@ -15,25 +14,19 @@ def evaluate_runtime(DATA_ROOT:str,
     with open(f'{DATA_ROOT}/{branch}_FinalStateMeta.json') as metafile:
         branch_meta = json.load(metafile)
         n_proc, process = branch_meta['nEvtSum'], branch_meta['processName']
+        tEnd, tStart = branch_meta['tEnd'], branch_meta['tStart']
         
     with open(f'{DATA_ROOT}/stdall_{branch}To{branch+1}.txt') as file:
-        signals = ['start time    :', 'end time      :', 'job exit code :']
-        values = ['', '', '']
+        signals = ['job exit code :']
+        values = ['']
         lsig = len(signals)
         
         for line in file.readlines():
             for i in range(lsig):
                 if line.startswith(signals[i]):
                     values[i] = line.split(f'{signals[i]} ')[1].strip()
-                    
-        for i in [0, 1]:
-            if values[i] != '':
-                if ' (' in values[i]:
-                    values[i] = values[i].split(' (')[0]
-                
-                values[i] = float(parser.parse(values[i]).timestamp())
             
-    return (branch, process, n_proc, src_path, values[0], values[1], values[1] - values[0] - MARLIN_STARTUP_TIME, int(values[2]))
+    return (branch, process, n_proc, src_path, tStart, tEnd, tEnd - tStart, int(values[0]))
 
 def get_runtime_analysis(DATA_ROOT:Optional[str]=None,
                          meta:Optional[dict]=None)->np.ndarray:
@@ -74,4 +67,40 @@ def get_runtime_analysis(DATA_ROOT:Optional[str]=None,
             ev = evaluate_runtime(DATA_ROOT=DATA_ROOT, branch=branch)
             results = np.append(results, np.array([ev], dtype=dtype))
     
+    return results
+
+def get_adjusted_time_per_event(runtime_analysis:np.ndarray,
+                                 divide_by_min:bool=True,
+                                 MAX_CAP:Optional[float]=None,
+                                 MIN_CAP:Optional[float]=None):
+    unique_processes = np.unique(runtime_analysis['process'])
+
+    dtype = [
+        ('process', '<U64'),
+        ('tAvg', 'f'),
+        ('n_processed', 'i'),
+        ('tPE', 'f')]
+
+    results = np.empty(len(unique_processes), dtype=dtype)
+
+    i = 0
+    for process in unique_processes:
+        # Average for
+        mask = runtime_analysis['process'] == process
+        tAvg = np.average(runtime_analysis['tDuration'][mask])
+        n_processed = int(np.average(runtime_analysis['n_processed'][mask])) # should be equal
+        tPE = tAvg/n_processed
+        
+        results[i] = np.array([ (process, tAvg, n_processed, tPE) ], dtype=dtype)
+        i += 1
+        
+    if divide_by_min:
+        results['tPE'] *= 1/results['tPE'].min()
+        
+    if MAX_CAP is not None:
+        results['tPE'] = np.minimum(results['tPE'], MAX_CAP)
+        
+    if MIN_CAP is not None:
+        results['tPE'][results['tPE'] < MIN_CAP] = 1
+        
     return results
