@@ -7,7 +7,7 @@ import numpy as np
 
 from tqdm.auto import tqdm
 from zhh.util import is_readable
-from zhh.analysis import get_pol_key
+from zhh.analysis import get_pol_key, parse_sample_path
 
 class ProcessIndex:
     process_index: str = 'processes.json'
@@ -88,14 +88,19 @@ class ProcessIndex:
                 'run': event.getRunNumber(),
                 'beamPol1': params.getFloatVal('Pol0'),
                 'beamPol2': params.getFloatVal('Pol1'),
+                'beamPol1Alt': params.getFloatVal('beamPol1'),
+                'beamPol2Alt': params.getFloatVal('beamPol2'),
                 'crossSection': params.getFloatVal('crossSection'),
                 'crossSection_err': params.getFloatVal('crossSectionError'),
                 'process_id': params.getIntVal('ProcessID'),
             }
-            
             reader.close()
+            
+            if file_meta['beamPol1'] != 0 or file_meta['beamPol2'] != 0:
+                pol_em, pol_ep = file_meta['beamPol1'], file_meta['beamPol2']
+            else:
+                pol_em, pol_ep = file_meta['beamPol1Alt'], file_meta['beamPol2Alt']
                 
-            pol_em, pol_ep = file_meta['beamPol1'], file_meta['beamPol2']
             process = file_meta['process']
             
             proc_pol = f'{process}_{get_pol_key(pol_em, pol_ep)}'
@@ -113,6 +118,9 @@ class ProcessIndex:
                 ], dtype=self.dtype_sample)])
                 
             self.save()
+        
+        self.STATE = 1
+        progress.set_description('Finished indexing processes and samples')
 
     def save(self):
         np.save(self.SAMPLE_INDEX, self.samples)

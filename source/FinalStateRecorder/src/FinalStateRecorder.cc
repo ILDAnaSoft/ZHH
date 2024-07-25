@@ -4,6 +4,7 @@
 #include <vector>
 #include <numeric>
 #include <string>
+#include <ctime>
 #include <EVENT/LCCollection.h>
 #include <EVENT/MCParticle.h>
 #include <EVENT/ReconstructedParticle.h>
@@ -80,6 +81,8 @@ void FinalStateRecorder::init()
 	m_pTTree->Branch("event_category_zhh", &m_event_category_zhh);
 	m_pTTree->Branch("n_fermion", &m_n_fermion);
 	m_pTTree->Branch("n_higgs", &m_n_higgs);
+
+	m_t_start = std::time(nullptr);
 
 	// Register physics processes / final state resolvers
 	// hh2f
@@ -384,6 +387,8 @@ void FinalStateRecorder::end()
 	m_jsonFile["eventWeight"] = m_eventWeight;
 	m_jsonFile["processId"] = m_process_id;
 	m_jsonFile["processName"] = m_process_name;
+	m_jsonFile["tStart"] = m_t_start;
+	m_jsonFile["tEnd"] = std::time(nullptr);
 
 	std::ofstream file(m_outputJsonFile);
 	file << m_jsonFile;

@@ -6,8 +6,8 @@ if __name__ == "__main__":
     from zhh import get_pol_key, get_raw_files, is_readable, ProcessIndex
     from pyLCIO import IOIMPL
 
-    PROCESS_INDEX = '/afs/desy.de/user/b/bliewert/public/MarlinWorkdirs/ZHH/notebooks/checked_processes.npy'
-    SAMPLE_INDEX = '/afs/desy.de/user/b/bliewert/public/MarlinWorkdirs/ZHH/notebooks/checked_files.npy'
+    PROCESS_INDEX = '/afs/desy.de/user/b/bliewert/nfs/zhh/CreateRawIndex/v1/processes.npy'
+    SAMPLE_INDEX  = '/afs/desy.de/user/b/bliewert/nfs/zhh/CreateRawIndex/v1/samples.npy'
     RAW_FILE_LIST = list(get_raw_files())
 
     a = ProcessIndex(PROCESS_INDEX, SAMPLE_INDEX, RAW_FILE_LIST)

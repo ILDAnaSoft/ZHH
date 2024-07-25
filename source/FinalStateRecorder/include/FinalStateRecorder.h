@@ -43,6 +43,7 @@ class FinalStateRecorder : public Processor
 		float m_crossSection_err{};
 		float m_eventWeight{};
 		int m_process_id{};
+		std::time_t m_t_start{};
 		std::string m_process_name{};
 
 	public:

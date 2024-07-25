@@ -8,27 +8,54 @@ import luigi
 
 # import our "framework" tasks
 from analysis.framework import HTCondorWorkflow
-from zhh import plot_preselection_pass, is_readable
+from zhh import plot_preselection_pass, is_readable, ProcessIndex
 from phc import export_figures, ShellTask, BaseTask, ForcibleTask
 
+from typing import Optional
 import numpy as np
 import uproot as ur
 import os.path as osp
-
-class Preselection(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
-    debug = luigi.BoolParameter(default=False)
-    
-    def requires(self):
-        return Preselection.req(self)
-    
-    def create_branch_map(self) -> dict[int, str]:
-        arr = get_raw_files(debug=self.debug)
-        arr = list(filter(is_readable, arr))
         
+class PreselectionAbstract(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
+    debug = True
+    
+    def workflow_requires(self):
+        reqs = super().workflow_requires()
+        reqs['raw_index'] = CreateRawIndex.req(self)
+        
+        return reqs
+    
+    @law.dynamic_workflow_condition
+    def workflow_condition(self):
+        # declare that the branch map can be built only if the workflow requirement exists
+        # the decorator will trigger a run of workflow_requires beforehand
+        if len(self.input()) > 0:
+            # here: self.input() refers to the outputs of tasks defined in workflow_requires()
+            return self.input()["raw_index"][0].exists() and self.input()["raw_index"][1].exists()
+        else:
+            return True
+    
+    @workflow_condition.create_branch_map
+    def create_branch_map(self) -> dict[int, str]:
+        samples = np.load(self.input()['raw_index'][1].path)
+        
+        # arr = get_raw_files(debug=self.debug)
+        # arr = list(filter(is_readable, arr))
+        # res = { k: v for k, v in zip(list(range(len(arr))), arr) }
+        
+        selection = samples[np.lexsort((samples['location'], samples['proc_pol']))]
+        if self.debug:
+            arr = []
+            for proc_pol in np.unique(selection['proc_pol']):
+                arr.append(selection[np.where(selection['proc_pol'] == proc_pol)[0][0]]['location'])
+        else:
+            arr = list(samples['location'])
+            
         res = { k: v for k, v in zip(list(range(len(arr))), arr) }
         
         return res
 
+    @workflow_condition.output
     def output(self):
         return [
             self.local_target(f'{self.branch}_PreSelection_llHH.root'),
@@ -70,18 +97,43 @@ class Preselection(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         cmd += f' && echo "{self.branch_map[self.branch]}" >> {temp_files[5].path}'
 
         return cmd
+    
+class PreselectionRuntime(PreselectionAbstract):
+    """Generates a runtime analysis for each proc_pol combination
 
-class CreateIndex(BaseTask):
+    Args:
+        PreselectionAbstract (_type_): _description_
+    """
+    debug = True
+
+class PreselectionFinal(PreselectionAbstract):
+    debug = False # luigi.BoolParameter(default=False)
+    
+    def workflow_requires(self):
+        reqs = super().workflow_requires()
+        reqs['presel_runtime'] = PreselectionRuntime.req(self)
+        
+        return reqs   
+
+class CreateRawIndex(BaseTask):
     """
     This task creates two indeces: An index of available SLCIO sample files with information about the file location, number of events, physics process and polarization + an index containing all encountered physics processes for each polarization and their cross section-section values 
     """
+    index: Optional[np.ndarray]
     
     def output(self):
         return [
-            self.local_target('processes.json'),
-            self.local_target('samples.json')
+            self.local_target('processes.npy'),
+            self.local_target('samples.npy')
         ]
     
+    def run(self):
+        temp_files = self.output()
+
+        self.index = index = ProcessIndex(temp_files[0], temp_files[1], get_raw_files())
+        self.index.load()
+        
+        self.publish_message(f'Loaded {len(index.samples)} samples and {len(index.processes)} processes')
 
 class CreatePlots(BaseTask):
     """
