@@ -1,5 +1,51 @@
 import numpy as np
 from math import floor, ceil
+from .PreselectionAnalysis import sample_weight
+
+def get_sample_count_normalization(processes:np.ndarray,
+                                   samples:np.ndarray):
+    """Returns a np.ndarray with
+
+    Args:
+        processes (np.ndarray): _description_
+        samples (np.ndarray): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    
+    dtype = [
+        ('process', '<U60'),
+        ('proc_pol', '<U64'),
+        ('cross_sec', 'f'),
+        ('event_weight', 'f'),
+        
+        ('n_events_tot', 'i'),
+        ('n_events_normalized', 'i')]
+    
+    results = np.empty(0, dtype=dtype)
+    
+    # Find the least least represented proc_pol combination
+    # First find n_events_tot for each proc_pol
+    for p in processes:
+        n_events_tot = 0
+        process, proc_pol, cross_sec = p['process'], p['proc_pol'], p['cross_sec']
+        pol = p['pol_e'], p['pol_p']
+        
+        for s in samples[samples['process'] == process]:
+            n_events_tot += s['n_events']
+            
+        event_weight = sample_weight(cross_sec, pol)
+            
+        results = np.append(results, np.array([
+            (process, proc_pol, cross_sec, event_weight, n_events_tot, 0)
+        ], dtype=dtype))
+        
+    # Normalize by cross-section
+    frac = np.min(results['n_events_tot'] / results['event_weight'])
+        
+    
+    return results
 
 def get_sample_chunk_splits(samples:np.ndarray,
                       adjusted_time_per_event:np.ndarray):
