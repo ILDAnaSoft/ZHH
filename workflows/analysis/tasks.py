@@ -8,17 +8,16 @@ import luigi
 
 # import our "framework" tasks
 from analysis.framework import HTCondorWorkflow
-from zhh import plot_preselection_pass, is_readable, ProcessIndex, get_adjusted_time_per_event, get_runtime_analysis, get_sample_chunk_splits
+from zhh import plot_preselection_pass, is_readable, ProcessIndex, get_adjusted_time_per_event, get_runtime_analysis, get_sample_chunk_splits, get_process_normalization
 from phc import export_figures, ShellTask, BaseTask, ForcibleTask
 
-from typing import Optional
+from typing import Optional, Union
 import numpy as np
 import uproot as ur
 import os.path as osp
         
 class PreselectionAbstract(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     debug = True
-    final = False
     
     def workflow_requires(self):
         reqs = super().workflow_requires()
@@ -41,30 +40,28 @@ class PreselectionAbstract(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
             return True
     
     @workflow_condition.create_branch_map
-    def create_branch_map(self) -> dict[int, str]:
+    def create_branch_map(self) -> Union[
+        dict[int, str],
+        dict[int, tuple[str, int, int]]
+        ]:
         samples = np.load(self.input()['raw_index'][1].path)
         
-        if False and 'preselection_chunks' in self.input():
-            sample_chunk_splits = np.load(self.input()['preselection_chunks'].path)
-            res = {}
-            i = 0
-            
-            for comb in sample_chunk_splits:
-                res[i] = (comb['location'], comb['chunk_start'], comb['chunk_size'])
-                i += 1
-                            
+        if 'preselection_chunks' in self.input():
+            scs = np.load(self.input()['preselection_chunks'].path)
+            res = { k: v for k, v in zip(scs['branch'].tolist(), zip(scs['location'], scs['chunk_start'], scs['chunk_size']))}
+                
         else: 
             # arr = get_raw_files(debug=self.debug)
             # arr = list(filter(is_readable, arr))
             # res = { k: v for k, v in zip(list(range(len(arr))), arr) }
             
             selection = samples[np.lexsort((samples['location'], samples['proc_pol']))]
-            if not self.final:
-                arr = []
-                for proc_pol in np.unique(selection['proc_pol']):
-                    arr.append(selection[np.where(selection['proc_pol'] == proc_pol)[0][0]]['location'])
-            else:
-                arr = list(samples['location'])
+            
+            arr = []
+            for proc_pol in np.unique(selection['proc_pol']):
+                arr.append(selection[np.where(selection['proc_pol'] == proc_pol)[0][0]]['location'])
+
+            # arr = list(samples['location'])
                 
             res = { k: v for k, v in zip(list(range(len(arr))), arr) }
         
@@ -84,7 +81,7 @@ class PreselectionAbstract(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     def build_command(self, fallback_level):
         temp_files = self.output()
         src = self.branch_map[self.branch]
-        print(src)
+        
         if isinstance(src, tuple):
             src_file = src[0]
             n_events_skip = src[1]
@@ -132,9 +129,12 @@ class PreselectionRuntime(PreselectionAbstract):
 
 class PreselectionFinal(PreselectionAbstract):
     debug = False # luigi.BoolParameter(default=False)
-    final = True
 
 class CreatePreselectionChunks(BaseTask):
+    mode = 1
+    # 0 -> get_adjusted_time_per_event()
+    # 1 -> get_process_normalization(GAIN=16)
+    
     def requires(self):
         return [
             CreateRawIndex.req(self),
@@ -148,9 +148,18 @@ class CreatePreselectionChunks(BaseTask):
         SAMPLE_INDEX = self.input()[0][1].path
         DATA_ROOT = osp.dirname(self.input()[1]['collection'][0][0].path)
         
-        runtime_analysis = get_runtime_analysis(DATA_ROOT)
-        atp = get_adjusted_time_per_event(runtime_analysis, True, 4, 2)
-        chunk_splits = get_sample_chunk_splits(np.load(SAMPLE_INDEX), atp)
+        processes = np.load(self.input()[0][0].path)
+        samples = np.load(SAMPLE_INDEX)
+        
+        if self.mode == 0:
+            runtime_analysis = get_runtime_analysis(DATA_ROOT)
+            atp = get_adjusted_time_per_event(runtime_analysis, True, 4, 2)
+            chunk_splits = get_sample_chunk_splits(samples, adjusted_time_per_event=atp)
+        elif self.mode == 1:
+            pn = get_process_normalization(processes, samples, GAIN=46)
+            chunk_splits = get_sample_chunk_splits(samples, process_normalization=pn)
+        else:
+            raise Exception(f'Mode {str(self.mode)} not implemented')
         
         self.output().parent.touch()
         np.save(self.output().path, chunk_splits)

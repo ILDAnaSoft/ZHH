@@ -27,7 +27,7 @@ class HTCondorWorkflow(law.htcondor.HTCondorWorkflow):
     """
 
     max_runtime = law.DurationParameter(
-        default=1.0,
+        default=2.0,
         unit="h",
         significant=False,
         description="maximum runtime; default unit is hours; default: 1",
@@ -43,7 +43,7 @@ class HTCondorWorkflow(law.htcondor.HTCondorWorkflow):
         bootstrap_file = law.util.rel_path(__file__, "bootstrap.sh")
         return law.JobInputFile(bootstrap_file, share=True, render_job=True)
 
-    def htcondor_job_config(self, config, job_num, branches):
+    def htcondor_job_config(self, config, jobs, branches):
         # render_variables are rendered into all files sent with a job
         config.render_variables["analysis_path"] = os.getenv("ANALYSIS_PATH")
         config.render_variables["REPO_ROOT"] = os.getenv("REPO_ROOT")
@@ -51,10 +51,11 @@ class HTCondorWorkflow(law.htcondor.HTCondorWorkflow):
         # copy the entire environment
         config.custom_content.append(('getenv', 'true'))
         #config.custom_content.append(('request_cpus', '1'))
-        config.custom_content.append(('request_memory', '4000 Mb'))
+        config.custom_content.append(('request_memory', '16000 Mb'))
         config.custom_content.append(('requirements', 'Machine =!= LastRemoteHost'))
         
-        if job_num > 5000:
-            config.custom_content.append(('materialize_max_idle', job_num - 5000))
+        print(f'LEN JOBS: {len(jobs)}')
+        if len(jobs) > 4000:
+            config.custom_content.append(('materialize_max_idle', 100))
 
         return config

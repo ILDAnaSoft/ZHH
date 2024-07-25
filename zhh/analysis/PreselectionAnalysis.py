@@ -160,7 +160,7 @@ def sample_weight(process_sigma_fb:float,
                   lum_inv_ab:Optional[float]=4.)->float:
     
     w_pol = get_w_pol(*pol)    
-    return process_sigma_fb*1000 *lum_inv_ab*w_pol/n_gen
+    return process_sigma_fb * 1000 *lum_inv_ab * w_pol / n_gen
 
 def get_preselection_passes(
     DATA_ROOT:str,
