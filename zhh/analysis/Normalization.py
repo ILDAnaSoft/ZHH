@@ -66,8 +66,20 @@ def get_process_normalization(
 def get_sample_chunk_splits(
         samples:np.ndarray,
         adjusted_time_per_event:Optional[np.ndarray]=None,
-        process_normalization:Optional[np.ndarray]=None
+        process_normalization:Optional[np.ndarray]=None,
+        MAXIMUM_TIME_PER_JOB:int=5400
         ):
+    """_summary_
+
+    Args:
+        samples (np.ndarray): _description_
+        adjusted_time_per_event (Optional[np.ndarray], optional): _description_. Defaults to None.
+        process_normalization (Optional[np.ndarray], optional): _description_. Defaults to None.
+        MAXIMUM_TIME_PER_JOB (int, optional): For splitting jobs, in seconds. Defaults to 5400 (1.5h).
+
+    Returns:
+        _type_: _description_
+    """
     
     dtype = [
         ('branch', 'i'),
@@ -83,6 +95,8 @@ def get_sample_chunk_splits(
     
     if process_normalization is not None:
         pn = process_normalization
+        atpe = adjusted_time_per_event
+        
         for p in pn:
             n_target = p['n_events_normalized']
             
@@ -91,9 +105,15 @@ def get_sample_chunk_splits(
                 c_chunks = []
                 n_chunks = 0
                 chunk_start = 0
+                max_chunk_size = 99999
             
                 for s in samples[samples['proc_pol'] == p['proc_pol']]:
-                    c_chunk_size = min(s['n_events'], n_target - n_accounted)
+                    if atpe is not None:
+                        time_per_event = atpe['tPE'][atpe['process'] == p['process']]
+                        max_chunk_size = MAXIMUM_TIME_PER_JOB/time_per_event
+                    
+                    c_chunk_size = min(min(s['n_events'], max_chunk_size), n_target - n_accounted)
+                        
                     n_accounted += c_chunk_size
                     
                     c_chunks.append((0, p['process'], p['proc_pol'], s['location'], c_chunk_size, n_chunks, chunk_start))

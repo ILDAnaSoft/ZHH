@@ -17,16 +17,14 @@ def evaluate_runtime(DATA_ROOT:str,
         tEnd, tStart = branch_meta['tEnd'], branch_meta['tStart']
         
     with open(f'{DATA_ROOT}/stdall_{branch}To{branch+1}.txt') as file:
-        signals = ['job exit code :']
-        values = ['']
-        lsig = len(signals)
+        marker = ['job exit code :']
+        value = ['']
         
         for line in file.readlines():
-            for i in range(lsig):
-                if line.startswith(signals[i]):
-                    values[i] = line.split(f'{signals[i]} ')[1].strip()
+            if line.startswith(marker):
+                value = line.split(f'{marker} ')[1].strip()
             
-    return (branch, process, n_proc, src_path, tStart, tEnd, tEnd - tStart, int(values[0]))
+    return (branch, process, n_proc, src_path, tStart, tEnd, tEnd - tStart, int(value))
 
 def get_runtime_analysis(DATA_ROOT:Optional[str]=None,
                          meta:Optional[dict]=None)->np.ndarray:
@@ -103,4 +101,6 @@ def get_adjusted_time_per_event(runtime_analysis:np.ndarray,
     if MIN_CAP is not None:
         results['tPE'][results['tPE'] < MIN_CAP] = 1
         
+    results['tPE'][results['tPE'] < 1] = 1
+    
     return results

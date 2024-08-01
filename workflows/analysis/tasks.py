@@ -131,9 +131,9 @@ class PreselectionFinal(PreselectionAbstract):
     debug = False # luigi.BoolParameter(default=False)
 
 class CreatePreselectionChunks(BaseTask):
-    mode = 1
-    # 0 -> get_adjusted_time_per_event()
-    # 1 -> get_process_normalization(GAIN=16)
+    mode = luigi.IntParameter(default=1)
+    # 0 -> get_adjusted_time_per_event(True, 4, 2)
+    # 1 -> get_process_normalization(GAIN=46) with get_adjusted_time_per_event(True)
     
     def requires(self):
         return [
@@ -157,7 +157,9 @@ class CreatePreselectionChunks(BaseTask):
             chunk_splits = get_sample_chunk_splits(samples, adjusted_time_per_event=atp)
         elif self.mode == 1:
             pn = get_process_normalization(processes, samples, GAIN=46)
-            chunk_splits = get_sample_chunk_splits(samples, process_normalization=pn)
+            atp = get_adjusted_time_per_event(runtime_analysis, True)
+            
+            chunk_splits = get_sample_chunk_splits(samples, process_normalization=pn, adjusted_time_per_event=atp)
         else:
             raise Exception(f'Mode {str(self.mode)} not implemented')
         
