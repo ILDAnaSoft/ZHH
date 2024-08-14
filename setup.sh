@@ -68,6 +68,27 @@ is_root_readable() (
     fi
 )
 
+is_json_readable() (
+    if [ -e "/afs/desy.de/group/flc" ]; then
+        local ON_NAF="true"
+        local CONDA_ROOT="/nfs/dust/ilc/user/bliewert/miniconda3"
+        local CONDA_ENV_NAME="graphjet_pyg"
+    else
+        local ON_NAF="false"
+        local CONDA_ROOT="$HOME/miniforge3"
+        local CONDA_ENV_NAME="py311"
+    fi
+
+    local PYTHONPATH=/afs/desy.de/user/b/bliewert/public/MarlinWorkdirs/pyhepcommon
+    local res=$($CONDA_ROOT/envs/$CONDA_ENV_NAME/bin/python -c "from phc import json_file_readable; print(json_file_readable('${1}'))")
+    
+    if [ "$res" = "True" ]; then
+        return 0
+    else
+        return 1
+    fi
+)
+
 echo "Relative library path set to ${REPO_ROOT}"
 
 if [[ $MARLIN_DLL != *"libFinalStateRecorder"* ]]; then

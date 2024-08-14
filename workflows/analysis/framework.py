@@ -56,6 +56,6 @@ class HTCondorWorkflow(law.htcondor.HTCondorWorkflow):
         
         print(f'LEN JOBS: {len(jobs)}')
         if len(jobs) > 4000:
-            config.custom_content.append(('materialize_max_idle', 100))
+            config.custom_content.append(('materialize_max_idle', 256))
 
         return config

@@ -17,8 +17,8 @@ def evaluate_runtime(DATA_ROOT:str,
         tEnd, tStart = branch_meta['tEnd'], branch_meta['tStart']
         
     with open(f'{DATA_ROOT}/stdall_{branch}To{branch+1}.txt') as file:
-        marker = ['job exit code :']
-        value = ['']
+        marker = 'job exit code :'
+        value = ''
         
         for line in file.readlines():
             if line.startswith(marker):

@@ -75,8 +75,13 @@ class PreselectionAbstract(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
             self.local_target(f'{self.branch}_PreSelection_qqHH.root'),
             self.local_target(f'{self.branch}_FinalStates.root'),
             self.local_target(f'{self.branch}_FinalStateMeta.json'),
+            self.local_target(f'{self.branch}.slcio'),
             self.local_target(f'{self.branch}_Source.txt')
         ]
+        
+    def complete(self):
+        """Consider task as complete if _Source.txt exists (last one written out)"""
+        return self.output()[-1].exists()
 
     def build_command(self, fallback_level):
         temp_files = self.output()
@@ -115,7 +120,8 @@ class PreselectionAbstract(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         cmd += f' && mv zhh_PreSelection_qqHH.root {temp_files[2].path}'
         cmd += f' && mv zhh_FinalStates.root {temp_files[3].path}'
         cmd += f' && mv zhh_FinalStateMeta.json {temp_files[4].path}'
-        cmd += f' && echo "{self.branch_map[self.branch]}" >> {temp_files[5].path}'
+        cmd += f' && mv zhh.slcio {temp_files[5].path}'
+        cmd += f' && echo "{self.branch_map[self.branch]}" >> {temp_files[6].path}'
 
         return cmd
     
@@ -132,6 +138,7 @@ class PreselectionFinal(PreselectionAbstract):
 
 class CreatePreselectionChunks(BaseTask):
     mode = luigi.IntParameter(default=1)
+    ratio = luigi.FloatParameter(default=0.05)
     # 0 -> get_adjusted_time_per_event(True, 4, 2)
     # 1 -> get_process_normalization(GAIN=46) with get_adjusted_time_per_event(True)
     
@@ -151,15 +158,16 @@ class CreatePreselectionChunks(BaseTask):
         processes = np.load(self.input()[0][0].path)
         samples = np.load(SAMPLE_INDEX)
         
+        runtime_analysis = get_runtime_analysis(DATA_ROOT)
+        
         if self.mode == 0:
-            runtime_analysis = get_runtime_analysis(DATA_ROOT)
-            atp = get_adjusted_time_per_event(runtime_analysis, True, 4, 2)
-            chunk_splits = get_sample_chunk_splits(samples, adjusted_time_per_event=atp)
+            atpe = get_adjusted_time_per_event(runtime_analysis, True, 4, 2)
+            chunk_splits = get_sample_chunk_splits(samples, adjusted_time_per_event=atpe)
         elif self.mode == 1:
-            pn = get_process_normalization(processes, samples, GAIN=46)
-            atp = get_adjusted_time_per_event(runtime_analysis, True)
+            pn = get_process_normalization(processes, samples, RATIO_BY_EXPECT=self.ratio)
+            atpe = get_adjusted_time_per_event(runtime_analysis, True)
             
-            chunk_splits = get_sample_chunk_splits(samples, process_normalization=pn, adjusted_time_per_event=atp)
+            chunk_splits = get_sample_chunk_splits(samples, process_normalization=pn, adjusted_time_per_event=atpe)
         else:
             raise Exception(f'Mode {str(self.mode)} not implemented')
         

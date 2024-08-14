@@ -6,7 +6,7 @@ from .PreselectionAnalysis import sample_weight
 def get_process_normalization(
         processes:np.ndarray,
         samples:np.ndarray,
-        GAIN:int=1):
+        RATIO_BY_EXPECT:float=1.):
     """Returns a np.ndarray with
 
     Args:
@@ -49,15 +49,14 @@ def get_process_normalization(
     # Normalize by cross-section
     results = results[np.argsort(results['proc_pol'])]
     
-    norm_by = results['n_events_tot'] / results['n_events_expected']
-    
-    bound_val = np.min(norm_by)*GAIN
+    #norm_by = results['n_events_tot'] / results['n_events_expected']
+    #bound_val = np.min(norm_by)*RATIO_BY_EXPECT
     
     #print(f'Normalizing by proc_pol {results["proc_pol"][np.argmin(norm_by)]}')
     #print(f'bound_val {bound_val}')
     #print(results['event_weight'])
     
-    results['n_events_normalized'] = np.minimum(results['n_events_tot'], np.floor(bound_val * results['n_events_expected']))
+    results['n_events_normalized'] = np.minimum(results['n_events_tot'], np.floor(RATIO_BY_EXPECT * results['n_events_expected']))
     
     assert(np.sum(results['n_events_normalized'] < 0) == 0)
     
@@ -87,9 +86,10 @@ def get_sample_chunk_splits(
         ('proc_pol', '<U64'),
         ('location', '<U512'),
         
-        ('chunk_size', 'i'),
         ('n_chunks', 'i'),
-        ('chunk_start', 'i')]
+        ('chunk_start', 'i'),
+        ('chunk_size', 'i'),
+    ]
 
     results = np.empty(0, dtype=dtype)
     
@@ -102,27 +102,36 @@ def get_sample_chunk_splits(
             
             if n_target > 0:
                 n_accounted = 0
+                
                 c_chunks = []
                 n_chunks = 0
-                chunk_start = 0
-                max_chunk_size = 99999
-            
-                for s in samples[samples['proc_pol'] == p['proc_pol']]:
+                
+                c_samples = samples[samples['proc_pol'] == p['proc_pol']]
+                n_sample = 0
+                
+                while n_sample < len(c_samples) and n_accounted < n_target:
+                    sample = c_samples[n_sample]
+                    
+                    n_accounted_sample = 0
+                    n_tot_sample = sample['n_events']
+                    
+                    max_chunk_size = 99999
+                
                     if atpe is not None:
                         time_per_event = atpe['tPE'][atpe['process'] == p['process']]
-                        max_chunk_size = MAXIMUM_TIME_PER_JOB/time_per_event
-                    
-                    c_chunk_size = min(min(s['n_events'], max_chunk_size), n_target - n_accounted)
+                        max_chunk_size = floor(MAXIMUM_TIME_PER_JOB/time_per_event)
                         
-                    n_accounted += c_chunk_size
-                    
-                    c_chunks.append((0, p['process'], p['proc_pol'], s['location'], c_chunk_size, n_chunks, chunk_start))
-                    
-                    if n_accounted == n_target:
-                        break
-                    
-                    n_chunks += 1
-                    
+                    while n_accounted < n_target and n_accounted_sample < n_tot_sample:
+                        c_chunk_size = min(min(n_tot_sample - n_accounted_sample, max_chunk_size), n_target - n_accounted)
+                        c_chunks.append((0, p['process'], p['proc_pol'], sample['location'], n_chunks, n_accounted_sample, c_chunk_size))
+                        
+                        n_accounted += c_chunk_size
+                        n_accounted_sample += c_chunk_size
+        
+                        n_chunks += 1
+                        
+                    n_sample += 1
+                        
                 results = np.append(results, np.array(c_chunks, dtype=dtype))
         
     elif adjusted_time_per_event is not None:
