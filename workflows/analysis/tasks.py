@@ -137,10 +137,8 @@ class PreselectionFinal(PreselectionAbstract):
     debug = False # luigi.BoolParameter(default=False)
 
 class CreatePreselectionChunks(BaseTask):
-    mode = luigi.IntParameter(default=1)
     ratio = luigi.FloatParameter(default=0.05)
-    # 0 -> get_adjusted_time_per_event(True, 4, 2)
-    # 1 -> get_process_normalization(GAIN=46) with get_adjusted_time_per_event(True)
+    jobtime = luigi.IntParameter(default=7200)
     
     def requires(self):
         return [
@@ -160,16 +158,10 @@ class CreatePreselectionChunks(BaseTask):
         
         runtime_analysis = get_runtime_analysis(DATA_ROOT)
         
-        if self.mode == 0:
-            atpe = get_adjusted_time_per_event(runtime_analysis, True, 4, 2)
-            chunk_splits = get_sample_chunk_splits(samples, adjusted_time_per_event=atpe)
-        elif self.mode == 1:
-            pn = get_process_normalization(processes, samples, RATIO_BY_EXPECT=self.ratio)
-            atpe = get_adjusted_time_per_event(runtime_analysis, True)
-            
-            chunk_splits = get_sample_chunk_splits(samples, process_normalization=pn, adjusted_time_per_event=atpe)
-        else:
-            raise Exception(f'Mode {str(self.mode)} not implemented')
+        pn = get_process_normalization(processes, samples, RATIO_BY_EXPECT=self.ratio)
+        atpe = get_adjusted_time_per_event(runtime_analysis, True)
+
+        chunk_splits = get_sample_chunk_splits(samples, process_normalization=pn, adjusted_time_per_event=atpe, MAXIMUM_TIME_PER_JOB=self.jobtime)
         
         self.output().parent.touch()
         np.save(self.output().path, chunk_splits)

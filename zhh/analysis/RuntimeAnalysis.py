@@ -5,7 +5,19 @@ from dateutil import parser
 from typing import Union, Optional
 
 def evaluate_runtime(DATA_ROOT:str,
-                     branch:Union[int,str]):
+                     branch:Union[int,str],
+                     WITH_EXIT_STATUS:bool=False):
+    """_summary_
+
+    Args:
+        DATA_ROOT (str): _description_
+        branch (Union[int,str]): _description_
+        WITH_EXIT_STATUS (bool, optional): Requires --transfer-logs to be used when the law command is run. Defaults to False.
+
+    Returns:
+        _type_: _description_
+    """
+    
     branch = int(branch)
     
     with open(f'{DATA_ROOT}/{branch}_Source.txt') as file:
@@ -15,19 +27,21 @@ def evaluate_runtime(DATA_ROOT:str,
         branch_meta = json.load(metafile)
         n_proc, process = branch_meta['nEvtSum'], branch_meta['processName']
         tEnd, tStart = branch_meta['tEnd'], branch_meta['tStart']
-        
-    with open(f'{DATA_ROOT}/stdall_{branch}To{branch+1}.txt') as file:
-        marker = 'job exit code :'
-        value = ''
-        
-        for line in file.readlines():
-            if line.startswith(marker):
-                value = line.split(f'{marker} ')[1].strip()
+    
+    value = -1
+    if WITH_EXIT_STATUS:
+        with open(f'{DATA_ROOT}/stdall_{branch}To{branch+1}.txt') as file:
+            marker = 'job exit code :'
             
-    return (branch, process, n_proc, src_path, tStart, tEnd, tEnd - tStart, int(value))
+            for line in file.readlines():
+                if line.startswith(marker):
+                    value = int(line.split(f'{marker} ')[1].strip())
+            
+    return (branch, process, n_proc, src_path, tStart, tEnd, tEnd - tStart, value)
 
 def get_runtime_analysis(DATA_ROOT:Optional[str]=None,
-                         meta:Optional[dict]=None)->np.ndarray:
+                         meta:Optional[dict]=None,
+                         WITH_EXIT_STATUS:bool=False)->np.ndarray:
     """_summary_
 
     Args:
@@ -62,7 +76,7 @@ def get_runtime_analysis(DATA_ROOT:Optional[str]=None,
     for job_key in jobs:
         branch = jobs[job_key]['branches'][0]
         if jobs[job_key]['status'] == 'finished':
-            ev = evaluate_runtime(DATA_ROOT=DATA_ROOT, branch=branch)
+            ev = evaluate_runtime(DATA_ROOT=DATA_ROOT, branch=branch, WITH_EXIT_STATUS=WITH_EXIT_STATUS)
             results = np.append(results, np.array([ev], dtype=dtype))
     
     return results
