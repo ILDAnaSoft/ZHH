@@ -1,21 +1,72 @@
-# coding: utf-8
-
-import law.util
-from zhh import get_raw_files
-import law
+import luigi, law
 from law.util import flatten
-import luigi
+from zhh import get_raw_files
 
 # import our "framework" tasks
 from analysis.framework import HTCondorWorkflow
-from zhh import plot_preselection_pass, is_readable, ProcessIndex, get_adjusted_time_per_event, get_runtime_analysis, get_sample_chunk_splits, get_process_normalization
+from zhh import plot_preselection_pass, is_readable, ProcessIndex, get_adjusted_time_per_event, get_runtime_analysis, get_sample_chunk_splits, get_process_normalization, get_preselection_passes
 from phc import export_figures, ShellTask, BaseTask, ForcibleTask
 
 from typing import Optional, Union
 import numpy as np
 import uproot as ur
 import os.path as osp
+
+class CreateRawIndex(BaseTask):
+    """
+    This task creates two indeces: An index of available SLCIO sample files with information about the file location, number of events, physics process and polarization + an index containing all encountered physics processes for each polarization and their cross section-section values 
+    """
+    index: Optional[np.ndarray]
+    
+    def output(self):
+        return [
+            self.local_target('processes.npy'),
+            self.local_target('samples.npy')
+        ]
+    
+    def run(self):
+        temp_files = self.output()
         
+        temp_files[0].parent.touch()
+        self.index = index = ProcessIndex(temp_files[0], temp_files[1], get_raw_files())
+        self.index.load()
+        
+        self.publish_message(f'Loaded {len(index.samples)} samples and {len(index.processes)} processes')
+
+
+class CreatePreselectionChunks(BaseTask):
+    ratio = luigi.FloatParameter(default=0.02)
+    jobtime = luigi.IntParameter(default=7200)
+    
+    def requires(self):
+        return [
+            CreateRawIndex.req(self),
+            PreselectionRuntime.req(self)
+        ]
+
+    def output(self):
+        return self.local_target('chunks.npy')
+    
+    def run(self):
+        SAMPLE_INDEX = self.input()[0][1].path
+        DATA_ROOT = osp.dirname(self.input()[1]['collection'][0][0].path)
+        
+        processes = np.load(self.input()[0][0].path)
+        samples = np.load(SAMPLE_INDEX)
+        
+        runtime_analysis = get_runtime_analysis(DATA_ROOT)
+        
+        pn = get_process_normalization(processes, samples, RATIO_BY_EXPECT=self.ratio)
+        atpe = get_adjusted_time_per_event(runtime_analysis, True)
+
+        chunk_splits = get_sample_chunk_splits(samples, process_normalization=pn, adjusted_time_per_event=atpe, MAXIMUM_TIME_PER_JOB=self.jobtime)
+        
+        self.output().parent.touch()
+        np.save(self.output().path, chunk_splits)
+        
+        self.publish_message(f'Compiled preselection chunks')
+
+
 class PreselectionAbstract(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     debug = True
     
@@ -136,61 +187,32 @@ class PreselectionRuntime(PreselectionAbstract):
 class PreselectionFinal(PreselectionAbstract):
     debug = False # luigi.BoolParameter(default=False)
 
-"""
-class PreselectionFinalPart(PreselectionAbstract):
-    debug = False # luigi.BoolParameter(default=False)
 
-class PreselectionFinal(BaseTask):
-    def requires(self):
-        # require multiple CreatePartialAlphabet tasks, starting from it's full branch map
-        all_branches = list(PreselectionFinalPart.req(self).branch_map.keys())
-        return [PreselectionFinalPart.req(self, branches=((b,),)) for b in all_branches]
-"""
-
-class CreatePreselectionChunks(BaseTask):
-    ratio = luigi.FloatParameter(default=0.02)
-    jobtime = luigi.IntParameter(default=7200)
+class PreselectionSummary(BaseTask, HTCondorWorkflow):
+    branchesperjob = luigi.IntParameter(default=1024)
     
-    def requires(self):
-        return [
-            CreateRawIndex.req(self),
-            PreselectionRuntime.req(self)
-        ]
-
-    def output(self):
-        return self.local_target('chunks.npy')
+    def workflow_requires(self):
+        reqs = super().workflow_requires()
+        reqs['preselection_final'] = PreselectionFinal.req(self)
+        
+        return reqs
     
-    def run(self):
-        SAMPLE_INDEX = self.input()[0][1].path
-        DATA_ROOT = osp.dirname(self.input()[1]['collection'][0][0].path)
+    @law.dynamic_workflow_condition
+    def workflow_condition(self):
+        if len(self.input()) > 0:
+            # here: self.input() refers to the outputs of tasks defined in workflow_requires()
+            return all(elem.exists() for elem in flatten(self.input()))
+        else:
+            return True
+    
+    def create_branch_map(self):
+        print(self.input())
+        raise Exception('Invalid')
         
-        processes = np.load(self.input()[0][0].path)
-        samples = np.load(SAMPLE_INDEX)
-        
-        runtime_analysis = get_runtime_analysis(DATA_ROOT)
-        
-        pn = get_process_normalization(processes, samples, RATIO_BY_EXPECT=self.ratio)
-        atpe = get_adjusted_time_per_event(runtime_analysis, True)
-
-        chunk_splits = get_sample_chunk_splits(samples, process_normalization=pn, adjusted_time_per_event=atpe, MAXIMUM_TIME_PER_JOB=self.jobtime)
-        
-        self.output().parent.touch()
-        np.save(self.output().path, chunk_splits)
-        
-        self.publish_message(f'Compiled preselection chunks')
-
-class CreateRawIndex(BaseTask):
-    """
-    This task creates two indeces: An index of available SLCIO sample files with information about the file location, number of events, physics process and polarization + an index containing all encountered physics processes for each polarization and their cross section-section values 
-    """
-    index: Optional[np.ndarray]
     
     def output(self):
-        return [
-            self.local_target('processes.npy'),
-            self.local_target('samples.npy')
-        ]
-    
+        return self.local_target(f'{self.branch}.npy')
+
     def run(self):
         temp_files = self.output()
         
@@ -199,6 +221,7 @@ class CreateRawIndex(BaseTask):
         self.index.load()
         
         self.publish_message(f'Loaded {len(index.samples)} samples and {len(index.processes)} processes')
+    
 
 class CreatePlots(BaseTask):
     """

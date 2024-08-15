@@ -164,7 +164,6 @@ def sample_weight(process_sigma_fb:float,
 
 def get_preselection_passes(
     DATA_ROOT:str,
-    processes:np.ndarray,
     version:str='v1')->np.ndarray:
     
     dtype = [
@@ -178,8 +177,7 @@ def get_preselection_passes(
         ('n_pass_vvhh', 'i'),
         ('n_pass_qqhh', 'i'),
         ('weight', 'f'),
-        ('proc_pol', '<U64'),
-        ('branch', 'i')]
+        ('proc_pol', '<U64')]
 
     results = np.empty(0, dtype=dtype)
     finished = glob(f'{DATA_ROOT}/*_Source.txt')
@@ -208,12 +206,12 @@ def get_preselection_passes(
             
             pbar.set_description(f'Adding {n_gen} events from branch {branch} ({procpol})')
             
-            if not procpol in results['id']:
+            if not procpol in results['proc_pol']:
                 results = np.append(results, [np.array([
-                    (proc, pol[0], pol[1], n_gen, meta['crossSection'], meta['crossSectionError'], 0, 0, 0, 0., procpol, int(branch))
+                    (proc, pol[0], pol[1], n_gen, meta['crossSection'], meta['crossSectionError'], 0, 0, 0, 0., procpol)
                 ], dtype=dtype)])
             else:
-                results['n_gen'][results['id'] == procpol] += n_gen
+                results['n_gen'][results['proc_pol'] == procpol] += n_gen
                 
             for presel in ['llHH', 'vvHH', 'qqHH']:
                 with ur.open(f'{DATA_ROOT}/{branch}_PreSelection_{presel}.root') as rf:
@@ -224,13 +222,12 @@ def get_preselection_passes(
                         raise Exception('Constraint mismatch')
                     
                     n_passed = np.sum(passed)
-                    results[f'n_pass_{presel.lower()}'][results['id'] == procpol] += n_passed
+                    results[f'n_pass_{presel.lower()}'][results['proc_pol'] == procpol] += n_passed
                     
-    for id in results['id']:
-        entry = results[results['id'] == id]
+    for entry in results:
         pol = (entry['pol_e'], entry['pol_p'])
-        results['weight'][results['id'] == id] = sample_weight(entry['cross_sec'], pol, entry['n_gen'])
+        results['weight'][results['proc_pol'] == entry['proc_pol']] = sample_weight(entry['cross_sec'], pol, entry['n_gen'])
 
-    results = results[np.argsort(results['id'])]
+    results = results[np.argsort(results['proc_pol'])]
     
     return results
