@@ -136,8 +136,19 @@ class PreselectionRuntime(PreselectionAbstract):
 class PreselectionFinal(PreselectionAbstract):
     debug = False # luigi.BoolParameter(default=False)
 
+"""
+class PreselectionFinalPart(PreselectionAbstract):
+    debug = False # luigi.BoolParameter(default=False)
+
+class PreselectionFinal(BaseTask):
+    def requires(self):
+        # require multiple CreatePartialAlphabet tasks, starting from it's full branch map
+        all_branches = list(PreselectionFinalPart.req(self).branch_map.keys())
+        return [PreselectionFinalPart.req(self, branches=((b,),)) for b in all_branches]
+"""
+
 class CreatePreselectionChunks(BaseTask):
-    ratio = luigi.FloatParameter(default=0.05)
+    ratio = luigi.FloatParameter(default=0.02)
     jobtime = luigi.IntParameter(default=7200)
     
     def requires(self):
