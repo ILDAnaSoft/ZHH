@@ -14,6 +14,7 @@ class ProcessIndex:
     samples_index: str = 'samples.json'
     
     dtype_sample = [
+        ('sid', 'i'),
         ('run_id', 'i'),
         ('process', '<U60'),
         ('proc_pol', '<U64'),
@@ -23,6 +24,7 @@ class ProcessIndex:
         ('location', '<U512'),]
 
     dtype_process = [
+        ('pid', 'i'),
         ('process', '<U60'),
         ('proc_pol', '<U64'),
         ('pol_e', 'i'),
@@ -72,6 +74,9 @@ class ProcessIndex:
             remaining_files = chunk                
         else:
             remaining_files = list(filter(is_readable, remaining_files))
+            
+        n_process = 0
+        n_sample = 0
 
         for location in (progress := tqdm(remaining_files, disable=not pbar)):
             progress.set_description(f'Reading file {location}')
@@ -108,14 +113,16 @@ class ProcessIndex:
             if not proc_pol in self.processes['proc_pol']:
                 cx, cx_err = file_meta['crossSection'], file_meta['crossSection_err']
                 self.processes = np.append(self.processes, [np.array([
-                    (process, proc_pol, pol_em, pol_ep, cx, cx_err, file_meta['process_id'])
+                    (n_process, process, proc_pol, pol_em, pol_ep, cx, cx_err, file_meta['process_id'])
                 ], dtype=self.dtype_process)])
+                n_process += 1
                 
             run_id = file_meta['run']
             if not location in self.samples['location']:
                 self.samples = np.append(self.samples, [np.array([
-                    (run_id, process, proc_pol, file_meta['nEvtSum'], pol_em, pol_ep, location)
+                    (n_sample, run_id, process, proc_pol, file_meta['nEvtSum'], pol_em, pol_ep, location)
                 ], dtype=self.dtype_sample)])
+                n_sample += 1 
                 
             self.save()
         

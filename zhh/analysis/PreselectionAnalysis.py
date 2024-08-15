@@ -164,6 +164,7 @@ def sample_weight(process_sigma_fb:float,
 
 def get_preselection_passes(
     DATA_ROOT:str,
+    processes:np.ndarray,
     version:str='v1')->np.ndarray:
     
     dtype = [
