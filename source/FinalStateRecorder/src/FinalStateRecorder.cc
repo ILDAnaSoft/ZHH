@@ -280,8 +280,6 @@ void FinalStateRecorder::processRunHeader( LCRunHeader*  /*run*/) {
 
 void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 {
-	pLCEvent->getWeight();
-
 	// Initialize JSON metadata file
 	if (m_n_evt == 0) {
 		m_beamPol1 = pLCEvent->getParameters().getFloatVal("Pol0");
@@ -294,8 +292,8 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 	}
 
 	this->clear();
-
-	streamlog_out(DEBUG) << "processing event: " << pLCEvent->getEventNumber() << "  in run: " << pLCEvent->getRunNumber() << std::endl;
+	
+	streamlog_out(DEBUG)  << "processing event: " << pLCEvent->getEventNumber() << "  in run: " << pLCEvent->getRunNumber() << std::endl;
 	
 	m_n_run = pLCEvent->getRunNumber();
 	m_n_evt = pLCEvent->getEventNumber();

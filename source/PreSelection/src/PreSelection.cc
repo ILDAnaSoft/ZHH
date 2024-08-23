@@ -193,6 +193,7 @@ void PreSelection::init()
 	m_pTTree->Branch("event", &m_nEvt, "event/I");
 	m_pTTree->Branch("nJets",&m_nJets,"nJets/I") ;
 	m_pTTree->Branch("nIsoLeptons",&m_nIsoLeps,"nIsoLeptons/I") ;
+	m_pTTree->Branch("lepTypes", &m_lepTypes) ;
 	m_pTTree->Branch("missingPT", &m_missingPT, "missingPT/F") ;
 	m_pTTree->Branch("Evis", &m_Evis, "Evis/F") ;
 	m_pTTree->Branch("thrust", &m_thrust, "thrust/F") ;
@@ -266,6 +267,7 @@ void PreSelection::Clear()
 
 	m_nJets = 0;
 	m_nIsoLeps = 0;
+	m_lepTypes.clear();
 	m_missingPT = -999.;
 	m_Evis  = -999.;
 	m_thrust = -999.;
@@ -341,17 +343,25 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
 			// ---------- CALCULATE DILEPTON MASS AND DIFFERENCE ----------
 			std::vector< ReconstructedParticle* > Leptons{};
 			TLorentzVector dileptonFourMomentum = TLorentzVector(0.,0.,0.,0.);
+
 			for ( int i_lep = 0 ; i_lep < 2 ; ++i_lep ) {
-			ReconstructedParticle* lepton = dynamic_cast<ReconstructedParticle*>( inputLepPairCollection->getElementAt( i_lep ) );
-			Leptons.push_back( lepton );
-			dileptonFourMomentum += TLorentzVector( lepton->getMomentum()[ 0 ] , lepton->getMomentum()[ 1 ] , lepton->getMomentum()[ 2 ] , lepton->getEnergy() );
+				ReconstructedParticle* lepton = dynamic_cast<ReconstructedParticle*>( inputLepPairCollection->getElementAt( i_lep ) );
+				Leptons.push_back( lepton );
+
+				dileptonFourMomentum += TLorentzVector( lepton->getMomentum()[ 0 ] , lepton->getMomentum()[ 1 ] , lepton->getMomentum()[ 2 ] , lepton->getEnergy() );
 			}
+
 			m_dileptonMass = dileptonFourMomentum.M();
 			m_dileptonMassDiff = fabs( m_dileptonMass - 91.2 );
+
+			// ---------- SAVE TYPES OF ISOLATED LEPTONS ----------
+			for (size_t j = 0; j < 2; j++) {
+				ReconstructedParticle* iso_lepton = dynamic_cast<ReconstructedParticle*>( inputLeptonCollection->getElementAt( j ) );
+				m_lepTypes.push_back( iso_lepton->getType() );
+			}
 		}
 
 		int ndijets = 0;
-
 		if ( m_nJets == m_nAskedJets ) {
 			// ---------- JET PROPERTIES AND FLAVOUR TAGGING ----------
 			vector<ReconstructedParticle*> jets;

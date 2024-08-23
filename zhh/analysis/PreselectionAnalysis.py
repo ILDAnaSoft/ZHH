@@ -1,3 +1,4 @@
+from ast import literal_eval as make_tuple
 from glob import glob
 from dateutil import parser
 from typing import Optional, Union
@@ -157,7 +158,7 @@ def get_w_pol(pol_em:int, pol_ep:int)->float:
 def sample_weight(process_sigma_fb:float,
                   pol:tuple[int, int],
                   n_gen:int=1,
-                  lum_inv_ab:Optional[float]=4.)->float:
+                  lum_inv_ab:Optional[float]=2.)->float:
     
     w_pol = get_w_pol(*pol)    
     return process_sigma_fb * 1000 *lum_inv_ab * w_pol / n_gen
@@ -190,7 +191,11 @@ def get_preselection_passes(
             # Source file is written at the very end -> .root files exist
             
             with open(f, 'r') as file:
-                src_file = file.read()
+                src_spec = file.read()
+                if src_spec.startswith('('):
+                    src_file, chunk_start, chunk_end = make_tuple(src_spec)
+                else:
+                    src_file = src_spec
                 
             # Read metadata
             with open(f'{DATA_ROOT}/{branch}_FinalStateMeta.json', 'r') as file:

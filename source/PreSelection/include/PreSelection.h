@@ -87,6 +87,7 @@ class PreSelection : public Processor
 
 		int m_nJets{};
 		int m_nIsoLeps{};
+		std::vector<int> m_lepTypes{};
 		float m_missingPT{};
 		float m_Evis{};
 		float m_thrust{};

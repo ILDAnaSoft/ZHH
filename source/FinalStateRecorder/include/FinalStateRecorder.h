@@ -77,8 +77,8 @@ class FinalStateRecorder : public Processor
 		std::string m_outputRootFile{};
 
 		int m_n_run;
-		int m_n_evt;
-		int m_n_evt_sum;
+		int m_n_evt = 0;
+		int m_n_evt_sum = 0;
 		int m_error_code;
 		
 		std::vector<int> m_final_states{};

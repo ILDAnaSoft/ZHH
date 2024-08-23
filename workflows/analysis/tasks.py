@@ -1,4 +1,4 @@
-import luigi, law
+import luigi, law, json
 from law.util import flatten
 from zhh import get_raw_files
 
@@ -35,7 +35,7 @@ class CreateRawIndex(BaseTask):
 
 
 class CreatePreselectionChunks(BaseTask):
-    ratio = luigi.FloatParameter(default=0.02)
+    ratio = luigi.FloatParameter(default=0.05)
     jobtime = luigi.IntParameter(default=7200)
     
     def requires(self):
@@ -158,6 +158,10 @@ class PreselectionAbstract(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         for suffix in ['FinalStateMeta.json'] + root_files:
             target_path = self.local_path(str(self.branch) + "_" + suffix)
             cmd += f' && (if [[ ! -f {src_txt_target} && -f {target_path} ]]; then rm {target_path}; fi)' # should not be necessary as we're writing to a temp file anyway
+        
+        # Marlin fix for SkipNEvents=0
+        if n_events_skip == 0:
+            n_events_max = n_events_max + 1
         
         cmd += f' && ( Marlin $REPO_ROOT/scripts/ZHH_v2.xml --global.MaxRecordNumber={str(n_events_max)} --global.LCIOInputFiles={src_file} --global.SkipNEvents={str(n_events_skip)} --constant.OutputDirectory=. --constant.MCParticleCollectionName={mcp_col_name} || true )'
         cmd += f' && echo "Finished Marlin at $(date)"'

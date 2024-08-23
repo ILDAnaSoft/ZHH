@@ -24,12 +24,12 @@ def get_process_normalization(
         ('event_weight', 'f'),
         
         ('n_events_tot', 'l'),
-        ('n_events_expected', 'l'),
+        ('n_events_expected', 'f'),
         ('n_events_normalized', 'l')]
     
     results = np.empty(0, dtype=dtype)
     
-    # Find the least least represented proc_pol combination
+    # Find the least represented proc_pol combination
     # First find n_events_tot for each proc_pol
     for p in processes:
         n_events_tot = 0
@@ -56,7 +56,7 @@ def get_process_normalization(
     #print(f'bound_val {bound_val}')
     #print(results['event_weight'])
     
-    results['n_events_normalized'] = np.minimum(results['n_events_tot'], np.floor(RATIO_BY_EXPECT * results['n_events_expected']))
+    results['n_events_normalized'] = np.minimum(results['n_events_tot'], np.ceil(RATIO_BY_EXPECT * results['n_events_expected']))
     
     assert(np.sum(results['n_events_normalized'] < 0) == 0)
     
