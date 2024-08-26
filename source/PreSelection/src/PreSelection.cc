@@ -200,6 +200,7 @@ void PreSelection::init()
 	m_pTTree->Branch("dileptonMass", &m_dileptonMass, "dileptonMass/F") ;
 	m_pTTree->Branch("dileptonMassDiff", &m_dileptonMassDiff, "dileptonMassDiff/F") ;
 	m_pTTree->Branch("dijetChi2min", &m_chi2min, "dijetChi2min/F");
+	m_pTTree->Branch("dijetPairing", &m_dijetPairing);
 	m_pTTree->Branch("dijetMass", &m_dijetMass);
 	m_pTTree->Branch("dijetMassDiff", &m_dijetMassDiff);
 	m_pTTree->Branch("bTags", &m_bTagValues);
@@ -279,6 +280,7 @@ void PreSelection::Clear()
 	m_dihiggsMass = -999;
 	m_nbjets = 0;
 	m_chi2min = 99999.;
+	m_dijetPairing.clear();
 
 	m_preselsPassedVec.clear();
 	m_preselsPassedAll = 0;
@@ -445,6 +447,11 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
 						dijetmass[1] = m2;
 						best_idx = i;
 					}
+				}
+
+				// Save dijet pairing
+				for (size_t i=0; i < 4; i++) {
+					m_dijetPairing.push_back(perms[best_idx][i]);
 				}
 
 				TLorentzVector vdijet[2];

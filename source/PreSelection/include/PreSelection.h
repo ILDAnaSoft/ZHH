@@ -98,6 +98,7 @@ class PreSelection : public Processor
 		int m_isPassed{};
 
 		// Event values for improving/investigating preselection efficiency
+		std::vector<int> m_dijetPairing{};
 		std::vector<float> m_dijetMass{};
 		std::vector<float> m_dijetMassDiff{};
 		std::vector<double> m_bTagValues{};
