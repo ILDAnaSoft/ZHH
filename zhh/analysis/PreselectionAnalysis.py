@@ -7,6 +7,7 @@ import os.path as osp
 import json
 import numpy as np
 import uproot as ur
+import awkward as ak
 
 DEFAULTS = {
     'PROD_NAME': '500-TDR_ws',
@@ -236,3 +237,129 @@ def get_preselection_passes(
     results = results[np.argsort(results['proc_pol'])]
     
     return results
+
+def extract_dijet_masses(dijetMass:ur.TBranch)->tuple[np.ndarray, np.ndarray]:
+    aka = dijetMass.array()
+    mask = ak.num(aka) > 0
+
+    mh1 = np.array(ak.fill_none(aka.mask[mask][:, 0], -1), dtype='f')
+    mh2 = np.array(ak.fill_none(aka.mask[mask][:, 1], -1), dtype='f')
+    
+    return mh1, mh2
+
+def presel_stack(DATA_ROOT:str,
+                 processes,
+                 chunks_f,
+                 branches:list,
+                 kinematics:bool=False)->np.ndarray:   
+            
+    dtype = [
+        ('branch', 'I'), # np.uint32
+        ('pid', 'H'), # np.uint16
+        ('event', 'I'), # max. encountered: 15 797 803 << 4 294 967 295 (max of uint32)
+        ('event_category', 'B'), # np.uint8
+        
+        ('ll_pass', 'B'),
+        ('vv_pass', 'B'),
+        ('qq_pass', 'B'),
+    ]
+    
+    if kinematics:
+        for dt in [
+            ('xx_thrust', 'f'),
+            ('xx_e_vis', 'f'),
+            ('xx_pt_miss', 'f'),
+            ('xx_nisoleps', 'B'),
+        
+            # llHH
+            ('ll_mh1', 'f'),
+            ('ll_mh2', 'f'),
+            ('ll_nbjets', 'B'),
+            
+            ('ll_dilepton_type', 'B'),
+            ('ll_mz', 'f'),
+            
+            # vvHH
+            ('vv_mh1', 'f'),
+            ('vv_mh2', 'f'),
+            ('vv_nbjets', 'B'),
+            
+            ('vv_mhh', 'f'),
+            
+            # qqHH
+            ('qq_mh1', 'f'),
+            ('qq_mh2', 'f'),
+            ('qq_nbjets', 'B')
+        ]:
+            dtype.append(dt)
+    
+    r_size = chunks_f[np.isin(chunks_f['branch'], branches)]['chunk_size_factual'].sum()
+    results = np.zeros(r_size, dtype=dtype)
+    
+    pointer = 0
+    
+    for branch in tqdm(branches):
+        chunk_size = chunks_f[chunks_f['branch'] == branch]['chunk_size_factual'][0]
+        chunk = np.zeros(chunk_size, dtype=dtype)
+        
+        # ('vv_jet1_b_tag', 'f'),
+        #    ('vv_jet2_b_tag', 'f'),
+        #    ('vv_jet3_b_tag', 'f'),
+        #    ('vv_jet4_b_tag', 'f'),
+        
+        proc_pol = chunks_f[chunks_f['branch'] == branch]['proc_pol'][0]
+        chunk['pid'] = processes[processes['proc_pol'] == proc_pol]['pid'][0]
+        chunk['branch'] = branch
+        
+        with ur.open(f'{DATA_ROOT}/{branch}_FinalStates.root:eventTree') as rf:
+            chunk['event'] = rf['event'].array()
+            chunk['event_category'] = rf['event_category'].array()
+        
+        with ur.open(f'{DATA_ROOT}/{branch}_PreSelection_qqHH.root:eventTree') as rf:            
+            chunk['qq_pass'] = rf['preselPassed'].array()
+            
+            if kinematics:
+                chunk['xx_thrust'] = rf['thrust'].array()
+                chunk['xx_e_vis'] = rf['Evis'].array()
+                chunk['xx_pt_miss'] = rf['missingPT'].array()
+                chunk['xx_nisoleps'] = rf['nIsoLeptons'].array()
+                chunk['qq_nbjets'] = rf['nbjets'].array()
+            
+                mh1, mh2 = extract_dijet_masses(rf['dijetMass'])
+                chunk['qq_mh1'] = mh1
+                chunk['qq_mh2'] = mh2
+        
+        for presel in ['ll', 'vv']:
+            with ur.open(f'{DATA_ROOT}/{branch}_PreSelection_{presel}HH.root:eventTree') as rf:
+                chunk[f'{presel}_pass'] = rf['preselPassed'].array()
+                
+                if kinematics:
+                    chunk[f'{presel}_nbjets'] = rf['nbjets'].array()
+                    
+                    mh1, mh2 = extract_dijet_masses(rf['dijetMass'])
+                    chunk[f'{presel}_mh1'] = mh1
+                    chunk[f'{presel}_mh2'] = mh2
+                
+                if presel == 'll':
+                    if kinematics:
+                        #pass_nIsoLeptons = np.array(rf['eventTree']['nIsoLeptons'].array()) == 2
+
+                        lepTypes = rf['lepTypes'].array()
+                        
+                        pass_ltype11 = np.sum(np.abs(lepTypes) == 11, axis=1) == 2
+                        pass_ltype13 = np.sum(np.abs(lepTypes) == 13, axis=1) == 2
+                        
+                        chunk['ll_dilepton_type'] = pass_ltype11*11 + pass_ltype13*13
+                        chunk['ll_mz'] = rf['eventTree']['dileptonMass'].array()
+                        
+                elif kinematics:
+                    chunk['vv_mhh'] = rf['eventTree']['dihiggsMass'].array()
+                    
+        # TODO: handle kinematics=True
+        results[pointer:(pointer+chunk_size)] = chunk
+        
+        pointer += chunk_size
+
+    return results
+
+

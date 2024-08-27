@@ -1,3 +1,4 @@
+import json
 import numpy as np
 from math import floor, ceil
 from typing import Optional
@@ -167,3 +168,22 @@ def get_sample_chunk_splits(
     results['branch'] = np.arange(len(results))
     
     return results
+
+def get_chunks_factual(DATA_ROOT:str, chunks_in:np.ndarray):
+    dtype_new = np.dtype(chunks_in.dtype.descr + [('chunk_size_factual', 'I')])
+    chunks = np.zeros(chunks_in.shape, dtype_new)
+    
+    for name in chunks_in.dtype.names:
+        chunks[name] = chunks_in[name]
+    
+    branches = chunks['branch']
+    for branch in branches:
+        with open(f'{DATA_ROOT}/{branch}_FinalStateMeta.json') as jf:
+            meta = json.load(jf)
+            n_events = meta['nEvtSum']
+            
+        chunks['chunk_size_factual'][chunks['branch'] == branch] = n_events
+        
+    return chunks
+            
+            

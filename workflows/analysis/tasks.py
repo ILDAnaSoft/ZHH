@@ -1,10 +1,12 @@
 import luigi, law, json
 from law.util import flatten
-from zhh import get_raw_files
+from math import ceil
 
 # import our "framework" tasks
 from analysis.framework import HTCondorWorkflow
-from zhh import plot_preselection_pass, is_readable, ProcessIndex, get_adjusted_time_per_event, get_runtime_analysis, get_sample_chunk_splits, get_process_normalization, get_preselection_passes
+from zhh import get_raw_files, presel_stack, plot_preselection_pass, is_readable, ProcessIndex, \
+    get_adjusted_time_per_event, get_runtime_analysis, get_sample_chunk_splits, get_process_normalization, \
+    get_preselection_passes, get_chunks_factual
 from phc import export_figures, ShellTask, BaseTask, ForcibleTask
 
 from typing import Optional, Union
@@ -191,13 +193,17 @@ class PreselectionRuntime(PreselectionAbstract):
 class PreselectionFinal(PreselectionAbstract):
     debug = False # luigi.BoolParameter(default=False)
 
-
 class PreselectionSummary(BaseTask, HTCondorWorkflow):
     branchesperjob = luigi.IntParameter(default=1024)
+    
+    preselection_chunks: Optional[str] = None
+    processes_index: Optional[str] = None
     
     def workflow_requires(self):
         reqs = super().workflow_requires()
         reqs['preselection_final'] = PreselectionFinal.req(self)
+        reqs['preselection_chunks'] = CreatePreselectionChunks.req(self)
+        reqs['raw_index'] = CreateRawIndex.req(self)
         
         return reqs
     
@@ -209,22 +215,45 @@ class PreselectionSummary(BaseTask, HTCondorWorkflow):
         else:
             return True
     
+    @workflow_condition.create_branch_map
     def create_branch_map(self):
-        print(self.input())
-        raise Exception('Invalid')
+        n_branches_in = len(self.input()['preselection_final']['collection'])
+        n_branches = ceil(n_branches_in / self.branchesperjob)
+        DATA_ROOT = osp.dirname(self.input()['preselection_final']['collection'][0][0].path)
+
+        branch_key = np.arange(n_branches_in)
+        branch_val = np.split(branch_key, self.branchesperjob*np.arange(1, n_branches))
         
+        preselection_chunks = self.input()['preselection_chunks'].path
+        processes_index = self.input()['raw_index'][0].path
+
+        return dict(
+            zip(branch_key.tolist(), zip(
+                [DATA_ROOT] * n_branches,
+                branch_val,
+                [preselection_chunks] * n_branches,
+                [processes_index] * n_branches
+                )))
     
     def output(self):
         return self.local_target(f'{self.branch}.npy')
 
     def run(self):
-        temp_files = self.output()
+        src = self.branch_map[self.branch]
+        DATA_ROOT, branches, preselection_chunks, processes_index = src
         
-        temp_files[0].parent.touch()
-        self.index = index = ProcessIndex(temp_files[0], temp_files[1], get_raw_files())
-        self.index.load()
+        chunks = np.load(preselection_chunks)
+        chunks_factual = get_chunks_factual(DATA_ROOT, chunks)
         
-        self.publish_message(f'Loaded {len(index.samples)} samples and {len(index.processes)} processes')
+        processes = np.load(processes_index)
+        
+        output = self.output()
+        output.parent.touch()
+        
+        presel_result = presel_stack(DATA_ROOT, processes, chunks_factual, branches)
+        np.save(self.output().path, presel_result)
+        
+        self.publish_message(f'Processed {len(branches)} branches')
     
 
 class CreatePlots(BaseTask):

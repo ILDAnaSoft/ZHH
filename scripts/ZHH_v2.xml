@@ -680,7 +680,7 @@
         <parameter name="PreSelectionCollection" type="string" lcioOutType="ReconstructedParticle">PreSelectionHHll</parameter>
         <parameter name="isPassed" type="string" lcioOutType="ReconstructedParticle">isPassedHHll</parameter>
         <parameter name="JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets_ll</parameter>
-        <parameter name="inputPfoCollection" type="string" lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
+        <parameter name="inputPfoCollection" type="string" lcioInType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
         <!--Parameters for preselection -->
         <!--predefined preselection available for llbbbb, vvbbbb, and qqbbbb-->
         <parameter name="whichPreselection"> llbbbb </parameter>
@@ -700,7 +700,7 @@
         <parameter name="PreSelectionCollection" type="string" lcioOutType="ReconstructedParticle">PreSelectionHHvv</parameter>
         <parameter name="isPassed" type="string" lcioOutType="ReconstructedParticle">isPassedHHvv</parameter>
         <parameter name="JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets_vv</parameter>
-        <parameter name="inputPfoCollection" type="string" lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
+        <parameter name="inputPfoCollection" type="string" lcioInType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
         <!--Parameters for preselection -->
         <!--predefined preselection available for llbbbb, vvbbbb, and qqbbbb-->
         <parameter name="whichPreselection"> vvbbbb </parameter>
@@ -720,7 +720,7 @@
         <parameter name="PreSelectionCollection" type="string" lcioOutType="ReconstructedParticle">PreSelectionHHqq</parameter>
         <parameter name="isPassed" type="string" lcioOutType="ReconstructedParticle">isPassedHHqq</parameter>
         <parameter name="JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets_qq</parameter>
-        <parameter name="inputPfoCollection" type="string" lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
+        <parameter name="inputPfoCollection" type="string" lcioInType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
         <!--Parameters for preselection -->
         <!--predefined preselection available for llbbbb, vvbbbb, and qqbbbb-->
         <parameter name="whichPreselection"> qqbbbb </parameter>

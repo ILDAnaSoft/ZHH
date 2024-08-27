@@ -39,6 +39,7 @@ class EVENT_CATEGORY_TRUE:
     ttbb = 56
     qq = 57
     qqqq = 58
+    bbbbbb = 59
 
     # ttbar -> lvbbqq [t->Wb, W->lv/qq, b->bb]
     # so far not accounted: ttbar -> llvvbb (two leptonically decaying W bosons)
