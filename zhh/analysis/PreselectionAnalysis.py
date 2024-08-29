@@ -39,6 +39,12 @@ def parse_sample_path(src_path:str,
     
     return (loc, polarization)
 
+def parse_json(json_path:str):
+    with open(json_path, 'r') as file:
+        content = json.load(file)
+        
+    return content
+
 def get_preselection_summary_for_branch(
             DATA_ROOT:str,
             branch:Union[int,str],
@@ -254,7 +260,7 @@ def presel_stack(DATA_ROOT:str,
                  kinematics:bool=False)->np.ndarray:   
             
     dtype = [
-        ('branch', 'I'), # np.uint32
+        ('branch', chunks_f.dtype['branch']), # np.uint32
         ('pid', 'H'), # np.uint16
         ('event', 'I'), # max. encountered: 15 797 803 << 4 294 967 295 (max of uint32)
         ('event_category', 'B'), # np.uint8

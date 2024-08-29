@@ -1,22 +1,22 @@
 #ifndef FinalStates_ffhh_h
 #define FinalStates_ffhh_h 1
 
-#include "FinalStateResolver.h"
+#include "FinalStates_6p.h"
 #include "IMPL/LCCollectionVec.h"
 #include <EVENT/MCParticle.h>
 #include "common.h"
 
 using namespace std;
 
-class ffhh: public FinalStateResolver {
+class ffhh: public p6 {
     protected:
         vector<int> m_z_decay_filter;
 
     public:
         // Set process ID and event category
-        ffhh( string process_name, int process_id, int event_category, vector<int> z_decay_filter ): FinalStateResolver( process_name, process_id, event_category, 2, 2 ) {
-            m_z_decay_filter = z_decay_filter;
-        };
+        ffhh( string process_name, int process_id, int event_category, vector<int> z_decay_filter ):
+            p6( process_name, process_id, event_category, 2, 2 ),
+            m_z_decay_filter { z_decay_filter } {};
 
         vector<int> m_resolve(LCCollection *mcp_collection) {
             // Get Z-decayed fermions

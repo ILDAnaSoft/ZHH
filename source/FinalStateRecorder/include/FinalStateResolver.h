@@ -53,10 +53,11 @@ class FinalStateResolver {
 
         std::string get_process_name() { return m_process_name; };
         int get_process_id() { return m_process_id; };
-        int get_event_category(std::map<int, int> m_final_state_counts) { return m_event_category; };
+        
         int get_n_fermions() { return m_n_fermions; };
         int get_n_higgs() { return m_n_higgs; };
         
+        virtual int get_event_category(std::map<int, int> m_final_state_counts) = 0;
         virtual std::vector<int> m_resolve(LCCollection *mcp_collection) = 0;
         //virtual int m_get_category(LCCollection *mcp_collection) = 0;
 
