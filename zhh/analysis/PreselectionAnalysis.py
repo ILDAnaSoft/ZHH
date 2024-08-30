@@ -1,7 +1,7 @@
 from ast import literal_eval as make_tuple
 from glob import glob
 from dateutil import parser
-from typing import Optional, Union
+from typing import Optional, Union, Iterable
 from tqdm.auto import tqdm
 import os.path as osp
 import json
@@ -108,11 +108,11 @@ def get_preselection_summary(DATA_ROOT:str, meta:dict)->np.ndarray:
     jobs = meta['jobs']
     dtype = [
         ('status', '<U16'),
-        ('branch', 'i'),
+        ('branch', 'I'),
         ('loc', '<U32'),
         ('process', '<U32'),
-        ('pol_e', 'i'),
-        ('pol_p', 'i'),
+        ('pol_e', 'B'),
+        ('pol_p', 'B'),
         ('src', '<U255'),
         ('tStart', 'f'),
         ('tEnd', 'f'),
@@ -356,10 +356,10 @@ def presel_stack(DATA_ROOT:str,
                         pass_ltype13 = np.sum(np.abs(lepTypes) == 13, axis=1) == 2
                         
                         chunk['ll_dilepton_type'] = pass_ltype11*11 + pass_ltype13*13
-                        chunk['ll_mz'] = rf['eventTree']['dileptonMass'].array()
+                        chunk['ll_mz'] = rf['dileptonMass'].array()
                         
                 elif kinematics:
-                    chunk['vv_mhh'] = rf['eventTree']['dihiggsMass'].array()
+                    chunk['vv_mhh'] = rf['dihiggsMass'].array()
                     
         # TODO: handle kinematics=True
         results[pointer:(pointer+chunk_size)] = chunk
@@ -368,4 +368,38 @@ def presel_stack(DATA_ROOT:str,
 
     return results
 
+
+def get_final_state_counts(DATA_ROOT:str,
+                           branches:Iterable,
+                           chunks_f:Optional[np.ndarray]=None):
+    
+    fs_columns = ['Nd', 'Nu', 'Ns', 'Nc', 'Nb', 'Nt', 'Ne1', 'Nn1', 'Ne2', 'Nn2', 'Ne3', 'Nv3', 'Ng', 'Ny', 'NZ', 'NW', 'NH']
+    dtype = [('branch', ('<U32' if isinstance(branches[0], str) else 'I') if chunks_f is None else chunks_f.dtype['branch']), ('event', 'I')]
+    for id in fs_columns:
+        dtype.append((id, 'B'))
+
+    res_size = 0 if chunks_f is None else np.sum(chunks_f['chunk_size_factual'][np.isin(chunks_f['branch'], branches)])
+    fs_counts = np.zeros(res_size, dtype=dtype)
+    
+    pointer = 0
+    
+    for branch in tqdm(branches):
+        with ur.open(f'{DATA_ROOT}/{branch}_FinalStates.root:eventTree') as a:
+            chunk_size = len(a['event'].array())
+
+            chunk = np.zeros(chunk_size, dtype=dtype)
+            chunk['branch'] = branch
+            chunk['event'] = a['event'].array()
+            fs_counts_raw = a['final_state_counts'][1].array()
+            
+            for i in range(len(fs_columns)):
+                chunk[fs_columns[i]] = fs_counts_raw[:, i] 
+        
+        if chunks_f is None:
+            fs_counts = np.concatenate([fs_counts, chunk])
+        else:
+            fs_counts[pointer:(pointer+chunk_size)] = chunk
+            pointer += chunk_size
+                
+    return fs_counts
 

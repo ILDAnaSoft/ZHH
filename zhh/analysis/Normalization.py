@@ -82,14 +82,14 @@ def get_sample_chunk_splits(
     """
     
     dtype = [
-        ('branch', 'i'),
+        ('branch', 'I'),
         ('process', '<U60'),
         ('proc_pol', '<U64'),
         ('location', '<U512'),
         
-        ('n_chunks', 'i'),
-        ('chunk_start', 'i'),
-        ('chunk_size', 'i'),
+        ('n_chunks', 'I'),
+        ('chunk_start', 'I'),
+        ('chunk_size', 'I'),
     ]
 
     results = np.empty(0, dtype=dtype)
