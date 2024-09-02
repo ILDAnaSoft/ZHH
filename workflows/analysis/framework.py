@@ -54,7 +54,6 @@ class HTCondorWorkflow(law.htcondor.HTCondorWorkflow):
         config.custom_content.append(('request_memory', '16000 Mb'))
         config.custom_content.append(('requirements', 'Machine =!= LastRemoteHost'))
         
-        print(f'LEN JOBS: {len(jobs)}')
         if len(jobs) > 4000:
             config.custom_content.append(('materialize_max_idle', 256))
 
