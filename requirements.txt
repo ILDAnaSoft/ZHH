@@ -1,0 +1,11 @@
+awkward==2.6.7
+law @ git+https://github.com/riga/law@673c2ac
+luigi==3.5.1
+matplotlib==3.7.2
+numpy==1.24.4
+pandas==2.0.3
+phc @ git+https://github.com/nVentis/pyhepcommon@3b4fe83
+python_dateutil==2.8.2
+seaborn==0.13.2
+tqdm==4.65.0
+uproot==5.3.12
