@@ -63,14 +63,38 @@ class p6: public FinalStateResolver {
                 // qq
                 if (non_b == 2) {
                     if (m_final_state_counts[PDG::e] == 1 &&
-                        m_final_state_counts[PDG::ve] == 1)
-                        return EVENT_CATEGORY_TRUE::evbbqq;
+                        m_final_state_counts[PDG::ve] == 1) {
+                            if (m_final_state_counts[PDG::c] == 1 &&
+                                m_final_state_counts[PDG::s] == 1)
+                                return EVENT_CATEGORY_TRUE::evbbcs;
+                            else if (m_final_state_counts[PDG::u] == 1 &&
+                                    m_final_state_counts[PDG::d] == 1)
+                                return EVENT_CATEGORY_TRUE::evbbud;
+                            else
+                                return EVENT_CATEGORY_TRUE::evbbqq;
+                        }
                     else if (m_final_state_counts[PDG::µ] == 1 &&
-                             m_final_state_counts[PDG::vµ] == 1)
-                        return EVENT_CATEGORY_TRUE::µvbbqq;
+                             m_final_state_counts[PDG::vµ] == 1) {
+                            if (m_final_state_counts[PDG::c] == 1 &&
+                                    m_final_state_counts[PDG::s] == 1)
+                                    return EVENT_CATEGORY_TRUE::µvbbcs;
+                                else if (m_final_state_counts[PDG::u] == 1 &&
+                                        m_final_state_counts[PDG::d] == 1)
+                                    return EVENT_CATEGORY_TRUE::µvbbud;
+                                else
+                                    return EVENT_CATEGORY_TRUE::µvbbqq;
+                        }
                     else if (m_final_state_counts[PDG::𝜏] == 1 &&
-                             m_final_state_counts[PDG::v𝜏] == 1)
-                        return EVENT_CATEGORY_TRUE::𝜏vbbqq;
+                             m_final_state_counts[PDG::v𝜏] == 1) {
+                                if (m_final_state_counts[PDG::c] == 1 &&
+                                    m_final_state_counts[PDG::s] == 1)
+                                    return EVENT_CATEGORY_TRUE::𝜏vbbcs;
+                                else if (m_final_state_counts[PDG::u] == 1 &&
+                                        m_final_state_counts[PDG::d] == 1)
+                                    return EVENT_CATEGORY_TRUE::𝜏vbbud;
+                                else
+                                    return EVENT_CATEGORY_TRUE::𝜏vbbqq;
+                            }
                 } else if (non_b == 4) {
                     if (m_final_state_counts[PDG::s] == 2 && m_final_state_counts[PDG::c] == 2)
                         return EVENT_CATEGORY_TRUE::bbcssc;

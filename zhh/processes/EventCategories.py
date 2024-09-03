@@ -52,6 +52,14 @@ class EVENT_CATEGORY_TRUE:
     evbbqq = 71
     µvbbqq = 72
     𝜏vbbqq = 73
+    
+    evbbcs = 74
+    µvbbcs = 75
+    𝜏vbbcs = 76
+
+    evbbud = 77
+    µvbbud = 78
+    𝜏vbbud = 79
 
     # tt/WWZ -> bbqqqq
     # for tt: tt -> bbqqqq : 2x [t->Wb; W->qq]
