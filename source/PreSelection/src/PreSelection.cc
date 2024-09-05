@@ -1,5 +1,6 @@
 #include "PreSelection.h"
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <numeric>
 #include <string>
@@ -69,22 +70,28 @@ PreSelection::PreSelection() :
 				);
 
 	registerProcessorParameter("whichPreselection",
-				   "Which set of cuts to use in the preselection",
+				   "Which set of cuts to use in the preselection. This will overwrite any input preselection values.",
 				   m_whichPreselection,
 				   std::string("llbbbb")
 				   );
 
-		registerProcessorParameter("nJets",
-				   "Number of jet should be in the event",
-				   m_nAskedJets,
-				   int(4)
+	registerProcessorParameter("cutDefinitionsJSONFile",
+				   "A JSON file containing cut definitions. See cuts.json in the repository for an example. If given, this will overwrite any input preselection as well as any predefined (hard-coded) preselection values.",
+				   m_cutDefinitionsJSONFile,
+				   std::string("")
 				   );
-	
-		registerProcessorParameter("nIsoLeps",
-				   "Number of Isolated Leptons should be in the event",
-				   m_nAskedIsoLeps,
-				   int(2)
-				   );
+
+	registerProcessorParameter("nJets",
+				"Number of jet should be in the event",
+				m_nAskedJets,
+				int(4)
+				);
+
+	registerProcessorParameter("nIsoLeps",
+				"Number of Isolated Leptons should be in the event",
+				m_nAskedIsoLeps,
+				int(2)
+				);
   	
 	registerProcessorParameter("maxdileptonmassdiff",
 				   "maximum on dilepton mass difference",
@@ -215,48 +222,69 @@ void PreSelection::init()
 
 	streamlog_out(DEBUG) << "   init finished  " << std::endl;
 
-	if (m_whichPreselection == "llbbbb") {
-		m_nAskedJets = 4;
-		m_nAskedIsoLeps = 2;
-		m_maxdileptonmassdiff = 40.;
-		m_maxdijetmassdiff = 80.;
-		m_mindijetmass = 60.;
-		m_maxdijetmass = 180.;
-		m_minmissingPT = 0.;
-		m_maxmissingPT = 70.;
-		m_maxthrust = 0.9;
-		m_minblikeliness = 0.; 
-		m_minnbjets = 0;
-		m_maxEvis = 999.;
-		m_minHHmass = 0.;
-	} else if (m_whichPreselection == "vvbbbb") {
-		m_nAskedJets = 4;
-		m_nAskedIsoLeps = 0;
-		m_maxdileptonmassdiff = 999.;
-		m_maxdijetmassdiff = 80.;
-		m_mindijetmass = 60.;
-		m_maxdijetmass = 180.;
-		m_minmissingPT = 10.;
-		m_maxmissingPT = 180.;
-		m_maxthrust = 0.9;
-		m_minblikeliness = 0.2;
-		m_minnbjets = 3;
-		m_maxEvis= 400.;
-		m_minHHmass = 220.;
-	} else if (m_whichPreselection == "qqbbbb") {
-		m_nAskedJets = 6;
-		m_nAskedIsoLeps = 0;
-		m_maxdileptonmassdiff = 999.;
-		m_maxdijetmassdiff = 999.;
-		m_mindijetmass = 60.;
-		m_maxdijetmass = 180.;
-		m_minmissingPT = 0.;
-		m_maxmissingPT = 70.;
-		m_maxthrust = 0.9;
-		m_minblikeliness = 0.16;
-		m_minnbjets = 4;
-		m_maxEvis = 999.;
-		m_minHHmass = 0.;
+	if (m_cutDefinitionsJSONFile != "") {
+		std::ifstream ifs(m_cutDefinitionsJSONFile);
+		jsonf cuts = jsonf::parse(ifs);
+		
+		std::string preselection_key = std::substr(m_whichPreselection, 0, 2);
+
+		m_nAskedJets = cuts[preselection_key]["nAskedJets"];
+		m_nAskedIsoLeps = cuts[preselection_key]["nAskedIsoLeps"];
+		m_maxdileptonmassdiff = cuts[preselection_key]["maxDileptonMassDiff"];
+		m_maxdijetmassdiff = cuts[preselection_key]["maxDijetMassDiff"];
+		m_mindijetmass = cuts[preselection_key]["dijetMass"][0];
+		m_maxdijetmass = cuts[preselection_key]["dijetMass"][1];
+		m_minmissingPT = cuts[preselection_key]["missingPT"][0];
+		m_maxmissingPT = cuts[preselection_key]["missingPT"][1];
+		m_maxthrust = cuts[preselection_key]["maxThrust"];
+		m_minblikeliness = cuts[preselection_key]["minBLikeliness"];
+		m_minnbjets = cuts[preselection_key]["minNBJets"];
+		m_maxEvis = cuts[preselection_key]["maxEvis"];
+		m_minHHmass = cuts[preselection_key]["minHHmass"];
+	} else {
+		if (m_whichPreselection == "llbbbb") {
+			m_nAskedJets = 4;
+			m_nAskedIsoLeps = 2;
+			m_maxdileptonmassdiff = 40.;
+			m_maxdijetmassdiff = 80.;
+			m_mindijetmass = 60.;
+			m_maxdijetmass = 180.;
+			m_minmissingPT = 0.;
+			m_maxmissingPT = 70.;
+			m_maxthrust = 0.9;
+			m_minblikeliness = 0.; 
+			m_minnbjets = 0;
+			m_maxEvis = 999.;
+			m_minHHmass = 0.;
+		} else if (m_whichPreselection == "vvbbbb") {
+			m_nAskedJets = 4;
+			m_nAskedIsoLeps = 0;
+			m_maxdileptonmassdiff = 999.;
+			m_maxdijetmassdiff = 80.;
+			m_mindijetmass = 60.;
+			m_maxdijetmass = 180.;
+			m_minmissingPT = 10.;
+			m_maxmissingPT = 180.;
+			m_maxthrust = 0.9;
+			m_minblikeliness = 0.2;
+			m_minnbjets = 3;
+			m_maxEvis= 400.;
+			m_minHHmass = 220.;
+		} else if (m_whichPreselection == "qqbbbb") {
+			m_nAskedJets = 6;
+			m_nAskedIsoLeps = 0;
+			m_maxdileptonmassdiff = 999.;
+			m_maxdijetmassdiff = 999.;
+			m_mindijetmass = 60.;
+			m_maxdijetmass = 180.;
+			m_minmissingPT = 0.;
+			m_maxmissingPT = 70.;
+			m_maxthrust = 0.9;
+			m_minblikeliness = 0.16;
+			m_minnbjets = 4;
+			m_maxEvis = 999.;
+			m_minHHmass = 0.;
+		}
 	}
 }
 

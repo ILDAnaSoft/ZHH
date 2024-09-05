@@ -1,6 +1,7 @@
 #ifndef PreSelection_h
 #define PreSelection_h 1
 
+#include "nlohmann/json.hpp"
 #include "marlin/Processor.h"
 #include "IMPL/LCCollectionVec.h"
 #include "lcio.h"
@@ -17,6 +18,7 @@ class TTree;
 
 using namespace lcio ;
 using namespace marlin ;
+using jsonf = nlohmann::json;
 
 // If the final state is a ZHH (with H -> bbar), the channel is given by the decay channel of the Z boson (else OTHER)
 // NONE is for initialization only and should not occur in practice
@@ -64,6 +66,7 @@ class PreSelection : public Processor
 		std::string m_outputFile{};
 		std::string m_whichPreselection{};
 		std::string m_isPassedCollection{};
+		std::string m_cutDefinitionsJSONFile{};
 
 		int m_nAskedJets{};
         int m_nAskedIsoLeps{};
