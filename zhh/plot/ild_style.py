@@ -8,7 +8,7 @@ def fig_ild_style(fig:Figure, xlim:Iterable, bins:int,
                   xscale:str='linear', xunit:Optional[str]='GeV', xlabel:str='m',
                   yscale:str='linear', yunit:Optional[str]='events', ylabel_prefix:str='',
                   fontname='Arial', beam_spec:bool=True, ax_index:int=0,
-                  title:Optional[str]=None,
+                  title:Optional[str]=None, title_postfix:str='',
                   legend_labels:Optional[List]=None, legend_kwargs={},
                   colorpalette:Optional[Iterable]=None,
                   ild_offset_x:float=0., ild_offset_y:float=0., ild_status:str='preliminary')->Figure:
@@ -22,6 +22,9 @@ def fig_ild_style(fig:Figure, xlim:Iterable, bins:int,
     
     if yunit is None or yunit =='':
         yunit = '1'
+        
+    if title_postfix != '':
+        title = title[:-1] + title_postfix + ')'
     
     fig.text(0.15+ild_offset_x, 0.83+ild_offset_y, f'ILD {ild_status}', fontsize=12, weight='bold', fontname=fontname)
     

@@ -1,7 +1,7 @@
 import json
 import numpy as np
 from math import floor, ceil
-from typing import Optional
+from typing import Optional, List, Iterable
 from .PreselectionAnalysis import sample_weight
 
 def get_process_normalization(
@@ -26,7 +26,8 @@ def get_process_normalization(
         
         ('n_events_tot', 'l'),
         ('n_events_expected', 'f'),
-        ('n_events_normalized', 'l')]
+        ('n_events_normalized', 'l'),
+        ('n_events_target', 'l')]
     
     results = np.empty(0, dtype=dtype)
     
@@ -61,13 +62,16 @@ def get_process_normalization(
     
     assert(np.sum(results['n_events_normalized'] < 0) == 0)
     
+    results['n_events_target'] = results['n_events_normalized']
+    
     return results
 
 def get_sample_chunk_splits(
         samples:np.ndarray,
         adjusted_time_per_event:Optional[np.ndarray]=None,
         process_normalization:Optional[np.ndarray]=None,
-        MAXIMUM_TIME_PER_JOB:int=5400
+        full_statistics:Optional[List[str]]=None,
+        MAXIMUM_TIME_PER_JOB:int=5400,
         ):
     """_summary_
 
@@ -75,6 +79,7 @@ def get_sample_chunk_splits(
         samples (np.ndarray): _description_
         adjusted_time_per_event (Optional[np.ndarray], optional): _description_. Defaults to None.
         process_normalization (Optional[np.ndarray], optional): _description_. Defaults to None.
+        full_statistics (Optional[List[str], optional): List of process names where all events should be considered. Defaults to None.
         MAXIMUM_TIME_PER_JOB (int, optional): For splitting jobs, in seconds. Defaults to 5400 (1.5h).
 
     Returns:
@@ -98,8 +103,12 @@ def get_sample_chunk_splits(
         pn = process_normalization
         atpe = adjusted_time_per_event
         
+        if isinstance(full_statistics, Iterable):
+            mask = np.isin(pn['process'], full_statistics)
+            pn['n_events_target'][mask] = pn['n_events_tot'][mask]
+        
         for p in pn:
-            n_target = p['n_events_normalized']
+            n_target = p['n_events_target']
             
             if n_target > 0:
                 n_accounted = 0
