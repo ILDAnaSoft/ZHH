@@ -22,5 +22,6 @@ Ranlux.coonf
 *.pyc
 *.json
 !source/PreSelection/cuts.json
+!workflows/analysis/custom_statistics.json
 *.npy
 *.log

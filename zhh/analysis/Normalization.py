@@ -45,7 +45,7 @@ def get_process_normalization(
         event_weight = n_events_expected / n_events_tot
             
         results = np.append(results, np.array([
-            (process, proc_pol, cross_sec, event_weight, n_events_tot, n_events_expected, 0)
+            (process, proc_pol, cross_sec, event_weight, n_events_tot, n_events_expected, 0, 0)
         ], dtype=dtype))
         
     # Normalize by cross-section
@@ -68,18 +68,21 @@ def get_process_normalization(
 
 def get_sample_chunk_splits(
         samples:np.ndarray,
-        adjusted_time_per_event:Optional[np.ndarray]=None,
-        process_normalization:Optional[np.ndarray]=None,
-        full_statistics:Optional[List[str]]=None,
+        adjusted_time_per_event:np.ndarray,
+        process_normalization:np.ndarray,
+        custom_statistics:Optional[List[tuple]]=None,
+        existing_chunks:Optional[np.ndarray]=None,
         MAXIMUM_TIME_PER_JOB:int=5400,
         ):
     """_summary_
 
     Args:
         samples (np.ndarray): _description_
-        adjusted_time_per_event (Optional[np.ndarray], optional): _description_. Defaults to None.
-        process_normalization (Optional[np.ndarray], optional): _description_. Defaults to None.
-        full_statistics (Optional[List[str], optional): List of process names where all events should be considered. Defaults to None.
+        adjusted_time_per_event (np.ndarray): _description_. Defaults to None.
+        process_normalization (np.ndarray): _description_. Defaults to None.
+        custom_statistics (Optional[List[tuple]], optional): list of entries of either (fraction:float, processes:list[str]) or
+            (fraction:float, processes:list[str], reference:str<'total', 'expected'>)
+        existing_chunks (Optional[np.ndarray], optional): _description_. Defaults to None.
         MAXIMUM_TIME_PER_JOB (int, optional): For splitting jobs, in seconds. Defaults to 5400 (1.5h).
 
     Returns:
@@ -99,80 +102,64 @@ def get_sample_chunk_splits(
 
     results = np.empty(0, dtype=dtype)
     
-    if process_normalization is not None:
-        pn = process_normalization
-        atpe = adjusted_time_per_event
-        
-        if isinstance(full_statistics, Iterable):
-            mask = np.isin(pn['process'], full_statistics)
-            pn['n_events_target'][mask] = pn['n_events_tot'][mask]
-        
-        for p in pn:
-            n_target = p['n_events_target']
+    pn = process_normalization
+    atpe = adjusted_time_per_event
+    
+    if isinstance(custom_statistics, Iterable):
+        for entry in custom_statistics:
+            if len(entry) == 2:
+                fraction, processes = entry
+                reference = 'total'
+            elif len(entry) == 3:
+                fraction, processes, reference = entry
+                reference = reference.lower()
+            else:
+                raise Exception('Cannot interpret custom_statistics')
             
-            if n_target > 0:
-                n_accounted = 0
-                
-                c_chunks = []
-                n_chunks = 0
-                
-                c_samples = samples[samples['proc_pol'] == p['proc_pol']]
-                n_sample = 0
-                
-                while n_sample < len(c_samples) and n_accounted < n_target:
-                    sample = c_samples[n_sample]
-                    
-                    n_accounted_sample = 0
-                    n_tot_sample = sample['n_events']
-                    
-                    max_chunk_size = 99999
-                
-                    if atpe is not None:
-                        time_per_event = atpe['tPE'][atpe['process'] == p['process']]
-                        max_chunk_size = floor(MAXIMUM_TIME_PER_JOB/time_per_event)
-                        
-                    while n_accounted < n_target and n_accounted_sample < n_tot_sample:
-                        c_chunk_size = min(min(n_tot_sample - n_accounted_sample, max_chunk_size), n_target - n_accounted)
-                        c_chunks.append((0, p['process'], p['proc_pol'], sample['location'], n_chunks, n_accounted_sample, c_chunk_size))
-                        
-                        n_accounted += c_chunk_size
-                        n_accounted_sample += c_chunk_size
-        
-                        n_chunks += 1
-                        
-                    n_sample += 1
-                        
-                results = np.append(results, np.array(c_chunks, dtype=dtype))
-        
-    elif adjusted_time_per_event is not None:
-        for s in samples:
-            weight = adjusted_time_per_event['tPE'][adjusted_time_per_event['process'] == s['process']]
-            n_events = s['n_events']
-
-            MIN_UNITS_PER_CHUNK = 8000 # one unit = one unit event * one unit of weight; see the process type for which tPE == 1.0
+            processes = np.unique(processes)
+            mask = np.isin(pn['process'], processes)
             
-            chunk_size = max(1, floor(n_events / weight))
-            n_chunks = max(1, ceil(n_events/chunk_size))
-
-            if n_chunks > 1 and (n_events % n_chunks)*weight < MIN_UNITS_PER_CHUNK:
-                n_chunks -= 1
-                
-            # skip:execute
-            # 0:chunk_size-1
-            # chunk_size:2xchunk_size -1
-            
+            pn['n_events_target'][mask] = np.ceil(fraction*pn['n_events_' + ('tot' if reference == 'total' else 'normalized')][mask])
+            pn['n_events_target'][mask] = np.minimum(pn['n_events_target'][mask], pn['n_events_tot'][mask])
+    
+    
+    
+    for p in pn:
+        n_target = p['n_events_target']
+        
+        if n_target > 0:
             n_accounted = 0
-            chunk_start = 0
-            for i in range(n_chunks):
-                c_chunk_size = min(chunk_size, n_events - n_accounted)
-                n_accounted += c_chunk_size
+            
+            c_chunks = []
+            n_chunks = 0
+            
+            c_samples = samples[samples['proc_pol'] == p['proc_pol']]
+            n_sample = 0
+            
+            while n_sample < len(c_samples) and n_accounted < n_target:
+                sample = c_samples[n_sample]
                 
-                assert(c_chunk_size > 0)
+                n_accounted_sample = 0
+                n_tot_sample = sample['n_events']
                 
-                results = np.append(results, np.array([
-                    (0, s['process'], s['proc_pol'], s['location'], c_chunk_size, n_chunks, chunk_start)
-                ], dtype=dtype))
-                chunk_start = n_accounted
+                max_chunk_size = 99999
+            
+                if atpe is not None:
+                    time_per_event = atpe['tPE'][atpe['process'] == p['process']]
+                    max_chunk_size = floor(MAXIMUM_TIME_PER_JOB/time_per_event)
+                    
+                while n_accounted < n_target and n_accounted_sample < n_tot_sample:
+                    c_chunk_size = min(min(n_tot_sample - n_accounted_sample, max_chunk_size), n_target - n_accounted)
+                    c_chunks.append((0, p['process'], p['proc_pol'], sample['location'], n_chunks, n_accounted_sample, c_chunk_size))
+                    
+                    n_accounted += c_chunk_size
+                    n_accounted_sample += c_chunk_size
+    
+                    n_chunks += 1
+                    
+                n_sample += 1
+                    
+            results = np.append(results, np.array(c_chunks, dtype=dtype))
     
     results['branch'] = np.arange(len(results))
     

@@ -47,7 +47,13 @@ class CreatePreselectionChunks(BaseTask):
         ]
 
     def output(self):
-        return self.local_target('chunks.npy')
+        return [
+            self.local_target('chunks.npy'),
+            self.local_target('runtime_analysis.npy'),
+            self.local_target('atpe.npy'),
+            self.local_target('process_normalization.npy'),
+            self.local_target('arguments.json')
+        ]
     
     def run(self):
         SAMPLE_INDEX = self.input()[0][1].path
@@ -57,17 +63,70 @@ class CreatePreselectionChunks(BaseTask):
         samples = np.load(SAMPLE_INDEX)
         
         runtime_analysis = get_runtime_analysis(DATA_ROOT)
-        
         pn = get_process_normalization(processes, samples, RATIO_BY_EXPECT=self.ratio)
         atpe = get_adjusted_time_per_event(runtime_analysis, True)
 
-        chunk_splits = get_sample_chunk_splits(samples, process_normalization=pn, adjusted_time_per_event=atpe, MAXIMUM_TIME_PER_JOB=self.jobtime)
+        with open(f'$REPO_ROOT/workflows/analysis/custom_statistics.json', 'r') as f:
+            custom_statistics = json.load(f)
+
+        chunk_splits = get_sample_chunk_splits(samples, process_normalization=pn,
+                    adjusted_time_per_event=atpe, MAXIMUM_TIME_PER_JOB=self.jobtime, \
+                    custom_statistics=custom_statistics)
         
         self.output().parent.touch()
-        np.save(self.output().path, chunk_splits)
+        
+        np.save(self.output()[0].path, chunk_splits)
+        np.save(self.output()[1].path, runtime_analysis)
+        np.save(self.output()[2].path, atpe)
+        np.save(self.output()[3].path, pn)
+        
+        with open(self.output()[4], 'w') as f:
+            json.dump({'ratio': self.ratio, 'jobtime': self.jobtime}, f)
         
         self.publish_message(f'Compiled preselection chunks')
 
+class UpdatePreselectionChunks(BaseTask):
+    """Updates the chunk definitions by only appending new chunks
+    for greater statistics. Useful only if the reconstruction has not
+    changed.
+
+    Args:
+        BaseTask (_type_): _description_
+    """
+    
+    def requires(self):
+        return [
+            CreateRawIndex.req(self),
+            CreatePreselectionChunks.req(self)
+        ]
+
+    def output(self):
+        return self.local_target('chunks.npy')
+    
+    def run(self):
+        samples = np.load(self.input()[0][1].path)
+        atpe = np.load(self.input()[1][2].path)
+        pn = np.load(self.input()[1][3].path)
+        arguments = self.input().load()
+        
+        chunks_in = self.input()[1]
+        chunks_in_path = chunks_in.path
+        existing_chunks = np.load(chunks_in_path)
+        
+        with open(f'$REPO_ROOT/workflows/analysis/custom_statistics.json', 'r') as f:
+            custom_statistics = json.load(f)
+        
+        new_chunks = get_sample_chunk_splits(samples, atpe, pn, MAXIMUM_TIME_PER_JOB=arguments['jobtime'], \
+                    custom_statistics=custom_statistics, existing_chunks=existing_chunks)
+        
+        # 
+        raise Exception('Testing')
+        chunks_in.remove()
+        
+        np.save(chunks_in_path, new_chunks)
+        np.save(self.output().path, new_chunks)
+        
+        self.publish_message(f'Updated chunks. Added {len(new_chunks)-len(chunks_in)} branches.')
 
 class PreselectionAbstract(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     debug = True
@@ -100,9 +159,8 @@ class PreselectionAbstract(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         samples = np.load(self.input()['raw_index'][1].path)
         
         if 'preselection_chunks' in self.input():
-            scs = np.load(self.input()['preselection_chunks'].path)
+            scs = np.load(self.input()['preselection_chunks'][0].path)
             res = { k: v for k, v in zip(scs['branch'].tolist(), zip(scs['location'], scs['chunk_start'], scs['chunk_size']))}
-                
         else: 
             # arr = get_raw_files(debug=self.debug)
             # arr = list(filter(is_readable, arr))
@@ -224,7 +282,7 @@ class PreselectionSummary(BaseTask, HTCondorWorkflow):
         branch_key = np.arange(n_branches_in)
         branch_val = np.split(branch_key, self.branchesperjob*np.arange(1, n_branches))
         
-        preselection_chunks = self.input()['preselection_chunks'].path
+        preselection_chunks = self.input()['preselection_chunks'][0].path
         processes_index = self.input()['raw_index'][0].path
 
         return dict(

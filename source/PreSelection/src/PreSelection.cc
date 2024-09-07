@@ -1,9 +1,7 @@
 #include "PreSelection.h"
 #include <iostream>
 #include <fstream>
-#include <vector>
 #include <numeric>
-#include <string>
 #include <EVENT/LCCollection.h>
 #include <EVENT/MCParticle.h>
 #include <EVENT/ReconstructedParticle.h>
@@ -226,7 +224,7 @@ void PreSelection::init()
 		std::ifstream ifs(m_cutDefinitionsJSONFile);
 		jsonf cuts = jsonf::parse(ifs);
 		
-		std::string preselection_key = std::substr(m_whichPreselection, 0, 2);
+		std::string preselection_key = m_whichPreselection.substr(0, 2);
 
 		m_nAskedJets = cuts[preselection_key]["nAskedJets"];
 		m_nAskedIsoLeps = cuts[preselection_key]["nAskedIsoLeps"];
