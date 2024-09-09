@@ -1,6 +1,7 @@
 from typing import Optional, List, Tuple, Iterable
 from tqdm.auto import tqdm
 from .ild_style import fig_ild_style
+from ..analysis.PreselectionAnalysis import calc_preselection_by_event_categories
 from phc import plot_hist
 import numpy as np
 from matplotlib.figure import Figure
@@ -69,116 +70,27 @@ def plot_preselection_by_event_category(presel_results:np.ndarray, processes:np.
     return all_figs
 
 def plot_preselection_by_event_categories(presel_results:np.ndarray, processes:np.ndarray, weights:np.ndarray, category_map_inv:dict,
-                                          hypothesis:str, event_categories:list=[11, 16, 12, 13, 14], additional_event_categories:Optional[int]=3,
-                                        quantity:str='ll_mz', unit:str='GeV', xlabel:Optional[str]=None,
+                                          hypothesis:str, weighted:bool, quantity:str='ll_mz', event_categories:list=[11, 16, 12, 13, 14], additional_event_categories:Optional[int]=3,
+                                        unit:str='GeV', xlabel:Optional[str]=None,
                                         nbins:int=100, xlim:Optional[tuple]=None,
                                         check_pass:bool=False, plot_flat:bool=True, yscale:Optional[str]=None,
                                         ild_style_kwargs:dict={})->Figure:
     
-    """Plot the preselection results for a given hypothesis by event categories
-
-    Args:
-        presel_results (np.ndarray): _description_
-        weights (np.ndarray): _description_
-        hypothesis (str): _description_
-        event_categories (list, optional): _description_. Defaults to [17].
-        additional_event_categories (Optional[int], optional): _description_. Defaults to 3.
-        quantity (str, optional): _description_. Defaults to 'll_mz'.
-        unit (str, optional): _description_. Defaults to 'GeV'.
-        xlabel (Optional[str], optional): _description_. Defaults to None.
-        nbins (int, optional): _description_. Defaults to 100.
-        xlim (Optional[tuple], optional): _description_. Defaults to None.
-        check_pass (bool, optional): _description_. Defaults to False.
-        yscale (Optional[str], optional): _description_. Defaults to None.
-        ild_style_kwargs (dict, optional): _description_. Defaults to {}.
-
-    Returns:
-        _type_: _description_
-    """
-    
     if xlabel is None:
         xlabel = quantity
     
-    hypothesis_key = hypothesis[:2]
+    calc_dics = calc_preselection_by_event_categories(presel_results, processes, weights, category_map_inv, hypothesis, weighted, quantity, \
+                                                        event_categories, additional_event_categories, xlim, check_pass)
     
-    if xlim is None:
-        subset = presel_results
-    else:
-        subset = presel_results[(presel_results[quantity] > xlim[0]) & (presel_results[quantity] < xlim[1])]
-    
-    # Find relevant event categories    
-    categories, counts = np.unique(subset['event_category'], return_counts=True)    
-    count_sort_ind = np.argsort(-counts)
-    
-    categories = categories[count_sort_ind]
-    #counts = counts[count_sort_ind]
-    
-    mask = np.isin(categories, event_categories)
-    
-    if additional_event_categories is not None:
-        n_additional = 0
-        for i in range(len(categories)):
-            if not mask[i]:
-                if n_additional < additional_event_categories:
-                    mask[i] = True
-                    n_additional += 1
-                else:
-                    break
-                
-    categories = categories[mask]
-    #counts = counts[mask]
-    
-    calc_dict_all  = {}
-    calc_dict_pass = {}
-    
-    for category in (pbar := tqdm(categories)):
-        label = category_map_inv[category]
-        pbar.set_description(f'Processing event category {label}')
-        
-        covered_processes = []
-
-        mask = (subset['event_category'] == category)
-        pids = np.unique(subset['pid'][mask])
-        
-        process_masks  = []
-        
-        # Collect contributions from all proc_pol combinations of a process
-        for pid in pids:
-            process_name = processes['process'][processes['pid'] == pid][0]
-            
-            if process_name in covered_processes:
-                continue
-            else:
-                covered_processes.append(process_name)
-            
-            #print(process_name)
-            mask_process = np.zeros(len(mask), dtype='?')
-            
-            for pidc in processes['pid'][processes['process'] == process_name]:
-                #print(f"> {processes['proc_pol'][processes['pid'] == pidc][0]}")
-                mask_process = mask_process | (subset['pid'] == pidc)
-            
-            # Use that indices of weights = weights['pid']
-            mask_process = mask & mask_process
-            
-            process_masks.append(mask_process)
-        
-        category_mask = np.logical_or.reduce(process_masks)
-        
-        calc_dict_all[label] = (subset[quantity][category_mask], weights['weight'][subset['pid'][category_mask]])
-        
-        if check_pass:
-            category_mask_pass = category_mask & subset[f'{hypothesis_key}_pass']
-            calc_dict_pass[label] = (subset[quantity][category_mask_pass], weights['weight'][subset['pid'][category_mask_pass]])
-            
-    all_figs = plot_preselection_by_calc_dict(calc_dict_all, unit, hypothesis, xlabel, nbins=nbins, xlim=xlim,
+    all_figs = plot_preselection_by_calc_dict(calc_dics[0], unit, hypothesis, xlabel, nbins=nbins, xlim=xlim,
                                               title_label=rf'events', plot_flat=plot_flat, yscale=yscale,
                                               ild_style_kwargs=ild_style_kwargs)
-    if check_pass:
-        all_figs += plot_preselection_by_calc_dict(calc_dict_pass, unit, hypothesis, xlabel, nbins=nbins, xlim=xlim,
+    
+    if check_pass:        
+        all_figs += plot_preselection_by_calc_dict(calc_dics[1], unit, hypothesis, xlabel, nbins=nbins, xlim=xlim,
                                                    title_label=rf'events passing {hypothesis}', yscale=yscale,
                                                    ild_style_kwargs=ild_style_kwargs)
-    
+        
     return all_figs
 
 def plot_preselection_by_calc_dict(calc_dict, xunit:str, hypothesis:str, xlabel:str,
@@ -224,10 +136,11 @@ def plot_preselection_by_calc_dict(calc_dict, xunit:str, hypothesis:str, xlabel:
             'ild_offset_x': 0.,
             'ylabel_prefix': 'wt. ' if weighted else '',
             'title_postfix': '',
-            'title': rf'ZHH → {hypothesis} analysis ('+ (r"$\bf{wt.}$ " if weighted else "") + (rf"{title_label}") + ')'
+            'title': rf'ZHH → {hypothesis} analysis ('+ (r"$\bf{wt.}$ " if weighted else "") + (rf"{title_label}") + ')',
+            'legend_kwargs': {'loc': 'lower right'}
         } | ild_style_kwargs
         
-        fig = fig_ild_style(fig, xlim, nbins, legend_labels=list(plot_dict.keys()), legend_kwargs={'loc': 'lower right'}, **fig_ild_kwargs)
+        fig = fig_ild_style(fig, xlim, nbins, legend_labels=list(plot_dict.keys()), **fig_ild_kwargs)
         
         all_figs.append(fig)
         

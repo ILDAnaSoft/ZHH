@@ -254,8 +254,8 @@ def extract_dijet_masses(dijetMass:ur.TBranch)->tuple[np.ndarray, np.ndarray]:
     return mh1, mh2
 
 def presel_stack(DATA_ROOT:str,
-                 processes,
-                 chunks_f,
+                 processes:np.ndarray,
+                 chunks_f:np.ndarray,
                  branches:list,
                  kinematics:bool=False)->np.ndarray:   
             
@@ -368,11 +368,10 @@ def presel_stack(DATA_ROOT:str,
 
     return results
 
-
 def get_final_state_counts(DATA_ROOT:str,
                            branches:Iterable,
                            chunks_f:Optional[np.ndarray]=None):
-    
+
     fs_columns = ['Nd', 'Nu', 'Ns', 'Nc', 'Nb', 'Nt', 'Ne1', 'Nn1', 'Ne2', 'Nn2', 'Ne3', 'Nv3', 'Ng', 'Ny', 'NZ', 'NW', 'NH']
     dtype = [('branch', ('<U32' if isinstance(branches[0], str) else 'I') if chunks_f is None else chunks_f.dtype['branch']), ('event', 'I')]
     for id in fs_columns:
@@ -403,3 +402,107 @@ def get_final_state_counts(DATA_ROOT:str,
                 
     return fs_counts
 
+def calc_preselection_by_event_categories(presel_results:np.ndarray, processes:np.ndarray, weights:np.ndarray, category_map_inv:dict,
+                                          hypothesis:str, weighted:bool, quantity:str, event_categories:Optional[list[int]]=[11, 16, 12, 13, 14], additional_event_categories:Optional[int]=3,
+                                        xlim:Optional[tuple]=None, check_pass:bool=False)->Iterable[dict]:
+    
+    """Calculate the preselection results for a given hypothesis by event categories
+
+    Args:
+        presel_results (np.ndarray): _description_
+        weights (np.ndarray): _description_
+        hypothesis (str): _description_
+        event_categories (list, optional): _description_. Defaults to [17].
+        additional_event_categories (Optional[int], optional): _description_. Defaults to 3.
+        quantity (str, optional): _description_. Defaults to 'll_mz'.
+        unit (str, optional): _description_. Defaults to 'GeV'.
+        nbins (int, optional): _description_. Defaults to 100.
+        xlim (Optional[tuple], optional): _description_. Defaults to None.
+        check_pass (bool, optional): _description_. Defaults to False.
+        yscale (Optional[str], optional): _description_. Defaults to None.
+        ild_style_kwargs (dict, optional): _description_. Defaults to {}.
+
+    Returns:
+        _type_: _description_
+    """
+    
+    hypothesis_key = hypothesis[:2]
+    
+    if xlim is None:
+        subset = presel_results
+    else:
+        subset = presel_results[(presel_results[quantity] > xlim[0]) & (presel_results[quantity] < xlim[1])]
+    
+    # Find relevant event categories
+    if weighted:
+        categories = np.unique(subset['event_category'])
+        counts = np.zeros(len(categories), dtype=float)
+        for i, cat in enumerate(categories):
+            counts[i] += weights['weight'][subset['pid'][subset['event_category'] == cat]].sum()
+        
+    else:
+        categories, counts = np.unique(subset['event_category'], return_counts=True)
+        
+    count_sort_ind = np.argsort(-counts)
+    categories = categories[count_sort_ind]
+    
+    mask = np.isin(categories, event_categories) if event_categories is not None else np.zeros(len(categories), dtype='?')
+    
+    if additional_event_categories is not None:
+        n_additional = 0
+        for i in range(len(categories)):
+            if not mask[i]:
+                if n_additional < additional_event_categories:
+                    mask[i] = True
+                    n_additional += 1
+                else:
+                    break
+                
+    categories = categories[mask]
+    
+    calc_dict_all  = {}
+    calc_dict_pass = {}
+    
+    for category in (pbar := tqdm(categories)):
+        label = category_map_inv[category]
+        pbar.set_description(f'Processing event category {label}')
+        
+        covered_processes = []
+
+        mask = (subset['event_category'] == category)
+        pids = np.unique(subset['pid'][mask])
+        
+        process_masks  = []
+        
+        # Collect contributions from all proc_pol combinations of a process
+        for pid in pids:
+            process_name = processes['process'][processes['pid'] == pid][0]
+            
+            if process_name in covered_processes:
+                continue
+            else:
+                covered_processes.append(process_name)
+            
+            mask_process = np.zeros(len(mask), dtype='?')
+            
+            for pidc in processes['pid'][processes['process'] == process_name]:
+                #print(f"> {processes['proc_pol'][processes['pid'] == pidc][0]}")
+                mask_process = mask_process | (subset['pid'] == pidc)
+            
+            # Use that indices of weights = weights['pid']
+            mask_process = mask & mask_process
+            
+            process_masks.append(mask_process)
+        
+        category_mask = np.logical_or.reduce(process_masks)
+        
+        calc_dict_all[label] = (subset[quantity][category_mask], weights['weight'][subset['pid'][category_mask]])
+        
+        if check_pass:
+            category_mask_pass = category_mask & subset[f'{hypothesis_key}_pass']
+            calc_dict_pass[label] = (subset[quantity][category_mask_pass], weights['weight'][subset['pid'][category_mask_pass]])
+            
+    if check_pass:
+        return [calc_dict_all, calc_dict_pass]
+    else:
+        return [calc_dict_all]    

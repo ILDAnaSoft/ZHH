@@ -25,3 +25,4 @@ Ranlux.coonf
 !workflows/analysis/custom_statistics.json
 *.npy
 *.log
+*.txt

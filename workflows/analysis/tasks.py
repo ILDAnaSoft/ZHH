@@ -6,7 +6,7 @@ from math import ceil
 from analysis.framework import HTCondorWorkflow
 from zhh import get_raw_files, presel_stack, plot_preselection_pass, is_readable, ProcessIndex, \
     get_adjusted_time_per_event, get_runtime_analysis, get_sample_chunk_splits, get_process_normalization, \
-    get_preselection_passes, get_chunks_factual
+    get_preselection_passes, get_chunks_factual, get_final_state_counts
 from phc import export_figures, ShellTask, BaseTask, ForcibleTask
 
 from typing import Optional, Union
@@ -292,7 +292,10 @@ class PreselectionSummary(BaseTask, HTCondorWorkflow):
                 )))
     
     def output(self):
-        return self.local_target(f'{self.branch}.npy')
+        return [
+            self.local_target(f'{self.branch}_Presel.npy'),
+            self.local_target(f'{self.branch}_FinalStates.npy')
+        ]
 
     def run(self):
         src = self.branch_map[self.branch]
@@ -304,10 +307,13 @@ class PreselectionSummary(BaseTask, HTCondorWorkflow):
         processes = np.load(processes_index)
         
         output = self.output()
-        output.parent.touch()
+        output[0].parent.touch()
         
         presel_result = presel_stack(DATA_ROOT, processes, chunks_factual, branches, kinematics=True)
-        np.save(self.output().path, presel_result)
+        np.save(self.output()[0].path, presel_result)
+        
+        final_states = get_final_state_counts(DATA_ROOT, branches, chunks_factual)
+        np.save(self.output()[1].path, final_states)
         
         self.publish_message(f'Processed {len(branches)} branches')
     
