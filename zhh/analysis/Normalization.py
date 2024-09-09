@@ -100,7 +100,7 @@ def get_sample_chunk_splits(
         ('chunk_size', 'I'),
     ]
 
-    results = np.empty(0, dtype=dtype)
+    results = np.empty(0, dtype=dtype) if existing_chunks is None else np.copy(existing_chunks)
     
     pn = process_normalization
     atpe = adjusted_time_per_event
@@ -122,19 +122,25 @@ def get_sample_chunk_splits(
             pn['n_events_target'][mask] = np.ceil(fraction*pn['n_events_' + ('tot' if reference == 'total' else 'normalized')][mask])
             pn['n_events_target'][mask] = np.minimum(pn['n_events_target'][mask], pn['n_events_tot'][mask])
     
-    
+    n_chunks_tot = 0 if existing_chunks is None else len(existing_chunks)
     
     for p in pn:
         n_target = p['n_events_target']
         
         if n_target > 0:
-            n_accounted = 0
-            
             c_chunks = []
-            n_chunks = 0
-            
             c_samples = samples[samples['proc_pol'] == p['proc_pol']]
-            n_sample = 0
+            
+            if existing_chunks is not None:
+                mask = existing_chunks['proc_pol'] == p['proc_pol']
+                
+                n_accounted = np.sum(existing_chunks['chunk_size'][mask])
+                n_chunks = np.max(existing_chunks['n_chunks'][mask]) + 1
+                n_sample = len(np.unique(existing_chunks['location'][mask]))
+            else:
+                n_accounted = 0
+                n_chunks = 0
+                n_sample = 0
             
             while n_sample < len(c_samples) and n_accounted < n_target:
                 sample = c_samples[n_sample]
@@ -150,18 +156,18 @@ def get_sample_chunk_splits(
                     
                 while n_accounted < n_target and n_accounted_sample < n_tot_sample:
                     c_chunk_size = min(min(n_tot_sample - n_accounted_sample, max_chunk_size), n_target - n_accounted)
-                    c_chunks.append((0, p['process'], p['proc_pol'], sample['location'], n_chunks, n_accounted_sample, c_chunk_size))
+                    c_chunks.append((n_chunks_tot, p['process'], p['proc_pol'], sample['location'], n_chunks, n_accounted_sample, c_chunk_size))
                     
                     n_accounted += c_chunk_size
                     n_accounted_sample += c_chunk_size
     
                     n_chunks += 1
+                    n_chunks_tot += 1
                     
                 n_sample += 1
                     
-            results = np.append(results, np.array(c_chunks, dtype=dtype))
-    
-    results['branch'] = np.arange(len(results))
+            if len(c_chunks) > 0:
+                results = np.append(results, np.array(c_chunks, dtype=dtype))
     
     return results
 

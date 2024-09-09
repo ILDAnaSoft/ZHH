@@ -1,4 +1,4 @@
-import luigi, law, json
+import luigi, law, json, os
 from law.util import flatten
 from math import ceil
 
@@ -65,23 +65,22 @@ class CreatePreselectionChunks(BaseTask):
         runtime_analysis = get_runtime_analysis(DATA_ROOT)
         pn = get_process_normalization(processes, samples, RATIO_BY_EXPECT=self.ratio)
         atpe = get_adjusted_time_per_event(runtime_analysis, True)
-
-        with open(f'$REPO_ROOT/workflows/analysis/custom_statistics.json', 'r') as f:
+        
+        with open(osp.expandvars(f'$REPO_ROOT/workflows/analysis/custom_statistics.json'), 'r') as f:
             custom_statistics = json.load(f)
 
         chunk_splits = get_sample_chunk_splits(samples, process_normalization=pn,
-                    adjusted_time_per_event=atpe, MAXIMUM_TIME_PER_JOB=self.jobtime, \
+                    adjusted_time_per_event=atpe, MAXIMUM_TIME_PER_JOB=self.jobtime,
                     custom_statistics=custom_statistics)
         
-        self.output().parent.touch()
+        self.output()[0].parent.touch()
         
         np.save(self.output()[0].path, chunk_splits)
         np.save(self.output()[1].path, runtime_analysis)
         np.save(self.output()[2].path, atpe)
         np.save(self.output()[3].path, pn)
         
-        with open(self.output()[4], 'w') as f:
-            json.dump({'ratio': self.ratio, 'jobtime': self.jobtime}, f)
+        self.output()[4].dump({'ratio': float(self.ratio), 'jobtime': int(self.jobtime)})
         
         self.publish_message(f'Compiled preselection chunks')
 
@@ -104,29 +103,28 @@ class UpdatePreselectionChunks(BaseTask):
         return self.local_target('chunks.npy')
     
     def run(self):
+        chunks_in = self.input()[1][0]
         samples = np.load(self.input()[0][1].path)
         atpe = np.load(self.input()[1][2].path)
         pn = np.load(self.input()[1][3].path)
-        arguments = self.input().load()
+        arguments = self.input()[1][4].load()
         
-        chunks_in = self.input()[1]
         chunks_in_path = chunks_in.path
         existing_chunks = np.load(chunks_in_path)
         
-        with open(f'$REPO_ROOT/workflows/analysis/custom_statistics.json', 'r') as f:
+        with open(osp.expandvars(f'$REPO_ROOT/workflows/analysis/custom_statistics.json'), 'r') as f:
             custom_statistics = json.load(f)
         
         new_chunks = get_sample_chunk_splits(samples, atpe, pn, MAXIMUM_TIME_PER_JOB=arguments['jobtime'], \
                     custom_statistics=custom_statistics, existing_chunks=existing_chunks)
         
-        # 
-        raise Exception('Testing')
         chunks_in.remove()
-        
         np.save(chunks_in_path, new_chunks)
+        
+        self.output().parent.touch()
         np.save(self.output().path, new_chunks)
         
-        self.publish_message(f'Updated chunks. Added {len(new_chunks)-len(chunks_in)} branches.')
+        self.publish_message(f'Updated chunks. Added {len(new_chunks)-len(existing_chunks)} branches.')
 
 class PreselectionAbstract(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     debug = True

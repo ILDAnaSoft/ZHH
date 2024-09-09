@@ -17,9 +17,6 @@ def fig_ild_style(fig:Figure, xlim:Iterable, bins:int,
     if colorpalette is None:
         colorpalette = get_colorpalette()
     
-    if xunit is None or xunit =='':
-        xunit = '1'
-    
     if yunit is None or yunit =='':
         yunit = '1'
         
@@ -59,8 +56,8 @@ def fig_ild_style(fig:Figure, xlim:Iterable, bins:int,
     ax.tick_params(axis='both', width=1.5, length=5, which='both', direction='in', labelsize=12)
     ax.tick_params(axis='both', width=2.5, length=8)
     
-    ax.set_xlabel(rf'${xlabel}$' + ('' if xunit == '' else f' [{xunit}]'), fontsize=12, fontname=fontname)
-    ax.set_ylabel(ylabel_prefix + rf"{yunit} / {(xlim[1]-xlim[0])/bins:0.2f}" + (f' {xunit}' if xunit != '' else ''), fontsize=12, fontname=fontname)
+    ax.set_xlabel(rf'${xlabel}$' + ('' if (xunit == '' or xunit is None) else f' [{xunit}]'), fontsize=12, fontname=fontname)
+    ax.set_ylabel(ylabel_prefix + rf"{yunit} / {(xlim[1]-xlim[0])/bins:0.2f}" + (f' {xunit}' if (xunit != '' and xunit is not None) else ''), fontsize=12, fontname=fontname)
     
     if title is not None:
         ax.set_title(title, loc='right', fontsize=12, fontname=fontname)

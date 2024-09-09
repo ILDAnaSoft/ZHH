@@ -101,8 +101,13 @@ def plot_preselection_by_event_categories(presel_results:np.ndarray, processes:n
     
     hypothesis_key = hypothesis[:2]
     
+    if xlim is None:
+        subset = presel_results
+    else:
+        subset = presel_results[(presel_results[quantity] > xlim[0]) & (presel_results[quantity] < xlim[1])]
+    
     # Find relevant event categories    
-    categories, counts = np.unique(presel_results['event_category'], return_counts=True)    
+    categories, counts = np.unique(subset['event_category'], return_counts=True)    
     count_sort_ind = np.argsort(-counts)
     
     categories = categories[count_sort_ind]
@@ -132,8 +137,8 @@ def plot_preselection_by_event_categories(presel_results:np.ndarray, processes:n
         
         covered_processes = []
 
-        mask = (presel_results['event_category'] == category)
-        pids = np.unique(presel_results['pid'][mask])
+        mask = (subset['event_category'] == category)
+        pids = np.unique(subset['pid'][mask])
         
         process_masks  = []
         
@@ -151,7 +156,7 @@ def plot_preselection_by_event_categories(presel_results:np.ndarray, processes:n
             
             for pidc in processes['pid'][processes['process'] == process_name]:
                 #print(f"> {processes['proc_pol'][processes['pid'] == pidc][0]}")
-                mask_process = mask_process | (presel_results['pid'] == pidc)
+                mask_process = mask_process | (subset['pid'] == pidc)
             
             # Use that indices of weights = weights['pid']
             mask_process = mask & mask_process
@@ -160,11 +165,11 @@ def plot_preselection_by_event_categories(presel_results:np.ndarray, processes:n
         
         category_mask = np.logical_or.reduce(process_masks)
         
-        calc_dict_all[label] = (presel_results[quantity][category_mask], weights['weight'][presel_results['pid'][category_mask]])
+        calc_dict_all[label] = (subset[quantity][category_mask], weights['weight'][subset['pid'][category_mask]])
         
         if check_pass:
-            category_mask_pass = category_mask & presel_results[f'{hypothesis_key}_pass']
-            calc_dict_pass[label] = (presel_results[quantity][category_mask_pass], weights['weight'][presel_results['pid'][category_mask_pass]])
+            category_mask_pass = category_mask & subset[f'{hypothesis_key}_pass']
+            calc_dict_pass[label] = (subset[quantity][category_mask_pass], weights['weight'][subset['pid'][category_mask_pass]])
             
     all_figs = plot_preselection_by_calc_dict(calc_dict_all, unit, hypothesis, xlabel, nbins=nbins, xlim=xlim,
                                               title_label=rf'events', plot_flat=plot_flat, yscale=yscale,
@@ -190,7 +195,7 @@ def plot_preselection_by_calc_dict(calc_dict, xunit:str, hypothesis:str, xlabel:
         plot_dict[key] = calc_dict_sorted[key][0]
         plot_weights.append(calc_dict_sorted[key][1])
     
-    fig1, _, counts_wt   = plot_hist(plot_dict, xlim=xlim, bins=nbins, custom_styling=True, stacked=True, weights=plot_weights, return_hist=True)
+    fig1, _, counts_wt = plot_hist(plot_dict, xlim=xlim, bins=nbins, custom_styling=True, stacked=True, weights=plot_weights, return_hist=True)
     
     if plot_flat:
         fig2, _, counts_flat = plot_hist(plot_dict, xlim=xlim, bins=nbins, custom_styling=True, stacked=True, return_hist=True)
@@ -203,7 +208,7 @@ def plot_preselection_by_calc_dict(calc_dict, xunit:str, hypothesis:str, xlabel:
             
         counts_wt = counts_wt[0]
         counts_wt = counts_wt[counts_wt > 0]
-        yscale_wt = 'log' if (np.max(  counts_wt)/np.min(counts_wt  ) > 100) else 'linear'
+        yscale_wt = 'log' if (np.max(counts_wt)/np.min(counts_wt) > 100) else 'linear'
     else:
         yscale_flat = yscale_wt = yscale
     
