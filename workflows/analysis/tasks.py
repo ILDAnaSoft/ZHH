@@ -1,15 +1,15 @@
 import luigi, law, json, os
 from law.util import flatten
 from math import ceil
+from law import LocalFileTarget
 
-# import our "framework" tasks
 from analysis.framework import HTCondorWorkflow
 from zhh import get_raw_files, presel_stack, plot_preselection_pass, is_readable, ProcessIndex, \
     get_adjusted_time_per_event, get_runtime_analysis, get_sample_chunk_splits, get_process_normalization, \
     get_preselection_passes, get_chunks_factual, get_final_state_counts
 from phc import export_figures, ShellTask, BaseTask, ForcibleTask
 
-from typing import Optional, Union
+from typing import Optional, Union, Annotated, List
 import numpy as np
 import uproot as ur
 import os.path as osp
@@ -18,7 +18,7 @@ class CreateRawIndex(BaseTask):
     """
     This task creates two indeces: An index of available SLCIO sample files with information about the file location, number of events, physics process and polarization + an index containing all encountered physics processes for each polarization and their cross section-section values 
     """
-    index: Optional[np.ndarray]
+    index: Optional[ProcessIndex] = None
     
     def output(self):
         return [
@@ -27,18 +27,18 @@ class CreateRawIndex(BaseTask):
         ]
     
     def run(self):
-        temp_files = self.output()
+        temp_files: List[LocalFileTarget] = self.output()
         
         temp_files[0].parent.touch()
-        self.index = index = ProcessIndex(temp_files[0], temp_files[1], get_raw_files())
+        self.index = index = ProcessIndex(temp_files[0].path, temp_files[1].path, get_raw_files())
         self.index.load()
         
         self.publish_message(f'Loaded {len(index.samples)} samples and {len(index.processes)} processes')
 
 
 class CreatePreselectionChunks(BaseTask):
-    ratio = luigi.FloatParameter(default=0.05)
-    jobtime = luigi.IntParameter(default=7200)
+    ratio: Annotated[float, luigi.FloatParameter()] = 0.05
+    jobtime: Annotated[int, luigi.IntParameter()] = 10800
     
     def requires(self):
         return [
@@ -159,18 +159,13 @@ class PreselectionAbstract(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         if 'preselection_chunks' in self.input():
             scs = np.load(self.input()['preselection_chunks'][0].path)
             res = { k: v for k, v in zip(scs['branch'].tolist(), zip(scs['location'], scs['chunk_start'], scs['chunk_size']))}
-        else: 
-            # arr = get_raw_files(debug=self.debug)
-            # arr = list(filter(is_readable, arr))
-            # res = { k: v for k, v in zip(list(range(len(arr))), arr) }
-            
+        else:             
             selection = samples[np.lexsort((samples['location'], samples['proc_pol']))]
             
+            # Average over three runs for each proc_pol run to get a more accurate estimate
             arr = []
             for proc_pol in np.unique(selection['proc_pol']):
-                arr.append(selection[np.where(selection['proc_pol'] == proc_pol)[0][0]]['location'])
-
-            # arr = list(samples['location'])
+                arr.append(selection[np.where(selection['proc_pol'] == proc_pol)[0][:3]]['location'])
                 
             res = { k: v for k, v in zip(list(range(len(arr))), arr) }
         
@@ -203,7 +198,7 @@ class PreselectionAbstract(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         else:
             src_file = str(src)
             n_events_skip = 0
-            n_events_max = 50 if self.debug else 0
+            n_events_max = 500 if self.debug else 0
         
         # Check if sample belongs to new or old MC production to change MCParticleCollectionName
         mcp_col_name = 'MCParticlesSkimmed' if '/hh/' in src_file else 'MCParticle'
@@ -250,7 +245,7 @@ class PreselectionFinal(PreselectionAbstract):
     debug = False # luigi.BoolParameter(default=False)
 
 class PreselectionSummary(BaseTask, HTCondorWorkflow):
-    branchesperjob = luigi.IntParameter(default=1024)
+    branchesperjob: Annotated[int, luigi.IntParameter()] = 1024
     
     preselection_chunks: Optional[str] = None
     processes_index: Optional[str] = None

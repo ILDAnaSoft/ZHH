@@ -38,7 +38,7 @@ class ffffh: public p6 {
 
             vector<int> d1 = pdgs_of_daughter_particles(h1);
 
-            assert_true(d1.size() == 2, RESOLVER_ERRORS::UNEXPECTED_CHILDREN);            
+            assert_true(d1.size() == 2, RESOLVER_ERRORS::UNEXPECTED_CHILDREN);
 
             return vector<int>{
                 part1->getPDG(),
@@ -49,6 +49,13 @@ class ffffh: public p6 {
                 d1[1]
             };
         };
+
+        virtual int get_event_category(std::map<int, int> m_final_state_counts) {
+            // Takes priority over p6::get_event_category
+            (void) m_final_state_counts;
+
+            return m_event_category;
+        }
 
 };
 

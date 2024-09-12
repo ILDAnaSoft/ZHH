@@ -149,9 +149,13 @@ w_em_ep = {
     'RR': 0.065
 }
 
-def get_pol_key(pol_em:int, pol_ep:int)->str:
-    key_em = ('L' if pol_em == -1 else ('R' if pol_em == 1 else 'N'))
-    key_ep = ('L' if pol_ep == -1 else ('R' if pol_ep == 1 else 'N'))
+def get_pol_key(pol_em:float, pol_ep:float)->str:
+    key_em = ('L' if pol_em == -1. else ('R' if pol_em == 1. else 'N'))
+    key_ep = ('L' if pol_ep == -1. else ('R' if pol_ep == 1. else 'N'))
+    
+    if key_em == 'N' or key_ep == 'N':
+        raise Exception('Invalid polarization encountered')
+    
     return key_em + key_ep
 
 def get_w_pol(pol_em:int, pol_ep:int)->float:
@@ -165,7 +169,7 @@ def get_w_pol(pol_em:int, pol_ep:int)->float:
 def sample_weight(process_sigma_fb:float,
                   pol:tuple[int, int],
                   n_gen:int=1,
-                  lum_inv_ab:Optional[float]=2.)->float:
+                  lum_inv_ab:float=2.)->float:
     
     w_pol = get_w_pol(*pol)    
     return process_sigma_fb * 1000 *lum_inv_ab * w_pol / n_gen

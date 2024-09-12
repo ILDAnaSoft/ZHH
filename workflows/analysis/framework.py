@@ -8,10 +8,7 @@ other tasks to receive the same features. This is usually called "framework"
 and only needs to be defined once per user / group / etc.
 """
 
-import os
-
-import luigi
-import law
+import os, luigi, law, math
 
 # the htcondor workflow implementation is part of a law contrib package
 # so we need to explicitly load it
@@ -27,7 +24,7 @@ class HTCondorWorkflow(law.htcondor.HTCondorWorkflow):
     """
 
     max_runtime = law.DurationParameter(
-        default=2.0,
+        default=3.0,
         unit="h",
         significant=False,
         description="maximum runtime; default unit is hours; default: 1",
@@ -52,6 +49,11 @@ class HTCondorWorkflow(law.htcondor.HTCondorWorkflow):
         config.custom_content.append(('getenv', 'true'))
         #config.custom_content.append(('request_cpus', '1'))
         config.custom_content.append(('request_memory', '16000 Mb'))
+        
+        # Only set for non-default value
+        if self.max_runtime != 3.0:
+            config.custom_content.append(("request_runtime", math.floor(self.max_runtime * 3600)))
+        
         config.custom_content.append(('requirements', 'Machine =!= LastRemoteHost'))
         
         if len(jobs) > 4000:

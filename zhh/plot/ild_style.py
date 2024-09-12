@@ -2,9 +2,9 @@ from matplotlib.ticker import AutoMinorLocator, LogLocator
 from matplotlib.patches import Patch
 from matplotlib.figure import Figure
 from matplotlib.legend_handler import HandlerTuple
-from typing import Optional, List, Iterable
+from typing import Optional, List, Iterable, Union, Tuple
 
-def fig_ild_style(fig:Figure, xlim:Iterable, bins:int,
+def fig_ild_style(fig:Figure, xlim:Union[List[float], Tuple[float,float]], bins:int,
                   xscale:str='linear', xunit:Optional[str]='GeV', xlabel:str='m',
                   yscale:str='linear', yunit:Optional[str]='events', ylabel_prefix:str='',
                   fontname='Arial', beam_spec:bool=True, ax_index:int=0,
@@ -20,7 +20,7 @@ def fig_ild_style(fig:Figure, xlim:Iterable, bins:int,
     if yunit is None or yunit =='':
         yunit = '1'
         
-    if title_postfix != '':
+    if title_postfix != '' and title is not None:
         title = title[:-1] + title_postfix + ')'
     
     fig.text(0.15+ild_offset_x, 0.83+ild_offset_y, f'ILD {ild_status}', fontsize=12, weight='bold', fontname=fontname)
@@ -69,6 +69,6 @@ def fig_ild_style(fig:Figure, xlim:Iterable, bins:int,
             process_name = legend_labels[i]
             legend_handles.append([Patch(facecolor=cp[i], edgecolor=cp[i], label=process_name)])
             
-        ax.legend(handles=legend_handles, labels=legend_labels, fontsize=10, handler_map={list: HandlerTuple(ndivide=None, pad=0)}, **legend_kwargs)
+        ax.legend(handles=legend_handles, labels=legend_labels, fontsize=10, handler_map={list: HandlerTuple(ndivide=len(legend_labels), pad=0)}, **legend_kwargs)
         
     return fig

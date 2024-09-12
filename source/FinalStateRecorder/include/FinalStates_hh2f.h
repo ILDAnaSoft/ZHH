@@ -48,6 +48,12 @@ class ffhh: public p6 {
             };
         };
 
+        virtual int get_event_category(std::map<int, int> m_final_state_counts) {
+            // Takes priority over p6::get_event_category
+            (void) m_final_state_counts;
+            
+            return m_event_category;
+        }
 };
 
 
