@@ -1,4 +1,4 @@
-import luigi, law, json, os
+import luigi, law, json, os, uuid
 from law.util import flatten
 from math import ceil
 from law import LocalFileTarget
@@ -35,10 +35,9 @@ class CreateRawIndex(BaseTask):
         
         self.publish_message(f'Loaded {len(index.samples)} samples and {len(index.processes)} processes')
 
-
 class CreatePreselectionChunks(BaseTask):
-    ratio: Annotated[float, luigi.FloatParameter()] = 0.05
-    jobtime: Annotated[int, luigi.IntParameter()] = 10800
+    ratio: Annotated[float, luigi.FloatParameter()] = 1.
+    jobtime: Annotated[int, luigi.IntParameter()] = 7200
     
     def requires(self):
         return [
@@ -64,7 +63,7 @@ class CreatePreselectionChunks(BaseTask):
         
         runtime_analysis = get_runtime_analysis(DATA_ROOT)
         pn = get_process_normalization(processes, samples, RATIO_BY_EXPECT=self.ratio)
-        atpe = get_adjusted_time_per_event(runtime_analysis, True)
+        atpe = get_adjusted_time_per_event(runtime_analysis)
         
         with open(osp.expandvars(f'$REPO_ROOT/workflows/analysis/custom_statistics.json'), 'r') as f:
             custom_statistics = json.load(f)
@@ -165,7 +164,8 @@ class PreselectionAbstract(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
             # Average over three runs for each proc_pol run to get a more accurate estimate
             arr = []
             for proc_pol in np.unique(selection['proc_pol']):
-                arr.append(selection[np.where(selection['proc_pol'] == proc_pol)[0][:3]]['location'])
+                for location in selection['location'][selection['proc_pol'] == proc_pol][:3]:
+                    arr.append(location)
                 
             res = { k: v for k, v in zip(list(range(len(arr))), arr) }
         
@@ -199,6 +199,8 @@ class PreselectionAbstract(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
             src_file = str(src)
             n_events_skip = 0
             n_events_max = 500 if self.debug else 0
+            
+        temp_files[0].parent.touch()
         
         # Check if sample belongs to new or old MC production to change MCParticleCollectionName
         mcp_col_name = 'MCParticlesSkimmed' if '/hh/' in src_file else 'MCParticle'
@@ -207,9 +209,9 @@ class PreselectionAbstract(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         cmd += f' && echo "Starting Marlin at $(date)"'
         
         src_txt_target = self.local_path(str(self.branch) + "_Source.txt")
-        root_files = ['PreSelection_llHH.root', 'PreSelection_vvHH.root', 'PreSelection_qqHH.root', 'FinalStates.root']
-        for suffix in ['FinalStateMeta.json'] + root_files:
-            target_path = self.local_path(str(self.branch) + "_" + suffix)
+        root_files = ['_PreSelection_llHH.root', '_PreSelection_vvHH.root', '_PreSelection_qqHH.root', '_FinalStates.root']
+        for suffix in ['_FinalStateMeta.json', '.slcio'] + root_files:
+            target_path = self.local_path(str(self.branch) + suffix)
             cmd += f' && (if [[ ! -f {src_txt_target} && -f {target_path} ]]; then rm {target_path}; fi)' # should not be necessary as we're writing to a temp file anyway
         
         # Marlin fix for SkipNEvents=0
@@ -221,7 +223,7 @@ class PreselectionAbstract(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         
         # is_root_readable (necessary because CheatedMCOverlayRemoval crashes Marlin before it can properly exit, see above)
         for suffix in root_files:
-            cmd += f' && is_root_readable ./zhh_{suffix}'
+            cmd += f' && is_root_readable ./zhh{suffix}'
         
         cmd += f' && mv zhh_PreSelection_llHH.root {temp_files[0].path}'
         cmd += f' && mv zhh_PreSelection_vvHH.root {temp_files[1].path}'
@@ -245,7 +247,7 @@ class PreselectionFinal(PreselectionAbstract):
     debug = False # luigi.BoolParameter(default=False)
 
 class PreselectionSummary(BaseTask, HTCondorWorkflow):
-    branchesperjob: Annotated[int, luigi.IntParameter()] = 1024
+    branchesperjob: Annotated[int, luigi.IntParameter()] = 256
     
     preselection_chunks: Optional[str] = None
     processes_index: Optional[str] = None

@@ -82,9 +82,9 @@ def get_runtime_analysis(DATA_ROOT:Optional[str]=None,
     return results
 
 def get_adjusted_time_per_event(runtime_analysis:np.ndarray,
-                                 normalize_by_min:bool=True,
                                  MAX_CAP:Optional[float]=None,
-                                 MIN_CAP:Optional[float]=0.1):
+                                 MIN_CAP:Optional[float]=0.01):
+    
     unique_processes = np.unique(runtime_analysis['process'])
 
     dtype = [
@@ -93,21 +93,20 @@ def get_adjusted_time_per_event(runtime_analysis:np.ndarray,
         ('n_processed', 'i'),
         ('tPE', 'f')]
 
-    results = np.empty(len(unique_processes), dtype=dtype)
+    results = np.zeros(len(unique_processes), dtype=dtype)
 
-    i = 0
-    for process in unique_processes:
+    for i, process in enumerate(unique_processes):
         # Average for
-        mask = runtime_analysis['process'] == process
-        tAvg = np.average(runtime_analysis['tDuration'][mask])
-        n_processed = int(np.average(runtime_analysis['n_processed'][mask])) # should be equal
-        tPE = tAvg/n_processed
+        subset = runtime_analysis[runtime_analysis['process'] == process]
+
+        tAvg = np.average(subset['tDuration'])
+        n_processed = subset['n_processed'].sum()
+        tPE = subset['tDuration'].sum()/ n_processed
         
-        results[i] = np.array([ (process, tAvg, n_processed, tPE) ], dtype=dtype)
-        i += 1
-        
-    if normalize_by_min:
-        results['tPE'] *= 1/results['tPE'].min()
+        results['process'][i] = process
+        results['tAvg'][i] = tAvg
+        results['n_processed'][i] = n_processed
+        results['tPE'][i] = tPE
         
     if MAX_CAP is not None:
         results['tPE'][results['tPE'] > MIN_CAP] = np.minimum(results['tPE'], MAX_CAP)

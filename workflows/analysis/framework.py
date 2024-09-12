@@ -9,6 +9,8 @@ and only needs to be defined once per user / group / etc.
 """
 
 import os, luigi, law, math
+from law.config import Config
+from typing import List
 
 # the htcondor workflow implementation is part of a law contrib package
 # so we need to explicitly load it
@@ -40,10 +42,11 @@ class HTCondorWorkflow(law.htcondor.HTCondorWorkflow):
         bootstrap_file = law.util.rel_path(__file__, "bootstrap.sh")
         return law.JobInputFile(bootstrap_file, share=True, render_job=True)
 
-    def htcondor_job_config(self, config, jobs, branches):
+    def htcondor_job_config(self, config:Config, branch_keys:List, branch_values:List)->Config:
         # render_variables are rendered into all files sent with a job
         config.render_variables["analysis_path"] = os.getenv("ANALYSIS_PATH")
         config.render_variables["REPO_ROOT"] = os.getenv("REPO_ROOT")
+        config.render_variables["DATA_PATH"] = os.getenv("DATA_PATH")
 
         # copy the entire environment
         config.custom_content.append(('getenv', 'true'))
@@ -56,7 +59,7 @@ class HTCondorWorkflow(law.htcondor.HTCondorWorkflow):
         
         config.custom_content.append(('requirements', 'Machine =!= LastRemoteHost'))
         
-        if len(jobs) > 4000:
+        if len(branch_keys) > 4000:
             config.custom_content.append(('materialize_max_idle', 256))
 
         return config
