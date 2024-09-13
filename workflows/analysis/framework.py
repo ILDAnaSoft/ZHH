@@ -31,6 +31,16 @@ class HTCondorWorkflow(law.htcondor.HTCondorWorkflow):
         significant=False,
         description="maximum runtime; default unit is hours; default: 1",
     )
+    
+    transfer_logs = luigi.BoolParameter(
+        default=True,
+        significant=False,
+        description="transfer job logs to the output directory; default: True",
+    )
+    
+    def __init__(self, *args, **kwargs):
+        super(HTCondorWorkflow, self).__init__(*args, **kwargs)
+        self.cwd = self.htcondor_output_directory().path
 
     def htcondor_output_directory(self):
         # the directory where submission meta data should be stored

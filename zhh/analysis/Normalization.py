@@ -180,7 +180,7 @@ def get_chunks_factual(DATA_ROOT:str, chunks_in:np.ndarray):
     
     branches = chunks['branch']
     for branch in branches:
-        with open(f'{DATA_ROOT}/{branch}_FinalStateMeta.json') as jf:
+        with open(f'{DATA_ROOT}/{branch}/zhh_FinalStateMeta.json') as jf:
             meta = json.load(jf)
             n_events = meta['nEvtSum']
             

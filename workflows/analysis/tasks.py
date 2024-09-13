@@ -56,7 +56,7 @@ class CreatePreselectionChunks(BaseTask):
     
     def run(self):
         SAMPLE_INDEX = self.input()[0][1].path
-        DATA_ROOT = osp.dirname(self.input()[1]['collection'][0][0].path)
+        DATA_ROOT = osp.dirname(self.input()[1]['collection'][0].path)
         
         processes = np.load(self.input()[0][0].path)
         samples = np.load(SAMPLE_INDEX)
@@ -173,23 +173,17 @@ class PreselectionAbstract(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
 
     @workflow_condition.output
     def output(self):
-        return [
-            self.local_target(f'{self.branch}_PreSelection_llHH.root'),
-            self.local_target(f'{self.branch}_PreSelection_vvHH.root'),
-            self.local_target(f'{self.branch}_PreSelection_qqHH.root'),
-            self.local_target(f'{self.branch}_FinalStates.root'),
-            self.local_target(f'{self.branch}_FinalStateMeta.json'),
-            self.local_target(f'{self.branch}.slcio'),
-            self.local_target(f'{self.branch}_Source.txt')
-        ]
-        
-    def complete(self):
-        """Consider task as complete if _Source.txt exists (last one written out)"""
-        return self.output()[-1].exists()
+        return self.local_directory_target(self.branch)
+
+    def get_target_and_temp(self, branch):
+        return (
+            f'{self.htcondor_output_directory().path}/{branch}',
+            f'{self.htcondor_output_directory().path}/{branch}-{str(uuid.uuid4())}'
+        )
 
     def build_command(self, fallback_level):
-        temp_files = self.output()
-        src = self.branch_map[self.branch]
+        branch = self.branch
+        src = self.branch_map[branch]
         
         if isinstance(src, tuple):
             src_file = src[0]
@@ -198,22 +192,18 @@ class PreselectionAbstract(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         else:
             src_file = str(src)
             n_events_skip = 0
-            n_events_max = 500 if self.debug else 0
-            
-        temp_files[0].parent.touch()
+            n_events_max = 50 if self.debug else 0
+        
+        target, temp = self.get_target_and_temp(branch)
+        os.makedirs(osp.dirname(target), exist_ok=True)
         
         # Check if sample belongs to new or old MC production to change MCParticleCollectionName
         mcp_col_name = 'MCParticlesSkimmed' if '/hh/' in src_file else 'MCParticle'
         
         cmd =  f'source $REPO_ROOT/setup.sh'
         cmd += f' && echo "Starting Marlin at $(date)"'
-        
-        src_txt_target = self.local_path(str(self.branch) + "_Source.txt")
-        root_files = ['_PreSelection_llHH.root', '_PreSelection_vvHH.root', '_PreSelection_qqHH.root', '_FinalStates.root']
-        for suffix in ['_FinalStateMeta.json', '.slcio'] + root_files:
-            target_path = self.local_path(str(self.branch) + suffix)
-            cmd += f' && (if [[ ! -f {src_txt_target} && -f {target_path} ]]; then rm {target_path}; fi)' # should not be necessary as we're writing to a temp file anyway
-        
+        cmd += f' && mkdir -p "{temp}" && cd "{temp}"'
+
         # Marlin fix for SkipNEvents=0
         if n_events_skip == 0:
             n_events_max = n_events_max + 1
@@ -222,16 +212,11 @@ class PreselectionAbstract(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         cmd += f' && echo "Finished Marlin at $(date)"'
         
         # is_root_readable (necessary because CheatedMCOverlayRemoval crashes Marlin before it can properly exit, see above)
-        for suffix in root_files:
+        for suffix in ['_PreSelection_llHH.root', '_PreSelection_vvHH.root', '_PreSelection_qqHH.root', '_FinalStates.root']:
             cmd += f' && is_root_readable ./zhh{suffix}'
         
-        cmd += f' && mv zhh_PreSelection_llHH.root {temp_files[0].path}'
-        cmd += f' && mv zhh_PreSelection_vvHH.root {temp_files[1].path}'
-        cmd += f' && mv zhh_PreSelection_qqHH.root {temp_files[2].path}'
-        cmd += f' && mv zhh_FinalStates.root {temp_files[3].path}'
-        cmd += f' && mv zhh_FinalStateMeta.json {temp_files[4].path}'
-        cmd += f' && mv zhh.slcio {temp_files[5].path}'
-        cmd += f' && echo "{self.branch_map[self.branch]}" >> {temp_files[6].path}'
+        cmd += f' && echo "{self.branch_map[self.branch]}" >> Source.txt'
+        cmd += f' && cd .. && mv "{temp}" "{target}"'
 
         return cmd
     

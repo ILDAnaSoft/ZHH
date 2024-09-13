@@ -54,13 +54,13 @@ def get_preselection_summary_for_branch(
     branch = int(branch)
     
     try:
-        with open(f'{DATA_ROOT}/{branch}_Source.txt') as file:
+        with open(f'{DATA_ROOT}/{branch}/Source.txt') as file:
             src_path = file.read().strip()            
     except:
         src_path = ''
     
     try: 
-        with open(f'{DATA_ROOT}/{branch}_FinalStateMeta.json') as jsonfile:
+        with open(f'{DATA_ROOT}/{branch}/zhh_FinalStateMeta.json') as jsonfile:
             fs_meta = json.load(jsonfile)
             process = fs_meta['processName']  
     except:
@@ -192,13 +192,13 @@ def get_preselection_passes(
         ('proc_pol', '<U64')]
 
     results = np.empty(0, dtype=dtype)
-    finished = glob(f'{DATA_ROOT}/*_Source.txt')
+    finished = glob(f'{DATA_ROOT}/*/Source.txt')
     finished.sort()
 
     for f in (pbar := tqdm(finished)):
-        branch = f.split(f'{version}/')[1].split('_Source.txt')[0]
+        branch = f.split(f'{version}/')[1].split('/Source.txt')[0]
         
-        if osp.isfile(f'{DATA_ROOT}/{branch}_FinalStateMeta.json'):
+        if osp.isfile(f'{DATA_ROOT}/{branch}/zhh_FinalStateMeta.json'):
             # Source file is written at the very end -> .root files exist
             
             with open(f, 'r') as file:
@@ -209,7 +209,7 @@ def get_preselection_passes(
                     src_file = src_spec
                 
             # Read metadata
-            with open(f'{DATA_ROOT}/{branch}_FinalStateMeta.json', 'r') as file:
+            with open(f'{DATA_ROOT}/{branch}/zhh_FinalStateMeta.json', 'r') as file:
                 meta = json.load(file)
                 
                 # {'crossSection': 133070.796875, 'crossSectionError': 78.4000015258789, 'eventWeight': 1.0, 'nEvtSum': 995, 'polElectron': -1.0, 'polPositron': 1.0, 'processId': 250127, 'processName': '2f_z_bhabhang', 'run': 250127}
@@ -230,7 +230,7 @@ def get_preselection_passes(
                 results['n_gen'][results['proc_pol'] == procpol] += n_gen
                 
             for presel in ['llHH', 'vvHH', 'qqHH']:
-                with ur.open(f'{DATA_ROOT}/{branch}_PreSelection_{presel}.root') as rf:
+                with ur.open(f'{DATA_ROOT}/{branch}/zhh_PreSelection_{presel}.root') as rf:
                     passed = rf['eventTree']['preselPassed'].array()
                     
                     n_items = len(passed)
@@ -321,11 +321,11 @@ def presel_stack(DATA_ROOT:str,
         chunk['pid'] = processes[processes['proc_pol'] == proc_pol]['pid'][0]
         chunk['branch'] = branch
         
-        with ur.open(f'{DATA_ROOT}/{branch}_FinalStates.root:eventTree') as rf:
+        with ur.open(f'{DATA_ROOT}/{branch}/zhh_FinalStates.root:eventTree') as rf:
             chunk['event'] = rf['event'].array()
             chunk['event_category'] = rf['event_category'].array()
         
-        with ur.open(f'{DATA_ROOT}/{branch}_PreSelection_qqHH.root:eventTree') as rf:            
+        with ur.open(f'{DATA_ROOT}/{branch}/zhh_PreSelection_qqHH.root:eventTree') as rf:            
             chunk['qq_pass'] = rf['preselPassed'].array()
             
             if kinematics:
@@ -340,7 +340,7 @@ def presel_stack(DATA_ROOT:str,
                 chunk['qq_mh2'] = mh2
         
         for presel in ['ll', 'vv']:
-            with ur.open(f'{DATA_ROOT}/{branch}_PreSelection_{presel}HH.root:eventTree') as rf:
+            with ur.open(f'{DATA_ROOT}/{branch}/zhh_PreSelection_{presel}HH.root:eventTree') as rf:
                 chunk[f'{presel}_pass'] = rf['preselPassed'].array()
                 
                 if kinematics:
@@ -387,7 +387,7 @@ def get_final_state_counts(DATA_ROOT:str,
     pointer = 0
     
     for branch in tqdm(branches):
-        with ur.open(f'{DATA_ROOT}/{branch}_FinalStates.root:eventTree') as a:
+        with ur.open(f'{DATA_ROOT}/{branch}/zhh_FinalStates.root:eventTree') as a:
             chunk_size = len(a['event'].array())
 
             chunk = np.zeros(chunk_size, dtype=dtype)

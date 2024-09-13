@@ -20,10 +20,10 @@ def evaluate_runtime(DATA_ROOT:str,
     
     branch = int(branch)
     
-    with open(f'{DATA_ROOT}/{branch}_Source.txt') as file:
+    with open(f'{DATA_ROOT}/{branch}/Source.txt') as file:
         src_path = file.read().strip()
         
-    with open(f'{DATA_ROOT}/{branch}_FinalStateMeta.json') as metafile:
+    with open(f'{DATA_ROOT}/{branch}/zhh_FinalStateMeta.json') as metafile:
         branch_meta = json.load(metafile)
         n_proc, process = branch_meta['nEvtSum'], branch_meta['processName']
         tEnd, tStart = branch_meta['tEnd'], branch_meta['tStart']
@@ -56,7 +56,7 @@ def get_runtime_analysis(DATA_ROOT:Optional[str]=None,
         raise Exception('Either meta or DATA_ROOT must be given')
     
     if meta is None:    
-        metafile = glob(f'{DATA_ROOT}/htcondor_jobs*.json')[0]
+        metafile = glob(f'{DATA_ROOT}/htcondor_jobs*.json')[-1]
         with open(metafile) as file:
             meta = json.load(file)
     
