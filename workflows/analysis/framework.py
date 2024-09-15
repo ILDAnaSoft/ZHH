@@ -61,7 +61,7 @@ class HTCondorWorkflow(law.htcondor.HTCondorWorkflow):
         # copy the entire environment
         config.custom_content.append(('getenv', 'true'))
         #config.custom_content.append(('request_cpus', '1'))
-        config.custom_content.append(('request_memory', '16000 Mb'))
+        config.custom_content.append(('request_memory', '4000 Mb'))
         
         # Only set for non-default value
         if self.max_runtime != 3.0:
@@ -70,6 +70,6 @@ class HTCondorWorkflow(law.htcondor.HTCondorWorkflow):
         config.custom_content.append(('requirements', 'Machine =!= LastRemoteHost'))
         
         if len(branch_keys) > 4000:
-            config.custom_content.append(('materialize_max_idle', 256))
+            config.custom_content.append(('materialize_max_idle', 1024))
 
         return config

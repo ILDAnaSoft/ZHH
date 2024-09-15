@@ -50,14 +50,6 @@ def get_process_normalization(
         
     # Normalize by cross-section
     results = results[np.argsort(results['proc_pol'])]
-    
-    #norm_by = results['n_events_tot'] / results['n_events_expected']
-    #bound_val = np.min(norm_by)*RATIO_BY_EXPECT
-    
-    #print(f'Normalizing by proc_pol {results["proc_pol"][np.argmin(norm_by)]}')
-    #print(f'bound_val {bound_val}')
-    #print(results['event_weight'])
-    
     results['n_events_normalized'] = np.minimum(results['n_events_tot'], np.ceil(RATIO_BY_EXPECT * results['n_events_expected']))
     
     assert(np.sum(results['n_events_normalized'] < 0) == 0)
@@ -180,11 +172,15 @@ def get_chunks_factual(DATA_ROOT:str, chunks_in:np.ndarray):
     
     branches = chunks['branch']
     for branch in branches:
-        with open(f'{DATA_ROOT}/{branch}/zhh_FinalStateMeta.json') as jf:
-            meta = json.load(jf)
-            n_events = meta['nEvtSum']
-            
-        chunks['chunk_size_factual'][chunks['branch'] == branch] = n_events
+        try:
+            with open(f'{DATA_ROOT}/{branch}/zhh_FinalStateMeta.json') as jf:
+                meta = json.load(jf)
+                n_events = meta['nEvtSum']
+                
+            chunks['chunk_size_factual'][chunks['branch'] == branch] = n_events
+        except:
+            print(f'Skipping chunk {branch}')
+            chunks['chunk_size_factual'][chunks['branch'] == branch] = 0
         
     return chunks
             
