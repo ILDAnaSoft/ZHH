@@ -1,7 +1,7 @@
 from ast import literal_eval as make_tuple
 from glob import glob
 from dateutil import parser
-from typing import Optional, Union, Iterable
+from typing import Optional, Union, Iterable, List
 from tqdm.auto import tqdm
 import os.path as osp
 import json
@@ -149,6 +149,22 @@ w_em_ep = {
     'RR': 0.065
 }
 
+def combined_cross_section(processes:np.ndarray, process:Union[str, List[str]],
+                           pol_em:float=-0.8, pol_ep:float=0.3)->float:
+    
+    if isinstance(process, list):
+        return np.sum([combined_cross_section(processes, p, pol_em, pol_ep) for p in process])
+    
+    prefacs = w_prefacs(pol_em, pol_ep)
+    cross_secs = np.zeros(4, dtype=float)
+    
+    for i, suffix in enumerate(['LL', 'LR', 'RL', 'RR']):
+        entry = processes[processes['proc_pol'] == f'{process}_{suffix}']
+        if len(entry) == 1:
+            cross_secs[i] = entry['cross_sec'][0]
+    
+    return np.dot(prefacs, cross_secs)
+
 def get_pol_key(pol_em:float, pol_ep:float)->str:
     key_em = ('L' if pol_em == -1. else ('R' if pol_em == 1. else 'N'))
     key_ep = ('L' if pol_ep == -1. else ('R' if pol_ep == 1. else 'N'))
@@ -257,11 +273,23 @@ def extract_dijet_masses(dijetMass:ur.TBranch)->tuple[np.ndarray, np.ndarray]:
     
     return mh1, mh2
 
+def extract_b_tagging_values(bTags:ur.TBranch)->tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    btags = ak.sort(bTags.array(), ascending=False)
+
+    return (
+        np.array(ak.fill_none(btags.mask[ak.num(btags) > 0][:, 0], -1), dtype='f'),
+        np.array(ak.fill_none(btags.mask[ak.num(btags) > 1][:, 1], -1), dtype='f'),
+        np.array(ak.fill_none(btags.mask[ak.num(btags) > 2][:, 2], -1), dtype='f'),
+        np.array(ak.fill_none(btags.mask[ak.num(btags) > 3][:, 3], -1), dtype='f')
+    )
+
 def presel_stack(DATA_ROOT:str,
                  processes:np.ndarray,
                  chunks_f:np.ndarray,
                  branches:list,
-                 kinematics:bool=False)->np.ndarray:   
+                 kinematics:bool=False,
+                 b_tagging:bool=False,
+                 final_states:bool=False)->np.ndarray:   
             
     dtype = [
         ('branch', chunks_f.dtype['branch']), # np.uint32
@@ -302,6 +330,20 @@ def presel_stack(DATA_ROOT:str,
             ('qq_nbjets', 'B')
         ]:
             dtype.append(dt)
+            
+    if b_tagging:
+        for hyp in ['ll', 'vv', 'qq']:
+            for dt in [
+                (f'{hyp}_bmax1', 'f'),
+                (f'{hyp}_bmax2', 'f'),
+                (f'{hyp}_bmax3', 'f'),
+                (f'{hyp}_bmax4', 'f')
+            ]:
+                dtype.append(dt)
+                
+    if final_states:
+        for dt in fs_columns:
+            dtype.append((dt, 'B'))
     
     r_size = chunks_f[np.isin(chunks_f['branch'], branches)]['chunk_size_factual'].sum()
     results = np.zeros(r_size, dtype=dtype)
@@ -312,11 +354,6 @@ def presel_stack(DATA_ROOT:str,
         chunk_size = chunks_f[chunks_f['branch'] == branch]['chunk_size_factual'][0]
         chunk = np.zeros(chunk_size, dtype=dtype)
         
-        # ('vv_jet1_b_tag', 'f'),
-        #    ('vv_jet2_b_tag', 'f'),
-        #    ('vv_jet3_b_tag', 'f'),
-        #    ('vv_jet4_b_tag', 'f'),
-        
         proc_pol = chunks_f[chunks_f['branch'] == branch]['proc_pol'][0]
         chunk['pid'] = processes[processes['proc_pol'] == proc_pol]['pid'][0]
         chunk['branch'] = branch
@@ -324,36 +361,32 @@ def presel_stack(DATA_ROOT:str,
         with ur.open(f'{DATA_ROOT}/{branch}/zhh_FinalStates.root:eventTree') as rf:
             chunk['event'] = rf['event'].array()
             chunk['event_category'] = rf['event_category'].array()
-        
-        with ur.open(f'{DATA_ROOT}/{branch}/zhh_PreSelection_qqHH.root:eventTree') as rf:            
-            chunk['qq_pass'] = rf['preselPassed'].array()
             
-            if kinematics:
-                chunk['xx_thrust'] = rf['thrust'].array()
-                chunk['xx_e_vis'] = rf['Evis'].array()
-                chunk['xx_pt_miss'] = rf['missingPT'].array()
-                chunk['xx_nisoleps'] = rf['nIsoLeptons'].array()
-                chunk['qq_nbjets'] = rf['nbjets'].array()
-            
-                mh1, mh2 = extract_dijet_masses(rf['dijetMass'])
-                chunk['qq_mh1'] = mh1
-                chunk['qq_mh2'] = mh2
+            if final_states:
+                fs_counts = rf['final_state_counts'][1].array()
+                
+                for i in range(len(fs_columns)):
+                    chunk[fs_columns[i]] = fs_counts[:, i]
         
-        for presel in ['ll', 'vv']:
+        for i, presel in enumerate(['qq', 'll', 'vv']):
             with ur.open(f'{DATA_ROOT}/{branch}/zhh_PreSelection_{presel}HH.root:eventTree') as rf:
                 chunk[f'{presel}_pass'] = rf['preselPassed'].array()
                 
+                if i == 0:
+                    if kinematics:
+                        chunk['xx_thrust'] = rf['thrust'].array()
+                        chunk['xx_e_vis'] = rf['Evis'].array()
+                        chunk['xx_pt_miss'] = rf['missingPT'].array()
+                        chunk['xx_nisoleps'] = rf['nIsoLeptons'].array()
+                    
                 if kinematics:
                     chunk[f'{presel}_nbjets'] = rf['nbjets'].array()
                     
                     mh1, mh2 = extract_dijet_masses(rf['dijetMass'])
                     chunk[f'{presel}_mh1'] = mh1
                     chunk[f'{presel}_mh2'] = mh2
-                
-                if presel == 'll':
-                    if kinematics:
-                        #pass_nIsoLeptons = np.array(rf['eventTree']['nIsoLeptons'].array()) == 2
-
+                    
+                    if presel == 'll':
                         lepTypes = rf['lepTypes'].array()
                         
                         pass_ltype11 = np.sum(np.abs(lepTypes) == 11, axis=1) == 2
@@ -362,21 +395,25 @@ def presel_stack(DATA_ROOT:str,
                         chunk['ll_dilepton_type'] = pass_ltype11*11 + pass_ltype13*13
                         chunk['ll_mz'] = rf['dileptonMass'].array()
                         
-                elif kinematics:
-                    chunk['vv_mhh'] = rf['dihiggsMass'].array()
+                    elif presel == 'vv':
+                        chunk['vv_mhh'] = rf['dihiggsMass'].array()
+                
+                if b_tagging:
+                    chunk[f'{presel}_bmax1'], chunk[f'{presel}_bmax2'],
+                    chunk[f'{presel}_bmax3'], chunk[f'{presel}_bmax4'] = extract_b_tagging_values(rf['bTags'])
                     
-        # TODO: handle kinematics=True
         results[pointer:(pointer+chunk_size)] = chunk
         
         pointer += chunk_size
 
     return results
 
+fs_columns = ['Nd', 'Nu', 'Ns', 'Nc', 'Nb', 'Nt', 'Ne1', 'Nn1', 'Ne2', 'Nn2', 'Ne3', 'Nv3', 'Ng', 'Ny', 'NZ', 'NW', 'NH']
+
 def get_final_state_counts(DATA_ROOT:str,
                            branches:Iterable,
                            chunks_f:Optional[np.ndarray]=None):
 
-    fs_columns = ['Nd', 'Nu', 'Ns', 'Nc', 'Nb', 'Nt', 'Ne1', 'Nn1', 'Ne2', 'Nn2', 'Ne3', 'Nv3', 'Ng', 'Ny', 'NZ', 'NW', 'NH']
     dtype = [('branch', ('<U32' if isinstance(branches[0], str) else 'I') if chunks_f is None else chunks_f.dtype['branch']), ('event', 'I')]
     for id in fs_columns:
         dtype.append((id, 'B'))
@@ -407,7 +444,10 @@ def get_final_state_counts(DATA_ROOT:str,
     return fs_counts
 
 def calc_preselection_by_event_categories(presel_results:np.ndarray, processes:np.ndarray, weights:np.ndarray, category_map_inv:dict,
-                                          hypothesis:str, weighted:bool, quantity:str, event_categories:Optional[list[int]]=[11, 16, 12, 13, 14], additional_event_categories:Optional[int]=3,
+                                          hypothesis:str, quantity:str, weighted:bool=True,
+                                          order:Optional[List]=None,
+                                          categories_selected:Optional[List[int]]=[11, 16, 12, 13, 14],
+                                          categories_additional:Optional[int]=3,
                                         xlim:Optional[tuple]=None, check_pass:bool=False)->Iterable[dict]:
     
     """Calculate the preselection results for a given hypothesis by event categories
@@ -416,9 +456,11 @@ def calc_preselection_by_event_categories(presel_results:np.ndarray, processes:n
         presel_results (np.ndarray): _description_
         weights (np.ndarray): _description_
         hypothesis (str): _description_
-        event_categories (list, optional): _description_. Defaults to [17].
-        additional_event_categories (Optional[int], optional): _description_. Defaults to 3.
         quantity (str, optional): _description_. Defaults to 'll_mz'.
+        weighted (bool, optional): Whether the correct proc_pol weighting should be used. Defaults to True.
+        categories_selected (list, optional): Event categories to include in any case. Defaults to [17].
+        categories_additional (Optional[int], optional): n-th most contributing categories to include as well. Defaults to 3.
+        order (Optional[List]): List of process names/event category names to sort by. Defaults to None.
         unit (str, optional): _description_. Defaults to 'GeV'.
         nbins (int, optional): _description_. Defaults to 100.
         xlim (Optional[tuple], optional): _description_. Defaults to None.
@@ -429,6 +471,9 @@ def calc_preselection_by_event_categories(presel_results:np.ndarray, processes:n
     Returns:
         _type_: _description_
     """
+    
+    # Make sure that the weights are ordered exactly by index
+    assert(np.sum(weights['pid'] == np.arange(len(weights))) == len(weights))
     
     hypothesis_key = hypothesis[:2]
     
@@ -450,13 +495,13 @@ def calc_preselection_by_event_categories(presel_results:np.ndarray, processes:n
     count_sort_ind = np.argsort(-counts)
     categories = categories[count_sort_ind]
     
-    mask = np.isin(categories, event_categories) if event_categories is not None else np.zeros(len(categories), dtype='?')
+    mask = np.isin(categories, categories_selected) if categories_selected is not None else np.zeros(len(categories), dtype='?')
     
-    if additional_event_categories is not None:
+    if categories_additional is not None:
         n_additional = 0
         for i in range(len(categories)):
             if not mask[i]:
-                if n_additional < additional_event_categories:
+                if n_additional < categories_additional:
                     mask[i] = True
                     n_additional += 1
                 else:
@@ -476,7 +521,7 @@ def calc_preselection_by_event_categories(presel_results:np.ndarray, processes:n
         mask = (subset['event_category'] == category)
         pids = np.unique(subset['pid'][mask])
         
-        process_masks  = []
+        process_masks = []
         
         # Collect contributions from all proc_pol combinations of a process
         for pid in pids:
@@ -509,4 +554,105 @@ def calc_preselection_by_event_categories(presel_results:np.ndarray, processes:n
     if check_pass:
         return [calc_dict_all, calc_dict_pass]
     else:
-        return [calc_dict_all]    
+        return [calc_dict_all]
+
+
+def calc_preselection_by_processes(presel_results:np.ndarray, processes:np.ndarray, weights:np.ndarray,
+                                    weighted:bool=True,
+                                    quantity:Optional[str]=None,
+                                    processes_selected:Optional[List]=None,
+                                    processes_additional:Optional[int]=None,
+                                    order:Optional[List]=None,
+                                    xlim:Optional[tuple]=None,
+                                    check_hypothesis:Optional[str]=None)->Iterable[dict]:
+    
+    """Calculate the preselection results for a given hypothesis by event categories
+
+    Args:
+        presel_results (np.ndarray): _description_
+        weights (np.ndarray): _description_
+        processes (list, optional): _description_..
+        quantity (str, optional): _description_. Defaults to 'll_mz'.
+        mode (int): 0 for sorting by processes, 1 for sorting by event_categories
+        weighted (bool, optional): Whether the correct proc_pol weighting should be used. Defaults to True.
+        processes_selected (Optional[List[str]]): Processes to include in any case. Defaults to None.
+        processes_additional (Optional[int], optional): n-th most-contributing processes are included. Defaults to None.
+        order (Optional[List]): List of process names to sort by. Defaults to None.
+        unit (str, optional): _description_. Defaults to 'GeV'.
+        nbins (int, optional): _description_. Defaults to 100.
+        xlim (Optional[tuple], optional): _description_. Defaults to None.
+        check_hypothesis (str, optional): Either llHH, vvHH or qqHH. Defaults to False.
+        yscale (Optional[str], optional): _description_. Defaults to None.
+        ild_style_kwargs (dict, optional): _description_. Defaults to {}.
+
+    Returns:
+        _type_: _description_
+    """
+    
+    # Make sure that the weights are ordered exactly by index
+    assert(np.sum(weights['pid'] == np.arange(len(weights))) == len(weights))
+    
+    if xlim is not None and isinstance(quantity, str):
+        subset = presel_results[(presel_results[quantity] > xlim[0]) & (presel_results[quantity] < xlim[1])]
+    else:
+        subset = presel_results
+    
+    # Find relevant processes
+    process_names = np.unique(processes['process'])
+    process_counts = np.zeros(len(process_names), dtype=float if weighted else int)
+        
+    for i, process_name in enumerate(process_names):
+        pids = processes['pid'][processes['process'] == process_name]
+        
+        if weighted:
+            process_counts[i] += np.sum(np.isin(subset['pid'], pids) * weights['weight'][subset['pid']])
+        else:
+            process_counts[i] = np.sum(np.isin(subset['pid'], pids))
+ 
+    count_sort_ind = np.argsort(-process_counts)
+    process_names = process_names[count_sort_ind]
+    
+    mask = np.isin(process_names, processes_selected) if processes_selected is not None else np.zeros(len(process_names), dtype='?')
+    
+    if processes_additional is not None:
+        n_additional = 0
+        for i in range(len(process_names)):
+            if not mask[i]:
+                if n_additional < processes_additional:
+                    mask[i] = True
+                    n_additional += 1
+                else:
+                    break
+                
+    process_names = process_names[mask]
+    
+    calc_dict_all  = {}
+    calc_dict_pass = {}
+    
+    for proccess_name in (pbar := tqdm(process_names)):
+        pbar.set_description(f'Processing process {proccess_name}')
+        
+        process_masks = []
+        
+        # Collect contributions from all proc_pol combinations of a process
+        for pid in processes['pid'][processes['process'] == proccess_name]:
+            process_masks.append((subset['pid'] == pid))
+        
+        mask = np.logical_or.reduce(process_masks)
+        
+        if quantity is None:
+            calc_dict_all[proccess_name] = (None, weights['weight'][subset['pid'][mask]])
+        else:
+            calc_dict_all[proccess_name] = (subset[quantity][mask], weights['weight'][subset['pid'][mask]])
+        
+        if check_hypothesis is not None:
+            category_mask_pass = mask & subset[f'{check_hypothesis[:2]}_pass']
+            if quantity is None:
+                calc_dict_pass[proccess_name] = (None, weights['weight'][subset['pid'][category_mask_pass]])        
+            else:
+                calc_dict_pass[proccess_name] = (subset[quantity][category_mask_pass], weights['weight'][subset['pid'][category_mask_pass]])
+    
+    if check_hypothesis is not None:
+        return [calc_dict_all, calc_dict_pass]
+    else:
+        return [calc_dict_all]

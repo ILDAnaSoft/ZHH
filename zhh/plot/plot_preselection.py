@@ -70,7 +70,9 @@ def plot_preselection_by_event_category(presel_results:np.ndarray, processes:np.
     return all_figs
 
 def plot_preselection_by_event_categories(presel_results:np.ndarray, processes:np.ndarray, weights:np.ndarray, category_map_inv:dict,
-                                          hypothesis:str, weighted:bool, quantity:str='ll_mz', event_categories:list=[11, 16, 12, 13, 14], additional_event_categories:Optional[int]=3,
+                                          hypothesis:str, weighted:bool, quantity:str='ll_mz',
+                                          categories_selected:list=[11, 16, 12, 13, 14],
+                                          categories_additional:Optional[int]=3,
                                         unit:str='GeV', xlabel:Optional[str]=None,
                                         nbins:int=100, xlim:Optional[tuple]=None,
                                         check_pass:bool=False, plot_flat:bool=True, yscale:Optional[str]=None,
@@ -79,8 +81,10 @@ def plot_preselection_by_event_categories(presel_results:np.ndarray, processes:n
     if xlabel is None:
         xlabel = quantity
     
-    calc_dics = calc_preselection_by_event_categories(presel_results, processes, weights, category_map_inv, hypothesis, weighted, quantity, \
-                                                        event_categories, additional_event_categories, xlim, check_pass)
+    calc_dics = calc_preselection_by_event_categories(presel_results, processes, weights, category_map_inv, hypothesis, quantity, weighted, \
+                                                        categories_selected=categories_selected,
+                                                        categories_additional=categories_additional,
+                                                        xlim=xlim, check_pass=check_pass)
     
     all_figs = plot_preselection_by_calc_dict(calc_dics[0], unit, hypothesis, xlabel, nbins=nbins, xlim=xlim,
                                               title_label=rf'events', plot_flat=plot_flat, yscale=yscale,
