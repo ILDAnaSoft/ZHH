@@ -1,5 +1,6 @@
 import json
 import numpy as np
+import uproot as ur
 from math import floor, ceil
 from typing import Optional, List, Iterable
 from .PreselectionAnalysis import sample_weight
@@ -163,25 +164,47 @@ def get_sample_chunk_splits(
     
     return results
 
-def get_chunks_factual(DATA_ROOT:str, chunks_in:np.ndarray):
-    dtype_new = np.dtype(chunks_in.dtype.descr + [('chunk_size_factual', 'I')])
+def get_chunks_factual(DATA_ROOT:str, chunks_in:np.ndarray, attach_time:bool=False):
+    dtype_arr = chunks_in.dtype.descr + [('chunk_size_factual', 'I')]
+    if attach_time:
+        dtype_arr += [('runtime', 'I')]
+    
+    dtype_new = np.dtype(dtype_arr)
+    
     chunks = np.zeros(chunks_in.shape, dtype_new)
     
     for name in chunks_in.dtype.names:
         chunks[name] = chunks_in[name]
     
     branches = chunks['branch']
+    todelete = []
     for branch in branches:
         try:
             with open(f'{DATA_ROOT}/{branch}/zhh_FinalStateMeta.json') as jf:
                 meta = json.load(jf)
                 n_events = meta['nEvtSum']
+                dt = meta['tEnd'] - meta['tStart']
                 
             chunks['chunk_size_factual'][chunks['branch'] == branch] = n_events
-        except:
-            print(f'Skipping chunk {branch}')
-            chunks['chunk_size_factual'][chunks['branch'] == branch] = 0
-        
+            if attach_time:
+                chunks['runtime'][chunks['branch'] == branch] = dt
+        except:        
+            try:
+                if attach_time:
+                    raise Exception('Not possible with attach_time=True')
+                
+                with ur.open(f'{DATA_ROOT}/{branch}/zhh_FinalStates.root') as rf:
+                    n_events = len(rf['event'].array())
+                    
+                chunks['chunk_size_factual'][chunks['branch'] == branch] = n_events
+            except:
+                print(f'Skipping chunk {branch} (unrecoverable), will be removed')
+                chunks['chunk_size_factual'][chunks['branch'] == branch] = 0
+                todelete.append(branch)    
+    
+    if len(todelete):
+        chunks = np.delete(chunks, todelete, axis=0)
+    
     return chunks
             
             
