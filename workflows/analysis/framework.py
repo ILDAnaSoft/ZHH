@@ -26,7 +26,7 @@ class HTCondorWorkflow(law.htcondor.HTCondorWorkflow):
     """
 
     max_runtime = law.DurationParameter(
-        default=3.0,
+        default=3.0, # 10.0
         unit="h",
         significant=False,
         description="maximum runtime; default unit is hours; default: 1",
@@ -61,7 +61,7 @@ class HTCondorWorkflow(law.htcondor.HTCondorWorkflow):
         # copy the entire environment
         config.custom_content.append(('getenv', 'true'))
         #config.custom_content.append(('request_cpus', '1'))
-        config.custom_content.append(('request_memory', '4000 Mb'))
+        config.custom_content.append(('request_memory', '4000 Mb')) # 16 GB
         
         # Only set for non-default value
         if self.max_runtime != 3.0:

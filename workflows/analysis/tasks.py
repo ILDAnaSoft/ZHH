@@ -257,7 +257,7 @@ class PreselectionSummary(BaseTask, HTCondorWorkflow):
     def create_branch_map(self):
         n_branches_in = len(self.input()['preselection_final']['collection'])
         n_branches = ceil(n_branches_in / self.branchesperjob)
-        DATA_ROOT = osp.dirname(self.input()['preselection_final']['collection'][0][0].path)
+        DATA_ROOT = osp.dirname(self.input()['preselection_final']['collection'][0].path)
 
         branch_key = np.arange(n_branches_in)
         branch_val = np.split(branch_key, self.branchesperjob*np.arange(1, n_branches))
@@ -274,10 +274,7 @@ class PreselectionSummary(BaseTask, HTCondorWorkflow):
                 )))
     
     def output(self):
-        return [
-            self.local_target(f'{self.branch}_Presel.npy'),
-            self.local_target(f'{self.branch}_FinalStates.npy')
-        ]
+        return self.local_target(f'{self.branch}_Presel.npy')
 
     def run(self):
         src = self.branch_map[self.branch]
@@ -289,13 +286,12 @@ class PreselectionSummary(BaseTask, HTCondorWorkflow):
         processes = np.load(processes_index)
         
         output = self.output()
-        output[0].parent.touch()
+        output.parent.touch()
         
-        presel_result = presel_stack(DATA_ROOT, processes, chunks_factual, branches, kinematics=True)
-        np.save(self.output()[0].path, presel_result)
+        presel_result = presel_stack(DATA_ROOT, processes, chunks_factual, branches,
+                                     kinematics=True, b_tagging=True, final_states=False)
         
-        final_states = get_final_state_counts(DATA_ROOT, branches, chunks_factual)
-        np.save(self.output()[1].path, final_states)
+        np.save(output.path, presel_result)
         
         self.publish_message(f'Processed {len(branches)} branches')
     

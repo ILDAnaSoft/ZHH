@@ -26,3 +26,7 @@ Ranlux.coonf
 *.npy
 *.log
 *.txt
+.env
+.env.sh
+.env.bck
+install/**
