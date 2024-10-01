@@ -1,128 +1,238 @@
 #!/bin/bash
 
-# Dependendies:
-# -> $ILCSOFT_ROOT/MarlinReco/Analysis/SLDCorrection/lib/libSLDCorrection.so
-# -> most ZHH processors
+function usage() {
+    echo "Usage: source setup.sh [-r <key4hep-release>] [--install [--install-dir ./install]] [--compile]"
+    echo "       -r <release> : setup a specific release, if not specified the latest release will be used"
+    echo "       --install, -i: downloads all dependencies, attempts to compile and install them as well as all libraries inside this repository"
+    echo "       --install-dir, -d: defaults to dependencies"
+    echo "       --compile, -c: recompiles all dependencies. requires all paths (dependencies) to be set"
+    ecgo "       --help, -h   : print this help message"
+    echo "--install and --compile are mutually exclusive"
+    echo ""
+    echo "Additional files which may be sourced after the key4hep stack is sourced (optional, not commited to git repository):"
+    echo "       .env: environment variables in key=value format"
+    echo "       .env.sh: shell script for additional environment setup"
+    echo ""
+    echo "Dependencies"
+    echo "       MarlinML: absolute path to MarlinML repository with binaries inside lib64 (see https://gitlab.desy.de/ilcsoft/MarlinML)"
+    echo "       VariablesForDeepMLFlavorTagger: absolute path to repository with binaries inside lib (see https://gitlab.desy.de/ilcsoft/variablesfordeepmlflavortagger)"
+    echo "       BTaggingVariables: absolute path to repository with binaries inside lib (see https://gitlab.desy.de/ilcsoft/btaggingvariables)"
+}
 
-#while [ ! -z $CONDA_PREFIX ]; do conda deactivate; done
+ZHH_K4H_RELEASE_DEFAULT="2024-04-12"
 
-if ! command -v conda &> /dev/null
-then
-    echo "Making conda available (not sourcing any environment)..."
-    source /afs/desy.de/user/b/bliewert/.zshrc
-fi
+function zhh_install() {
+    local INSTALL_DIR="$1"
+
+    if [ -d $INSTALL_DIR ]; then
+        echo "install-dir <$INSTALL_DIR> must be empty"
+        return 1
+    fi
+
+    if [[ -f ".env" ]]; then
+        read -p "You wish to install the dependencies, but an .env file which would be overwritten already exists. Do you wish to back it up to .env.bck and continue? Any existing .env.bck will be overwritten. (n)" yn
+        if [[ "$yn" = "y" ]]; then
+            rm -f .env.bck
+            mv .env .env.bck
+        else
+            return 1
+        fi
+    fi
+
+    mkdir -p $INSTALL_DIR && cd $INSTALL_DIR
+
+    git clone --recurse-submodules https://gitlab.desy.de/ilcsoft/MarlinML
+    git clone https://gitlab.desy.de/ilcsoft/variablesfordeepmlflavortagger
+    git clone https://gitlab.desy.de/ilcsoft/btaggingvariables
+    git clone https://github.com/iLCSoft/ILDConfig.git
+
+    export MarlinML="$(pwd)/MarlinML"
+    export VariablesForDeepMLFlavorTagger="$(pwd)/variablesfordeepmlflavortagger"
+    export BTaggingVariables="$(pwd)/btaggingvariables"
+    export ILD_CONFIG_DIR="$(pwd)/ILDConfig"
+
+    # Save directories to .env
+    cat >> "$REPO_ROOT/.env" <<EOF
+REPO_ROOT="$REPO_ROOT"
+MarlinML="$MarlinML"
+VariablesForDeepMLFlavorTagger="$VariablesForDeepMLFlavorTagger"
+BTaggingVariables="$BTaggingVariables"
+TORCH_PATH="$TORCH_PATH"
+ILD_CONFIG_DIR="$ILD_CONFIG_DIR"
+
+EOF
+}
+
+function zhh_recompile() {
+    # Compile ZHH processors
+    cd $REPO_ROOT
+    source compile_from_scratch.sh
+
+    compile_pkg ()
+    {
+        cd $1
+        rm -rf build
+        mkdir -p build
+        cd build
+        cmake -DCMAKE_CXX_STANDARD=17 ..
+        make install || { cd ../.. ; return 1; }
+        cd ../..
+    }
+
+    # Compile the ML and helper libraries
+    for module_to_compile in "$MarlinML" "$VariablesForDeepMLFlavorTagger" "$BTaggingVariables"
+    do
+        compile_pkg $module_to_compile && echo "+++ Successfully compiled $module_to_compile +++" || { echo "!!! Error [$?] while trying to compile $module_to_compile !!!"; cd $REPO_ROOT; return 1; }
+    done
+
+    cd $REPO_ROOT
+    
+}
+
+function zhh_attach_marlin_dlls() {
+    local libs=(
+        "$REPO_ROOT/source/CheatedMCOverlayRemoval/lib/libCheatedMCOverlayRemoval.so"
+        "$REPO_ROOT/source/AddNeutralPFOCovMat/lib/libAddNeutralPFOCovMat.so"
+        "$REPO_ROOT/source/LeptonPairing/lib/libLeptonPairing.so"
+        "$REPO_ROOT/source/HdecayMode/lib/libHdecayMode.so"
+        "$REPO_ROOT/source/PreSelection/lib/libPreSelection.so"
+        "$REPO_ROOT/source/FinalStateRecorder/lib/libFinalStateRecorder.so"
+        "$MarlinML/lib64/libJetTaggers.so"
+        "$VariablesForDeepMLFlavorTagger/lib/libVariablesForDeepMLFlavorTagger.so"
+        "$BTaggingVariables/lib/libBTaggingVariables.so"
+    )
+
+    for lib in "${libs[@]}"; do
+        if [[ ! -f "$lib" ]]; then
+            echo "Error: Library <$lib> not found. Make sure it is compiled and the path is correct."
+            return 1
+        fi
+
+        echo "Attaching library $(basename $lib)"
+        export MARLIN_DLL=$MARLIN_DLL:"$lib"
+    done
+
+    # v3 requires a recent version of ReconstructedParticleParticleIDFilterProcessor.cc 
+    # https://github.com/iLCSoft/MarlinReco/blob/master/Analysis/PIDTools/src/ReconstructedParticleParticleIDFilterProcessor.cc
+    # As a quick fix, one may use Uli's version
+    # export MARLIN_DLL="/afs/desy.de/user/u/ueinhaus/pool/MarlinReco_v01-35/lib/libMarlinReco.so.1.35.0:$MARLIN_DLL"
+}
+
+ZHH_K4H_RELEASE=$ZHH_K4H_RELEASE_DEFAULT
+ZHH_COMMAND=""
+
+for ((i=1; i<=$#; i++)); do
+    eval arg=\$$i
+    eval "argn=\${$((i+1))}"
+    case $arg in
+        --help|-h)
+            usage
+            return 0
+            ;;
+        --install)
+            ZHH_COMMAND="install"
+            ZHH_INSTALL_DIR="./dependencies"
+            return 0
+            if [ ! -n "$argn" ]; then
+                list_releases $os
+                return 0
+            elif [ -n "$argn" ] && [[ "$argn" =~ ^(almalinux|centos|ubuntu) ]]; then
+                list_releases $argn
+                return 0
+            else
+                echo "Unsupported OS $argn, aborting..."
+                usage
+                return 1
+            fi
+            ;;
+        --install-dir|-d)
+            if [ -z "$argn" ]; then
+                echo "install-dir requires a non-empty argument"
+                return 1
+            else
+                echo "Option: Setting install-dir to $argn"
+                ZHH_INSTALL_DIR="$argn"
+            fi
+            ;;
+        -r)
+            if [ -z "$argn" ]; then
+                echo "release requires a non-empty argument"
+                return 1
+            else
+                echo "Option: Setting release to $argn"
+                ZHH_K4H_RELEASE="$argn"
+            fi
+            ;;
+        --compile|-c)
+            ZHH_COMMAND="compile"
+            ;;
+        *)
+            eval "prev=\${$((i-1))}"
+            if [ "$prev" != "-r" ]; then
+                echo "Unknown argument $arg, aborting\n"
+                usage
+                return 1
+            fi
+            ;;
+    esac
+done
+
+#########################################
+
+REPO_ROOT=$(readlink -f "$0")
+REPO_ROOT=$(dirname "$REPO_ROOT")
 
 if [[ -z "${MARLIN_DLL}" ]]; then
-    # source /cvmfs/ilc.desy.de/key4hep/releases/2023-05-23/key4hep-stack/2023-05-24/x86_64-centos7-gcc12.3.0-opt/7emhu/setup.sh
-    # source /cvmfs/sw.hsf.org/key4hep/setup.sh
-    source /cvmfs/sw.hsf.org/key4hep/setup.sh -r 2023-11-23
-    # source /cvmfs/ilc.desy.de/key4hep/setup.sh
+    source /cvmfs/sw.hsf.org/key4hep/setup.sh -r $ZHH_K4H_RELEASE
 fi
 
-if [[ -z "${REPO_ROOT}" ]]; then
-    export REPO_ROOT="/afs/desy.de/user/b/bliewert/public/MarlinWorkdirs/ZHH"
+if [[ -f ".env" && -z $ZHH_ENV_DOT ]]; then
+    echo "Loading local environment file .env..."
+    export $(grep -v '^#' .env | xargs)
+    export ZHH_ENV_DOT=true
 fi
 
-if [[ -z "${ILCSOFT_ROOT}" ]]; then
-    export ILCSOFT_ROOT="/afs/desy.de/user/b/bliewert/public/ILCSoft"
+if [[ -f ".env.sh" && -z $ZHH_ENV_DOT_SH ]]; then
+    echo "Sourcing local sh file .env.sh..." 
+    source .env.sh
+    export ZHH_ENV_DOT_SH=true
 fi
 
-is_root_readable() (
-    if [ -e "/afs/desy.de/group/flc" ]; then
-        local ON_NAF="true"
-        local CONDA_ROOT="/nfs/dust/ilc/user/bliewert/miniconda3"
-        local CONDA_ENV_NAME="graphjet_pyg"
-    else
-        local ON_NAF="false"
-        local CONDA_ROOT="$HOME/miniforge3"
-        local CONDA_ENV_NAME="py311"
-    fi
+# Automatically find pytorch
+if [[ -z "${TORCH_PATH}" ]]; then
+    echo "Trying to find pytorch..."
+    TORCH_PATH=$(dirname $(python -c 'import torch; print(f"{torch.__file__}")'))
+fi
 
-    local PYTHONPATH=/afs/desy.de/user/b/bliewert/public/MarlinWorkdirs/pyhepcommon
+if [[ $CMAKE_PREFIX_PATH != *"torch/share/cmake"* ]]; then
+    export CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:${TORCH_PATH}/share/cmake
+    export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${TORCH_PATH}/lib
+fi
 
-    #echo "CONDA_DEFAULT_ENV: $CONDA_DEFAULT_ENV | CONDA_ENV_NAME: $CONDA_ENV_NAME"
-    #if [ "$CONDA_DEFAULT_ENV" != "$CONDA_ENV_NAME" ]; then
-    #if [[ "$($CONDA_ROOT/envs/$CONDA_ENV_NAME/bin/python -m site)" != *"pyhepcommon"* ]]; then
-    #    echo "Activating conda $CONDA_ENV_NAME"
-    #    conda activate $CONDA_ROOT/envs/$CONDA_ENV_NAME
-        #&> /dev/null
-    #fi
-
-    #echo "PYTHONPATH: $PYTHONPATH"
-
-    local root_tree=${2:-None}
-
-    if [ "$root_tree" != "None" ]; then
-        local root_tree="'$root_tree'"
-    fi
-
-    #echo "which python: $(which python)"
-    #echo "which conda $(which conda)"
+if [[ "$ZHH_COMMAND" = "install" ]]; then
+    echo "Attempting to install dependencies..."
+    zhh_install $ZHH_INSTALL_DIR
     
-    local res=$($CONDA_ROOT/envs/$CONDA_ENV_NAME/bin/python -c "from phc import root_file_readable; print(root_file_readable('${1}', ${root_tree}))")
-    
-    if [ "$res" = "True" ]; then
-        return 0
-    else
-        return 1
-    fi
-)
+    ZHH_COMMAND="compile"
+fi
 
-is_json_readable() (
-    if [ -e "/afs/desy.de/group/flc" ]; then
-        local ON_NAF="true"
-        local CONDA_ROOT="/nfs/dust/ilc/user/bliewert/miniconda3"
-        local CONDA_ENV_NAME="graphjet_pyg"
-    else
-        local ON_NAF="false"
-        local CONDA_ROOT="$HOME/miniforge3"
-        local CONDA_ENV_NAME="py311"
-    fi
+if [[ ! -d "$MarlinML" || ! -d "$VariablesForDeepMLFlavorTagger" || ! -d "$BTaggingVariables" ]]; then
+    echo "MarlinML, VariablesForDeepMLFlavorTagger and BTaggingVariables must be set and point to valid directories. Use --install to download and compile them inside here."
+    return 1
+fi
 
-    local PYTHONPATH=/afs/desy.de/user/b/bliewert/public/MarlinWorkdirs/pyhepcommon
-    local res=$($CONDA_ROOT/envs/$CONDA_ENV_NAME/bin/python -c "from phc import json_file_readable; print(json_file_readable('${1}'))")
-    
-    if [ "$res" = "True" ]; then
-        return 0
-    else
-        return 1
-    fi
-)
+if [[ "$ZHH_COMMAND" = "compile" ]]; then
+    echo "Attempting to recompile dependencies..."
+    zhh_recompile
 
-echo "Relative library path set to ${REPO_ROOT}"
+    echo "Successfully compiled all dependencies and libraries"
+fi
 
 if [[ $MARLIN_DLL != *"libFinalStateRecorder"* ]]; then
-    # Starting July 2024, libnsl.so.1 cannot be found. They seem to be not available on batch nodes only, but are present on the local machines
-    # As a temporary (?) workaround, we use a clone of the lib64 directory from the WGS node (they use nearly the same version)
-    #export MARLIN_DLL=$(echo "$MARLIN_DLL" | sed "s~/cvmfs/ilc.desy.de/key4hep/releases/2023-05-23/pandoraanalysis/2.0.1/x86_64-centos7-gcc12.3.0-opt/oqkyr/lib/libPandoraAnalysis.so:~~g")
-    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/nfs/dust/ilc/user/bliewert/lib64
-    
-    # CheatedMCOverlayRemoval NOT working right now (segfaults)
-    export MARLIN_DLL=$MARLIN_DLL:$REPO_ROOT/source/CheatedMCOverlayRemoval/lib/libCheatedMCOverlayRemoval.so
-
-    # Debugging LCFIPlus
-    # 2024-03-10
-    #export MARLIN_DLL=$(echo $MARLIN_DLL | sed -e "s#cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-centos7-gcc12.2.0-opt/lcfiplus/0.10.1-ff6lg4#root/public/DevLocal/LCFIPlus#g")
-    
-    # 2023-11-23
-    #export MARLIN_DLL=$(echo $MARLIN_DLL | sed -e "s#cvmfs/sw.hsf.org/key4hep/releases/2023-11-23/x86_64-centos7-gcc12.2.0-opt/lcfiplus/0.10.1-z7amkm#root/public/DevLocal/LCFIPlus#g")    
-
-    export MARLIN_DLL=$MARLIN_DLL:$REPO_ROOT/source/AddNeutralPFOCovMat/lib/libAddNeutralPFOCovMat.so
-    #export MARLIN_DLL=$MARLIN_DLL:$REPO_ROOT/source/LeptonErrorAnalysis/lib/libLeptonErrorAnalysis.so
-    export MARLIN_DLL=$MARLIN_DLL:$REPO_ROOT/source/LeptonPairing/lib/libLeptonPairing.so
-    export MARLIN_DLL=$MARLIN_DLL:$REPO_ROOT/source/HdecayMode/lib/libHdecayMode.so
-    export MARLIN_DLL=$MARLIN_DLL:$REPO_ROOT/source/PreSelection/lib/libPreSelection.so
-    #export MARLIN_DLL=$MARLIN_DLL:$ILCSOFT_ROOT/MarlinReco/Analysis/SLDCorrection/lib/libSLDCorrection.so
-    #export MARLIN_DLL=$MARLIN_DLL:$REPO_ROOT/source/JetErrorAnalysis/lib/libJetErrorAnalysis.so
-    #export MARLIN_DLL=$MARLIN_DLL:$REPO_ROOT/source/ZHHKinfitProcessors/lib/libZHHKinfitProcessors.so
-    #export MARLIN_DLL=$MARLIN_DLL:$REPO_ROOT/source/Misclustering/lib/libMisclustering.so
-    export MARLIN_DLL=$MARLIN_DLL:$REPO_ROOT/source/FinalStateRecorder/lib/libFinalStateRecorder.so
-
-    # MarlinReco + Legacy
-    # export MARLIN_DLL=$MARLIN_DLL:$REPO_ROOT/source/legacy/lib/libzhhll4j.so
-
-    # Other dependencies
-    #export MARLIN_DLL=$MARLIN_DLL:/afs/desy.de/user/b/bliewert/public/ILCSoft/Physsim/build/lib/libPhyssim.so
-    #export MARLIN_DLL=$MARLIN_DLL:/afs/desy.de/user/b/bliewert/public/yradkhorrami/SLDecayCorrection/build/lib/libSLDecayCorrection.so
-    #export LD_LIBRARY_PATH=$LCIO/lib64:/afs/desy.de/user/b/bliewert/public/ILCSoft/Physsim/lib:$LD_LIBRARY_PATH
+    zhh_attach_marlin_dlls
 fi
+
+alias MarlinZHH_ll="Marlin $REPO_ROOT/scripts/ZHH_v3_ll.xml --constant.ParticleNetScriptFile=\"$MarlinML/python/particlenet.pt\" --constant.ILDConfigDir=\"$ILD_CONFIG_DIR\""
+alias MarlinZHH_vv="Marlin $REPO_ROOT/scripts/ZHH_v3_vv.xml --constant.ParticleNetScriptFile=\"$MarlinML/python/particlenet.pt\" --constant.ILDConfigDir=\"$ILD_CONFIG_DIR\""
+alias MarlinZHH_qq="Marlin $REPO_ROOT/scripts/ZHH_v3_qq.xml --constant.ParticleNetScriptFile=\"$MarlinML/python/particlenet.pt\" --constant.ILDConfigDir=\"$ILD_CONFIG_DIR\""
+alias MarlinZHH="Marlin $REPO_ROOT/scripts/ZHH_v2.xml"

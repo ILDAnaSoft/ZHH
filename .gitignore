@@ -30,3 +30,7 @@ Ranlux.coonf
 *.tex
 *.bbl
 *.blg
+.env
+.env.sh
+.env.bck
+install/**

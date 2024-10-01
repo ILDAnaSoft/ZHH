@@ -2,7 +2,6 @@
 
 action() {
     # Configuration
-    export ILCSOFT_ROOT="/afs/desy.de/user/b/bliewert/public/ILCSoft"
     export REPO_ROOT="/afs/desy.de/user/b/bliewert/public/MarlinWorkdirs/ZHH"
     export DATA_PATH="/nfs/dust/ilc/user/bliewert/zhh"
 

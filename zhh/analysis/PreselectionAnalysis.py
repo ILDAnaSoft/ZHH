@@ -399,8 +399,7 @@ def presel_stack(DATA_ROOT:str,
                         chunk['vv_mhh'] = rf['dihiggsMass'].array()
                 
                 if b_tagging:
-                    chunk[f'{presel}_bmax1'], chunk[f'{presel}_bmax2'],
-                    chunk[f'{presel}_bmax3'], chunk[f'{presel}_bmax4'] = extract_b_tagging_values(rf['bTags'])
+                    chunk[f'{presel}_bmax1'], chunk[f'{presel}_bmax2'], chunk[f'{presel}_bmax3'], chunk[f'{presel}_bmax4'] = extract_b_tagging_values(rf['bTags'])
                     
         results[pointer:(pointer+chunk_size)] = chunk
         
