@@ -62,52 +62,52 @@ def plot_preselection_by_event_category(presel_results:np.ndarray, processes:np.
             calc_dict_pass[process_name] = (presel_results[quantity][mask_process_pass], weights['weight'][presel_results['pid'][mask_process_pass]])
         
         # Sort by number of entries
-        figs_all  = plot_preselection_by_calc_dict(calc_dict_all , unit, hypothesis, xlabel, nbins=nbins, xlim=xlim, yscale=yscale, title_label=rf'events', ild_style_kwargs=ild_style_kwargs)
-        figs_pass = plot_preselection_by_calc_dict(calc_dict_pass, unit, hypothesis, xlabel, nbins=nbins, xlim=xlim, yscale=yscale, title_label=rf'events passing {hypothesis}', ild_style_kwargs=ild_style_kwargs)
+        figs_all  = plot_preselection_by_calc_dict(calc_dict_all , hypothesis, xlabel, unit, nbins=nbins, xlim=xlim, yscale=yscale, title_label=rf'events', ild_style_kwargs=ild_style_kwargs)
+        figs_pass = plot_preselection_by_calc_dict(calc_dict_pass, hypothesis, xlabel, unit, nbins=nbins, xlim=xlim, yscale=yscale, title_label=rf'events passing {hypothesis}', ild_style_kwargs=ild_style_kwargs)
         
         all_figs += figs_all + figs_pass
         
     return all_figs
 
-def plot_preselection_by_event_categories(presel_results:np.ndarray, processes:np.ndarray, weights:np.ndarray, category_map_inv:dict,
-                                          hypothesis:str, weighted:bool, quantity:str='ll_mz',
+def plot_preselection_by_event_categories(presel_results:np.ndarray, processes:np.ndarray, weights:np.ndarray,
+                                          hypothesis:str, quantity:str, weighted:bool=True,
                                           categories_selected:list=[11, 16, 12, 13, 14],
                                           categories_additional:Optional[int]=3,
                                         unit:str='GeV', xlabel:Optional[str]=None,
                                         nbins:int=100, xlim:Optional[tuple]=None,
-                                        check_pass:bool=False, plot_flat:bool=True, yscale:Optional[str]=None,
+                                        plot_flat:bool=True, yscale:Optional[str]=None,
                                         ild_style_kwargs:dict={})->Figure:
     
     if xlabel is None:
         xlabel = quantity
+        
+    calc_dics = calc_preselection_by_event_categories(
+        presel_results, processes, weights,
+        quantity=quantity,
+        categories_selected=categories_selected,
+        categories_additional=categories_additional,
+        xlim=xlim)
     
-    calc_dics = calc_preselection_by_event_categories(presel_results, processes, weights, category_map_inv, hypothesis, quantity, weighted, \
-                                                        categories_selected=categories_selected,
-                                                        categories_additional=categories_additional,
-                                                        xlim=xlim, check_pass=check_pass)
-    
-    all_figs = plot_preselection_by_calc_dict(calc_dics[0], unit, hypothesis, xlabel, nbins=nbins, xlim=xlim,
+    return plot_preselection_by_calc_dict(calc_dics[0],
+                                              hypothesis=hypothesis,
+                                              xlabel=xlabel,
+                                              xunit=unit, nbins=nbins, xlim=xlim,
                                               title_label=rf'events', plot_flat=plot_flat, yscale=yscale,
                                               ild_style_kwargs=ild_style_kwargs)
-    
-    if check_pass:        
-        all_figs += plot_preselection_by_calc_dict(calc_dics[1], unit, hypothesis, xlabel, nbins=nbins, xlim=xlim,
-                                                   title_label=rf'events passing {hypothesis}', yscale=yscale,
-                                                   ild_style_kwargs=ild_style_kwargs)
-        
-    return all_figs
 
-def plot_preselection_by_calc_dict(calc_dict, xunit:str, hypothesis:str, xlabel:str,
+def plot_preselection_by_calc_dict(calc_dict, hypothesis:str, xlabel:str, xunit:Optional[str]=None,
                                  nbins:int=100, xlim:Optional[Iterable]=None, title_label:str='events',
-                                 plot_flat:bool=True, yscale:Optional[str]=None, ild_style_kwargs:dict={})->List[Figure]:
+                                 plot_flat:bool=False, yscale:Optional[str]=None, ild_style_kwargs:dict={})->List[Figure]:
     all_figs = []
     
-    calc_dict_sorted = dict(sorted(calc_dict.items(), key=lambda key_val: np.sum(np.dot(key_val[1][0], key_val[1][1]))))
+    calc_dict_sorted = calc_dict
+    #calc_dict_sorted = dict(sorted(calc_dict.items(), key=lambda key_val: np.sum(np.dot(key_val[1][0], key_val[1][1]))))
     
     plot_dict = {}
     plot_weights = []
     
     for key in calc_dict_sorted:
+        print(key)
         plot_dict[key] = calc_dict_sorted[key][0]
         plot_weights.append(calc_dict_sorted[key][1])
     

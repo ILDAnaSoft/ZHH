@@ -443,28 +443,28 @@ def get_final_state_counts(DATA_ROOT:str,
                 
     return fs_counts
 
-def calc_preselection_by_event_categories(presel_results:np.ndarray, processes:np.ndarray, weights:np.ndarray, category_map_inv:dict,
-                                          hypothesis:str, quantity:str, weighted:bool=True,
+def calc_preselection_by_event_categories(presel_results:np.ndarray, processes:np.ndarray, weights:np.ndarray,
+                                          weighted:bool=True,
+                                          quantity:Optional[str]=None,
                                           order:Optional[List]=None,
                                           categories_selected:Optional[List[int]]=[11, 16, 12, 13, 14],
                                           categories_additional:Optional[int]=3,
-                                        xlim:Optional[tuple]=None, check_pass:bool=False)->Iterable[dict]:
+                                        xlim:Optional[tuple]=None, check_hypothesis:Optional[str]=None)->Iterable[dict]:
     
     """Calculate the preselection results for a given hypothesis by event categories
 
     Args:
         presel_results (np.ndarray): _description_
-        weights (np.ndarray): _description_
-        hypothesis (str): _description_
-        quantity (str, optional): _description_. Defaults to 'll_mz'.
+        weights (np.ndarray): _description_  
         weighted (bool, optional): Whether the correct proc_pol weighting should be used. Defaults to True.
+        quantity (str, optional): _description_. Defaults to 'll_mz'.
         categories_selected (list, optional): Event categories to include in any case. Defaults to [17].
         categories_additional (Optional[int], optional): n-th most contributing categories to include as well. Defaults to 3.
         order (Optional[List]): List of process names/event category names to sort by. Defaults to None.
         unit (str, optional): _description_. Defaults to 'GeV'.
         nbins (int, optional): _description_. Defaults to 100.
         xlim (Optional[tuple], optional): _description_. Defaults to None.
-        check_pass (bool, optional): _description_. Defaults to False.
+        check_hypothesis (str, optional): If either llHH, vvHH or qqHH, will check if events pass the respective total selection as well. Defaults to None.
         yscale (Optional[str], optional): _description_. Defaults to None.
         ild_style_kwargs (dict, optional): _description_. Defaults to {}.
 
@@ -472,15 +472,15 @@ def calc_preselection_by_event_categories(presel_results:np.ndarray, processes:n
         _type_: _description_
     """
     
+    from ..processes.EventCategories import EventCategories
+    
     # Make sure that the weights are ordered exactly by index
     assert(np.sum(weights['pid'] == np.arange(len(weights))) == len(weights))
     
-    hypothesis_key = hypothesis[:2]
-    
-    if xlim is None:
-        subset = presel_results
-    else:
+    if xlim is not None and isinstance(quantity, str):
         subset = presel_results[(presel_results[quantity] > xlim[0]) & (presel_results[quantity] < xlim[1])]
+    else:
+        subset = presel_results        
     
     # Find relevant event categories
     if weighted:
@@ -492,8 +492,9 @@ def calc_preselection_by_event_categories(presel_results:np.ndarray, processes:n
     else:
         categories, counts = np.unique(subset['event_category'], return_counts=True)
         
+    # Sort and include categories_additional
     count_sort_ind = np.argsort(-counts)
-    categories = categories[count_sort_ind]
+    counts, categories = counts[count_sort_ind], categories[count_sort_ind]
     
     mask = np.isin(categories, categories_selected) if categories_selected is not None else np.zeros(len(categories), dtype='?')
     
@@ -507,13 +508,15 @@ def calc_preselection_by_event_categories(presel_results:np.ndarray, processes:n
                 else:
                     break
                 
-    categories = categories[mask]
+    categories, counts = categories[mask], counts[mask]
     
     calc_dict_all  = {}
     calc_dict_pass = {}
     
+    print(categories, counts)
+    
     for category in (pbar := tqdm(categories)):
-        label = category_map_inv[category]
+        label = EventCategories.inverted[category]
         pbar.set_description(f'Processing event category {label}')
         
         covered_processes = []
@@ -545,13 +548,19 @@ def calc_preselection_by_event_categories(presel_results:np.ndarray, processes:n
         
         category_mask = np.logical_or.reduce(process_masks)
         
-        calc_dict_all[label] = (subset[quantity][category_mask], weights['weight'][subset['pid'][category_mask]])
+        if quantity is None:
+            calc_dict_all[label] = (None, weights['weight'][subset['pid'][category_mask]])
+        else:
+            calc_dict_all[label] = (subset[quantity][category_mask], weights['weight'][subset['pid'][category_mask]])
         
-        if check_pass:
-            category_mask_pass = category_mask & subset[f'{hypothesis_key}_pass']
-            calc_dict_pass[label] = (subset[quantity][category_mask_pass], weights['weight'][subset['pid'][category_mask_pass]])
+        if check_hypothesis is not None:
+            category_mask_pass = category_mask & subset[f'{check_hypothesis[:2]}_pass']
+            if quantity is None:
+                calc_dict_pass[label] = (None, weights['weight'][subset['pid'][category_mask_pass]])
+            else:
+                calc_dict_pass[label] = (subset[quantity][category_mask_pass], weights['weight'][subset['pid'][category_mask_pass]])
             
-    if check_pass:
+    if check_hypothesis is not None:
         return [calc_dict_all, calc_dict_pass]
     else:
         return [calc_dict_all]
@@ -581,7 +590,7 @@ def calc_preselection_by_processes(presel_results:np.ndarray, processes:np.ndarr
         unit (str, optional): _description_. Defaults to 'GeV'.
         nbins (int, optional): _description_. Defaults to 100.
         xlim (Optional[tuple], optional): _description_. Defaults to None.
-        check_hypothesis (str, optional): Either llHH, vvHH or qqHH. Defaults to False.
+        check_hypothesis (str, optional): If either llHH, vvHH or qqHH, will check if events pass the respective total selection as well. Defaults to None.
         yscale (Optional[str], optional): _description_. Defaults to None.
         ild_style_kwargs (dict, optional): _description_. Defaults to {}.
 

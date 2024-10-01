@@ -1,4 +1,5 @@
-from typing import Any, Union
+from typing import Any, Union, Generator, List
+import numpy as np
 
 class CutTypes():
     CUT_EQ = 0
@@ -14,7 +15,7 @@ class Cut():
         raise NotImplementedError('Method not implemented')
     
     def __repr__(self):
-        return f"<Cut on '{self.quantity}'>"
+        return f"<Cut on {self.quantity}>"
     
 class EqualCut(Cut):
     def __init__(self, quantity:str, value:int):
@@ -27,7 +28,7 @@ class EqualCut(Cut):
         return arg[self.quantity] == self.value
     
     def __repr__(self):
-        return f"<Cut on '{self.quantity}'={self.value}>"
+        return f"<Cut on {self.quantity}={self.value}>"
         
 class WindowCut(Cut):
     def __init__(self, quantity:str,
@@ -48,7 +49,7 @@ class WindowCut(Cut):
         return (self.lower <= arg[self.quantity]) & (arg[self.quantity] <= self.upper)
     
     def __repr__(self):
-        return f"<Cut on {self.lower} <= '{self.quantity}' <= {self.upper}>"
+        return f"<Cut on {self.lower} <= {self.quantity} <= {self.upper}>"
 
 class GreaterThanEqualCut(Cut):
     def __init__(self, quantity:str, lower:Union[int,float]):
@@ -61,7 +62,7 @@ class GreaterThanEqualCut(Cut):
         return self.lower <= arg[self.quantity]
     
     def __repr__(self):
-        return f"<Cut on '{self.quantity}' >= {self.lower}>"
+        return f"<Cut on {self.quantity} >= {self.lower}>"
         
 class LessThanEqualCut(Cut):
     def __init__(self, quantity:str, upper:Union[int,float]):
@@ -74,4 +75,16 @@ class LessThanEqualCut(Cut):
         return arg[self.quantity] <= self.upper
     
     def __repr__(self):
-        return f"<Cut on '{self.quantity}' <= {self.upper}>"
+        return f"<Cut on {self.quantity} <= {self.upper}>"
+
+def apply_cuts(data:np.ndarray, cuts:List[Cut], consecutive:bool=True)->Generator:
+    for i, cut in enumerate(cuts):
+        if consecutive:
+            if i == 0:
+                a = cut(data)
+            else:
+                a = a & cut(data)
+            
+            yield a, cut
+        else:
+            yield cut(data), cut

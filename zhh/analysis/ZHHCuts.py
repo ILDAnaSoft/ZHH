@@ -9,8 +9,8 @@ def zhh_cuts(hypothesis:str,
     if hypothesis == 'llHH':
         cuts = [GreaterThanEqualCut('xx_nisoleps', 2),
                 WindowCut('ll_mz', mZ, 40, center=True),
-                WindowCut('ll_mh1', mH, 80., center=True),
-                WindowCut('ll_mh2', mH, 80., center=True)]
+                WindowCut('ll_mh1', mH, 160., center=True),
+                WindowCut('ll_mh2', mH, 160., center=True)]
         
         if additional:
             cuts += [WindowCut('ll_mh1', 60., 180.),

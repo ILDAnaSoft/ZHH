@@ -26,3 +26,7 @@ Ranlux.coonf
 *.npy
 *.log
 *.txt
+*.aux
+*.tex
+*.bbl
+*.blg
