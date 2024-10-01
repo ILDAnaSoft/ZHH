@@ -44,17 +44,21 @@ function zhh_install() {
     git clone --recurse-submodules https://gitlab.desy.de/ilcsoft/MarlinML
     git clone https://gitlab.desy.de/ilcsoft/variablesfordeepmlflavortagger
     git clone https://gitlab.desy.de/ilcsoft/btaggingvariables
+    git clone https://github.com/iLCSoft/ILDConfig.git
 
     export MarlinML="$(pwd)/MarlinML"
     export VariablesForDeepMLFlavorTagger="$(pwd)/variablesfordeepmlflavortagger"
     export BTaggingVariables="$(pwd)/btaggingvariables"
+    export ILD_CONFIG_DIR="$(pwd)/ILDConfig"
 
     # Save directories to .env
     cat >> "$REPO_ROOT/.env" <<EOF
+REPO_ROOT="$REPO_ROOT"
 MarlinML="$MarlinML"
 VariablesForDeepMLFlavorTagger="$VariablesForDeepMLFlavorTagger"
 BTaggingVariables="$BTaggingVariables"
 TORCH_PATH="$TORCH_PATH"
+ILD_CONFIG_DIR="$ILD_CONFIG_DIR"
 
 EOF
 }
@@ -86,18 +90,6 @@ function zhh_recompile() {
 }
 
 function zhh_attach_marlin_dlls() {
-    # Starting July 2024, libnsl.so.1 cannot be found. They seem to be not available on batch nodes only, but are present on the local machines
-    # As a temporary (?) workaround, we use a clone of the lib64 directory from the WGS node (they use nearly the same version)
-    # export MARLIN_DLL=$(echo "$MARLIN_DLL" | sed "s~/cvmfs/ilc.desy.de/key4hep/releases/2023-05-23/pandoraanalysis/2.0.1/x86_64-centos7-gcc12.3.0-opt/oqkyr/lib/libPandoraAnalysis.so:~~g")
-    # export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/nfs/dust/ilc/user/bliewert/lib64
-
-    # Debugging LCFIPlus
-    # 2024-03-10
-    #export MARLIN_DLL=$(echo $MARLIN_DLL | sed -e "s#cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-centos7-gcc12.2.0-opt/lcfiplus/0.10.1-ff6lg4#root/public/DevLocal/LCFIPlus#g")
-    
-    # 2023-11-23
-    #export MARLIN_DLL=$(echo $MARLIN_DLL | sed -e "s#cvmfs/sw.hsf.org/key4hep/releases/2023-11-23/x86_64-centos7-gcc12.2.0-opt/lcfiplus/0.10.1-z7amkm#root/public/DevLocal/LCFIPlus#g")    
-
     local libs=(
         "$REPO_ROOT/source/CheatedMCOverlayRemoval/lib/libCheatedMCOverlayRemoval.so"
         "$REPO_ROOT/source/AddNeutralPFOCovMat/lib/libAddNeutralPFOCovMat.so"
@@ -120,13 +112,10 @@ function zhh_attach_marlin_dlls() {
         export MARLIN_DLL=$MARLIN_DLL:"$lib"
     done
 
-    #export MARLIN_DLL=$MARLIN_DLL:$REPO_ROOT/source/LeptonErrorAnalysis/lib/libLeptonErrorAnalysis.so
-    #export MARLIN_DLL=$MARLIN_DLL:$REPO_ROOT/source/JetErrorAnalysis/lib/libJetErrorAnalysis.so
-    #export MARLIN_DLL=$MARLIN_DLL:$REPO_ROOT/source/ZHHKinfitProcessors/lib/libZHHKinfitProcessors.so
-    #export MARLIN_DLL=$MARLIN_DLL:$REPO_ROOT/source/Misclustering/lib/libMisclustering.so
-
-    # MarlinReco + Legacy
-    # export MARLIN_DLL=$MARLIN_DLL:$REPO_ROOT/source/legacy/lib/libzhhll4j.so
+    # v3 requires a recent version of ReconstructedParticleParticleIDFilterProcessor.cc 
+    # https://github.com/iLCSoft/MarlinReco/blob/master/Analysis/PIDTools/src/ReconstructedParticleParticleIDFilterProcessor.cc
+    # As a quick fix, one may use Uli's version
+    # export MARLIN_DLL="/afs/desy.de/user/u/ueinhaus/pool/MarlinReco_v01-35/lib/libMarlinReco.so.1.35.0:$MARLIN_DLL"
 }
 
 ZHH_K4H_RELEASE=$ZHH_K4H_RELEASE_DEFAULT
@@ -161,8 +150,8 @@ for ((i=1; i<=$#; i++)); do
                 echo "install-dir requires a non-empty argument"
                 return 1
             else
+                echo "Option: Setting install-dir to $argn"
                 ZHH_INSTALL_DIR="$argn"
-                return 0
             fi
             ;;
         -r)
@@ -170,8 +159,8 @@ for ((i=1; i<=$#; i++)); do
                 echo "release requires a non-empty argument"
                 return 1
             else
+                echo "Option: Setting release to $argn"
                 ZHH_K4H_RELEASE="$argn"
-                return 0
             fi
             ;;
         --compile|-c)
@@ -180,9 +169,9 @@ for ((i=1; i<=$#; i++)); do
         *)
             eval "prev=\${$((i-1))}"
             if [ "$prev" != "-r" ]; then
-                echo "Unknown argument $arg, it will be ignored"
-                # usage
-                # return 1
+                echo "Unknown argument $arg, aborting\n"
+                usage
+                return 1
             fi
             ;;
     esac
@@ -242,3 +231,8 @@ fi
 if [[ $MARLIN_DLL != *"libFinalStateRecorder"* ]]; then
     zhh_attach_marlin_dlls
 fi
+
+alias MarlinZHH_ll="Marlin $REPO_ROOT/scripts/ZHH_v3_ll.xml --constant.ParticleNetScriptFile=\"$MarlinML/python/particlenet.pt\" --constant.ILDConfigDir=\"$ILD_CONFIG_DIR\""
+alias MarlinZHH_vv="Marlin $REPO_ROOT/scripts/ZHH_v3_vv.xml --constant.ParticleNetScriptFile=\"$MarlinML/python/particlenet.pt\" --constant.ILDConfigDir=\"$ILD_CONFIG_DIR\""
+alias MarlinZHH_qq="Marlin $REPO_ROOT/scripts/ZHH_v3_qq.xml --constant.ParticleNetScriptFile=\"$MarlinML/python/particlenet.pt\" --constant.ILDConfigDir=\"$ILD_CONFIG_DIR\""
+alias MarlinZHH="Marlin $REPO_ROOT/scripts/ZHH_v2.xml"
