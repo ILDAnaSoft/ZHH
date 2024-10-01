@@ -202,6 +202,7 @@ void PreSelection::init()
 	m_pTTree->Branch("missingPT", &m_missingPT, "missingPT/F") ;
 	m_pTTree->Branch("Evis", &m_Evis, "Evis/F") ;
 	m_pTTree->Branch("thrust", &m_thrust, "thrust/F") ;
+	m_pTTree->Branch("dileptonMassPrePairing", &m_dileptonMassPrePairing, "dileptonMassPrePairing/F") ;
 	m_pTTree->Branch("dileptonMass", &m_dileptonMass, "dileptonMass/F") ;
 	m_pTTree->Branch("dileptonMassDiff", &m_dileptonMassDiff, "dileptonMassDiff/F") ;
 	m_pTTree->Branch("dijetChi2min", &m_chi2min, "dijetChi2min/F");
@@ -216,7 +217,6 @@ void PreSelection::init()
 	m_pTTree->Branch("preselsPassedAll", &m_preselsPassedAll);
 	m_pTTree->Branch("preselsPassedConsec", &m_preselsPassedConsec);
 	m_pTTree->Branch("preselPassed", &m_isPassed);
-	m_pTTree->Branch("process", &m_process);
 
 	streamlog_out(DEBUG) << "   init finished  " << std::endl;
 
@@ -298,6 +298,7 @@ void PreSelection::Clear()
 	m_missingPT = -999.;
 	m_Evis  = -999.;
 	m_thrust = -999.;
+	m_dileptonMassPrePairing = -999.;
 	m_dileptonMass = -999.;
 	m_dileptonMassDiff = -999.;
 	m_dijetMass.clear();
@@ -312,7 +313,6 @@ void PreSelection::Clear()
 	m_preselsPassedAll = 0;
 	m_preselsPassedConsec = 0;
 	m_isPassed = 0;
-	m_process = "";
 }
 void PreSelection::processRunHeader( LCRunHeader*  /*run*/) { 
 	m_nRun++ ;
@@ -381,6 +381,16 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
 
 			m_dileptonMass = dileptonFourMomentum.M();
 			m_dileptonMassDiff = fabs( m_dileptonMass - 91.2 );
+
+			// ---------- GET DILEPTON MASS BEFORE LEPTON PAIRING ----------
+			TLorentzVector dileptonFourMomentumPrePairing = TLorentzVector(0.,0.,0.,0.);
+			for ( int i_lep = 0 ; i_lep < 2 ; ++i_lep ) {
+				ReconstructedParticle* lepton = dynamic_cast<ReconstructedParticle*>( inputLepPairCollection->getElementAt( i_lep ) );
+
+				dileptonFourMomentumPrePairing += TLorentzVector( lepton->getMomentum()[ 0 ] , lepton->getMomentum()[ 1 ] , lepton->getMomentum()[ 2 ] , lepton->getEnergy() );
+			}
+
+			m_dileptonMassPrePairing = dileptonFourMomentumPrePairing.M();
 
 			// ---------- SAVE TYPES OF ISOLATED LEPTONS ----------
 			for (size_t j = 0; j < 2; j++) {
@@ -563,8 +573,6 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
 	} catch(DataNotAvailableException &e) {
 		streamlog_out(MESSAGE) << "processEvent : Input collections not found in event " << m_nEvt << std::endl;
 	}
-
-	m_process = pLCEvent->getParameters().getStringVal("processName");
 
 	if (m_isPassed)
 		setReturnValue("GoodEvent", true);

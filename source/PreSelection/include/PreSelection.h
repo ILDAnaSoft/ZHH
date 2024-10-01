@@ -94,6 +94,7 @@ class PreSelection : public Processor
 		float m_missingPT{};
 		float m_Evis{};
 		float m_thrust{};
+		float m_dileptonMassPrePairing{};
 		float m_dileptonMass{};
 		float m_dileptonMassDiff{};
 		float m_chi2min{};
@@ -108,7 +109,7 @@ class PreSelection : public Processor
 		
 		float m_dihiggsMass{};
 		std::vector<int>  m_preselsPassedVec{};
-		std::string m_process{};
+
 		int m_preselsPassedAll{};
 		int m_preselsPassedConsec{};
 		int m_nbjets{};

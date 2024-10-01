@@ -262,7 +262,7 @@
         <parameter name="PrintEventNumber" type="int" value="100"/> <!-- 0 for not printing event number, n for printing every n events -->
 
         <!-- jet clustering parameters -->
-        <parameter name="JetClustering.PrimaryVertexCollectionName" type="string" value="PrimaryVertex_ll" />
+        <parameter name="JetClustering.PrimaryVertexCollectionName" type="string" value="PrimaryVertex" />
         <parameter name="JetClustering.InputVertexCollectionName" type="string" value="BuildUpVertex" /> <!-- vertex collections to be used in JC -->
         <parameter name="JetClustering.OutputJetCollectionName" type="stringVec" value="VertexJets_ll" /> <!-- output collection name, may be multiple -->
         <parameter name="JetClustering.NJetsRequested" type="intVec">4</parameter> <!-- Multiple NJets can be specified -->
@@ -291,7 +291,7 @@
 
         <parameter name="JetVertexRefiner.InputJetCollectionName" type="string" value="VertexJets_ll" />
         <parameter name="JetVertexRefiner.OutputJetCollectionName" type="string" value="RefinedJets_ll" />
-        <parameter name="JetVertexRefiner.PrimaryVertexCollectionName" type="string" value="PrimaryVertex_ll" />
+        <parameter name="JetVertexRefiner.PrimaryVertexCollectionName" type="string" value="PrimaryVertex" />
         <parameter name="JetVertexRefiner.InputVertexCollectionName" type="string" value="BuildUpVertex" />
         <parameter name="JetVertexRefiner.V0VertexCollectionName" type="string" value="BuildUpVertex_V0" />
         <parameter name="JetVertexRefiner.OutputVertexCollectionName" type="string" value="RefinedVertex_ll" />
@@ -307,7 +307,7 @@
         <parameter name="JetVertexRefiner.MaxCharmFlightLengthPerJetEnergy" type="double" value="0.1" />
 
         <!-- FlavorTag parameters -->
-        <parameter name="PrimaryVertexCollectionName" type="string" value="PrimaryVertex_ll" />
+        <parameter name="PrimaryVertexCollectionName" type="string" value="PrimaryVertex" />
         <parameter name="FlavorTag.JetCollectionName" type="string" value="RefinedJets_ll" />
         <parameter name="MakeNtuple.AuxiliaryInfo" type="int" value="-1" />
 
