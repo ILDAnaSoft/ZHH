@@ -289,7 +289,7 @@ class PreselectionSummary(BaseTask, HTCondorWorkflow):
         output.parent.touch()
         
         presel_result = presel_stack(DATA_ROOT, processes, chunks_factual, branches,
-                                     kinematics=True, b_tagging=True, final_states=False)
+                                     kinematics=True, b_tagging=True, final_states=True)
         
         np.save(output.path, presel_result)
         

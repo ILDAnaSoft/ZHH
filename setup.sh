@@ -186,15 +186,15 @@ if [[ -z "${MARLIN_DLL}" ]]; then
     source /cvmfs/sw.hsf.org/key4hep/setup.sh -r $ZHH_K4H_RELEASE
 fi
 
-if [[ -f ".env" && -z $ZHH_ENV_DOT ]]; then
+if [[ -f "${REPO_ROOT}/.env" && -z $ZHH_ENV_DOT ]]; then
     echo "Loading local environment file .env..."
-    export $(grep -v '^#' .env | xargs)
+    export $(grep -v '^#' "${REPO_ROOT}/.env" | xargs)
     export ZHH_ENV_DOT=true
 fi
 
-if [[ -f ".env.sh" && -z $ZHH_ENV_DOT_SH ]]; then
+if [[ -f "${REPO_ROOT}/.env.sh" && -z $ZHH_ENV_DOT_SH ]]; then
     echo "Sourcing local sh file .env.sh..." 
-    source .env.sh
+    source "${REPO_ROOT}/.env.sh"
     export ZHH_ENV_DOT_SH=true
 fi
 
