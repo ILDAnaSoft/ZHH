@@ -34,8 +34,8 @@ struct ERROR_CODES {
 class FinalStateRecorder : public Processor
 {
 	private:
-		void register_process(FinalStateResolver* resolver) { m_resolvers[resolver->get_process_name()] = resolver;  };
-		std::map<std::string, FinalStateResolver*> m_resolvers{};
+		void register_process(FinalStateResolver* resolver) { resolvers[resolver->get_process_name()] = resolver;  };
+		std::map<std::string, FinalStateResolver*> resolvers{};
 
 		float m_beamPol1{};
 		float m_beamPol2{};
@@ -107,6 +107,7 @@ class FinalStateRecorder : public Processor
 		int m_event_category_zhh{};
 		int m_n_fermion{};
 		int m_n_higgs{};
+		int m_n_b_from_higgs{};
 
 		// Output ROOT file
 		TFile *m_pTFile{};

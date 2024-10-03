@@ -14,7 +14,7 @@ class p5: public FinalStateResolver {
         p5( string process_name, int process_id, int event_category): FinalStateResolver( process_name, process_id, event_category, 5, 0 ) {};
         p5( string process_name, int process_id, int event_category, int n_fermions, int n_higgs ): FinalStateResolver( process_name, process_id, event_category, n_fermions, n_higgs ) {};
 
-        vector<int> m_resolve(LCCollection *mcp_collection) {
+        vector<int> resolve(LCCollection *mcp_collection) {
             // Get 5 fermions
             MCParticle* part1 = (MCParticle*)mcp_collection->getElementAt(6);
             MCParticle* part2 = (MCParticle*)mcp_collection->getElementAt(7);

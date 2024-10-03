@@ -79,6 +79,12 @@ PreSelection::PreSelection() :
 				   std::string("")
 				   );
 
+	registerProcessorParameter("PIDAlgorithmBTag",
+				"Number of jet should be in the event",
+				m_PIDAlgorithmBTag,
+				std::string("lcfiplus")
+				);
+
 	registerProcessorParameter("nJets",
 				"Number of jet should be in the event",
 				m_nAskedJets,
@@ -199,7 +205,9 @@ void PreSelection::init()
 	m_pTTree->Branch("nJets",&m_nJets,"nJets/I") ;
 	m_pTTree->Branch("nIsoLeptons",&m_nIsoLeps,"nIsoLeptons/I") ;
 	m_pTTree->Branch("lepTypes", &m_lepTypes) ;
+	m_pTTree->Branch("lepTypesPaired", &m_lepTypesPaired, "lepTypesPaired/I")
 	m_pTTree->Branch("missingPT", &m_missingPT, "missingPT/F") ;
+	m_pTTree->Branch("missingPTMass", &m_missingPTMass, "missingPTMass/F") ;
 	m_pTTree->Branch("Evis", &m_Evis, "Evis/F") ;
 	m_pTTree->Branch("thrust", &m_thrust, "thrust/F") ;
 	m_pTTree->Branch("dileptonMassPrePairing", &m_dileptonMassPrePairing, "dileptonMassPrePairing/F") ;
@@ -295,7 +303,9 @@ void PreSelection::Clear()
 	m_nJets = 0;
 	m_nIsoLeps = 0;
 	m_lepTypes.clear();
+	m_lepTypesPaired = 0;
 	m_missingPT = -999.;
+	m_missingPTMass = -999.;
 	m_Evis  = -999.;
 	m_thrust = -999.;
 	m_dileptonMassPrePairing = -999.;
@@ -361,42 +371,32 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
 		}
 		TLorentzVector pmis = ecms - pfosum;
 		m_missingPT = pmis.Pt();
-		// ---------- VISIBLE ENERGY ----------                                                
+		m_missingPTMass = pmis.M();
+		
+		// ---------- VISIBLE ENERGY ----------                                          
 		m_Evis = pfosum.E();
+
 		// ---------- THRUST ----------                                                        
-		const EVENT::LCParameters& pfoparams = inputPfoCollection->getParameters() ;
-		m_thrust = pfoparams.getFloatVal("principleThrustValue");
+		const EVENT::LCParameters& pfo_params = inputPfoCollection->getParameters() ;
+		m_thrust = pfo_params.getFloatVal("principleThrustValue");
+
 		//-----------------  REQUIRE CORRECT NUMBER OF SIGNATURE PARTICLES  -----------------
 		if (inputLepPairCollection->getNumberOfElements() == 2 ) {
-			// ---------- CALCULATE DILEPTON MASS AND DIFFERENCE ----------
-			std::vector< ReconstructedParticle* > Leptons{};
-			TLorentzVector dileptonFourMomentum = TLorentzVector(0.,0.,0.,0.);
+			const EVENT::LCParameters& leppair_params = inputPfoCollection->getParameters() ;
 
-			for ( int i_lep = 0 ; i_lep < 2 ; ++i_lep ) {
-				ReconstructedParticle* lepton = dynamic_cast<ReconstructedParticle*>( inputLepPairCollection->getElementAt( i_lep ) );
-				Leptons.push_back( lepton );
-
-				dileptonFourMomentum += TLorentzVector( lepton->getMomentum()[ 0 ] , lepton->getMomentum()[ 1 ] , lepton->getMomentum()[ 2 ] , lepton->getEnergy() );
-			}
-
-			m_dileptonMass = dileptonFourMomentum.M();
+			m_dileptonMassPrePairing = leppair_params.getFloatVal("IsoLepsInvMass");
+			m_dileptonMass = leppair_params.getFloatVal("RecoLepsInvMass");
 			m_dileptonMassDiff = fabs( m_dileptonMass - 91.2 );
 
-			// ---------- GET DILEPTON MASS BEFORE LEPTON PAIRING ----------
-			TLorentzVector dileptonFourMomentumPrePairing = TLorentzVector(0.,0.,0.,0.);
-			for ( int i_lep = 0 ; i_lep < 2 ; ++i_lep ) {
-				ReconstructedParticle* lepton = dynamic_cast<ReconstructedParticle*>( inputLepPairCollection->getElementAt( i_lep ) );
+			// ---------- SAVE TYPES OF PAIRED ISOLATED LEPTONS ----------
+			ReconstructedParticle* first_iso_lepton_from_pair = dynamic_cast<ReconstructedParticle*>( inputLepPairCollection->getElementAt(0));
+			m_lepTypesPaired = first_iso_lepton_from_pair->getType();
+		}
 
-				dileptonFourMomentumPrePairing += TLorentzVector( lepton->getMomentum()[ 0 ] , lepton->getMomentum()[ 1 ] , lepton->getMomentum()[ 2 ] , lepton->getEnergy() );
-			}
-
-			m_dileptonMassPrePairing = dileptonFourMomentumPrePairing.M();
-
-			// ---------- SAVE TYPES OF ISOLATED LEPTONS ----------
-			for (size_t j = 0; j < 2; j++) {
-				ReconstructedParticle* iso_lepton = dynamic_cast<ReconstructedParticle*>( inputLeptonCollection->getElementAt( j ) );
-				m_lepTypes.push_back( iso_lepton->getType() );
-			}
+		// ---------- SAVE TYPES OF ALL ISOLATED LEPTONS ----------
+		for (size_t j = 0; j < 2; j++) {
+			ReconstructedParticle* iso_lepton_from_pair = dynamic_cast<ReconstructedParticle*>( inputLepPairCollection->getElementAt( j ) );
+			m_lepTypes.push_back( iso_lepton_from_pair->getType() );
 		}
 
 		int ndijets = 0;
@@ -408,15 +408,14 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
 				jets.push_back(jet);
 			}
 
-			std::string _FTAlgoName = "lcfiplus"; // FT = Flavor Tag
 			PIDHandler FTHan(inputJetCollection);
-			int _FTAlgoID = FTHan.getAlgorithmID(_FTAlgoName);
+			int _FTAlgoID = FTHan.getAlgorithmID(m_PIDAlgorithmBTag);
 			int BTagID = FTHan.getParameterIndex(_FTAlgoID, "BTag");
 			//int CTagID = FTHan.getParameterIndex(_FTAlgoID, "CTag");
 			//int OTagID = FTHan.getParameterIndex(_FTAlgoID, "OTag");
 
 			for (int i=0; i<m_nJets; ++i) {
-				const ParticleIDImpl& FTImpl = dynamic_cast<const ParticleIDImpl&>(FTHan.getParticleID(jets[i],_FTAlgoID));
+				const ParticleIDImpl& FTImpl = dynamic_cast<const ParticleIDImpl&>(FTHan.getParticleID(jets[i], _FTAlgoID));
 				const FloatVec& FTPara = FTImpl.getParameters();
 				double bTagValue = FTPara[BTagID];
 				m_bTagValues.push_back(bTagValue);

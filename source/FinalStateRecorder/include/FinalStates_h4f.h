@@ -18,7 +18,7 @@ class ffffh: public p6 {
             p6( process_name, process_id, event_category, 4, 1 ),
             m_z_decay_filter { z_decay_filter } {};
 
-        vector<int> m_resolve(LCCollection *mcp_collection) {
+        vector<int> resolve(LCCollection *mcp_collection) {
             // Get Z-decayed fermions
             MCParticle* part1 = (MCParticle*)mcp_collection->getElementAt(8);
             MCParticle* part2 = (MCParticle*)mcp_collection->getElementAt(9);
@@ -39,6 +39,8 @@ class ffffh: public p6 {
             vector<int> d1 = pdgs_of_daughter_particles(h1);
 
             assert_true(d1.size() == 2, RESOLVER_ERRORS::UNEXPECTED_CHILDREN);
+
+            m_n_b_from_higgs = count(d1.begin(), d1.end(), 5);
 
             return vector<int>{
                 part1->getPDG(),

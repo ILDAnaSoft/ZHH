@@ -14,7 +14,7 @@ class p6: public FinalStateResolver {
         p6( string process_name, int process_id, int event_category ): FinalStateResolver( process_name, process_id, event_category, 6, 0 ) {};
         p6( string process_name, int process_id, int event_category, int n_fermions, int n_higgs ): FinalStateResolver( process_name, process_id, event_category, n_fermions, n_higgs ) {};
 
-        vector<int> m_resolve(LCCollection *mcp_collection) {
+        vector<int> resolve(LCCollection *mcp_collection) {
             MCParticle* part1 = (MCParticle*)mcp_collection->getElementAt(6);
             MCParticle* part2 = (MCParticle*)mcp_collection->getElementAt(7);
             MCParticle* part3 = (MCParticle*)mcp_collection->getElementAt(8);

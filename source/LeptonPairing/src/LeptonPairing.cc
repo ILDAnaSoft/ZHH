@@ -217,6 +217,10 @@ void LeptonPairing::processEvent( EVENT::LCEvent *pLCEvent ) {
     m_RecoLepsInvMass.push_back(inv_mass(recoLepton1,recoLepton2));
     m_LepPairCol->addElement(recoLepton1);
     m_LepPairCol->addElement(recoLepton2);
+
+    // Save inv masses for use in downstream processors
+    m_LepPairCol->parameters().setValue("IsoLepsInvMass", m_IsoLepsInvMass);
+    m_LepPairCol->parameters().setValue("RecoLepsInvMass", m_RecoLepsInvMass);
   }
   for ( int i_lep = 0 ; i_lep < InIsoLeps ; ++i_lep ) {
     bool isFromPair = false;

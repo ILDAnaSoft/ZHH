@@ -74,7 +74,7 @@ def plot_preselection_by_event_categories(presel_results:np.ndarray, processes:n
                                           categories_selected:list=[11, 16, 12, 13, 14],
                                           categories_additional:Optional[int]=3,
                                         unit:str='GeV', xlabel:Optional[str]=None,
-                                        nbins:int=100, xlim:Optional[tuple]=None,
+                                        bins:int=100, xlim:Optional[tuple]=None,
                                         plot_flat:bool=True, yscale:Optional[str]=None,
                                         ild_style_kwargs:dict={})->Figure:
     
@@ -91,30 +91,27 @@ def plot_preselection_by_event_categories(presel_results:np.ndarray, processes:n
     return plot_preselection_by_calc_dict(calc_dics[0],
                                               hypothesis=hypothesis,
                                               xlabel=xlabel,
-                                              xunit=unit, nbins=nbins, xlim=xlim,
+                                              xunit=unit, bins=bins, xlim=xlim,
                                               title_label=rf'events', plot_flat=plot_flat, yscale=yscale,
                                               ild_style_kwargs=ild_style_kwargs)
 
 def plot_preselection_by_calc_dict(calc_dict, hypothesis:str, xlabel:str, xunit:Optional[str]=None,
-                                 nbins:int=100, xlim:Optional[Iterable]=None, title_label:str='events',
-                                 plot_flat:bool=False, yscale:Optional[str]=None, ild_style_kwargs:dict={})->List[Figure]:
+                                 bins:int=100, xlim:Optional[Iterable]=None, title_label:str='events',
+                                 plot_flat:bool=False, yscale:Optional[str]=None,
+                                 ild_style_kwargs:dict={}, plot_hist_kwargs:dict={})->List[Figure]:
     all_figs = []
-    
-    calc_dict_sorted = calc_dict
-    #calc_dict_sorted = dict(sorted(calc_dict.items(), key=lambda key_val: np.sum(np.dot(key_val[1][0], key_val[1][1]))))
     
     plot_dict = {}
     plot_weights = []
     
-    for key in calc_dict_sorted:
-        print(key)
-        plot_dict[key] = calc_dict_sorted[key][0]
-        plot_weights.append(calc_dict_sorted[key][1])
+    for key in calc_dict:
+        plot_dict[key] = calc_dict[key][0]
+        plot_weights.append(calc_dict[key][1])
     
-    fig1, _, counts_wt = plot_hist(plot_dict, xlim=xlim, bins=nbins, custom_styling=True, stacked=True, weights=plot_weights, return_hist=True)
+    fig1, _, counts_wt = plot_hist(plot_dict, xlim=xlim, bins=bins, custom_styling=True, stacked=True, weights=plot_weights, return_hist=True, **plot_hist_kwargs)
     
     if plot_flat:
-        fig2, _, counts_flat = plot_hist(plot_dict, xlim=xlim, bins=nbins, custom_styling=True, stacked=True, return_hist=True)
+        fig2, _, counts_flat = plot_hist(plot_dict, xlim=xlim, bins=bins, custom_styling=True, stacked=True, return_hist=True, **plot_hist_kwargs)
     
     if yscale is None:
         if plot_flat:
@@ -144,7 +141,7 @@ def plot_preselection_by_calc_dict(calc_dict, hypothesis:str, xlabel:str, xunit:
             'legend_kwargs': {'loc': 'lower right'}
         } | ild_style_kwargs
         
-        fig = fig_ild_style(fig, xlim, nbins, legend_labels=list(plot_dict.keys()), **fig_ild_kwargs)
+        fig = fig_ild_style(fig, xlim, bins, legend_labels=list(plot_dict.keys()), **fig_ild_kwargs)
         
         all_figs.append(fig)
         

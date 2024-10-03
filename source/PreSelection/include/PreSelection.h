@@ -67,6 +67,7 @@ class PreSelection : public Processor
 		std::string m_whichPreselection{};
 		std::string m_isPassedCollection{};
 		std::string m_cutDefinitionsJSONFile{};
+		std::string m_PIDAlgorithmBTag{};
 
 		int m_nAskedJets{};
         int m_nAskedIsoLeps{};
@@ -91,7 +92,9 @@ class PreSelection : public Processor
 		int m_nJets{};
 		int m_nIsoLeps{};
 		std::vector<int> m_lepTypes{};
+		int m_lepTypesPaired{};
 		float m_missingPT{};
+		float m_missingPTInvMass{};
 		float m_Evis{};
 		float m_thrust{};
 		float m_dileptonMassPrePairing{};

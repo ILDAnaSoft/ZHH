@@ -18,7 +18,7 @@ class p4: public FinalStateResolver {
             FinalStateResolver( process_name, process_id, event_category, 4, 0 ),
             m_z_decay_filter {z_decay_filter} {};
 
-        vector<int> m_resolve(LCCollection *mcp_collection) {
+        vector<int> resolve(LCCollection *mcp_collection) {
             // Get Z-decayed fermions
             MCParticle* part1 = (MCParticle*)mcp_collection->getElementAt(6);
             MCParticle* part2 = (MCParticle*)mcp_collection->getElementAt(7);

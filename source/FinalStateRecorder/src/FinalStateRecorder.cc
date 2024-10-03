@@ -81,6 +81,7 @@ void FinalStateRecorder::init()
 	m_pTTree->Branch("event_category_zhh", &m_event_category_zhh);
 	m_pTTree->Branch("n_fermion", &m_n_fermion);
 	m_pTTree->Branch("n_higgs", &m_n_higgs);
+	m_pTTree->Branch("n_b_from_higgs", &m_n_b_from_higgs);
 
 	m_t_start = std::time(nullptr);
 
@@ -270,6 +271,7 @@ void FinalStateRecorder::clear()
 	m_process = 0;
 	m_n_fermion = 0;
 	m_n_higgs = 0;
+	m_n_b_from_higgs = 0;
 
 	m_event_category = EVENT_CATEGORY_TRUE::OTHER;
 	m_event_category_zhh = EVENT_CATEGORY_ZHH::OTHER;
@@ -314,8 +316,8 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 		streamlog_out(DEBUG0) << "        getting jet collection: " << m_mcParticleCollection << std::endl ;
 		inputMCParticleCollection = pLCEvent->getCollection( m_mcParticleCollection );
 
-		if (m_resolvers.find(process) != m_resolvers.end()) {
-			FinalStateResolver* resolver = m_resolvers.at(process);
+		if (resolvers.find(process) != resolvers.end()) {
+			FinalStateResolver* resolver = resolvers.at(process);
 
 			m_process = resolver->get_process_id();
 			m_n_fermion = resolver->get_n_fermions();
@@ -323,7 +325,8 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 
 			// Get final state information
 			try {
-				m_final_states = resolver->m_resolve(inputMCParticleCollection);
+				m_final_states = resolver->resolve(inputMCParticleCollection);
+				m_n_b_from_higgs = resolver->get_n_b_from_higgs();
 
 				for (size_t i = 0; i < m_final_states.size(); i++) {
 					int particle_pdg = abs(m_final_states[i]);

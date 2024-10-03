@@ -4,7 +4,17 @@ class EVENT_CATEGORY_TRUE:
     # LEPTONIC
     OTHER_LL = 10
     llHH = 11 # // llbbbb (ZHH signal)
-
+    
+    # START Only used in analysis (not in Marlin processor)
+    eeHH = 111
+    µµHH = 112
+    𝜏𝜏HH = 113
+    
+    eeHHbbbb = 114
+    µµHHbbbb = 115
+    𝜏𝜏HHbbbb = 116
+    # END
+    
     eebb = 12
     µµbb = 13
     𝜏𝜏bb = 14
@@ -20,7 +30,15 @@ class EVENT_CATEGORY_TRUE:
     # NEUTRINO
     OTHER_VV = 30
     vvHH = 31 # vvbbbb (ZHH signal)
-
+    
+    # START Only used in analysis (not in Marlin processor)
+    v1v1HH = 131
+    v23v23HH = 132
+    
+    v1v1HHbbbb = 133
+    v23v23HHbbbb = 134
+    # END
+    
     vvbb = 32
     vvbbbb = 33
     vvqqH = 34
@@ -31,6 +49,10 @@ class EVENT_CATEGORY_TRUE:
     # HADRONIC
     OTHER_QQ = 50
     qqHH = 51 # qqbbbb (ZHH signal)
+    
+    # START Only used in analysis (not in Marlin processor)
+    qqHHbbbb = 151
+    # END
 
     qqqqH = 52
     qqbbbb = 53

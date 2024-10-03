@@ -28,6 +28,7 @@ class FinalStateResolver {
         int m_event_category;
         int m_n_fermions;
         int m_n_higgs;
+        int m_n_b_from_higgs = 0;
 
         void assert_true(bool check) {
             if (!check) {
@@ -56,9 +57,10 @@ class FinalStateResolver {
         
         int get_n_fermions() { return m_n_fermions; };
         int get_n_higgs() { return m_n_higgs; };
+        int get_n_b_from_higgs() { return m_n_b_from_higgs; };
         
         virtual int get_event_category(std::map<int, int> m_final_state_counts) = 0;
-        virtual std::vector<int> m_resolve(LCCollection *mcp_collection) = 0;
+        virtual std::vector<int> resolve(LCCollection *mcp_collection) = 0;
         //virtual int m_get_category(LCCollection *mcp_collection) = 0;
 
 };

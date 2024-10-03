@@ -1,7 +1,7 @@
 from ast import literal_eval as make_tuple
 from glob import glob
 from dateutil import parser
-from typing import Optional, Union, Iterable, List
+from typing import Optional, Union, Iterable, List, Callable
 from tqdm.auto import tqdm
 import os.path as osp
 import json
@@ -442,13 +442,25 @@ def get_final_state_counts(DATA_ROOT:str,
                 
     return fs_counts
 
+def apply_order(categories:List[str], order:Union[List[str], Callable]):
+    if isinstance(order, Callable):
+        return order(categories)
+    elif isinstance(order, List):
+        categories_new = order
+        for cat in categories:
+            if not cat in categories_new:
+                categories_new.append(cat)
+    
+        return categories_new
+
 def calc_preselection_by_event_categories(presel_results:np.ndarray, processes:np.ndarray, weights:np.ndarray,
                                           weighted:bool=True,
                                           quantity:Optional[str]=None,
-                                          order:Optional[List]=None,
+                                          order:Optional[List[str]]=None,
                                           categories_selected:Optional[List[int]]=[11, 16, 12, 13, 14],
                                           categories_additional:Optional[int]=3,
-                                        xlim:Optional[tuple]=None, check_hypothesis:Optional[str]=None)->Iterable[dict]:
+                                        xlim:Optional[tuple]=None,
+                                        check_hypothesis:Optional[str]=None)->Iterable[dict]:
     
     """Calculate the preselection results for a given hypothesis by event categories
 
@@ -459,7 +471,7 @@ def calc_preselection_by_event_categories(presel_results:np.ndarray, processes:n
         quantity (str, optional): _description_. Defaults to 'll_mz'.
         categories_selected (list, optional): Event categories to include in any case. Defaults to [17].
         categories_additional (Optional[int], optional): n-th most contributing categories to include as well. Defaults to 3.
-        order (Optional[List]): List of process names/event category names to sort by. Defaults to None.
+        order (Optional[List, Callable]): Either Callable that sorts the given categories or List which may be used for sorting. Defaults to None.
         unit (str, optional): _description_. Defaults to 'GeV'.
         nbins (int, optional): _description_. Defaults to 100.
         xlim (Optional[tuple], optional): _description_. Defaults to None.
@@ -472,6 +484,8 @@ def calc_preselection_by_event_categories(presel_results:np.ndarray, processes:n
     """
     
     from ..processes.EventCategories import EventCategories
+    if categories_additional == 0:
+        categories_additional = None
     
     # Make sure that the weights are ordered exactly by index
     assert(np.sum(weights['pid'] == np.arange(len(weights))) == len(weights))
@@ -479,25 +493,26 @@ def calc_preselection_by_event_categories(presel_results:np.ndarray, processes:n
     if xlim is not None and isinstance(quantity, str):
         subset = presel_results[(presel_results[quantity] > xlim[0]) & (presel_results[quantity] < xlim[1])]
     else:
-        subset = presel_results        
+        subset = presel_results
     
     # Find relevant event categories
     if weighted:
-        categories = np.unique(subset['event_category'])
+        categories = np.array(categories_selected) if categories_additional is None else np.unique(subset['event_category'])
         counts = np.zeros(len(categories), dtype=float)
+        
         for i, cat in enumerate(categories):
             counts[i] += weights['weight'][subset['pid'][subset['event_category'] == cat]].sum()
         
     else:
         categories, counts = np.unique(subset['event_category'], return_counts=True)
         
-    # Sort and include categories_additional
-    count_sort_ind = np.argsort(-counts)
-    counts, categories = counts[count_sort_ind], categories[count_sort_ind]
-    
-    mask = np.isin(categories, categories_selected) if categories_selected is not None else np.zeros(len(categories), dtype='?')
-    
+    # Sort and include categories_additional (descending)
     if categories_additional is not None:
+        count_sort_ind = np.argsort(-counts)
+        counts, categories = counts[count_sort_ind], categories[count_sort_ind]
+
+        mask = np.isin(categories, categories_selected) if categories_selected is not None else np.zeros(len(categories), dtype='?')
+
         n_additional = 0
         for i in range(len(categories)):
             if not mask[i]:
@@ -507,12 +522,17 @@ def calc_preselection_by_event_categories(presel_results:np.ndarray, processes:n
                 else:
                     break
                 
-    categories, counts = categories[mask], counts[mask]
+        categories, counts = categories[mask], counts[mask]
+    
+    # Sort and include categories_additional (ascending for correct plotting)
+    count_sort_ind = np.argsort(counts)
+    counts, categories = counts[count_sort_ind], categories[count_sort_ind]
+    
+    if order is not None:
+        categories = apply_order(categories, order)
     
     calc_dict_all  = {}
     calc_dict_pass = {}
-    
-    print(categories, counts)
     
     for category in (pbar := tqdm(categories)):
         label = EventCategories.inverted[category]

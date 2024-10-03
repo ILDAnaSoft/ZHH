@@ -18,7 +18,7 @@ class p2: public FinalStateResolver {
             m_final_state_filter = final_state_filter;
         };
 
-        vector<int> m_resolve(LCCollection *mcp_collection) {
+        vector<int> resolve(LCCollection *mcp_collection) {
             // Get final state fermions
             MCParticle* part1 = (MCParticle*)mcp_collection->getElementAt(6);
             MCParticle* part2 = (MCParticle*)mcp_collection->getElementAt(7);

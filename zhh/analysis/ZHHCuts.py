@@ -2,15 +2,13 @@ from .Cuts import Cut, EqualCut, WindowCut, GreaterThanEqualCut, LessThanEqualCu
 
 def zhh_cuts(hypothesis:str,
              additional:bool=True,
-             b_tagging:bool=False,
+             b_tagging:bool=True,
              mH:float=125.,
              mZ:float=91.2,):
     
     if hypothesis == 'llHH':
         cuts = [GreaterThanEqualCut('xx_nisoleps', 2),
-                WindowCut('ll_mz', mZ, 40, center=True),
-                WindowCut('ll_mh1', mH, 160., center=True),
-                WindowCut('ll_mh2', mH, 160., center=True)]
+                WindowCut('ll_mz', mZ, 40, center=True)]
         
         if additional:
             cuts += [WindowCut('ll_mh1', 60., 180.),
@@ -19,12 +17,10 @@ def zhh_cuts(hypothesis:str,
                      LessThanEqualCut('xx_thrust', 0.9)]
         
     elif hypothesis == 'vvHH':
-        cuts = [EqualCut('xx_nisoleps', 0),
-                WindowCut('vv_mh1', mH, 80, center=True),
-                WindowCut('vv_mh2', mH, 80., center=True)]
+        cuts = [EqualCut('xx_nisoleps', 0)]
         
         if b_tagging:
-            cuts += [GreaterThanEqualCut('ll_bmax3', 0.2)]
+            cuts += [GreaterThanEqualCut('vv_bmax3', 0.2)]
         
         cuts += [WindowCut('vv_mh1', 60., 180.),
                  WindowCut('vv_mh2', 60., 180.),

@@ -1,12 +1,14 @@
-from matplotlib.ticker import AutoMinorLocator, LogLocator
+from matplotlib.ticker import AutoMinorLocator, LogLocator, Locator, MultipleLocator
 from matplotlib.patches import Patch
 from matplotlib.figure import Figure
 from matplotlib.legend_handler import HandlerTuple
 from typing import Optional, List, Iterable, Union, Tuple
 
-def fig_ild_style(fig:Figure, xlim:Union[List[float], Tuple[float,float]], bins:int,
+def fig_ild_style(fig:Figure, xlim:Union[List[float], Tuple[float,float]], bins:Union[Iterable,int],
                   xscale:str='linear', xunit:Optional[str]='GeV', xlabel:str='m',
                   yscale:str='linear', yunit:Optional[str]='events', ylabel_prefix:str='',
+                  xlocator:Optional[Locator]=None, ylocator:Optional[Locator]=None,
+                  xminor:Optional[int]=5, yminor:Optional[int]=5,
                   fontname='Arial', beam_spec:bool=True, ax_index:int=0,
                   title:Optional[str]=None, title_postfix:str='',
                   legend_labels:Optional[List]=None, legend_kwargs={},
@@ -39,7 +41,8 @@ def fig_ild_style(fig:Figure, xlim:Union[List[float], Tuple[float,float]], bins:
     ax = fig.get_axes()[ax_index]
     
     if xscale =='linear':
-        ax.xaxis.set_minor_locator(AutoMinorLocator(5))
+        if xminor is not None:
+            ax.xaxis.set_minor_locator(AutoMinorLocator(xminor))
     else:
         raise NotImplementedError('Log scale not yet implemented')
     
@@ -48,7 +51,14 @@ def fig_ild_style(fig:Figure, xlim:Union[List[float], Tuple[float,float]], bins:
         ax.yaxis.set_major_locator(LogLocator(base=10))
         ax.yaxis.set_minor_locator(LogLocator(base=10,subs=[2., 5., 6., 7., 8., 9.]))
     else:
-        ax.yaxis.set_minor_locator(AutoMinorLocator(5))        
+        if yminor is not None:
+            ax.yaxis.set_minor_locator(AutoMinorLocator(yminor))        
+    
+    if xlocator is not None:
+        ax.xaxis.set_major_locator(xlocator)
+    
+    if ylocator is not None:
+        ax.yaxis.set_major_locator(ylocator)
     
     ax.xaxis.set_ticks_position('both')
     ax.yaxis.set_ticks_position('both')
@@ -56,8 +66,10 @@ def fig_ild_style(fig:Figure, xlim:Union[List[float], Tuple[float,float]], bins:
     ax.tick_params(axis='both', width=1.5, length=5, which='both', direction='in', labelsize=12)
     ax.tick_params(axis='both', width=2.5, length=8)
     
+    nbins = len(bins) if isinstance(bins, Iterable) else bins
+    
     ax.set_xlabel(rf'${xlabel}$' + ('' if (xunit == '' or xunit is None) else f' [{xunit}]'), fontsize=12, fontname=fontname)
-    ax.set_ylabel(ylabel_prefix + rf"{yunit} / {(xlim[1]-xlim[0])/bins:0.2f}" + (f' {xunit}' if (xunit != '' and xunit is not None) else ''), fontsize=12, fontname=fontname)
+    ax.set_ylabel(ylabel_prefix + rf"{yunit} / {(xlim[1]-xlim[0])/nbins:0.2f}" + (f' {xunit}' if (xunit != '' and xunit is not None) else ''), fontsize=12, fontname=fontname)
     
     if title is not None:
         ax.set_title(title, loc='right', fontsize=12, fontname=fontname)
