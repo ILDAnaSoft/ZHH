@@ -179,8 +179,17 @@ done
 
 #########################################
 
-REPO_ROOT=$(readlink -f "$0")
-REPO_ROOT=$(dirname "$REPO_ROOT")
+if [[ ! -d "$REPO_ROOT" ]]; then
+    echo "Trying to infer ZHH REPO_ROOT..."
+
+    REPO_ROOT=$(readlink -f "$0")
+    REPO_ROOT=$(dirname "$REPO_ROOT")
+
+    if [[ ! -d "$REPO_ROOT/zhh" ]]; then
+        echo "ZHH REPO_ROOT not found, aborting..."
+        return 1
+    fi
+fi
 
 if [[ -z "${MARLIN_DLL}" ]]; then
     source /cvmfs/sw.hsf.org/key4hep/setup.sh -r $ZHH_K4H_RELEASE

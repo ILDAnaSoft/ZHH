@@ -202,17 +202,17 @@ void PreSelection::init()
 
 	m_pTTree->Branch("run", &m_nRun, "run/I");
 	m_pTTree->Branch("event", &m_nEvt, "event/I");
-	m_pTTree->Branch("nJets",&m_nJets,"nJets/I") ;
-	m_pTTree->Branch("nIsoLeptons",&m_nIsoLeps,"nIsoLeptons/I") ;
-	m_pTTree->Branch("lepTypes", &m_lepTypes) ;
-	m_pTTree->Branch("lepTypesPaired", &m_lepTypesPaired, "lepTypesPaired/I")
-	m_pTTree->Branch("missingPT", &m_missingPT, "missingPT/F") ;
-	m_pTTree->Branch("missingPTMass", &m_missingPTMass, "missingPTMass/F") ;
-	m_pTTree->Branch("Evis", &m_Evis, "Evis/F") ;
-	m_pTTree->Branch("thrust", &m_thrust, "thrust/F") ;
-	m_pTTree->Branch("dileptonMassPrePairing", &m_dileptonMassPrePairing, "dileptonMassPrePairing/F") ;
-	m_pTTree->Branch("dileptonMass", &m_dileptonMass, "dileptonMass/F") ;
-	m_pTTree->Branch("dileptonMassDiff", &m_dileptonMassDiff, "dileptonMassDiff/F") ;
+	m_pTTree->Branch("nJets",&m_nJets,"nJets/I");
+	m_pTTree->Branch("nIsoLeptons",&m_nIsoLeps,"nIsoLeptons/I");
+	m_pTTree->Branch("lepTypes", &m_lepTypes);
+	m_pTTree->Branch("lepTypesPaired", &m_lepTypesPaired, "lepTypesPaired/I");
+	m_pTTree->Branch("missingPT", &m_missingPT, "missingPT/F");
+	m_pTTree->Branch("missingPTInvMass", &m_missingPTInvMass, "missingPTInvMass/F");
+	m_pTTree->Branch("Evis", &m_Evis, "Evis/F");
+	m_pTTree->Branch("thrust", &m_thrust, "thrust/F");
+	m_pTTree->Branch("dileptonMassPrePairing", &m_dileptonMassPrePairing, "dileptonMassPrePairing/F");
+	m_pTTree->Branch("dileptonMass", &m_dileptonMass, "dileptonMass/F");
+	m_pTTree->Branch("dileptonMassDiff", &m_dileptonMassDiff, "dileptonMassDiff/F");
 	m_pTTree->Branch("dijetChi2min", &m_chi2min, "dijetChi2min/F");
 	m_pTTree->Branch("dijetPairing", &m_dijetPairing);
 	m_pTTree->Branch("dijetMass", &m_dijetMass);
@@ -305,7 +305,7 @@ void PreSelection::Clear()
 	m_lepTypes.clear();
 	m_lepTypesPaired = 0;
 	m_missingPT = -999.;
-	m_missingPTMass = -999.;
+	m_missingPTInvMass = -999.;
 	m_Evis  = -999.;
 	m_thrust = -999.;
 	m_dileptonMassPrePairing = -999.;
@@ -371,7 +371,7 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
 		}
 		TLorentzVector pmis = ecms - pfosum;
 		m_missingPT = pmis.Pt();
-		m_missingPTMass = pmis.M();
+		m_missingPTInvMass = pmis.M();
 		
 		// ---------- VISIBLE ENERGY ----------                                          
 		m_Evis = pfosum.E();
@@ -394,9 +394,9 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
 		}
 
 		// ---------- SAVE TYPES OF ALL ISOLATED LEPTONS ----------
-		for (size_t j = 0; j < 2; j++) {
-			ReconstructedParticle* iso_lepton_from_pair = dynamic_cast<ReconstructedParticle*>( inputLepPairCollection->getElementAt( j ) );
-			m_lepTypes.push_back( iso_lepton_from_pair->getType() );
+		for (size_t j = 0; j < inputLeptonCollection->getNumberOfElements(); j++) {
+			ReconstructedParticle* iso_lepton = dynamic_cast<ReconstructedParticle*>( inputLeptonCollection->getElementAt( j ) );
+			m_lepTypes.push_back( iso_lepton->getType() );
 		}
 
 		int ndijets = 0;
