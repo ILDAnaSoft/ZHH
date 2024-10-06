@@ -368,6 +368,7 @@ def presel_stack(DATA_ROOT:str,
             
             if final_states:
                 fs_counts = rf['final_state_counts'][1].array()
+                chunk['Nb_from_H'] = rf['n_b_from_higgs'].array()
                 
                 for i in range(len(fs_columns)):
                     chunk[fs_columns[i]] = fs_counts[:, i]
