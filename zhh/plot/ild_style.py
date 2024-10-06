@@ -77,6 +77,8 @@ def fig_ild_style(fig:Figure, xlim:Union[List[float], Tuple[float,float]], bins:
     if legend_labels is not None:
         cp = get_colorpalette()
         legend_handles = []
+        print(len(cp), len(legend_labels))
+        
         for i in range(len(legend_labels)):
             process_name = legend_labels[i]
             legend_handles.append([Patch(facecolor=cp[i], edgecolor=cp[i], label=process_name)])

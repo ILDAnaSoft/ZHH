@@ -141,7 +141,12 @@ def plot_preselection_by_calc_dict(calc_dict, hypothesis:str, xlabel:str, xunit:
             'legend_kwargs': {'loc': 'lower right'}
         } | ild_style_kwargs
         
-        fig = fig_ild_style(fig, xlim, bins, legend_labels=list(plot_dict.keys()), **fig_ild_kwargs)
+        legend_labels = []
+        for key, value in plot_dict.items():
+            if len(value) > 0:
+                legend_labels.append(key)
+                
+        fig = fig_ild_style(fig, xlim, bins, legend_labels=legend_labels, **fig_ild_kwargs)
         
         all_figs.append(fig)
         

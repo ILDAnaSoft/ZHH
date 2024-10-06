@@ -382,7 +382,7 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
 
 		//-----------------  REQUIRE CORRECT NUMBER OF SIGNATURE PARTICLES  -----------------
 		if (inputLepPairCollection->getNumberOfElements() == 2 ) {
-			const EVENT::LCParameters& leppair_params = inputPfoCollection->getParameters() ;
+			const EVENT::LCParameters& leppair_params = inputLepPairCollection->getParameters() ;
 
 			m_dileptonMassPrePairing = leppair_params.getFloatVal("IsoLepsInvMass");
 			m_dileptonMass = leppair_params.getFloatVal("RecoLepsInvMass");

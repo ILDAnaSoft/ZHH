@@ -52,6 +52,7 @@ class EVENT_CATEGORY_TRUE:
     
     # START Only used in analysis (not in Marlin processor)
     qqHHbbbb = 151
+    bbHHbbbb = 152 
     # END
 
     qqqqH = 52
