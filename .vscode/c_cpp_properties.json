@@ -3,14 +3,14 @@
         {
             "name": "Linux",
             "includePath": [
-                "/cvmfs/ilc.desy.de/key4hep/spackages/root/6.26.06/x86_64-centos7-gcc11.2.0-opt/dctcyvzmo7xg4dehiooyfl24oevtaids/include/**", // Root
+                "/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-almalinux9-gcc11.3.1-opt/root/6.28.10-j6yheu/include/**", // Root
                 //"/cvmfs/ilc.desy.de/key4hep/spackages/physsim/0.4.2/x86_64-centos7-gcc11.2.0-opt/e26yiqeeecuwnx563aoawj2yhovjquox/include/**", // Physsim
                 "${HOME}/public/ILCSoft/Physsim/include/**", // Physsim
                 "${HOME}/public/ILCSoft/MarlinReco/Analysis/PIDTools/include/**",
-                "/cvmfs/ilc.desy.de/key4hep/spackages/lcio/2.19/x86_64-centos7-gcc11.2.0-opt/lr4mjd4u7kmg2ugmdcvcr6vdjtrxxwwv/include/**", // LCIO
-                "/cvmfs/ilc.desy.de/key4hep/spackages/marlin/1.19/x86_64-centos7-gcc11.2.0-opt/aj5n37vac5zzw4eil7raxolernp6o4vi/include/**", // Marlin
-                "/cvmfs/ilc.desy.de/key4hep/spackages/marlinutil/1.17/x86_64-centos7-gcc11.2.0-opt/tfc4e34qxhplzktv6xs3lqxjsjx3uic7/include/marlinutil/", // MarlinUtil
-                "/cvmfs/ilc.desy.de/key4hep/spackages/ilcutil/1.7/x86_64-centos7-gcc11.2.0-opt/nnyawmpqncnl6tu3nfhufy4seyzdlfj2/include/**", // streamlog
+                "/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-almalinux9-gcc11.3.1-opt/lcio/2.21-66idkb/include/**", // LCIO
+                "/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-almalinux9-gcc11.3.1-opt/marlin/1.19.2-23csbl/include/**", // Marlin
+                "/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-almalinux9-gcc11.3.1-opt/marlinutil/1.17.2-vbff32/include/**", // MarlinUtil
+                "/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-almalinux9-gcc11.3.1-opt/ilcutil/1.7.2-vamvj5/include/**", // streamlog
                 "${workspaceFolder}/source/PreSelection/include/**",
                 "${workspaceFolder}/source/Misclustering/include/**",
                 "${workspaceFolder}/source/HdecayMode/include/**",
@@ -19,11 +19,11 @@
                 "${workspaceFolder}/source/ZHHKinfitProcessors/include/**",
                 "${workspaceFolder}/source/FinalStateRecorder/include/**",
                 "${workspaceFolder}/source/legacy/include/**",
-                "/cvmfs/ilc.desy.de/key4hep/spackages/nlohmann-json/3.10.5/x86_64-centos7-gcc11.2.0-opt/j4tl2q4blff6srzrgtztrg53witsjlcd/include"
+                "/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-almalinux9-gcc11.3.1-opt/nlohmann-json/3.11.2-mxh7ki/include"
             ],
             "defines": [],
-            "compilerPath": "/cvmfs/ilc.desy.de/key4hep/spackages/gcc/11.2.0/x86_64-centos7-gcc4.8.5-opt/7isdlpuoi7cbcsugpa2hzuqhh5zgeapj/bin/g++",
-            //"compilerPath": "/cvmfs/ilc.desy.de/key4hep/spackages/gcc/11.2.0/x86_64-centos7-gcc4.8.5-opt/7isdlpuoi7cbcsugpa2hzuqhh5zgeapj/bin/gcc",
+            //"compilerPath": "/cvmfs/ilc.desy.de/key4hep/spackages/gcc/11.2.0/x86_64-centos7-gcc4.8.5-opt/7isdlpuoi7cbcsugpa2hzuqhh5zgeapj/bin/g++",
+            "compilerPath": "/usr/bin/g++",
             "cStandard": "gnu17",
             "cppStandard": "gnu++17",
             "intelliSenseMode": "linux-gcc-x64",

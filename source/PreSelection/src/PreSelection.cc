@@ -377,15 +377,14 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
 		m_Evis = pfosum.E();
 
 		// ---------- THRUST ----------                                                        
-		const EVENT::LCParameters& pfo_params = inputPfoCollection->getParameters() ;
+		const EVENT::LCParameters& pfo_params = inputPfoCollection->getParameters();
 		m_thrust = pfo_params.getFloatVal("principleThrustValue");
 
 		//-----------------  REQUIRE CORRECT NUMBER OF SIGNATURE PARTICLES  -----------------
 		if (inputLepPairCollection->getNumberOfElements() == 2 ) {
-			const EVENT::LCParameters& leppair_params = inputLepPairCollection->getParameters() ;
+			m_dileptonMass = inputLepPairCollection->parameters().getFloatVal("RecoLepsInvMass");
+			m_dileptonMassPrePairing = inputLepPairCollection->parameters().getFloatVal("IsoLepsInvMass");
 
-			m_dileptonMassPrePairing = leppair_params.getFloatVal("IsoLepsInvMass");
-			m_dileptonMass = leppair_params.getFloatVal("RecoLepsInvMass");
 			m_dileptonMassDiff = fabs( m_dileptonMass - 91.2 );
 
 			// ---------- SAVE TYPES OF PAIRED ISOLATED LEPTONS ----------
