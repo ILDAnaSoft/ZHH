@@ -37,48 +37,59 @@ def evaluate_runtime(DATA_ROOT:str,
                 if line.startswith(marker):
                     value = int(line.split(f'{marker} ')[1].strip())
             
-    return (branch, process, n_proc, src_path, tStart, tEnd, tEnd - tStart, value)
+    return (branch, process, n_proc, src_path, tEnd - tStart, tStart, tEnd, value)
 
 def get_runtime_analysis(DATA_ROOT:Optional[str]=None,
+                         chunks_factual:Optional[np.ndarray]=None,
                          meta:Optional[dict]=None,
                          WITH_EXIT_STATUS:bool=False)->np.ndarray:
     """_summary_
 
     Args:
-        meta (Optional[dict]): _description_
         DATA_ROOT (Optional[str]): _description_
+        meta (Optional[dict]): _description_
 
     Returns:
         np.ndarray: _description_
     """
     
-    if meta is None and DATA_ROOT is None:
-        raise Exception('Either meta or DATA_ROOT must be given')
+    if chunks_factual is None and DATA_ROOT is None:
+        raise Exception('Either chunks_factual or DATA_ROOT must be given')
     
-    if meta is None:    
-        metafile = glob(f'{DATA_ROOT}/htcondor_jobs*.json')[-1]
-        with open(metafile) as file:
-            meta = json.load(file)
-    
-    jobs = meta['jobs']
     dtype = [
         ('branch', 'i'),
         ('process', '<U60'),
         ('n_processed', 'i'),
         ('src', '<U512'),
-        ('tStart', 'f'),
-        ('tEnd', 'f'),
-        ('tDuration', 'f'),
-        ('exitCode', 'i')]
+        ('tDuration', 'f')]
     
-    results = np.empty(0, dtype=dtype)
-
-    for job_key in jobs:
-        branch = jobs[job_key]['branches'][0]
-        if jobs[job_key]['status'] == 'finished':
-            ev = evaluate_runtime(DATA_ROOT=DATA_ROOT, branch=branch, WITH_EXIT_STATUS=WITH_EXIT_STATUS)
-            results = np.append(results, np.array([ev], dtype=dtype))
+    results = []
     
+    if chunks_factual is not None:
+        results = chunks_factual[['branch', 'process', 'chunk_size_factual', 'location', 'runtime']].tolist()
+    elif DATA_ROOT is not None:
+        if meta is None:    
+            metafile = glob(f'{DATA_ROOT}/htcondor_jobs*.json')[-1]
+            
+            with open(metafile) as file:
+                meta = json.load(file)
+        
+        jobs = meta['jobs']
+    
+        dtype += [('tStart', 'f')]
+        dtype += [('tEnd', 'f')]
+        dtype += [('exitCode', 'i')]
+        
+        for job_key in jobs:
+            branch = jobs[job_key]['branches'][0]
+            if jobs[job_key]['status'] == 'finished':
+                ev = evaluate_runtime(DATA_ROOT=DATA_ROOT, branch=branch, WITH_EXIT_STATUS=WITH_EXIT_STATUS)
+                results.append(ev)
+    else:
+        raise Exception('No data source given')
+    
+    results = np.array(results, dtype=dtype)
+                
     return results
 
 def get_adjusted_time_per_event(runtime_analysis:np.ndarray,

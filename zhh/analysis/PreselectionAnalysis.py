@@ -307,6 +307,7 @@ def presel_stack(DATA_ROOT:str,
             ('xx_thrust', 'f'),
             ('xx_e_vis', 'f'),
             ('xx_pt_miss', 'f'),
+            ('xx_invmass_miss', 'f'),
             ('xx_nisoleps', 'B'),
         
             # llHH
@@ -316,6 +317,7 @@ def presel_stack(DATA_ROOT:str,
             
             ('ll_dilepton_type', 'B'),
             ('ll_mz', 'f'),
+            ('ll_mz_pre_pairing', 'f'),
             
             # vvHH
             ('vv_mh1', 'f'),
@@ -344,6 +346,8 @@ def presel_stack(DATA_ROOT:str,
     if final_states:
         for dt in fs_columns:
             dtype.append((dt, 'B'))
+        
+        dtype.append(('Nb_from_H', 'B'))
     
     r_size = chunks_f[np.isin(chunks_f['branch'], branches)]['chunk_size_factual'].sum()
     results = np.zeros(r_size, dtype=dtype)
@@ -377,6 +381,7 @@ def presel_stack(DATA_ROOT:str,
                         chunk['xx_thrust'] = rf['thrust'].array()
                         chunk['xx_e_vis'] = rf['Evis'].array()
                         chunk['xx_pt_miss'] = rf['missingPT'].array()
+                        chunk['xx_invmass_miss'] = rf['missingPTInvMass'].array()
                         chunk['xx_nisoleps'] = rf['nIsoLeptons'].array()
                     
                 if kinematics:
@@ -386,14 +391,16 @@ def presel_stack(DATA_ROOT:str,
                     chunk[f'{presel}_mh1'] = mh1
                     chunk[f'{presel}_mh2'] = mh2
                     
-                    if presel == 'll':
-                        lepTypes = rf['lepTypes'].array()
+                    if presel == 'll':                        
+                        #lepTypes = rf['lepTypes'].array()
+                        #pass_ltype11 = np.sum(np.abs(lepTypes) == 11, axis=1) == 2
+                        #pass_ltype13 = np.sum(np.abs(lepTypes) == 13, axis=1) == 2
+                        #chunk['ll_dilepton_type'] = pass_ltype11*11 + pass_ltype13*13
+                        lepTypesPaired = rf['lepTypesPaired'].array()
+                        chunk['ll_dilepton_type'] = lepTypesPaired
                         
-                        pass_ltype11 = np.sum(np.abs(lepTypes) == 11, axis=1) == 2
-                        pass_ltype13 = np.sum(np.abs(lepTypes) == 13, axis=1) == 2
-                        
-                        chunk['ll_dilepton_type'] = pass_ltype11*11 + pass_ltype13*13
                         chunk['ll_mz'] = rf['dileptonMass'].array()
+                        chunk['ll_mz_pre_pairing'] = rf['dileptonMassPrePairing'].array()
                         
                     elif presel == 'vv':
                         chunk['vv_mhh'] = rf['dihiggsMass'].array()
@@ -429,6 +436,8 @@ def get_final_state_counts(DATA_ROOT:str,
             chunk = np.zeros(chunk_size, dtype=dtype)
             chunk['branch'] = branch
             chunk['event'] = a['event'].array()
+            chunk['Nb_from_H'] = a['n_b_from_higgs'].array()
+            
             fs_counts_raw = a['final_state_counts'][1].array()
             
             for i in range(len(fs_columns)):

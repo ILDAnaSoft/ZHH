@@ -61,11 +61,16 @@ class HTCondorWorkflow(law.htcondor.HTCondorWorkflow):
         # copy the entire environment
         config.custom_content.append(('getenv', 'true'))
         #config.custom_content.append(('request_cpus', '1'))
-        config.custom_content.append(('request_memory', '4000 Mb')) # 16 GB
         
-        # Only set for non-default value
-        if self.max_runtime != 3.0:
-            config.custom_content.append(("request_runtime", math.floor(self.max_runtime * 3600)))
+        if False:
+            # Only for failing jobs
+            config.custom_content.append(("request_runtime", math.floor(12 * 3600)))
+            config.custom_content.append(('request_memory', '16000 Mb'))
+        else:
+            # Default config: 4GB RAM and 3h of runtime
+            config.custom_content.append(('request_memory', '4000 Mb')) # 16 GB
+            if self.max_runtime:
+                config.custom_content.append(("request_runtime", math.floor(self.max_runtime * 3600)))
         
         config.custom_content.append(('requirements', 'Machine =!= LastRemoteHost'))
         
