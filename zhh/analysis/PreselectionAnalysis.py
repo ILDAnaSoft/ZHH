@@ -466,11 +466,11 @@ def apply_order(categories:List[str], order:Union[List[str], Callable]):
 def calc_preselection_by_event_categories(presel_results:np.ndarray, processes:np.ndarray, weights:np.ndarray,
                                           weighted:bool=True,
                                           quantity:Optional[str]=None,
-                                          order:Optional[List[str]]=None,
+                                          order:Optional[Union[List[str],Callable]]=None,
                                           categories_selected:Optional[List[int]]=[11, 16, 12, 13, 14],
                                           categories_additional:Optional[int]=3,
                                         xlim:Optional[tuple]=None,
-                                        check_hypothesis:Optional[str]=None)->Iterable[dict]:
+                                        check_hypothesis:Optional[str]=None)->List[dict]:
     
     """Calculate the preselection results for a given hypothesis by event categories
 
@@ -539,6 +539,9 @@ def calc_preselection_by_event_categories(presel_results:np.ndarray, processes:n
     counts, categories = counts[count_sort_ind], categories[count_sort_ind]
     
     if order is not None:
+        if isinstance(order, list):
+            order = order.copy()
+            
         categories = apply_order(categories, order)
     
     calc_dict_all  = {}
@@ -694,3 +697,31 @@ def calc_preselection_by_processes(presel_results:np.ndarray, processes:np.ndarr
         return [calc_dict_all, calc_dict_pass]
     else:
         return [calc_dict_all]
+    
+def subset_test(presel_results:np.ndarray, n_per_process:int=1000, mask_only:bool=False)->np.ndarray:
+    """Returns a subset or mask of presel_results that includes min(n_per_process, available events)
+    events per process. Useful for prototyping.
+
+    Args:
+        presel_results (np.ndarray): _description_
+        n_per_process (int, optional): _description_. Defaults to 1000.
+        mask_only (bool, optional): _description_. Defaults to False.
+
+    Returns:
+        np.ndarray: either the subset, or a mask
+    """
+    pids, counts = np.unique(presel_results['pid'], return_counts=True)
+
+    mask_size = np.min(np.stack([n_per_process*np.ones(len(pids), dtype='I'), counts]), axis=0).sum()
+    mask = np.zeros(mask_size, dtype='I')
+    pointer = 0
+    
+    for i, pid in enumerate(pids):
+        current_size = min(counts[i], n_per_process)
+        mask[pointer:(pointer+current_size)] = np.where(presel_results['pid'] == pid)[0][:current_size]
+        pointer += current_size
+        
+    if mask_only:
+        return mask
+    
+    return presel_results[mask]

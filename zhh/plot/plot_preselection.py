@@ -5,6 +5,8 @@ from ..analysis.PreselectionAnalysis import calc_preselection_by_event_categorie
 from phc import plot_hist
 import numpy as np
 from matplotlib.figure import Figure
+from matplotlib.axes import Axes
+from ..analysis.Cuts import Cut, EqualCut, WindowCut, GreaterThanEqualCut, LessThanEqualCut
 
 # For a given final state, plots the most important processes
 def plot_preselection_by_event_category(presel_results:np.ndarray, processes:np.ndarray, weights:np.ndarray,
@@ -76,7 +78,7 @@ def plot_preselection_by_event_categories(presel_results:np.ndarray, processes:n
                                         unit:str='GeV', xlabel:Optional[str]=None,
                                         bins:int=100, xlim:Optional[tuple]=None,
                                         plot_flat:bool=True, yscale:Optional[str]=None,
-                                        ild_style_kwargs:dict={})->Figure:
+                                        ild_style_kwargs:dict={})->List[Figure]:
     
     if xlabel is None:
         xlabel = quantity
@@ -137,7 +139,7 @@ def plot_preselection_by_calc_dict(calc_dict, hypothesis:str, xlabel:str, xunit:
             'ild_offset_x': 0.,
             'ylabel_prefix': 'wt. ' if weighted else '',
             'title_postfix': '',
-            'title': rf'ZHH → {hypothesis} analysis ('+ (r"$\bf{wt.}$ " if weighted else "") + (rf"{title_label}") + ')',
+            'title': rf'ZHH → {hypothesis} analysis ('+ (r"wt. " if weighted else "") + (rf"{title_label}") + ')',
             'legend_kwargs': {'loc': 'lower right'}
         } | ild_style_kwargs
         
@@ -220,3 +222,30 @@ def plot_preselection_pass(vecs:np.ndarray) -> List:
         ax1.get_figure(),
         ax2.get_figure()
     ]
+    
+def annotate_cut(ax:Axes, cut:Cut):
+    if isinstance(cut, WindowCut):
+        ax.axvspan(cut.lower, cut.upper, .97, alpha=0.7, color='r', hatch='*')
+        ax.axvline(x=cut.lower, linewidth=1.5, color='r', alpha=0.7)
+        ax.axvline(x=cut.upper, linewidth=1.5, color='r', alpha=0.7)
+        
+    else:
+        if isinstance(cut, GreaterThanEqualCut) or isinstance(cut, LessThanEqualCut):
+            value = cut.lower if isinstance(cut, GreaterThanEqualCut) else cut.upper
+            xlim = ax.get_xlim()            
+            
+            if isinstance(value, int):
+                xlimspan = (value, xlim[1] + 0.5) if isinstance(cut, GreaterThanEqualCut) else (xlim[0] - 0.5, value)
+            else:
+                xlimspan = (value, xlim[1]) if isinstance(cut, GreaterThanEqualCut) else (xlim[0], value)            
+                
+            ax.axvspan(xlimspan[0], xlimspan[1], .97, alpha=0.7, color='r', hatch='*')
+        elif isinstance(cut, EqualCut):
+            value = cut.value
+        else:
+            raise ValueError(f'Unknown cut type {type(cut)}')
+        
+        if isinstance(value, int):
+            ax.axvspan(value - .5, value + .5, .97, alpha=0.7, color='r', hatch='*')
+        else:
+            ax.axvline(x=value, linewidth=1.5, color='r', alpha=0.7)

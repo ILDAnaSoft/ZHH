@@ -17,28 +17,27 @@ def zhh_cuts(hypothesis:str,
                      LessThanEqualCut('xx_thrust', 0.9)]
         
     elif hypothesis == 'vvHH':
-        cuts = [EqualCut('xx_nisoleps', 0)]
+        cuts = [EqualCut('xx_nisoleps', 0),
+                WindowCut('vv_mh1', 60., 180.),
+                WindowCut('vv_mh2', 60., 180.),
+                WindowCut('xx_pt_miss', 10., 180.),
+                LessThanEqualCut('xx_thrust', 0.9),
+                LessThanEqualCut('xx_e_vis', 400.),
+                GreaterThanEqualCut('vv_mhh', 220.)]
         
         if b_tagging:
             cuts += [GreaterThanEqualCut('vv_bmax3', 0.2)]
         
-        cuts += [WindowCut('vv_mh1', 60., 180.),
-                 WindowCut('vv_mh2', 60., 180.),
-                 WindowCut('xx_pt_miss', 10., 180.),
-                 LessThanEqualCut('xx_thrust', 0.9),
-                 LessThanEqualCut('xx_e_vis', 400.),
-                 GreaterThanEqualCut('vv_mhh', 220.)]
-        
     elif hypothesis == 'qqHH':
         cuts = [EqualCut('xx_nisoleps', 0)]
-        
-        if b_tagging:
-            cuts += [GreaterThanEqualCut('qq_bmax4', 0.16)]
         
         if additional:
             cuts += [WindowCut('qq_mh1', 60., 180.),
                      WindowCut('qq_mh2', 60., 180.),
                      LessThanEqualCut('xx_pt_miss', 70.),
                      LessThanEqualCut('xx_thrust', 0.9)]
+            
+        if b_tagging:
+            cuts += [GreaterThanEqualCut('qq_bmax4', 0.16)]
         
     return cuts

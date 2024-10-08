@@ -12,7 +12,7 @@ def fig_ild_style(fig:Figure, xlim:Union[List[float], Tuple[float,float]], bins:
                   fontname='Arial', beam_spec:bool=True, ax_index:int=0,
                   title:Optional[str]=None, title_postfix:str='',
                   legend_labels:Optional[List]=None, legend_kwargs={},
-                  colorpalette:Optional[Iterable]=None,
+                  colorpalette:Optional[List]=None,
                   ild_offset_x:float=0., ild_offset_y:float=0., ild_status:str='preliminary')->Figure:
     
     from phc import get_colorpalette
@@ -69,19 +69,20 @@ def fig_ild_style(fig:Figure, xlim:Union[List[float], Tuple[float,float]], bins:
     nbins = len(bins) if isinstance(bins, Iterable) else bins
     
     ax.set_xlabel(rf'${xlabel}$' + ('' if (xunit == '' or xunit is None) else f' [{xunit}]'), fontsize=12, fontname=fontname)
-    ax.set_ylabel(ylabel_prefix + rf"{yunit} / {(xlim[1]-xlim[0])/nbins:0.2f}" + (f' {xunit}' if (xunit != '' and xunit is not None) else ''), fontsize=12, fontname=fontname)
+    
+    ylabel_binning_val = (xlim[1]-xlim[0])/nbins
+    ylabel_binning_str = rf'{ylabel_binning_val:.2f}' if ylabel_binning_val >= 0.1 else rf'{ylabel_binning_val:.2E}'
+    ax.set_ylabel(ylabel_prefix + rf"{yunit} / {ylabel_binning_str}" + (f' {xunit}' if (xunit != '' and xunit is not None) else ''), fontsize=12, fontname=fontname)
     
     if title is not None:
         ax.set_title(title, loc='right', fontsize=12, fontname=fontname)
     
     if legend_labels is not None:
-        cp = get_colorpalette()
         legend_handles = []
-        print(len(cp), len(legend_labels))
         
         for i in range(len(legend_labels)):
             process_name = legend_labels[i]
-            legend_handles.append([Patch(facecolor=cp[i], edgecolor=cp[i], label=process_name)])
+            legend_handles.append([Patch(facecolor=colorpalette[i], edgecolor=colorpalette[i], label=process_name)])
             
         ax.legend(handles=legend_handles, labels=legend_labels, fontsize=10, handler_map={list: HandlerTuple(ndivide=len(legend_labels), pad=0)}, **legend_kwargs)
         
