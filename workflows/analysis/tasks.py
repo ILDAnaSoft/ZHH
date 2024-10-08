@@ -210,10 +210,12 @@ class PreselectionAbstract(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         
         cmd += f' && ( Marlin $REPO_ROOT/scripts/ZHH_v2.xml --constant.ILDConfigDir="$ILD_CONFIG_DIR" --global.MaxRecordNumber={str(n_events_max)} --global.LCIOInputFiles={src_file} --global.SkipNEvents={str(n_events_skip)} --constant.OutputDirectory=. --constant.MCParticleCollectionName={mcp_col_name} || true )'
         cmd += f' && echo "Finished Marlin at $(date)"'
+        cmd += f' && sleep 2'
         
-        # is_root_readable (necessary because CheatedMCOverlayRemoval crashes Marlin before it can properly exit, see above)
         for suffix in ['_PreSelection_llHH.root', '_PreSelection_vvHH.root', '_PreSelection_qqHH.root', '_FinalStates.root']:
             cmd += f' && is_root_readable ./zhh{suffix} eventTree'
+        
+        cmd += f' && [[ -f ./zhh_FinalStateMeta.json ]]'
         
         cmd += f' && echo "{self.branch_map[self.branch]}" >> Source.txt'
         cmd += f' && cd .. && mv "{temp}" "{target}"'

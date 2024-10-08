@@ -104,8 +104,7 @@ function zhh_attach_marlin_dlls() {
 
     for lib in "${libs[@]}"; do
         if [[ ! -f "$lib" ]]; then
-            echo "Error: Library <$lib> not found. Make sure it is compiled and the path is correct."
-            return 1
+            echo "+++ WARNING +++ Library <$(basename $lib)> not found at $lib. Make sure to compile it before you start Marlin. Continuing..."
         fi
 
         echo "Attaching library $(basename $lib)"
