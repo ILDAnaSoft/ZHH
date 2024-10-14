@@ -22,8 +22,11 @@ def fig_ild_style(fig:Figure, xlim:Union[List[float], Tuple[float,float]], bins:
     if yunit is None or yunit =='':
         yunit = '1'
         
-    if title_postfix != '' and title is not None:
-        title = title[:-1] + title_postfix + ')'
+    if title is not None:
+        if title_postfix != '':
+            title = title[:-1] + title_postfix + ')'
+            
+        title = fancify_formula(title)
     
     fig.text(0.15+ild_offset_x, 0.83+ild_offset_y, f'ILD {ild_status}', fontsize=12, weight='bold', fontname=fontname)
     
@@ -87,3 +90,12 @@ def fig_ild_style(fig:Figure, xlim:Union[List[float], Tuple[float,float]], bins:
         ax.legend(handles=legend_handles, labels=legend_labels, fontsize=10, handler_map={list: HandlerTuple(ndivide=len(legend_labels), pad=0)}, **legend_kwargs)
         
     return fig
+
+def fancify_formula(s:str):
+    for (a, b) in [
+        ('>=', ' \\geq '),
+        ('<=', ' \\leq '),
+    ]:
+        s = s.replace(a, b)
+    
+    return s

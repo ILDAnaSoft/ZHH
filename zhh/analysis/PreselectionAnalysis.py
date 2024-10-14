@@ -463,12 +463,24 @@ def apply_order(categories:List[str], order:Union[List[str], Callable]):
     
         return categories_new
 
+def weighted_counts_by_categories(presel_results:np.ndarray, weights:np.ndarray,
+                                       categories_selected:Optional[np.ndarray]=None):
+    
+    categories = np.array(categories_selected) if categories_selected is not None else np.unique(presel_results['event_category'])
+    counts = np.zeros(len(categories), dtype=float)
+    
+    for i, cat in enumerate(categories):
+        counts[i] += weights['weight'][presel_results['pid'][presel_results['event_category'] == cat]].sum()
+        
+    return categories, counts
+
 def calc_preselection_by_event_categories(presel_results:np.ndarray, processes:np.ndarray, weights:np.ndarray,
-                                          weighted:bool=True,
                                           quantity:Optional[str]=None,
                                           order:Optional[Union[List[str],Callable]]=None,
                                           categories_selected:Optional[List[int]]=[11, 16, 12, 13, 14],
                                           categories_additional:Optional[int]=3,
+                                          weighted:bool=True,
+                                          categories:Optional[np.ndarray]=None, counts:Optional[np.ndarray]=None,
                                         xlim:Optional[tuple]=None,
                                         check_hypothesis:Optional[str]=None)->List[dict]:
     
@@ -507,12 +519,13 @@ def calc_preselection_by_event_categories(presel_results:np.ndarray, processes:n
     
     # Find relevant event categories
     if weighted:
-        categories = np.array(categories_selected) if categories_additional is None else np.unique(subset['event_category'])
-        counts = np.zeros(len(categories), dtype=float)
-        
-        for i, cat in enumerate(categories):
-            counts[i] += weights['weight'][subset['pid'][subset['event_category'] == cat]].sum()
-        
+        if categories is None or counts is None:
+            categories = np.array(categories_selected) if categories_additional is None else np.unique(subset['event_category'])
+            categories, counts = weighted_counts_by_categories(presel_results, weights, categories)
+        else:
+            if categories_selected is not None and categories_additional is None:
+                mask = np.isin(categories, categories_selected)
+                categories, counts = categories[mask], counts[mask]
     else:
         categories, counts = np.unique(subset['event_category'], return_counts=True)
         
@@ -520,9 +533,9 @@ def calc_preselection_by_event_categories(presel_results:np.ndarray, processes:n
     if categories_additional is not None:
         count_sort_ind = np.argsort(-counts)
         counts, categories = counts[count_sort_ind], categories[count_sort_ind]
-
+        
         mask = np.isin(categories, categories_selected) if categories_selected is not None else np.zeros(len(categories), dtype='?')
-
+        
         n_additional = 0
         for i in range(len(categories)):
             if not mask[i]:

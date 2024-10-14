@@ -2,11 +2,14 @@ from typing import Optional, List, Tuple, Iterable
 from tqdm.auto import tqdm
 from .ild_style import fig_ild_style
 from ..analysis.PreselectionAnalysis import calc_preselection_by_event_categories
-from phc import plot_hist
+from phc import plot_hist, get_colorpalette
 import numpy as np
+import math
+import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
 from ..analysis.Cuts import Cut, EqualCut, WindowCut, GreaterThanEqualCut, LessThanEqualCut
+from ..analysis.ZHHCuts import zhh_cuts
 
 # For a given final state, plots the most important processes
 def plot_preselection_by_event_category(presel_results:np.ndarray, processes:np.ndarray, weights:np.ndarray,
@@ -131,7 +134,7 @@ def plot_preselection_by_calc_dict(calc_dict, hypothesis:str, xlabel:str, xunit:
         xlim = fig1.get_axes()[0].get_xlim()
     
     weighted = True
-    for fig in ([fig1, fig2] if plot_flat else [fig1]):
+    for fig in ([fig1, fig2] if plot_flat else [fig1]):       
         fig_ild_kwargs = {
             'xunit': xunit,
             'xlabel': xlabel,
@@ -156,96 +159,101 @@ def plot_preselection_by_calc_dict(calc_dict, hypothesis:str, xlabel:str, xunit:
         
     return all_figs
 
-def plot_preselection_pass(vecs:np.ndarray) -> List:
-    """_summary_
-
-    Args:
-        vecs (np.ndarray): _description_
-
-    Returns:
-        List: list of figures
-    """
-    
-    import seaborn as sns
-    import matplotlib.pyplot as plt
-    from matplotlib.figure import Figure
-
-    bars = list(range(len(vecs.T) + 1))
-    vals = [len(vecs)]
-
-    temp = np.ones(len(vecs), dtype=int)
-
-    for i in range(len(vecs.T)):
-        temp = temp & vecs.T[i]
-        vals.append(np.sum(temp))
-        
-    del temp
-    
-    desc = [
-        'All',
-        'nJets',
-        'nIsoLeps',
-        'DiLepMDif',
-        
-        'DiJetMDif1',
-        'DiJetMWdw1',
-        'DiJetMDif2',
-        'DiJetMWdw2',
-        
-        'MissPTWdw',
-        'Thrust',
-        'Evis',
-        'MinHHMass',
-        'nBJets',
-    ]
-    
-    # Plot consecutive (&) cuts
-    ax1 = sns.barplot(x=bars, y=vals, )
-    
-    ax1.set_yscale('log')
-    ax1.set_ylabel('Number of events')
-    ax1.set_xlabel('Preselection cut')
-    ax1.set_title(rf'$2f$ events surviving cats (consecutive)')
-    ax1.set_xticklabels(desc, rotation=45)
-    
-    # Plot individual cuts
-    plt.show()
-    
-    ax2 = sns.barplot(x=bars, y=[ len(vecs), *[ np.sum(vecs.T[i]) for i in range(len(vecs.T)) ]])
-    ax2.set_yscale('log')
-    ax2.set_ylabel('Number of events')
-    ax2.set_xlabel('Preselection cut')
-    ax2.set_title(rf'$2f$ events surviving cats (individual)')
-    ax2.set_xticklabels(desc, rotation=45)
-    
-    return [
-        ax1.get_figure(),
-        ax2.get_figure()
-    ]
-    
-def annotate_cut(ax:Axes, cut:Cut):
+def annotate_cut(ax:Axes, cut:Cut, spancolor:str='red', alpha:float=0.7):
     if isinstance(cut, WindowCut):
-        ax.axvspan(cut.lower, cut.upper, .97, alpha=0.7, color='r', hatch='*')
-        ax.axvline(x=cut.lower, linewidth=1.5, color='r', alpha=0.7)
-        ax.axvline(x=cut.upper, linewidth=1.5, color='r', alpha=0.7)
+        ax.axvspan(cut.lower, cut.upper, .97,  color=spancolor, alpha=alpha, hatch='*')
+        ax.axvline(x=cut.lower, linewidth=1.5, color=spancolor)
+        ax.axvline(x=cut.upper, linewidth=1.5, color=spancolor)
         
     else:
         if isinstance(cut, GreaterThanEqualCut) or isinstance(cut, LessThanEqualCut):
             value = cut.lower if isinstance(cut, GreaterThanEqualCut) else cut.upper
-            xlim = ax.get_xlim()            
+            xlim = ax.get_xlim()
             
             if isinstance(value, int):
-                xlimspan = (value, xlim[1] + 0.5) if isinstance(cut, GreaterThanEqualCut) else (xlim[0] - 0.5, value)
+                offset = 0.5 if isinstance(cut, GreaterThanEqualCut) else -0.5
             else:
-                xlimspan = (value, xlim[1]) if isinstance(cut, GreaterThanEqualCut) else (xlim[0], value)            
+                offset = 0
                 
-            ax.axvspan(xlimspan[0], xlimspan[1], .97, alpha=0.7, color='r', hatch='*')
+            xlimspan = (value, xlim[1] + offset) if isinstance(cut, GreaterThanEqualCut) else (xlim[0] + offset, value)            
+            
+            ax.axvspan(xlimspan[0], xlimspan[1], .97, alpha=alpha, color=spancolor, hatch='*')
+            ax.axvline(x=xlimspan[0 if isinstance(cut, GreaterThanEqualCut) else 1] - offset, linewidth=1.5, color=spancolor)
         elif isinstance(cut, EqualCut):
             value = cut.value
         else:
             raise ValueError(f'Unknown cut type {type(cut)}')
         
         if isinstance(value, int):
-            ax.axvspan(value - .5, value + .5, .97, alpha=0.7, color='r', hatch='*')
+            ax.axvspan(value - .5, value + .5, .97, alpha=alpha, color=spancolor, hatch='*')
         else:
-            ax.axvline(x=value, linewidth=1.5, color='r', alpha=0.7)
+            ax.axvline(x=value, linewidth=1.5, color=spancolor)
+            
+
+def plot_total_efficiency(counts_first:dict, counts_last:dict, hypothesis:str,
+                          signal_categories:List[str],
+                          colorpalette:Optional[List[str]]=None,
+                          color_dict:Optional[dict]=None):
+    
+    if color_dict is not None:
+        colorpalette = [color_dict[key] for key in signal_categories]
+        
+    if colorpalette is None:
+        colorpalette = get_colorpalette()
+    
+    labels = np.array(signal_categories)
+    ratios = np.array([counts_last[key]/counts_first[key] for key in labels])
+    order = np.argsort(-ratios)
+    
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.bar(labels[order], ratios[order], color=colorpalette)
+    ax.legend()
+    
+    ax.set_title(f'Totel efficiency for {hypothesis}: {sum([counts_last[key] for key in labels])/sum([counts_first[key] for key in labels]):.1%}')
+    ax.set_ylabel('Efficiency after pre-cuts')
+    ax.bar_label(ax.containers[0], labels=[f'{r:.1%}' for r in ratios[order]])
+    
+    return fig
+
+def plot_cut_efficiencies(counts_all:List[dict], hypothesis:str, signal_categories:List[str],
+                          colorpalette:Optional[List[str]]=None,
+                          color_dict:Optional[dict]=None,
+                          width:float = 0.6, spacing:float=0.2):
+    
+    if color_dict is not None:
+        colorpalette = [color_dict[key] for key in signal_categories]
+        
+    if colorpalette is None:
+        colorpalette = get_colorpalette()
+    
+    figs = []
+    ncats = len(signal_categories)
+    
+    fig, ax = plt.subplots(figsize=(5*ncats, 6))
+    X_axis = (width*ncats + spacing)*np.arange(len(zhh_cuts(hypothesis)))
+    
+    ax.set_title(f'Efficiency of preselection cuts ({hypothesis})')
+    #ax.set_yscale('log')
+    
+    X_offsets = np.zeros(ncats) if ncats == 1 else (-(width/2 if (ncats % 2 != 0) else 0) + width * (
+        (ncats/2) - np.arange(ncats)
+    ))
+    
+    for i, key in enumerate(signal_categories):
+        ratios = []
+        labels = []
+        
+        for j, cut in enumerate(zhh_cuts(hypothesis)):
+            ratio = counts_all[j+1][key] / counts_all[j][key]
+            ratios.append(0 if math.isnan(ratio) else ratio)
+            labels.append(rf'${cut.label}$')
+        
+        ax.bar(X_axis + X_offsets[i], ratios, width, color=colorpalette[i], align='center', label=key)
+        ax.bar_label(ax.containers[i], labels=[f'{r:.1%}' for r in ratios])
+        
+    ax.set_xticks(X_axis, labels)
+    ax.legend(loc='lower right')
+    
+    figs.append(fig)
+    
+    return figs

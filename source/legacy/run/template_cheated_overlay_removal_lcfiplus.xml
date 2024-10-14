@@ -1,6 +1,13 @@
 <?xml version="1.0"?>
 <marlin xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://ilcsoft.desy.de/marlin/marlin.xsd">
   <constants>
+    <!-- These variables must be provided by the call to Marlin
+    The MarlinZHH alias in setup.sh populates these variables with
+    the correct values
+    -->
+    <constant name="ILDConfigDir" value="" />
+
+    <!-- These variables should be constant -->
     <constant name="lcgeo_DIR" value="/cvmfs/ilc.desy.de/sw/x86_64_gcc82_centos7/v02-02-02/lcgeo/v00-16-06" />
     <constant name="DetectorModel" value="ILD_l5_o1_v02" />
     <constant name="CompactFile" value="${lcgeo_DIR}/ILD/compact/${DetectorModel}/${DetectorModel}.xml" />
@@ -10,7 +17,7 @@
   <global>
     <parameter name="LCIOInputFiles">
       <!-- /afs/desy.de/group/flc/pool/duerigcf/DST_NOBGRD_zhh_e1e1hh.eL.pR.001.slcio -->
-      /nfs/dust/ilc/user/bliewert/fullflow_v3/zhh/slcio/rv02-02-03.sv02-02-03.mILD_l5_o1_v02_nobg.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n000.d_dstm_15807_0.slcio
+      /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02/v02-02-03/00015739/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n000.d_dstm_15739_0.slcio
     </parameter>
     <!-- limit the number of processed records (run+evt): -->  
     <parameter name="MaxRecordNumber" value="10001" />  
@@ -186,14 +193,14 @@
 
     <!--parameter name="FlavorTag.WeightsDirectory" type="string" value="/afs/desy.de/user/s/skawada/sonas_work/mini-DST/lcfiweights"/--> <!-- e.g. lcfiweights/lcfiweights_6q500_v04_p00_ildl5 -->
     <!--parameter name="FlavorTag.WeightsPrefix" type="string" value="6q500_v04_p00_ildl5" /--> <!-- e.g. 6q500_v04_p00_ildl5 -->
-    <parameter name="FlavorTag.WeightsDirectory" type="string" value="/afs/desy.de/user/b/bliewert/public/ILCSoft/ILDConfig/LCFIPlusConfig/lcfiweights"/>
+    <parameter name="FlavorTag.WeightsDirectory" type="string" value="${ILDConfigDir}/LCFIPlusConfig/lcfiweights"/>
     <parameter name="FlavorTag.WeightsPrefix" type="string" value="6q500_v04_p00_ildl5" />
     <parameter name="FlavorTag.BookName" type="string" value="bdt" />
     <parameter name="FlavorTag.PIDAlgo" type="string" value="lcfiplus" />
     <!--parameter name="FlavorTag.D0ProbFileName" type="string" value="/afs/desy.de/user/s/skawada/sonas_work/mini-DST/vtxprob/d0probv2_ildl5_6q500.root"/--> <!-- vtxprob/d0probv2_ildl5_6q500.root -->
     <!--parameter name="FlavorTag.Z0ProbFileName" type="string" value="/afs/desy.de/user/s/skawada/sonas_work/mini-DST/vtxprob/z0probv2_ildl5_6q500.root"/--> <!-- vtxprob/z0probv2_ildl5_6q500.root -->
-    <parameter name="FlavorTag.D0ProbFileName" type="string" value="/cvmfs/ilc.desy.de/sw/ILDConfig/v02-02-01/LCFIPlusConfig/vtxprob/d0probv2_ildl5_6q500.root"/>
-    <parameter name="FlavorTag.Z0ProbFileName" type="string" value="/cvmfs/ilc.desy.de/sw/ILDConfig/v02-02-01/LCFIPlusConfig/vtxprob/z0probv2_ildl5_6q500.root"/>
+    <parameter name="FlavorTag.D0ProbFileName" type="string" value="${ILDConfigDir}/LCFIPlusConfig/vtxprob/d0probv2_ildl5_6q500.root"/>
+    <parameter name="FlavorTag.Z0ProbFileName" type="string" value="${ILDConfigDir}/LCFIPlusConfig/vtxprob/z0probv2_ildl5_6q500.root"/>
 
     <parameter name="FlavorTag.CategoryDefinition1" type="string">nvtx==0</parameter>
     <parameter name="FlavorTag.CategoryPreselection1" type="string">trk1d0sig!=0</parameter>

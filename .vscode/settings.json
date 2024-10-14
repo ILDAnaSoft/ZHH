@@ -91,9 +91,9 @@
     "C_Cpp.intelliSenseEngine": "default",
     "cmake.buildDirectory": "${sourceDirectory}/build",
     "cmake.sourceDirectory": [
-        "/afs/desy.de/user/b/bliewert/public/MarlinWorkdirs/ZHH/source/LeptonPairing",
-        "/afs/desy.de/user/b/bliewert/public/MarlinWorkdirs/ZHH/source/Misclustering",
-        "/afs/desy.de/user/b/bliewert/public/MarlinWorkdirs/ZHH/source/PreSelection",
-        "/afs/desy.de/user/b/bliewert/public/MarlinWorkdirs/ZHH/source/ZHHKinfitProcessors"
+        "${workspaceFolder}/source/LeptonPairing",
+        "${workspaceFolder}/source/Misclustering",
+        "${workspaceFolder}/source/PreSelection",
+        "${workspaceFolder}/source/ZHHKinfitProcessors"
     ]
 }

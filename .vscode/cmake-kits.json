@@ -5,6 +5,6 @@
         "C": "/usr/bin/gcc",
         "CXX": "/usr/bin/g++"
       },
-      "environmentSetupScript" : "/afs/desy.de/user/b/bliewert/public/MarlinWorkdirs/MEM_HEP/setup.sh"
+      "environmentSetupScript" : "${workspaceFolder}/setup.sh"
     }
   ]

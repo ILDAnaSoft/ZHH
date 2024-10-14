@@ -2,7 +2,14 @@
 <marlin xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://ilcsoft.desy.de/marlin/marlin.xsd">
   
   <constants>
-    <constant name="lcgeo_DIR" value="/cvmfs/ilc.desy.de/sw/x86_64_gcc82_centos7/v02-02-02/lcgeo/v00-16-06" />
+    <!-- These variables must be provided by the call to Marlin
+    The MarlinZHH alias in setup.sh populates these variables with
+    the correct values
+    -->
+    <constant name="ILDConfigDir" value="" />
+    <constant name="lcgeo_DIR" value="/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-centos7-gcc12.2.0-opt/k4geo/0.20-e42drs/share/k4geo" />
+
+    <!-- These variables should be constant -->
     <constant name="DetectorModel" value="ILD_l5_o1_v02" />
     <constant name="CompactFile" value="${lcgeo_DIR}/ILD/compact/${DetectorModel}/${DetectorModel}.xml" />
     <constant name="OutputDirectory" value="." />
@@ -31,19 +38,18 @@
     <processor name="MyLeptonPairing"/>
     <processor name="MyFastJetProcessor" condition="" />
     <processor name="JC4FT"/>
-    <processor name="MyPreSelection"/>
-    <if condition="MyPreSelection.GoodEvent">
-      <processor name="MySLDCorrection" condition="" />
-      <processor name="MyErrorFlow" condition="" />
-      <processor name="MyZHHKinFitLeptonChannel" condition="" />
-      <!-- <processor name="MyLeptonErrorAnalysis" condition="" /> -->
-      <!-- <processor name="MyJetErrorAnalysis_woNu" condition="" /> -->
-      <!-- <processor name="MyJetErrorAnalysis" condition="" /> -->
-    </if>
+    <processor name="PreSelection"/>
+    <if condition="MyPreSelection.Passed"-->
+	<processor name="MySLDCorrection" condition="" />
+	<processor name="MyErrorFlow" condition="" />
+	<processor name="MyZHHKinFitLeptonChannel" condition="" />
+	<processor name="MyLeptonErrorAnalysis" condition="" />
+	<processor name="MyJetErrorAnalysis_woNu" condition="" />
+	<processor name="MyJetErrorAnalysis" condition="" />
+    </if> 
     <if condition="MyHdecayMode.GoodEvent">
-      <processor name="mytruejet"/>
-      <!-- <processor name="MyZHHPostRecoMEProcessor"/> -->
-      <processor name="MyMisclustering"/>
+	<processor name="mytruejet"/>
+	<processor name="MyMisclustering"/>
     </if> 
     <processor name="MyLCIOOutputProcessor"/>
   </execute>
@@ -110,7 +116,7 @@
     <parameter name="MaxRecordNumber" value="100"/>
     <parameter name="SkipNEvents" value="0" />
     <parameter name="SupressCheck" value="false" />
-    <parameter name="GearXMLFile">/cvmfs/ilc.desy.de/sw/ILDConfig/v02-02-02/StandardConfig/production/Gear/gear_ILD_l5_v02.xml</parameter>
+    <parameter name="GearXMLFile">${ILDConfigDir}/StandardConfig/production/Gear/gear_ILD_l5_v02.xml</parameter>
     <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT">DEBUG</parameter>
     <parameter name="RandomSeed" value="1234567890" />
     <parameter name="OutputSteeringFile" value="" />
@@ -402,14 +408,14 @@
 
     <!--parameter name="FlavorTag.WeightsDirectory" type="string" value="/afs/desy.de/user/s/skawada/sonas_work/mini-DST/lcfiweights"/--> <!-- e.g. lcfiweights/lcfiweights_6q500_v04_p00_ildl5 -->
     <!--parameter name="FlavorTag.WeightsPrefix" type="string" value="6q500_v04_p00_ildl5" /--> <!-- e.g. 6q500_v04_p00_ildl5 -->
-    <parameter name="FlavorTag.WeightsDirectory" type="string" value="/afs/desy.de/user/b/bliewert/public/ILCSoft/ILDConfig/LCFIPlusConfig/lcfiweights"/>
+    <parameter name="FlavorTag.WeightsDirectory" type="string" value="${ILDConfigDir}/LCFIPlusConfig/lcfiweights"/>
     <parameter name="FlavorTag.WeightsPrefix" type="string" value="6q500_v04_p00_ildl5" />
     <parameter name="FlavorTag.BookName" type="string" value="bdt" />
     <parameter name="FlavorTag.PIDAlgo" type="string" value="lcfiplus" />
     <!--parameter name="FlavorTag.D0ProbFileName" type="string" value="/afs/desy.de/user/s/skawada/sonas_work/mini-DST/vtxprob/d0probv2_ildl5_6q500.root"/--> <!-- vtxprob/d0probv2_ildl5_6q500.root -->
     <!--parameter name="FlavorTag.Z0ProbFileName" type="string" value="/afs/desy.de/user/s/skawada/sonas_work/mini-DST/vtxprob/z0probv2_ildl5_6q500.root"/--> <!-- vtxprob/z0probv2_ildl5_6q500.root -->
-    <parameter name="FlavorTag.D0ProbFileName" type="string" value="/cvmfs/ilc.desy.de/sw/ILDConfig/v02-02-01/LCFIPlusConfig/vtxprob/d0probv2_ildl5_6q500.root"/>
-    <parameter name="FlavorTag.Z0ProbFileName" type="string" value="/cvmfs/ilc.desy.de/sw/ILDConfig/v02-02-01/LCFIPlusConfig/vtxprob/z0probv2_ildl5_6q500.root"/>
+    <parameter name="FlavorTag.D0ProbFileName" type="string" value="${ILDConfigDir}/LCFIPlusConfig/vtxprob/d0probv2_ildl5_6q500.root"/>
+    <parameter name="FlavorTag.Z0ProbFileName" type="string" value="${ILDConfigDir}/LCFIPlusConfig/vtxprob/z0probv2_ildl5_6q500.root"/>
 
     <parameter name="FlavorTag.CategoryDefinition1" type="string">nvtx==0</parameter>
     <parameter name="FlavorTag.CategoryPreselection1" type="string">trk1d0sig!=0</parameter>
