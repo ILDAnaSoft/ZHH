@@ -34,3 +34,4 @@ Ranlux.coonf
 .env.sh
 .env.bck
 install/**
+*notebooks/**

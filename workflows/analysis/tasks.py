@@ -4,7 +4,7 @@ from math import ceil
 from law import LocalFileTarget
 
 from analysis.framework import HTCondorWorkflow
-from zhh import get_raw_files, presel_stack, plot_preselection_pass, is_readable, ProcessIndex, \
+from zhh import get_raw_files, presel_stack, is_readable, ProcessIndex, \
     get_adjusted_time_per_event, get_runtime_analysis, get_sample_chunk_splits, get_process_normalization, \
     get_preselection_passes, get_chunks_factual, get_final_state_counts
 from phc import export_figures, ShellTask, BaseTask, ForcibleTask
@@ -311,6 +311,8 @@ class CreatePlots(BaseTask):
         return self.local_target("plots.pdf")
 
     def run(self):
+        import matplotlib.pyplot as plt
+        
         # Get targets of dependendies and get the file paths of relevant files 
         inputs = self.input()['collection'].targets
         
@@ -328,8 +330,9 @@ class CreatePlots(BaseTask):
         vecs = np.concatenate(vecs)
         vecs[vecs < 0] = 0 # setting invalid entries to 0
         
-        # Create the plots and save them to
-        figs = plot_preselection_pass(vecs)
+        # TODO
+        fig, ax = plt.subplots()
+        figs = [fig]
         
         self.output().parent.touch() # Create intermediate directories and save plots    
         export_figures(self.output().path, figs)

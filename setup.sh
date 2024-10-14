@@ -21,46 +21,8 @@ function usage() {
 
 ZHH_K4H_RELEASE_DEFAULT="2024-04-12"
 
-function zhh_install() {
-    local INSTALL_DIR="$1"
-
-    if [ -d $INSTALL_DIR ]; then
-        echo "install-dir <$INSTALL_DIR> must be empty"
-        return 1
-    fi
-
-    if [[ -f ".env" ]]; then
-        read -p "You wish to install the dependencies, but an .env file which would be overwritten already exists. Do you wish to back it up to .env.bck and continue? Any existing .env.bck will be overwritten. (n)" yn
-        if [[ "$yn" = "y" ]]; then
-            rm -f .env.bck
-            mv .env .env.bck
-        else
-            return 1
-        fi
-    fi
-
-    mkdir -p $INSTALL_DIR && cd $INSTALL_DIR
-
-    git clone --recurse-submodules https://gitlab.desy.de/ilcsoft/MarlinML
-    git clone https://gitlab.desy.de/ilcsoft/variablesfordeepmlflavortagger
-    git clone https://gitlab.desy.de/ilcsoft/btaggingvariables
-    git clone https://github.com/iLCSoft/ILDConfig.git
-
-    export MarlinML="$(pwd)/MarlinML"
-    export VariablesForDeepMLFlavorTagger="$(pwd)/variablesfordeepmlflavortagger"
-    export BTaggingVariables="$(pwd)/btaggingvariables"
-    export ILD_CONFIG_DIR="$(pwd)/ILDConfig"
-
-    # Save directories to .env
-    cat >> "$REPO_ROOT/.env" <<EOF
-REPO_ROOT="$REPO_ROOT"
-MarlinML="$MarlinML"
-VariablesForDeepMLFlavorTagger="$VariablesForDeepMLFlavorTagger"
-BTaggingVariables="$BTaggingVariables"
-TORCH_PATH="$TORCH_PATH"
-ILD_CONFIG_DIR="$ILD_CONFIG_DIR"
-
-EOF
+function zhh_echo() {
+    echo "ZHH> $1"
 }
 
 function zhh_recompile() {
@@ -82,7 +44,7 @@ function zhh_recompile() {
     # Compile the ML and helper libraries
     for module_to_compile in "$MarlinML" "$VariablesForDeepMLFlavorTagger" "$BTaggingVariables"
     do
-        compile_pkg $module_to_compile && echo "+++ Successfully compiled $module_to_compile +++" || { echo "!!! Error [$?] while trying to compile $module_to_compile !!!"; cd $REPO_ROOT; return 1; }
+        compile_pkg $module_to_compile && zhh_echo "+++ Successfully compiled $module_to_compile +++" || { zhh_echo "!!! Error [$?] while trying to compile $module_to_compile !!!"; cd $REPO_ROOT; return 1; }
     done
 
     cd $REPO_ROOT
@@ -104,10 +66,10 @@ function zhh_attach_marlin_dlls() {
 
     for lib in "${libs[@]}"; do
         if [[ ! -f "$lib" ]]; then
-            echo "+++ WARNING +++ Library <$(basename $lib)> not found at $lib. Make sure to compile it before you start Marlin. Continuing..."
+            zhh_echo "+++ WARNING +++ Library <$(basename $lib)> not found at $lib. Make sure to compile it before you start Marlin. Continuing..."
         fi
 
-        echo "Attaching library $(basename $lib)"
+        zhh_echo "Attaching library $(basename $lib)"
         export MARLIN_DLL=$MARLIN_DLL:"$lib"
     done
 
@@ -139,26 +101,26 @@ for ((i=1; i<=$#; i++)); do
                 list_releases $argn
                 return 0
             else
-                echo "Unsupported OS $argn, aborting..."
+                zhh_echo "Unsupported OS $argn. Aborting."
                 usage
                 return 1
             fi
             ;;
         --install-dir|-d)
             if [ -z "$argn" ]; then
-                echo "install-dir requires a non-empty argument"
+                zhh_echo "install-dir requires a non-empty argument"
                 return 1
             else
-                echo "Option: Setting install-dir to $argn"
+                zhh_echo "Option: Setting install-dir to $argn"
                 ZHH_INSTALL_DIR="$argn"
             fi
             ;;
         -r)
             if [ -z "$argn" ]; then
-                echo "release requires a non-empty argument"
+                zhh_echo "release requires a non-empty argument"
                 return 1
             else
-                echo "Option: Setting release to $argn"
+                zhh_echo "Option: Setting release to $argn"
                 ZHH_K4H_RELEASE="$argn"
             fi
             ;;
@@ -168,7 +130,7 @@ for ((i=1; i<=$#; i++)); do
         *)
             eval "prev=\${$((i-1))}"
             if [ "$prev" != "-r" ]; then
-                echo "Unknown argument $arg, aborting\n"
+                zhh_echo "Unknown argument $arg. Aborting.\n"
                 usage
                 return 1
             fi
@@ -179,13 +141,15 @@ done
 #########################################
 
 if [[ ! -d "$REPO_ROOT" ]]; then
-    echo "Trying to infer ZHH REPO_ROOT..."
+    zhh_echo "Trying to infer REPO_ROOT..."
 
-    REPO_ROOT=$(readlink -f "$0")
+    REPO_ROOT=$(realpath "${BASH_SOURCE[${#BASH_SOURCE[@]} - 1]}")
     REPO_ROOT=$(dirname "$REPO_ROOT")
 
-    if [[ ! -d "$REPO_ROOT/zhh" ]]; then
-        echo "ZHH REPO_ROOT not found, aborting..."
+    if [[ -d "$REPO_ROOT/zhh" ]]; then
+        zhh_echo "Found REPO_ROOT at <$REPO_ROOT>"
+    else
+        zhh_echo "REPO_ROOT not found. Aborting."
         return 1
     fi
 fi
@@ -195,21 +159,27 @@ if [[ -z "${MARLIN_DLL}" ]]; then
 fi
 
 if [[ -f "${REPO_ROOT}/.env" && -z $ZHH_ENV_DOT ]]; then
-    echo "Loading local environment file .env..."
+    zhh_echo "Loading local environment file .env..."
     export $(grep -v '^#' "${REPO_ROOT}/.env" | xargs)
     export ZHH_ENV_DOT=true
 fi
 
-if [[ -f "${REPO_ROOT}/.env.sh" && -z $ZHH_ENV_DOT_SH ]]; then
-    echo "Sourcing local sh file .env.sh..." 
+if [[ -f "${REPO_ROOT}/.env.sh" ]]; then
+    zhh_echo "Sourcing local sh file .env.sh..." 
     source "${REPO_ROOT}/.env.sh"
-    export ZHH_ENV_DOT_SH=true
 fi
 
 # Automatically find pytorch
 if [[ -z "${TORCH_PATH}" ]]; then
-    echo "Trying to find pytorch..."
-    TORCH_PATH=$(dirname $(python -c 'import torch; print(f"{torch.__file__}")'))
+    zhh_echo "Trying to find pytorch..."
+    export TORCH_PATH=$(dirname $(python -c 'import torch; print(f"{torch.__file__}")'))
+
+    if [[ -d "${TORCH_PATH}" ]]; then
+        zhh_echo "Found pytorch at <$TORCH_PATH>"
+    else
+        zhh_echo "Pytorch not found, please set TORCH_PATH. Aborting."
+        return 1
+    fi
 fi
 
 if [[ $CMAKE_PREFIX_PATH != *"torch/share/cmake"* ]]; then
@@ -218,22 +188,44 @@ if [[ $CMAKE_PREFIX_PATH != *"torch/share/cmake"* ]]; then
 fi
 
 if [[ "$ZHH_COMMAND" = "install" ]]; then
-    echo "Attempting to install dependencies..."
-    zhh_install $ZHH_INSTALL_DIR
+    zhh_echo "Attempting to install dependencies..."
+
+    read -p "Where do you wish to install all the dependencies? ($ZHH_INSTALL_DIR)" zhh_install_dir
+    zhh_install_dir=${zhh_install_dir:-$ZHH_INSTALL_DIR}
+    
+    source $REPO_ROOT/shell/zhh_install_conda.sh
+    zhh_install_conda && zhh_echo "Successfully located conda installation." || ( zhh_echo "Could not locate conda installation. Aborting."; return 1; )
+
+    ( echo "Initializing sub-shell to install python dependencies..."
+    local shell_name="$( [ -z "${ZSH_VERSION}" ] && echo "bash" || echo "zsh" )"
+    eval "$($CONDA_ROOT/bin/conda shell.$shell_name hook)"
+    conda activate $CONDA_ENV
+    pip install -r $REPO_ROOT/requirements.txt
+    )
+
+    source $REPO_ROOT/shell/zhh_install_deps.sh
+    zhh_install_deps $zhh_install_dir
     
     ZHH_COMMAND="compile"
 fi
 
-if [[ ! -d "$MarlinML" || ! -d "$VariablesForDeepMLFlavorTagger" || ! -d "$BTaggingVariables" ]]; then
-    echo "MarlinML, VariablesForDeepMLFlavorTagger and BTaggingVariables must be set and point to valid directories. Use --install to download and compile them inside here."
+if [[ ! -d "$MarlinML" || ! -d "$VariablesForDeepMLFlavorTagger" || ! -d "$BTaggingVariables" || ! -d "${ILD_CONFIG_DIR}" ]]; then
+    zhh_echo "Error: MarlinML, VariablesForDeepMLFlavorTagger, BTaggingVariables and ILD_CONFIG_DIR must be set and point to valid directories."
+    zhh_echo "    Use --install to download and/or compile them here. Aborting."
     return 1
 fi
 
+if [[ ! -d "$CONDA_ROOT/envs/$CONDA_ENV" ]]; then
+    zhh_echo "Warning: <$CONDA_ROOT/envs/$CONDA_ENV> does not point to a valid conda environment."
+    zhh_echo "    Job submissions via law may and calls to is_root_readable/is_json_readable will fail."
+    zhh_echo "    Check your conda installation."
+fi
+
 if [[ "$ZHH_COMMAND" = "compile" ]]; then
-    echo "Attempting to recompile dependencies..."
+    zhh_echo "Attempting to recompile dependencies..."
     zhh_recompile
 
-    echo "Successfully compiled all dependencies and libraries"
+    zhh_echo "Successfully compiled all dependencies and libraries"
 fi
 
 if [[ $MARLIN_DLL != *"libFinalStateRecorder"* ]]; then
@@ -244,3 +236,29 @@ alias MarlinZHH_ll="Marlin $REPO_ROOT/scripts/ZHH_v3_ll.xml --constant.ParticleN
 alias MarlinZHH_vv="Marlin $REPO_ROOT/scripts/ZHH_v3_vv.xml --constant.ParticleNetScriptFile=\"$MarlinML/python/particlenet.pt\" --constant.ILDConfigDir=\"$ILD_CONFIG_DIR\""
 alias MarlinZHH_qq="Marlin $REPO_ROOT/scripts/ZHH_v3_qq.xml --constant.ParticleNetScriptFile=\"$MarlinML/python/particlenet.pt\" --constant.ILDConfigDir=\"$ILD_CONFIG_DIR\""
 alias MarlinZHH="Marlin $REPO_ROOT/scripts/ZHH_v2.xml --constant.ILDConfigDir=\"$ILD_CONFIG_DIR\""
+
+is_root_readable() (
+    local root_tree=${2:-None}
+
+    if [ "$root_tree" != "None" ]; then
+        local root_tree="'$root_tree'"
+    fi
+
+    local res=$($CONDA_ROOT/envs/$CONDA_ENV/bin/python -c "from phc import root_file_readable; print(root_file_readable('${1}', ${root_tree}))")
+    
+    if [ "$res" = "True" ]; then
+        return 0
+    else
+        return 1
+    fi
+)
+
+is_json_readable() (
+    local res=$($CONDA_ROOT/envs/$CONDA_ENV/bin/python -c "from phc import json_file_readable; print(json_file_readable('${1}'))")
+    
+    if [ "$res" = "True" ]; then
+        return 0
+    else
+        return 1
+    fi
+)
