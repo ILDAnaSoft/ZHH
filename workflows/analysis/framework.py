@@ -10,11 +10,17 @@ and only needs to be defined once per user / group / etc.
 
 import os, luigi, law, math
 from law.config import Config
-from typing import List
+from typing import List, Optional
 
 # the htcondor workflow implementation is part of a law contrib package
 # so we need to explicitly load it
 law.contrib.load("htcondor")
+
+# Keep track of all job submissions during this session of law
+# This is mainly used as a fix to submit jobs with different (higher)
+# requirements in case they fail the first time. Important as for some
+# samples with many jets, the jobs fail due to memory issues.
+session_submissions = {}
 
 class HTCondorWorkflow(law.htcondor.HTCondorWorkflow):
     """
@@ -62,19 +68,27 @@ class HTCondorWorkflow(law.htcondor.HTCondorWorkflow):
         config.custom_content.append(('getenv', 'true'))
         #config.custom_content.append(('request_cpus', '1'))
         
-        if False:
-            # Only for failing jobs
-            config.custom_content.append(("request_runtime", math.floor(12 * 3600)))
+        name:Optional[str] = None
+        for key, value in config.custom_content:
+            if key == 'initialdir':
+                name = os.path.basename(os.path.dirname(value))
+        
+        if name is not None and name in session_submissions:
+            print(f'Re-Running task {name} with increases requirements')
+            
             config.custom_content.append(('request_memory', '16000 Mb'))
+            config.custom_content.append(("request_runtime", math.floor(12 * 3600)))
+            
+            session_submissions[name] += 1
         else:
             # Default config: 4GB RAM and 3h of runtime
-            config.custom_content.append(('request_memory', '4000 Mb')) # 16 GB
+            config.custom_content.append(('request_memory', '4000 Mb'))
             if self.max_runtime:
                 config.custom_content.append(("request_runtime", math.floor(self.max_runtime * 3600)))
+                
+            session_submissions[name] = 0
         
         config.custom_content.append(('requirements', 'Machine =!= LastRemoteHost'))
-        
-        if len(branch_keys) > 4000:
-            config.custom_content.append(('materialize_max_idle', 1024))
+        config.custom_content.append(('materialize_max_idle', 1024))
 
         return config
