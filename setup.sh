@@ -79,6 +79,22 @@ function zhh_attach_marlin_dlls() {
     # export MARLIN_DLL="/afs/desy.de/user/u/ueinhaus/pool/MarlinReco_v01-35/lib/libMarlinReco.so.1.35.0:$MARLIN_DLL"
 }
 
+# Inferring REPO_ROOT
+if [[ ! -d "$REPO_ROOT" ]]; then
+    zhh_echo "Info: Trying to infer REPO_ROOT..."
+
+    REPO_ROOT=$(realpath "${BASH_SOURCE[${#BASH_SOURCE[@]} - 1]}")
+    REPO_ROOT=$(dirname "$REPO_ROOT")
+
+    if [[ -d "$REPO_ROOT/zhh" && -d "$REPO_ROOT/source" ]]; then
+        zhh_echo "Success: Found REPO_ROOT at <$REPO_ROOT>"
+    else
+        zhh_echo "Error: REPO_ROOT not found. Aborting."
+        return 1
+    fi
+fi
+
+# Parse user input
 ZHH_K4H_RELEASE=$ZHH_K4H_RELEASE_DEFAULT
 ZHH_COMMAND=""
 
@@ -92,35 +108,23 @@ for ((i=1; i<=$#; i++)); do
             ;;
         --install)
             ZHH_COMMAND="install"
-            ZHH_INSTALL_DIR="./dependencies"
-            return 0
-            if [ ! -n "$argn" ]; then
-                list_releases $os
-                return 0
-            elif [ -n "$argn" ] && [[ "$argn" =~ ^(almalinux|centos|ubuntu) ]]; then
-                list_releases $argn
-                return 0
-            else
-                zhh_echo "Unsupported OS $argn. Aborting."
-                usage
-                return 1
-            fi
+            ZHH_INSTALL_DIR=$( realpath "$REPO_ROOT/dependencies" )
+
+            zhh_echo "Option: Setting install-dir to default <$ZHH_INSTALL_DIR>"
             ;;
         --install-dir|-d)
-            if [ -z "$argn" ]; then
-                zhh_echo "install-dir requires a non-empty argument"
-                return 1
+            if [[ -z "$argn" ]]; then
+                zhh_echo "Error: install-dir requires a non-empty argument. Aborting." && return 1
             else
-                zhh_echo "Option: Setting install-dir to $argn"
-                ZHH_INSTALL_DIR="$argn"
+                ZHH_INSTALL_DIR="$( realpath $argn )"
+                zhh_echo "Option: Setting install-dir to <$ZHH_INSTALL_DIR>" 
             fi
             ;;
         -r)
-            if [ -z "$argn" ]; then
-                zhh_echo "release requires a non-empty argument"
-                return 1
+            if [[ -z "$argn" ]]; then
+                zhh_echo "Error: release requires a non-empty argument. Aborting." && return 1
             else
-                zhh_echo "Option: Setting release to $argn"
+                zhh_echo "Option: Setting release to <$argn>"
                 ZHH_K4H_RELEASE="$argn"
             fi
             ;;
@@ -129,7 +133,7 @@ for ((i=1; i<=$#; i++)); do
             ;;
         *)
             eval "prev=\${$((i-1))}"
-            if [ "$prev" != "-r" ]; then
+            if [[ "$prev" != "-r" && "$prev" != "--install-dir" && "$prev" != "-d" ]]; then
                 zhh_echo "Unknown argument $arg. Aborting.\n"
                 usage
                 return 1
@@ -138,28 +142,16 @@ for ((i=1; i<=$#; i++)); do
     esac
 done
 
-#########################################
-
-if [[ ! -d "$REPO_ROOT" ]]; then
-    zhh_echo "Trying to infer REPO_ROOT..."
-
-    REPO_ROOT=$(realpath "${BASH_SOURCE[${#BASH_SOURCE[@]} - 1]}")
-    REPO_ROOT=$(dirname "$REPO_ROOT")
-
-    if [[ -d "$REPO_ROOT/zhh" ]]; then
-        zhh_echo "Found REPO_ROOT at <$REPO_ROOT>"
-    else
-        zhh_echo "REPO_ROOT not found. Aborting."
-        return 1
-    fi
-fi
-
 if [[ -z "${MARLIN_DLL}" ]]; then
     if [[ ! -f "/cvmfs/sw.hsf.org/key4hep/setup.sh" ]]; then
         zhh_echo "Error: key4hep stack not found. Make sure CVMFS is available and sw.hsf.org loaded. Aborting." && return 1
     fi
     source /cvmfs/sw.hsf.org/key4hep/setup.sh -r $ZHH_K4H_RELEASE
+else
+    zhh_echo "Info: key4hep stack already loaded."
 fi
+
+#########################################
 
 if [[ -f "${REPO_ROOT}/.env" && -z $ZHH_ENV_DOT ]]; then
     zhh_echo "Loading local environment file .env..."
