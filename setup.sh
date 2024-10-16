@@ -155,6 +155,9 @@ if [[ ! -d "$REPO_ROOT" ]]; then
 fi
 
 if [[ -z "${MARLIN_DLL}" ]]; then
+    if [[ ! -f "/cvmfs/sw.hsf.org/key4hep/setup.sh" ]]; then
+        zhh_echo "Error: key4hep stack not found. Make sure CVMFS is available and sw.hsf.org loaded. Aborting." && return 1
+    fi
     source /cvmfs/sw.hsf.org/key4hep/setup.sh -r $ZHH_K4H_RELEASE
 fi
 
@@ -177,8 +180,7 @@ if [[ -z "${TORCH_PATH}" ]]; then
     if [[ -d "${TORCH_PATH}" ]]; then
         zhh_echo "Found pytorch at <$TORCH_PATH>"
     else
-        zhh_echo "Pytorch not found, please set TORCH_PATH. Aborting."
-        return 1
+        zhh_echo "Pytorch not found, please set TORCH_PATH. Aborting." && return 1
     fi
 fi
 
@@ -209,12 +211,6 @@ if [[ "$ZHH_COMMAND" = "install" ]]; then
     ZHH_COMMAND="compile"
 fi
 
-if [[ ! -d "$MarlinML" || ! -d "$VariablesForDeepMLFlavorTagger" || ! -d "$BTaggingVariables" || ! -d "${ILD_CONFIG_DIR}" ]]; then
-    zhh_echo "Error: MarlinML, VariablesForDeepMLFlavorTagger, BTaggingVariables and ILD_CONFIG_DIR must be set and point to valid directories."
-    zhh_echo "    Use --install to download and/or compile them here. Aborting."
-    return 1
-fi
-
 if [[ ! -d "$CONDA_ROOT/envs/$CONDA_ENV" ]]; then
     zhh_echo "Warning: <$CONDA_ROOT/envs/$CONDA_ENV> does not point to a valid conda environment."
     zhh_echo "    Job submissions via law may and calls to is_root_readable/is_json_readable will fail."
@@ -226,6 +222,12 @@ if [[ "$ZHH_COMMAND" = "compile" ]]; then
     zhh_recompile
 
     zhh_echo "Successfully compiled all dependencies and libraries"
+fi
+
+if [[ ! -d "$MarlinML" || ! -d "$VariablesForDeepMLFlavorTagger" || ! -d "$BTaggingVariables" || ! -d "${ILD_CONFIG_DIR}" ]]; then
+    zhh_echo "Error: MarlinML, VariablesForDeepMLFlavorTagger, BTaggingVariables and ILD_CONFIG_DIR must be set and point to valid directories."
+    zhh_echo "    Use --install to download and/or compile them here. Aborting."
+    return 1
 fi
 
 if [[ $MARLIN_DLL != *"libFinalStateRecorder"* ]]; then
