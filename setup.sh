@@ -108,15 +108,19 @@ for ((i=1; i<=$#; i++)); do
             ;;
         --install)
             ZHH_COMMAND="install"
-            ZHH_INSTALL_DIR=$( realpath "$REPO_ROOT/dependencies" )
-
-            zhh_echo "Option: Setting install-dir to default <$ZHH_INSTALL_DIR>"
             ;;
         --install-dir|-d)
             if [[ -z "$argn" ]]; then
                 zhh_echo "Error: install-dir requires a non-empty argument. Aborting." && return 1
             else
-                ZHH_INSTALL_DIR="$( realpath $argn )"
+                mkdir -p "$argn" || ( zhh_echo "Error: Could not create directory <$argn>. Aborting." && return 1 )
+                ZHH_INSTALL_DIR="$( realpath "$argn" )"
+
+                if [[ $? -ne "0" ]]; then
+                    zhh_echo "Error: Could not resolve dependencies directory. Aborting." && return 1
+                else
+                    zhh_echo "Option: Setting install-dir to default <$ZHH_INSTALL_DIR>"
+                fi
                 zhh_echo "Option: Setting install-dir to <$ZHH_INSTALL_DIR>" 
             fi
             ;;
@@ -182,24 +186,34 @@ if [[ $CMAKE_PREFIX_PATH != *"torch/share/cmake"* ]]; then
 fi
 
 if [[ "$ZHH_COMMAND" = "install" ]]; then
-    zhh_echo "Attempting to install dependencies..."
+    unset zhh_install_dir
 
-    read -p "Where do you wish to install all the dependencies? ($ZHH_INSTALL_DIR)" zhh_install_dir
-    zhh_install_dir=${zhh_install_dir:-$ZHH_INSTALL_DIR}
-    
+    if [[ -z "$ZHH_INSTALL_DIR" ]]; then
+        ZHH_INSTALL_DIR=$( realpath "$REPO_ROOT/dependencies" )
+
+        read -p "Where do you wish to install all the dependencies? ($ZHH_INSTALL_DIR)" zhh_install_dir
+        zhh_install_dir=${$ZHH_INSTALL_DIR:-zhh_install_dir}
+    else
+        zhh_install_dir="$ZHH_INSTALL_DIR"
+    fi
+
+    zhh_echo "Attempting to install dependencies to <$zhh_install_dir>..."
+
     source $REPO_ROOT/shell/zhh_install_conda.sh
     zhh_install_conda && zhh_echo "Successfully located conda installation." || ( zhh_echo "Could not locate conda installation. Aborting."; return 1; )
 
-    ( echo "Initializing sub-shell to install python dependencies..."
-    local shell_name="$( [ -z "${ZSH_VERSION}" ] && echo "bash" || echo "zsh" )"
-    eval "$($CONDA_ROOT/bin/conda shell.$shell_name hook)"
-    conda activate $CONDA_ENV
-    pip install -r $REPO_ROOT/requirements.txt
-    )
+    if [[ "true" == "false" ]]; then
+        ( echo "Initializing sub-shell to install python dependencies..."
+        shell_name="$( [ -z "${ZSH_VERSION}" ] && echo "bash" || echo "zsh" )"
+        eval "$($CONDA_ROOT/bin/conda shell.$shell_name hook)"
+        conda activate $CONDA_ENV
+        pip install -r $REPO_ROOT/requirements.txt
+        )
+    fi
 
     source $REPO_ROOT/shell/zhh_install_deps.sh
     zhh_install_deps $zhh_install_dir
-    
+    return 0
     ZHH_COMMAND="compile"
 fi
 

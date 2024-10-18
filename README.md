@@ -1,8 +1,22 @@
 # ZHH
 Code for ZHH analysis with ILD
 
-### Setup library paths
-From the top level of the repository execute
+### Setup
+
+Running the analysis requires dependencies provided by the key4hep stack *and* more. For a list of them, see [this list](####list-of-required-dependencies).
+
+The recommended way to setup the environment variables is to use `setup.sh`. It can install all necessary dependencies (if required) or use your versions of them.
+
+#### Fresh install
+
+```shell
+source setup.sh --install --install-dir ~/nfs/zhh_dependencies
+```
+
+This will download and 
+
+#### Using an existing setup
+
 ```shell
 source setup.sh
 ```
@@ -11,19 +25,29 @@ You can verify the path by doing
 echo $MARLIN_DLL
 ```
 
-### Compilation and installation of processors
-Ensure that you have setup the above library paths.
+#### List of required dependencies
+
+Dependencies are 
+
+
+
+
+### Compiling and installing processors
 
 For each processor under `source/`, do
 ```shell
 mkdir build
 cd build
-cmake -C $ILCSOFT/ILCSoft.cmake ..
+cmake -DCMAKE_CXX_STANDARD=17 ..
 make install
 ```
 
+The resulting library file `*.so` must then be added to `MARLIN_DLL` as via
+
+    $MARLIN_DLL=$MARLIN_DLL:<Path to compiled library file>
+
 #### Helper script
-If you compile a freshly cloned copy from scratch, you _might_ want to use the `compile_from_scratch.sh` script.
+If you compile a freshly cloned copy of all ZHH processors from scratch, you might want to use the `compile_from_scratch.sh` script.
 For that you need to `source` it from the top level directory of the repository. It saves some typing, that's all.
 
 ### Running the full analysis

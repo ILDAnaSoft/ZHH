@@ -11,28 +11,33 @@ function zhh_install_conda() {
     local default_python_version="3.11"
     
     # Set $CONDA_ROOT
-    if [[ ! -d $CONDA_ROOT ]]; then        
+    if [[ -z $CONDA_ROOT || ! -d $CONDA_ROOT ]]; then        
         if [[ ! -z $CONDA_ROOT ]]; then
             echo "Default conda install path set to <CONDA_ROOT>=<$CONDA_ROOT>"
             default_conda_install_dir=$CONDA_ROOT
         fi
 
-        read -p "Do you with to install conda? (y) " conda_do_install
-        local conda_do_install=${conda_do_install:-"y"}
+        if [[ -f "$default_conda_install_dir/etc/profile.d/conda.sh" ]]; then
+            echo "Discovered conda at default directory <$default_conda_install_dir>"
+            export CONDA_ROOT=$default_conda_install_dir
+        else
+            read -p "Do you with to install conda? (y) " conda_do_install
+            local conda_do_install=${conda_do_install:-"y"}
 
-        if [[ $conda_do_install != "y" ]]; then
-            return 1
+            if [[ $conda_do_install != "y" ]]; then
+                return 1
+            fi
+            
+            read -p "Please enter the base path of the conda installation (nfs is recommended over afs). ($default_conda_install_dir) " conda_install_dir
+            local conda_install_dir=${conda_install_dir:-$default_conda_install_dir}
+
+            if [[ -d $conda_install_dir ]]; then
+                echo "The directory <$conda_install_dir> already exists. Please remove it or choose another directory. Aborting." && return 1
+            fi
+
+            wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh -O /tmp/miniforge.sh && bash /tmp/miniforge.sh -p $conda_install_dir || (echo "Could not install conda to <$conda_install_dir>. Aborting." && return 1 )
+            export CONDA_ROOT=$conda_install_dir
         fi
-        
-        read -p "Please enter the base path of the conda installation (nfs is recommended over afs). ($default_conda_install_dir) " conda_install_dir
-        local conda_install_dir=${conda_install_dir:-$default_conda_install_dir}
-
-        if [[ -d $conda_install_dir ]]; then
-            echo "The directory <$conda_install_dir> already exists. Please remove it or choose another directory. Aborting." && return 1
-        fi
-
-        wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh -O /tmp/miniforge.sh && bash /tmp/miniforge.sh -p $conda_install_dir || (echo "Could not install conda to <$conda_install_dir>. Aborting." && return 1 )
-        export CONDA_ROOT=$conda_install_dir
     fi
 
     echo "<CONDA_ROOT> set to <$CONDA_ROOT>"
@@ -54,8 +59,10 @@ function zhh_install_conda() {
         read -p "Please enter a python version to use. ($default_python_version) " python_version
         local python_version=${python_version:-$default_python_version}
 
-        mamba create -n $conda_env_name python=$python_version -y || (echo "Could not create conda environment <$conda_env_name> with python version <$python_version>. Aborting." && return 1)
-        
+        if [[ ! -d "$CONDA_ROOT/envs/$conda_env_name" ]]; then
+            mamba create -n $conda_env_name python=$python_version -y || (echo "Could not create conda environment <$conda_env_name> with python version <$python_version>. Aborting." && return 1)
+        fi
+
         export CONDA_ENV=$conda_env_name
         export PYTHON_VERSION=$python_version
     fi
