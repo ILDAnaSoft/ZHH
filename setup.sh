@@ -213,7 +213,7 @@ if [[ "$ZHH_COMMAND" = "install" ]]; then
 
     source $REPO_ROOT/shell/zhh_install_deps.sh
     zhh_install_deps $zhh_install_dir
-    return 0
+    
     ZHH_COMMAND="compile"
 fi
 
