@@ -568,8 +568,53 @@
         <!--parameter name="Verbosity" type="string">DEBUG </parameter-->
         <parameter name="CollectionRefinedJets" type="string" value="RefinedJets" />
         <parameter name="CollectionRefinedVertices" type="string" value="RefinedVertex" />
-        <parameter name="CollectionPFOs" type="string" value="PandoraPFOs" /> 
+        <parameter name="CollectionPFOs" type="string" value="PandoraPFOs" />
 
+        <parameter name="ParticleNetFeatures_PFPoints" type="StringVec"> RapidityRelJet PhiRelJet</parameter>
+        
+        <parameter name="ParticleNetFeatures_PFFeatures" type="StringVec"> RapidityRelJet Rapidity PhiRelJet TransverseMomentumConstituentLOG EnergyConstituentLOG 
+            TransverseMomentumFracConstituentLOG EnergyFracLOG DeltaRJet D0 D0Sig Z0 Z0Sig 3DImpactPar 3DImpactParSig Charge
+            IsElectron IsMuon IsChargedHadron IsNeutralHadron IsPhoton D0bprob D0cprob D0qprob Z0bprob 
+            Z0cprob Z0qprob UsedinPrimVertex LeptonMomRelJet Kaoness Chi2NDF LeptonMomFraction WeightedKaonnessMomFrac
+            JetDotProductNorm HCalFrac </parameter>
+        <parameter name="ParticleNetFeatures_SVPoints" type="StringVec"> SecondaryVertexRapidityJetAxis SecondaryVertexPhiJetAxis</parameter>
+
+        <parameter name="ParticleNetFeatures_SVFeatures" type="StringVec"> SecondaryVertexRapidityJetAxis SecondaryVertexRapidity SecondaryVertexPhiJetAxis SecondaryVertexPtLOG SecondaryVertexMass SecondaryVertexNTracks
+            SecondaryVertexChi2NDF SecondaryVertexD0 SecondaryVertexD0Sig SecondaryVertexImpactPar3d SecondaryVertexImpactPar3dSig SecondaryVertexCosMomPos
+            SecondaryVertexEnergyJetEnergy SecondaryVertexEnergy </parameter>
+
+        <parameter name="MeanPFFeatures" type="FloatVec"> -7.29761758e-05 -4.90586780e-04  2.13698741e-03 -4.85899334e-02
+            1.55332571e-01 -1.70381662e+00 -1.72863238e+00  3.98157854e-01
+            -5.64316368e+00 -4.33297919e+00 -5.58491714e+00 -5.54083471e+00
+            -1.23558220e+00  3.77338024e+01  3.53744694e-03  3.61168603e-02
+            5.44658670e-03  3.99160210e-01  1.24098596e-01  4.35177747e-01
+            -5.53569693e+00 -5.56372828e+00 -5.55553654e+00 -5.43602715e+00
+            -5.51979248e+00 -5.52802548e+00 -5.31413136e+00 -3.92395558e+00
+            -5.41138463e+00 -5.08574942e+00 -5.56832463e+00 -5.58195263e+00
+            -3.66299027e+00 -4.36298817e+00</parameter>
+
+        <parameter name="MeanSVFeatures" type="FloatVec"> 9.50258040e-04 5.84343269e-03 8.82074831e-05 1.02138306e+00
+            1.12825104e+00 2.80497551e+00 1.33534754e+01 4.48843851e+00
+            7.80911041e+11 8.06027962e+00 1.21880239e+12 9.78663636e-01
+            2.65825129e-01 2.09486003e+01 </parameter>
+
+        <parameter name="StdPFFeatures" type="FloatVec"> 4.63464098e-01 1.14537800e+00 5.08248809e-01 5.93276019e-01
+            5.56418085e-01 5.92653891e-01 5.72287883e-01 4.21164822e-01
+            2.12213643e+01 6.67180698e+02 2.35735079e+01 7.18364247e+02
+            3.18062710e+01 7.90407970e+02 6.63860786e-01 1.86580901e-01
+            7.35997377e-02 4.89725777e-01 3.29694002e-01 4.95780269e-01
+            5.03142623e+00 4.99806323e+00 5.00808600e+00 5.14448399e+00
+            5.04771499e+00 5.03882330e+00 5.28831488e+00 8.16289406e+00
+            5.17188338e+00 5.59991318e+00 4.99269040e+00 4.97699012e+00
+            8.59563093e+00 5.01705123e+00 </parameter>
+
+        <parameter name="StdSVFeatures" type="FloatVec"> 1.74785539e-01 8.62445944e-01 1.94874110e-01 4.00349924e-01
+            8.71161959e-01 1.39115375e+00 4.40525001e+02 1.17934104e+01
+            4.54040549e+14 2.04232077e+03 7.11264431e+14 1.10007142e-01
+            1.75591528e-01 1.85614393e+01 </parameter>
+
+
+        <!-- 
         <parameter name="ParticleNetFeatures_PFPoints" type="StringVec"> RapidityRelJet PhiRelJet JetRapidity </parameter>
         <parameter name="ParticleNetFeatures_SVPoints" type="StringVec"> SecondaryVertexRapidityJetAxis SecondaryVertexPhiJetAxis JetRapidity </parameter>
 
@@ -588,6 +633,7 @@
         <parameter name="ParticleNetFeatures_PFFeatures" type="StringVec"> TransverseMomentumConstituentLOG EnergyConstituentLOG TransverseMomentumFracConstituentLOG EnergyFracLOG DeltaRJet Charge IsElectron IsMuon IsChargedHadron IsNeutralHadron IsPhoton RapidityRelJet PhiRelJet Rapidity D0 D0Sig Z0 Z0Sig 3DImpactPar 3DImpactParSig D0bprob D0cprob D0qprob Z0bprob Z0cprob Z0qprob UsedinPrimVertex LeptonMomRelJet Kaoness Chi2NDF LeptonMomFraction WeightedKaonnessMomFrac JetDotProductNorm HCalFrac </parameter>
         <parameter name="MeanPFFeatures" type="StringVec"> -4.85899334e-02 1.55332571e-01 -1.70381662e+00 -1.72863238e+00 3.98157854e-01 3.53744694e-03 3.61168603e-02 5.44658670e-03 3.99160210e-01 1.24098596e-01 4.35177747e-01 -7.29761758e-05 2.13698741e-03 -4.90586780e-04 -5.64316368e+00 -4.33297919e+00 -5.58491714e+00 -5.54083471e+00 -1.23558220e+00 3.77338024e+01 -5.53569693e+00 -5.56372828e+00 -5.55553654e+00 -5.43602715e+00 -5.51979248e+00 -5.52802548e+00 -5.31413136e+00 -3.92395558e+00 -5.41138463e+00 -5.08574942e+00 -5.56832463e+00 -5.58195263e+00 -3.66299027e+00 -4.36298817e+00 </parameter>
         <parameter name="StdPFFeatures" type="StringVec"> 5.93276019e-01 5.56418085e-01 5.92653891e-01 5.72287883e-01 4.21164822e-01 6.63860786e-01 1.86580901e-01 7.35997377e-02 4.89725777e-01 3.29694002e-01 4.95780269e-01 4.63464098e-01 5.08248809e-01 1.14537800e+00 2.12213643e+01 6.67180698e+02 2.35735079e+01 7.18364247e+02 3.18062710e+01 7.90407970e+02 5.03142623e+00 4.99806323e+00 5.00808600e+00 5.14448399e+00 5.04771499e+00 5.03882330e+00 5.28831488e+00 8.16289406e+00 5.17188338e+00 5.59991318e+00 4.99269040e+00 4.97699012e+00 8.59563093e+00 5.01705123e+00 </parameter>
+        -->
 
         <!--
         <parameter name="ParticleNetFeatures_SVFeatures" type="StringVec"> SecondaryVertexPtLOG SecondaryVertexMass SecondaryVertexNTracks SecondaryVertexChi2NDF SecondaryVertexD0 SecondaryVertexD0Sig SecondaryVertexImpactPar3d SecondaryVertexImpactPar3dSig SecondaryVertexRapidityJetAxis SecondaryVertexPhiJetAxis SecondaryVertexCosMomPos SecondaryVertexEnergyJetEnergy SecondaryVertexEnergy SecondaryVertexRapidity </parameter>
