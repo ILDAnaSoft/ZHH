@@ -17,6 +17,7 @@
                 "${workspaceFolder}/source/ZHHKinfitProcessors/include/**",
                 "${workspaceFolder}/source/FinalStateRecorder/include/**",
                 "${workspaceFolder}/source/legacy/include/**",
+                "${workspaceFolder}/source/JetTaggingComparison/include/**",
                 //"/cvmfs/ilc.desy.de/key4hep/spackages/physsim/0.4.2/x86_64-centos7-gcc11.2.0-opt/e26yiqeeecuwnx563aoawj2yhovjquox/include/**", // Physsim
                 //"${HOME}/public/ILCSoft/Physsim/include/**", // Physsim
                 //"${HOME}/public/ILCSoft/MarlinReco/Analysis/PIDTools/include/**",

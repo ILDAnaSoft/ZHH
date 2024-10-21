@@ -94,6 +94,8 @@
         "${workspaceFolder}/source/LeptonPairing",
         "${workspaceFolder}/source/Misclustering",
         "${workspaceFolder}/source/PreSelection",
-        "${workspaceFolder}/source/ZHHKinfitProcessors"
+        "${workspaceFolder}/source/ZHHKinfitProcessors",
+        "${workspaceFolder}/source/JetTaggingComparison",
+        "${workspaceFolder}/source/FinalStateRecorder"
     ]
 }

@@ -37,7 +37,7 @@ function zhh_recompile() {
         mkdir -p build
         cd build
         cmake -DCMAKE_CXX_STANDARD=17 ..
-        make install || { cd ../.. ; return 1; }
+        make install || ( cd ../.. && return 1 )
         cd ../..
     }
 
@@ -57,6 +57,7 @@ function zhh_attach_marlin_dlls() {
         "$REPO_ROOT/source/AddNeutralPFOCovMat/lib/libAddNeutralPFOCovMat.so"
         "$REPO_ROOT/source/LeptonPairing/lib/libLeptonPairing.so"
         "$REPO_ROOT/source/HdecayMode/lib/libHdecayMode.so"
+        "$REPO_ROOT/source/JetTaggingComparison/lib/libJetTaggingComparison.so"
         "$REPO_ROOT/source/PreSelection/lib/libPreSelection.so"
         "$REPO_ROOT/source/FinalStateRecorder/lib/libFinalStateRecorder.so"
         "$MarlinML/lib64/libJetTaggers.so"
@@ -66,7 +67,8 @@ function zhh_attach_marlin_dlls() {
 
     for lib in "${libs[@]}"; do
         if [[ ! -f "$lib" ]]; then
-            zhh_echo "+++ WARNING +++ Library <$(basename $lib)> not found at $lib. Make sure to compile it before you start Marlin. Continuing..."
+            zhh_echo "+++ WARNING +++ Library <$(basename $lib)> not found at $lib."
+            zhh_echo "    Make sure to compile it before you start Marlin. Continuing..."
         fi
 
         zhh_echo "Attaching library $(basename $lib)"

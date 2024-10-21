@@ -26,6 +26,7 @@ Ranlux.coonf
 *.npy
 *.log
 *.txt
+!CMakeLists.txt
 *.aux
 *.tex
 *.bbl
