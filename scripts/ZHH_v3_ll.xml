@@ -512,7 +512,7 @@
         <parameter name="whichPreselection"> llbbbb </parameter>
         <parameter name="ECM" type="float"> ${ECM} </parameter>
 
-        <parameter name="outputFilename" type="string">${OutputDirectory}/${OutputBaseName}_PreSelection_llHH.root</parameter>
+        <parameter name="outputFilename" type="string">${OutputDirectory}/${OutputBaseName}_PreSelection.root</parameter>
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
         <parameter name="Verbosity" type="string">MESSAGE</parameter>
     </processor>

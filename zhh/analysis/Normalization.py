@@ -8,12 +8,13 @@ from .PreselectionAnalysis import sample_weight
 def get_process_normalization(
         processes:np.ndarray,
         samples:np.ndarray,
-        RATIO_BY_EXPECT:float=1.):
+        RATIO_BY_EXPECT:Optional[float]=1.):
     """Returns a np.ndarray with
 
     Args:
         processes (np.ndarray): _description_
         samples (np.ndarray): _description_
+        RATIO_BY_EXPECT (Optional[float], optional): If None, will use all the data. Defaults to 1..
 
     Returns:
         _type_: _description_
@@ -27,7 +28,6 @@ def get_process_normalization(
         
         ('n_events_tot', 'l'),
         ('n_events_expected', 'f'),
-        ('n_events_normalized', 'l'),
         ('n_events_target', 'l')]
     
     results = np.empty(0, dtype=dtype)
@@ -51,11 +51,12 @@ def get_process_normalization(
         
     # Normalize by cross-section
     results = results[np.argsort(results['proc_pol'])]
-    results['n_events_normalized'] = np.minimum(results['n_events_tot'], np.ceil(RATIO_BY_EXPECT * results['n_events_expected']))
+    if RATIO_BY_EXPECT is None:
+        results['n_events_target'] = results['n_events_tot']
+    else:
+        results['n_events_target'] = np.minimum(results['n_events_tot'], np.ceil(RATIO_BY_EXPECT * results['n_events_expected']))
     
-    assert(np.sum(results['n_events_normalized'] < 0) == 0)
-    
-    results['n_events_target'] = results['n_events_normalized']
+    assert(np.sum(results['n_events_target'] < 0) == 0)
     
     return results
 
@@ -72,7 +73,7 @@ def get_sample_chunk_splits(
     Args:
         samples (np.ndarray): _description_
         adjusted_time_per_event (np.ndarray): _description_. Defaults to None.
-        process_normalization (np.ndarray): _description_. Defaults to None.
+        process_normalization (np.ndarray): _description_.
         custom_statistics (Optional[List[tuple]], optional): list of entries of either (fraction:float, processes:list[str]) or
             (fraction:float, processes:list[str], reference:str<'total', 'expected'>)
         existing_chunks (Optional[np.ndarray], optional): _description_. Defaults to None.

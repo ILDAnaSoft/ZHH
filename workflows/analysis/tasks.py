@@ -4,14 +4,17 @@ from math import ceil
 from law import LocalFileTarget
 
 from analysis.framework import HTCondorWorkflow
-from zhh import get_raw_files, presel_stack, is_readable, ProcessIndex, \
+from analysis.tasks_abstract import MarlinJob
+
+from zhh import get_raw_files, analysis_stack, ProcessIndex, \
     get_adjusted_time_per_event, get_runtime_analysis, get_sample_chunk_splits, get_process_normalization, \
-    get_preselection_passes, get_chunks_factual, get_final_state_counts
-from phc import export_figures, ShellTask, BaseTask, ForcibleTask
+    get_chunks_factual
+    
+from phc import BaseTask
 
 from typing import Optional, Union, Annotated, List
+
 import numpy as np
-import uproot as ur
 import os.path as osp
 
 class CreateRawIndex(BaseTask):
@@ -35,14 +38,16 @@ class CreateRawIndex(BaseTask):
         
         self.publish_message(f'Loaded {len(index.samples)} samples and {len(index.processes)} processes')
 
-class CreatePreselectionChunks(BaseTask):
+class CreateAnalysisChunks(BaseTask):
     ratio: Annotated[float, luigi.FloatParameter()] = 1.
     jobtime: Annotated[int, luigi.IntParameter()] = 7200
     
     def requires(self):
+        from analysis.tasks_analysis import AnalysisRuntime
+        
         return [
             CreateRawIndex.req(self),
-            PreselectionRuntime.req(self)
+            AnalysisRuntime.req(self)
         ]
 
     def output(self):
@@ -81,9 +86,9 @@ class CreatePreselectionChunks(BaseTask):
         
         self.output()[4].dump({'ratio': float(self.ratio), 'jobtime': int(self.jobtime)})
         
-        self.publish_message(f'Compiled preselection chunks')
+        self.publish_message(f'Compiled analysis chunks')
 
-class UpdatePreselectionChunks(BaseTask):
+class UpdateAnalysisChunks(BaseTask):
     """Updates the chunk definitions by only appending new chunks
     for greater statistics. Useful only if the reconstruction has not
     changed.
@@ -95,7 +100,7 @@ class UpdatePreselectionChunks(BaseTask):
     def requires(self):
         return [
             CreateRawIndex.req(self),
-            CreatePreselectionChunks.req(self)
+            CreateAnalysisChunks.req(self)
         ]
 
     def output(self):
@@ -125,124 +130,18 @@ class UpdatePreselectionChunks(BaseTask):
         
         self.publish_message(f'Updated chunks. Added {len(new_chunks)-len(existing_chunks)} branches.')
 
-class PreselectionAbstract(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
-    debug = True
-    
-    def workflow_requires(self):
-        reqs = super().workflow_requires()
-        reqs['raw_index'] = CreateRawIndex.req(self)
-        
-        if not self.debug:
-            reqs['preselection_chunks'] = CreatePreselectionChunks.req(self)
-        
-        return reqs
-    
-    @law.dynamic_workflow_condition
-    def workflow_condition(self):
-        # declare that the branch map can be built only if the workflow requirement exists
-        # the decorator will trigger a run of workflow_requires beforehand
-        if len(self.input()) > 0:
-            # here: self.input() refers to the outputs of tasks defined in workflow_requires()
-            return all(elem.exists() for elem in flatten(self.input()))
-            #return self.input()["raw_index"][0].exists() and self.input()["raw_index"][1].exists()
-        else:
-            return True
-    
-    @workflow_condition.create_branch_map
-    def create_branch_map(self) -> Union[
-        dict[int, str],
-        dict[int, tuple[str, int, int]]
-        ]:
-        samples = np.load(self.input()['raw_index'][1].path)
-        
-        if 'preselection_chunks' in self.input():
-            scs = np.load(self.input()['preselection_chunks'][0].path)
-            res = { k: v for k, v in zip(scs['branch'].tolist(), zip(scs['location'], scs['chunk_start'], scs['chunk_size']))}
-        else:             
-            selection = samples[np.lexsort((samples['location'], samples['proc_pol']))]
-            
-            # Average over three runs for each proc_pol run to get a more accurate estimate
-            arr = []
-            for proc_pol in np.unique(selection['proc_pol']):
-                for location in selection['location'][selection['proc_pol'] == proc_pol][:3]:
-                    arr.append(location)
-                
-            res = { k: v for k, v in zip(list(range(len(arr))), arr) }
-        
-        return res
-
-    @workflow_condition.output
-    def output(self):
-        return self.local_directory_target(self.branch)
-
-    def get_target_and_temp(self, branch):
-        return (
-            f'{self.htcondor_output_directory().path}/{branch}',
-            f'{self.htcondor_output_directory().path}/{branch}-{str(uuid.uuid4())}'
-        )
-
-    def build_command(self, fallback_level):
-        branch = self.branch
-        src = self.branch_map[branch]
-        
-        if isinstance(src, tuple):
-            src_file = src[0]
-            n_events_skip = src[1]
-            n_events_max = src[2]
-        else:
-            src_file = str(src)
-            n_events_skip = 0
-            n_events_max = 50 if self.debug else 0
-        
-        target, temp = self.get_target_and_temp(branch)
-        os.makedirs(osp.dirname(target), exist_ok=True)
-        
-        # Check if sample belongs to new or old MC production to change MCParticleCollectionName
-        mcp_col_name = 'MCParticlesSkimmed' if '/hh/' in src_file else 'MCParticle'
-        
-        cmd =  f'source $REPO_ROOT/setup.sh'
-        cmd += f' && echo "Starting Marlin at $(date)"'
-        cmd += f' && mkdir -p "{temp}" && cd "{temp}"'
-
-        # Marlin fix for SkipNEvents=0
-        if n_events_skip == 0:
-            n_events_max = n_events_max + 1
-        
-        cmd += f' && ( Marlin $REPO_ROOT/scripts/ZHH_v2.xml --constant.ILDConfigDir="$ILD_CONFIG_DIR" --global.MaxRecordNumber={str(n_events_max)} --global.LCIOInputFiles={src_file} --global.SkipNEvents={str(n_events_skip)} --constant.OutputDirectory=. --constant.MCParticleCollectionName={mcp_col_name} || true )'
-        cmd += f' && echo "Finished Marlin at $(date)"'
-        cmd += f' && sleep 2'
-        
-        for suffix in ['_PreSelection_llHH.root', '_PreSelection_vvHH.root', '_PreSelection_qqHH.root', '_FinalStates.root']:
-            cmd += f' && is_root_readable ./zhh{suffix} eventTree'
-        
-        cmd += f' && [[ -f ./zhh_FinalStateMeta.json ]]'
-        
-        cmd += f' && echo "{self.branch_map[self.branch]}" >> Source.txt'
-        cmd += f' && cd .. && mv "{temp}" "{target}"'
-
-        return cmd
-    
-class PreselectionRuntime(PreselectionAbstract):
-    """Generates a runtime analysis for each proc_pol combination, essentially by running in debug mode
-
-    Args:
-        PreselectionAbstract (_type_): _description_
-    """
-    debug = True
-
-class PreselectionFinal(PreselectionAbstract):
-    debug = False # luigi.BoolParameter(default=False)
-
-class PreselectionSummary(BaseTask, HTCondorWorkflow):
+class AnalysisSummary(BaseTask, HTCondorWorkflow):
     branchesperjob: Annotated[int, luigi.IntParameter()] = 256
     
-    preselection_chunks: Optional[str] = None
+    analysis_chunks: Optional[str] = None
     processes_index: Optional[str] = None
     
     def workflow_requires(self):
+        from tasks_analysis import AnalysisFinal
+        
         reqs = super().workflow_requires()
-        reqs['preselection_final'] = PreselectionFinal.req(self)
-        reqs['preselection_chunks'] = CreatePreselectionChunks.req(self)
+        reqs['analysis_final'] = AnalysisFinal.req(self)
+        reqs['analysis_chunks'] = CreateAnalysisChunks.req(self)
         reqs['raw_index'] = CreateRawIndex.req(self)
         
         return reqs
@@ -257,21 +156,21 @@ class PreselectionSummary(BaseTask, HTCondorWorkflow):
     
     @workflow_condition.create_branch_map
     def create_branch_map(self):
-        n_branches_in = len(self.input()['preselection_final']['collection'])
+        n_branches_in = len(self.input()['analysis_final']['collection'])
         n_branches = ceil(n_branches_in / self.branchesperjob)
-        DATA_ROOT = osp.dirname(self.input()['preselection_final']['collection'][0].path)
+        DATA_ROOT = osp.dirname(self.input()['analysis_final']['collection'][0].path)
 
         branch_key = np.arange(n_branches_in)
         branch_val = np.split(branch_key, self.branchesperjob*np.arange(1, n_branches))
         
-        preselection_chunks = self.input()['preselection_chunks'][0].path
+        analysis_chunks = self.input()['analysis_chunks'][0].path
         processes_index = self.input()['raw_index'][0].path
 
         return dict(
             zip(branch_key.tolist(), zip(
                 [DATA_ROOT] * n_branches,
                 branch_val,
-                [preselection_chunks] * n_branches,
+                [analysis_chunks] * n_branches,
                 [processes_index] * n_branches
                 )))
     
@@ -280,9 +179,9 @@ class PreselectionSummary(BaseTask, HTCondorWorkflow):
 
     def run(self):
         src = self.branch_map[self.branch]
-        DATA_ROOT, branches, preselection_chunks, processes_index = src
+        DATA_ROOT, branches, analysis_chunks, processes_index = src
         
-        chunks = np.load(preselection_chunks)
+        chunks = np.load(analysis_chunks)
         chunks_factual = get_chunks_factual(DATA_ROOT, chunks)
         
         processes = np.load(processes_index)
@@ -290,54 +189,9 @@ class PreselectionSummary(BaseTask, HTCondorWorkflow):
         output = self.output()
         output.parent.touch()
         
-        presel_result = presel_stack(DATA_ROOT, processes, chunks_factual, branches,
+        presel_result = analysis_stack(DATA_ROOT, processes, chunks_factual, branches,
                                      kinematics=True, b_tagging=True, final_states=True)
         
         np.save(output.path, presel_result)
         
         self.publish_message(f'Processed {len(branches)} branches')
-    
-
-class CreatePlots(BaseTask):
-    """
-    This task requires the Preselection workflow and extracts the created data to create plots.
-    """
-
-    def requires(self):
-        return PreselectionFinal.req(self)
-
-    def output(self):
-        # output a plain text file
-        return self.local_target("plots.pdf")
-
-    def run(self):
-        import matplotlib.pyplot as plt
-        
-        # Get targets of dependendies and get the file paths of relevant files 
-        inputs = self.input()['collection'].targets
-        
-        files = []
-        for input in flatten(inputs):
-            if input.path.endswith('PreSelection.root'):
-                files.append(input.path)
-                
-        # Extract columns using uproot
-        vecs = []
-        for f in files:
-            d = ur.open(f)['eventTree']
-            vecs.append(np.array(d['preselsPassedVec'].array()))
-            
-        vecs = np.concatenate(vecs)
-        vecs[vecs < 0] = 0 # setting invalid entries to 0
-        
-        # TODO
-        fig, ax = plt.subplots()
-        figs = [fig]
-        
-        self.output().parent.touch() # Create intermediate directories and save plots    
-        export_figures(self.output().path, figs)
-        
-        # Status message
-        self.publish_message(f'exported {len(figs)} plots to {self.output().path}')
-
-

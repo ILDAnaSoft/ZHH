@@ -60,6 +60,7 @@ function zhh_attach_marlin_dlls() {
         "$REPO_ROOT/source/JetTaggingComparison/lib/libJetTaggingComparison.so"
         "$REPO_ROOT/source/PreSelection/lib/libPreSelection.so"
         "$REPO_ROOT/source/FinalStateRecorder/lib/libFinalStateRecorder.so"
+        "$REPO_ROOT/source/ZHHKinfitProcessors/lib/libZHHKinfitProcessors.so"
         "$MarlinML/lib64/libJetTaggers.so"
         "$VariablesForDeepMLFlavorTagger/lib/libVariablesForDeepMLFlavorTagger.so"
         "$BTaggingVariables/lib/libBTaggingVariables.so"
@@ -204,14 +205,12 @@ if [[ "$ZHH_COMMAND" = "install" ]]; then
     source $REPO_ROOT/shell/zhh_install_conda.sh
     zhh_install_conda && zhh_echo "Successfully located conda installation." || ( zhh_echo "Could not locate conda installation. Aborting."; return 1; )
 
-    if [[ "true" == "false" ]]; then
-        ( echo "Initializing sub-shell to install python dependencies..."
-        shell_name="$( [ -z "${ZSH_VERSION}" ] && echo "bash" || echo "zsh" )"
-        eval "$($CONDA_ROOT/bin/conda shell.$shell_name hook)"
-        conda activate $CONDA_ENV
-        pip install -r $REPO_ROOT/requirements.txt
-        )
-    fi
+    ( echo "Initializing sub-shell to install python dependencies..."
+    shell_name="$( [ -z "${ZSH_VERSION}" ] && echo "bash" || echo "zsh" )"
+    eval "$($CONDA_PREFIX/bin/conda shell.$shell_name hook)"
+    conda activate $CONDA_ENV
+    pip install -r $REPO_ROOT/requirements.txt
+    )
 
     source $REPO_ROOT/shell/zhh_install_deps.sh
     zhh_install_deps $zhh_install_dir
@@ -219,8 +218,8 @@ if [[ "$ZHH_COMMAND" = "install" ]]; then
     ZHH_COMMAND="compile"
 fi
 
-if [[ ! -d "$CONDA_ROOT/envs/$CONDA_ENV" ]]; then
-    zhh_echo "Warning: <$CONDA_ROOT/envs/$CONDA_ENV> does not point to a valid conda environment."
+if [[ ! -d "$CONDA_PREFIX/envs/$CONDA_ENV" ]]; then
+    zhh_echo "Warning: <$CONDA_PREFIX/envs/$CONDA_ENV> does not point to a valid conda environment."
     zhh_echo "    Job submissions via law may and calls to is_root_readable/is_json_readable will fail."
     zhh_echo "    Check your conda installation."
 fi
@@ -254,7 +253,7 @@ is_root_readable() (
         local root_tree="'$root_tree'"
     fi
 
-    local res=$($CONDA_ROOT/envs/$CONDA_ENV/bin/python -c "from phc import root_file_readable; print(root_file_readable('${1}', ${root_tree}))")
+    local res=$($CONDA_PREFIX/envs/$CONDA_ENV/bin/python -c "from phc import root_file_readable; print(root_file_readable('${1}', ${root_tree}))")
     
     if [ "$res" = "True" ]; then
         return 0
@@ -264,7 +263,7 @@ is_root_readable() (
 )
 
 is_json_readable() (
-    local res=$($CONDA_ROOT/envs/$CONDA_ENV/bin/python -c "from phc import json_file_readable; print(json_file_readable('${1}'))")
+    local res=$($CONDA_PREFIX/envs/$CONDA_ENV/bin/python -c "from phc import json_file_readable; print(json_file_readable('${1}'))")
     
     if [ "$res" = "True" ]; then
         return 0

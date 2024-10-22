@@ -89,7 +89,7 @@ function zhh_install_deps() {
     mkdir -p "$data_dir"
 
     # Save directories to .env
-    # For CONDA_ROOT, CONDA_ENV and PYTHON_VERSION, see zhh_install_conda.sh
+    # For CONDA_PREFIX, CONDA_ENV and PYTHON_VERSION, see zhh_install_conda.sh
     cat >> "$REPO_ROOT/.env" <<EOF
 REPO_ROOT="$REPO_ROOT"
 MarlinML="$MarlinML"
@@ -97,7 +97,7 @@ VariablesForDeepMLFlavorTagger="$VariablesForDeepMLFlavorTagger"
 BTaggingVariables="$BTaggingVariables"
 TORCH_PATH="$TORCH_PATH"
 ILD_CONFIG_DIR="$ILD_CONFIG_DIR"
-CONDA_ROOT="$CONDA_ROOT"
+CONDA_PREFIX="$CONDA_PREFIX"
 CONDA_ENV="$CONDA_ENV"
 PYTHON_VERSION="$PYTHON_VERSION"
 DATA_PATH="$data_dir"

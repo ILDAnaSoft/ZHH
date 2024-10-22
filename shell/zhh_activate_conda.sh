@@ -29,19 +29,19 @@ function zhh_activate_conda() {
         source "${REPO_ROOT}/.env.sh"
     fi
 
-    if [[ ! -d "$CONDA_ROOT" || ! -d "$CONDA_ROOT/envs/$CONDA_ENV" ]]; then
-        echo "Either invalid conda root <$CONDA_ROOT> or invalid environment <$CONDA_ENV> given, aborting..."
+    if [[ ! -d "$CONDA_PREFIX" || ! -d "$CONDA_PREFIX/envs/$CONDA_ENV" ]]; then
+        echo "Either invalid conda root <$CONDA_PREFIX> or invalid environment <$CONDA_ENV> given, aborting..."
         return 1
     fi
 
     # Make sure to initialize conda if is has not been before
     if [[ -z $CONDA_SHLVL ]]; then
         echo "conda seems to not have been initialized before. initializing..."
-        #source "${CONDA_ROOT}/etc/profile.d/conda.sh"
+        #source "${CONDA_PREFIX}/etc/profile.d/conda.sh"
 
         local shell_name="$( [ -z "${ZSH_VERSION}" ] && echo "bash" || echo "zsh" )"
-        eval "$($CONDA_ROOT/bin/conda shell.$shell_name hook)"
+        eval "$($CONDA_PREFIX/bin/conda shell.$shell_name hook)"
     fi
 
-    conda activate $CONDA_ROOT/envs/$CONDA_ENV
+    conda activate $CONDA_PREFIX/envs/$CONDA_ENV
 }
