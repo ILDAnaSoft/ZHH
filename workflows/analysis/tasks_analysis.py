@@ -1,10 +1,9 @@
 from analysis.tasks_abstract import MarlinJob
-from analysis.framework import HTCondorWorkflow
 from typing import Union, Optional
 import numpy as np
 import law
 
-class AnalysisAbstract(MarlinJob, HTCondorWorkflow, law.LocalWorkflow):
+class AnalysisAbstract(MarlinJob):
     debug = True
     
     check_output_root_ttrees = [

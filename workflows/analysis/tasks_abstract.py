@@ -1,12 +1,10 @@
 from analysis.framework import HTCondorWorkflow
-import luigi, law, json, os, uuid
+import law, os, uuid
 import os.path as osp
-from law.util import flatten
-from law import LocalFileTarget
-from phc import ShellTask, BaseTask
+from phc import ShellTask
 from typing import Optional, Union
 
-class MarlinJob(ShellTask):
+class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     """Abstract class for Marlin jobs
     
     The parameters for running Marlin can be set here

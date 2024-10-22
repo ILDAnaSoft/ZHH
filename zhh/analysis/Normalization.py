@@ -54,7 +54,10 @@ def get_process_normalization(
     if RATIO_BY_EXPECT is None:
         results['n_events_target'] = results['n_events_tot']
     else:
-        results['n_events_target'] = np.minimum(results['n_events_tot'], np.ceil(RATIO_BY_EXPECT * results['n_events_expected']))
+        results['n_events_target'] = np.maximum(
+            np.minimum(results['n_events_tot'], np.ceil(RATIO_BY_EXPECT * results['n_events_expected'])),
+            50*np.ones(len(results), dtype=int)
+        )
     
     assert(np.sum(results['n_events_target'] < 0) == 0)
     
