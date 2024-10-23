@@ -43,7 +43,8 @@ function zhh_install_conda() {
                     echo "The directory <$conda_install_dir> already exists. Please remove it or choose another directory. Aborting." && return 1
                 fi
 
-                wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh -O /tmp/miniforge.sh && bash /tmp/miniforge.sh -p $conda_install_dir || (echo "Could not install conda to <$conda_install_dir>. Aborting." && return 1 )
+                local miniforge_install="/tmp/miniforge-$(whoami).sh"
+                wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh -O $miniforge_install && bash $miniforge_install -p $conda_install_dir || (echo "Could not install conda to <$conda_install_dir>. Aborting." && return 1 )
                 export CONDA_ROOT=$conda_install_dir
             fi
         fi
