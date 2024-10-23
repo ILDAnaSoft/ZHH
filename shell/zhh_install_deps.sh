@@ -74,7 +74,7 @@ function zhh_install_deps() {
                 local ypath="y"
                 read -p "Dependency $dependency not found. You can either install it (y) or supply a path to it (enter path): " ypath
 
-                if [[ $ypath = "y" || -z $ypath ]];
+                if [[ $ypath = "y" || -z $ypath ]]; then
                     local dirnamecur="${dirnames[$ind]}"
                     install_dir="$INSTALL_DIR/$dirnamecur"
 
