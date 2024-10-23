@@ -46,7 +46,7 @@ def get_process_normalization(
         event_weight = n_events_expected / n_events_tot
             
         results = np.append(results, np.array([
-            (process, proc_pol, cross_sec, event_weight, n_events_tot, n_events_expected, 0, 0)
+            (process, proc_pol, cross_sec, event_weight, n_events_tot, n_events_expected, 0)
         ], dtype=dtype))
         
     # Normalize by cross-section
@@ -116,7 +116,7 @@ def get_sample_chunk_splits(
             processes = np.unique(processes)
             mask = np.isin(pn['process'], processes)
             
-            pn['n_events_target'][mask] = np.ceil(fraction*pn['n_events_' + ('tot' if reference == 'total' else 'normalized')][mask])
+            pn['n_events_target'][mask] = np.ceil(fraction*pn['n_events_' + ('tot' if reference == 'total' else 'expected')][mask])
             pn['n_events_target'][mask] = np.minimum(pn['n_events_target'][mask], pn['n_events_tot'][mask])
     
     n_chunks_tot = 0 if existing_chunks is None else len(existing_chunks)

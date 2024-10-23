@@ -34,7 +34,7 @@ This will run the tasks CreateRawIndex, AnalysisRuntime, CreateAnalysisChunks an
 
 | Task name                 | Batch job | Description                                                                                                         | Parameters with defaults |
 |---------------------------|-----------|---------------------------------------------------------------------------------------------------------------------|--------------------------|
-| CreateRawIndex            | Yes       | Creates an index of all readable sample files and physics processes associated to them. See `ProcessIndex`.          | - |
+| CreateRawIndex            | No        | Creates an index of all readable sample files and physics processes associated to them. See `ProcessIndex`.          | - |
 | AnalysisRuntime           | Yes       | Runs the Marlin analysis for each proc_pol (process polarization) combination over 50 events to estimate the runtime per event.            | - |
 | CreateAnalysisChunks      | No        | Calculates chunks according to a desired target, physics sample size and maximum duration per job (2h, to stay below limit of 3h). `ratio` controls the number of desired events as fraction of the number of expected events (`1.` equates to ca. 45M events of the available 60M). Setting this to `None` will use all available data.     | `jobtime=7200` <br> `ratio=1.` |
 | AnalysisFinal             | Yes       | Runs the Marlin analysis with the chunking as given above.                                                          | - |
