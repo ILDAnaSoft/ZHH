@@ -65,7 +65,7 @@ class HTCondorWorkflow(law.htcondor.HTCondorWorkflow):
         config.render_variables["DATA_PATH"] = os.getenv("DATA_PATH")
 
         # copy the entire environment
-        config.custom_content.append(('getenv', 'true'))
+        #config.custom_content.append(('getenv', 'true'))
         #config.custom_content.append(('request_cpus', '1'))
         
         name:Optional[str] = None
@@ -73,8 +73,8 @@ class HTCondorWorkflow(law.htcondor.HTCondorWorkflow):
             if key == 'initialdir':
                 name = os.path.basename(os.path.dirname(value))
         
-        if name is not None and name in session_submissions:
-            print(f'Re-Running task {name} with increases requirements')
+        if False and name is not None and name in session_submissions:
+            print(f'Re-Running task {name} with increased requirements')
             
             config.custom_content.append(('request_memory', '16000 Mb'))
             config.custom_content.append(("request_runtime", math.floor(12 * 3600)))
@@ -89,6 +89,6 @@ class HTCondorWorkflow(law.htcondor.HTCondorWorkflow):
             session_submissions[name] = 0
         
         config.custom_content.append(('requirements', 'Machine =!= LastRemoteHost'))
-        config.custom_content.append(('materialize_max_idle', 1024))
+        config.custom_content.append(('materialize_max_idle', 1000))
 
         return config

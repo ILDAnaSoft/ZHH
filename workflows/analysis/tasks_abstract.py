@@ -14,8 +14,8 @@ class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     
     executable = 'Marlin'
     
-    n_events_max:Optional[int] = None
-    n_events_skip:Optional[int] = None
+    n_events_max:int = 50
+    n_events_skip:int = 0
     
     steering_file:str = '$REPO_ROOT/scripts/ZHH_v2.xml'
     

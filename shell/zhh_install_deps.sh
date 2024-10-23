@@ -1,5 +1,26 @@
 #!/bin/bash
 
+function zhh_compile_pylcio() {
+    (
+    # Add pyLCIO to PYTHONPATH for the conda environment
+    if [[ ! -f "$CONDA_ROOT/envs/$CONDA_ENV/lib/python$PYTHON_VERSION/site-packages/lcio.pth" ]]; then
+        echo "$LCIO/python" >> "$CONDA_ROOT/envs/$CONDA_ENV/lib/python$PYTHON_VERSION/site-packages/lcio.pth"
+    fi
+
+    # Activate conda environment and build LCIO
+    source "${CONDA_ROOT}/etc/profile.d/conda.sh" && conda activate $CONDA_ROOT/envs/$CONDA_ENV && cd $LCIO && rm -rf build && mkdir -p build && cd build && cmake -DBUILD_ROOTDICT=ON -D CMAKE_CXX_STANDARD=17 .. && make install
+
+    # Add compiled LCIO to LD_LIBRARY_PATH
+    if [[ $(conda env config vars list) == *"LD_LIBRARY_PATH"* ]]; then
+        echo "LD_LIBRARY_PATH already set"
+    else
+        echo "Adding LCIO to LD_LIBRARY_PATH"
+        conda env config vars set LD_LIBRARY_PATH=$LCIO/build/lib64:$LD_LIBRARY_PATH
+    fi
+
+    ) || return 1
+}
+
 function zhh_install_deps() {
     local INSTALL_DIR="$1"
     echo "Installing ZHH dependencies to $INSTALL_DIR"
@@ -21,7 +42,7 @@ function zhh_install_deps() {
     if [[ -f ".env" ]]; then
         local yn="n"
         
-        read -p "You wish to install the dependencies, but an .env file which would be overwritten already exists. Do you wish to back it up to .env.bck and continue? Any existing .env.bck will be overwritten. (n) " yn
+        read -p "You wish to install the dependencies, but an .env file which would be overwritten already exists. Do you wish to continue anyway? (y) " yn
         if [[ "$yn" = "y" ]]; then
             rm -f .env.bck
             mv .env .env.bck
@@ -30,7 +51,7 @@ function zhh_install_deps() {
         fi
     fi
 
-    if [[ -z $MarlinML || -z $VariablesForDeepMLFlavorTagger || -z $BTaggingVariables || -z $ILD_CONFIG_DIR ]]; then
+    if [[ -z $MarlinML || -z $VariablesForDeepMLFlavorTagger || -z $BTaggingVariables || -z $LCIO || -z $ILD_CONFIG_DIR ]]; then
         echo "At least one of the dependencies could not be found. Retrieving them..."
 
         local ind="$( [ -z "${ZSH_VERSION}" ] && echo "0" || echo "1" )" # ZSH arrays are 1-indexed
@@ -38,9 +59,10 @@ function zhh_install_deps() {
             https://gitlab.desy.de/ilcsoft/MarlinML
             https://gitlab.desy.de/ilcsoft/variablesfordeepmlflavortagger
             https://gitlab.desy.de/ilcsoft/btaggingvariables
+            https://github.com/iLCSoft/LCIO.git
             https://github.com/iLCSoft/ILDConfig.git)
-        local varnames=(MarlinML VariablesForDeepMLFlavorTagger BTaggingVariables ILD_CONFIG_DIR)
-        local dirnames=(MarlinML variablesfordeepmlflavortagger btaggingvariables ILDConfig)
+        local varnames=(MarlinML VariablesForDeepMLFlavorTagger BTaggingVariables LCIO ILD_CONFIG_DIR)
+        local dirnames=(MarlinML variablesfordeepmlflavortagger btaggingvariables LCIO ILDConfig)
 
         mkdir -p $INSTALL_DIR
 
@@ -48,19 +70,37 @@ function zhh_install_deps() {
         do
             # Check if the variables defined by varnames already exist
             if [[ -z ${!dependency} ]]; then
-                echo "Dependency $dependency not found."
+                local install_dir
+                local ypath="y"
+                read -p "Dependency $dependency not found. You can either install it (y) or supply a path to it (enter path): " ypath
 
-                local dirnamecur="${dirnames[$ind]}"
+                if [[ $ypath = "y" || -z $ypath ]];
+                    local dirnamecur="${dirnames[$ind]}"
+                    install_dir="$INSTALL_DIR/$dirnamecur"
 
-                if [[ ! -d "$INSTALL_DIR/$dirnamecur" ]]; then
-                    echo "Cloning to $INSTALL_DIR/$dirnamecur"
-                    git clone --recurse-submodules ${repositories[$ind]} "$INSTALL_DIR/$dirnamecur"
+                    if [[ ! -d "$install_dir" ]]; then
+                        echo "Cloning to $INSTALL_DIR/$dirnamecur"
+                        git clone --recurse-submodules ${repositories[$ind]} "$install_dir"
+                    else
+                        echo "Directory $install_dir already exists. Assume it's correct."
+                    fi
+                elif [[ -d $ypath ]]; then
+                    install_dir="$ypath"
+                    echo "Using user-supplied path $ypath for dependency $dependency"
                 else
-                    echo "Directory $INSTALL_DIR/$dirnamecur already exists"
+                    echo "Path $ypath does not exist. Aborting..."
+                    return 1
                 fi
 
-                echo "Setting variable $dependency to <$INSTALL_DIR/$dirnamecur>"
-                export $dependency="$INSTALL_DIR/$dirnamecur"
+                echo "Setting variable $dependency to <$install_dir>"
+                export $dependency="$install_dir"
+                echo "$dependency=$install_dir" >> $REPO_ROOT/.env
+
+                if [[ $dependency = "LCIO" ]]; then
+                    echo "Compiling LCIO+pyLCIO..."
+                    zhh_compile_pylcio
+                fi
+
             else
                 echo "Dependency $dependency already found."
             fi
@@ -90,11 +130,12 @@ function zhh_install_deps() {
 
     # Save directories to .env
     # For CONDA_PREFIX, CONDA_ENV and PYTHON_VERSION, see zhh_install_conda.sh
-    cat >> "$REPO_ROOT/.env" <<EOF
+    cat > "$REPO_ROOT/.env" <<EOF
 REPO_ROOT="$REPO_ROOT"
 MarlinML="$MarlinML"
 VariablesForDeepMLFlavorTagger="$VariablesForDeepMLFlavorTagger"
 BTaggingVariables="$BTaggingVariables"
+LCIO="$LCIO"
 TORCH_PATH="$TORCH_PATH"
 ILD_CONFIG_DIR="$ILD_CONFIG_DIR"
 CONDA_PREFIX="$CONDA_PREFIX"

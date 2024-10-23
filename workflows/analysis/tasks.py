@@ -16,7 +16,7 @@ from typing import Optional, Union, Annotated, List
 import numpy as np
 import os.path as osp
 
-class CreateRawIndex(BaseTask, HTCondorWorkflow):
+class CreateRawIndex(BaseTask):
     """
     This task creates two indeces:
     1. samples.npy: An index of available SLCIO sample files with information about the file location, number of events, physics process and polarization
@@ -24,16 +24,13 @@ class CreateRawIndex(BaseTask, HTCondorWorkflow):
     """
     index: Optional[ProcessIndex] = None
     
-    def create_branch_map(self):
-        return { 0: None } # just a place holder, but necessary as we need to run this task on the batch system (RAM requirements)
-    
     def output(self):
         return [
             self.local_target('processes.npy'),
             self.local_target('samples.npy')
         ]
     
-    def run(self, branch:int):
+    def run(self):
         temp_files: List[LocalFileTarget] = self.output()
         
         temp_files[0].parent.touch()

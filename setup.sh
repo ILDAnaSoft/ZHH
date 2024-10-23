@@ -17,6 +17,7 @@ function usage() {
     echo "       MarlinML: absolute path to MarlinML repository with binaries inside lib64 (see https://gitlab.desy.de/ilcsoft/MarlinML)"
     echo "       VariablesForDeepMLFlavorTagger: absolute path to repository with binaries inside lib (see https://gitlab.desy.de/ilcsoft/variablesfordeepmlflavortagger)"
     echo "       BTaggingVariables: absolute path to repository with binaries inside lib (see https://gitlab.desy.de/ilcsoft/btaggingvariables)"
+    echo "       LCIO: absolute path to LCIO installation (see https://github.com/iLCSoft/LCIO)"
 }
 
 ZHH_K4H_RELEASE_DEFAULT="2024-04-12"
@@ -231,9 +232,16 @@ if [[ "$ZHH_COMMAND" = "compile" ]]; then
     zhh_echo "Successfully compiled all dependencies and libraries"
 fi
 
-if [[ ! -d "$MarlinML" || ! -d "$VariablesForDeepMLFlavorTagger" || ! -d "$BTaggingVariables" || ! -d "${ILD_CONFIG_DIR}" ]]; then
-    zhh_echo "Error: MarlinML, VariablesForDeepMLFlavorTagger, BTaggingVariables and ILD_CONFIG_DIR must be set and point to valid directories."
+if [[ ! -d "$MarlinML" || ! -d "$VariablesForDeepMLFlavorTagger" || ! -d "$BTaggingVariables" ||  ! -d "$LCIO" || ! -d "${ILD_CONFIG_DIR}" ]]; then
+    zhh_echo "Error: MarlinML, VariablesForDeepMLFlavorTagger, BTaggingVariables, LCIO and ILD_CONFIG_DIR must be set and point to valid directories."
     zhh_echo "    Use --install to download and/or compile them here. Aborting."
+    return 1
+fi
+
+if [[ ! -f "$LCIO/lib64/rootDict_rdict.pcm" ]]; then
+    zhh_echo "Error: LCIO is not correctly compiled. Make sure to compile"
+    zhh_echo "    it with 'cmake -DBUILD_ROOTDICT=ON'. Aborting."
+    
     return 1
 fi
 
@@ -247,13 +255,16 @@ alias MarlinZHH_qq="Marlin $REPO_ROOT/scripts/ZHH_v3_qq.xml --constant.ParticleN
 alias MarlinZHH="Marlin $REPO_ROOT/scripts/ZHH_v2.xml --constant.ILDConfigDir=\"$ILD_CONFIG_DIR\""
 
 is_root_readable() (
+    source $REPO_ROOT/shell/zhh_activate_conda.sh
+    zhh_activate_conda
+    
     local root_tree=${2:-None}
 
     if [ "$root_tree" != "None" ]; then
         local root_tree="'$root_tree'"
     fi
 
-    local res=$($CONDA_ROOT/envs/$CONDA_ENV/bin/python -c "from phc import root_file_readable; print(root_file_readable('${1}', ${root_tree}))")
+    local res=$(python -c "from phc import root_file_readable; print(root_file_readable('${1}', ${root_tree}))")
     
     if [ "$res" = "True" ]; then
         return 0
@@ -263,7 +274,10 @@ is_root_readable() (
 )
 
 is_json_readable() (
-    local res=$($CONDA_ROOT/envs/$CONDA_ENV/bin/python -c "from phc import json_file_readable; print(json_file_readable('${1}'))")
+    source $REPO_ROOT/shell/zhh_activate_conda.sh
+    zhh_activate_conda
+
+    local res=$(python -c "from phc import json_file_readable; print(json_file_readable('${1}'))")
     
     if [ "$res" = "True" ]; then
         return 0
