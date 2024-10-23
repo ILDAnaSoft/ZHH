@@ -56,6 +56,7 @@ function zhh_attach_marlin_dlls() {
     local libs=(
         "$REPO_ROOT/source/CheatedMCOverlayRemoval/lib/libCheatedMCOverlayRemoval.so"
         "$REPO_ROOT/source/AddNeutralPFOCovMat/lib/libAddNeutralPFOCovMat.so"
+        "$REPO_ROOT/source/ChargedPFOCorrection/lib/libChargedPFOCorrection.so"
         "$REPO_ROOT/source/LeptonPairing/lib/libLeptonPairing.so"
         "$REPO_ROOT/source/HdecayMode/lib/libHdecayMode.so"
         "$REPO_ROOT/source/JetTaggingComparison/lib/libJetTaggingComparison.so"
