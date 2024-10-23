@@ -10,4 +10,3 @@ seaborn==0.13.2
 tqdm==4.65.0
 uproot==5.3.12
 tabulate==0.9.0
-root==6.28.04
