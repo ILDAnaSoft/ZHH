@@ -84,12 +84,14 @@ function zhh_install_deps() {
                     else
                         echo "Directory $install_dir already exists. Assume it's correct."
                     fi
-                elif [[ -d $ypath ]]; then
-                    install_dir="$ypath"
-                    echo "Using user-supplied path $ypath for dependency $dependency"
                 else
-                    echo "Path $ypath does not exist. Aborting..."
-                    return 1
+                    if [[ -d $ypath ]]; then
+                        install_dir="$ypath"
+                        echo "Using user-supplied path $ypath for dependency $dependency"
+                    else
+                        echo "Path $ypath does not exist. Aborting..."
+                        return 1
+                    fi
                 fi
 
                 echo "Setting variable $dependency to <$install_dir>"
