@@ -116,6 +116,7 @@ class PreSelection : public Processor
 		int m_preselsPassedAll{};
 		int m_preselsPassedConsec{};
 		int m_nbjets{};
+		std::vector<float> m_blikelihoodness{};
 
 		TFile *m_pTFile{};        
 		TTree *m_pTTree{};

@@ -565,7 +565,7 @@ void Misclustering::processEvent( LCEvent* pLCEvent)
   catch(DataNotAvailableException &e) {
     streamlog_out(MESSAGE) << "Check : Input collections not found in event " << m_nEvt << endl;
   }
-
+  
 }
 
 float Misclustering::getMatchingByAngularSpace( EVENT::LCEvent *pLCEvent, vector<EVENT::ReconstructedParticle*> recoJets, vector<pair<int,int>> &reco2truejetindex)

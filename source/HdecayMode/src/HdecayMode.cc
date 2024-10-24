@@ -48,6 +48,11 @@ HdecayMode::HdecayMode() :
 					"Number of Higgs decays",
 					_nhiggs,
 					(int)2.);
+	registerProcessorParameter(     "outputFilename",
+					"name of output root file",
+					m_outputFile,
+					std::string("")
+					);
 
 	registerProcessorParameter(     "outputFilename",
 					"name of output root file",
