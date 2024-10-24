@@ -1,0 +1,10 @@
+[
+    {
+      "name": "key4hep",
+      "compilers": {
+        "C": "/usr/bin/gcc",
+        "CXX": "/usr/bin/g++"
+      },
+      "environmentSetupScript" : "${workspaceFolder}/setup.sh"
+    }
+  ]

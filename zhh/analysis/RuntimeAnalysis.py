@@ -1,0 +1,128 @@
+import json
+import numpy as np
+from glob import glob
+from dateutil import parser
+from typing import Union, Optional
+
+def evaluate_runtime(DATA_ROOT:str,
+                     branch:Union[int,str],
+                     WITH_EXIT_STATUS:bool=False):
+    """_summary_
+
+    Args:
+        DATA_ROOT (str): _description_
+        branch (Union[int,str]): _description_
+        WITH_EXIT_STATUS (bool, optional): Requires --transfer-logs to be used when the law command is run. Defaults to False.
+
+    Returns:
+        _type_: _description_
+    """
+    
+    branch = int(branch)
+    
+    with open(f'{DATA_ROOT}/{branch}/Source.txt') as file:
+        src_path = file.read().strip()
+        
+    with open(f'{DATA_ROOT}/{branch}/zhh_FinalStateMeta.json') as metafile:
+        branch_meta = json.load(metafile)
+        n_proc, process = branch_meta['nEvtSum'], branch_meta['processName']
+        tEnd, tStart = branch_meta['tEnd'], branch_meta['tStart']
+    
+    value = -1
+    if WITH_EXIT_STATUS:
+        with open(f'{DATA_ROOT}/stdall_{branch}To{branch+1}.txt') as file:
+            marker = 'job exit code :'
+            
+            for line in file.readlines():
+                if line.startswith(marker):
+                    value = int(line.split(f'{marker} ')[1].strip())
+            
+    return (branch, process, n_proc, src_path, tEnd - tStart, tStart, tEnd, value)
+
+def get_runtime_analysis(DATA_ROOT:Optional[str]=None,
+                         chunks_factual:Optional[np.ndarray]=None,
+                         meta:Optional[dict]=None,
+                         WITH_EXIT_STATUS:bool=False)->np.ndarray:
+    """_summary_
+
+    Args:
+        DATA_ROOT (Optional[str]): _description_
+        meta (Optional[dict]): _description_
+
+    Returns:
+        np.ndarray: _description_
+    """
+    
+    if chunks_factual is None and DATA_ROOT is None:
+        raise Exception('Either chunks_factual or DATA_ROOT must be given')
+    
+    dtype = [
+        ('branch', 'i'),
+        ('process', '<U60'),
+        ('n_processed', 'i'),
+        ('src', '<U512'),
+        ('tDuration', 'f')]
+    
+    results = []
+    
+    if chunks_factual is not None:
+        results = chunks_factual[['branch', 'process', 'chunk_size_factual', 'location', 'runtime']].tolist()
+    elif DATA_ROOT is not None:
+        if meta is None:    
+            metafile = glob(f'{DATA_ROOT}/htcondor_jobs*.json')[-1]
+            
+            with open(metafile) as file:
+                meta = json.load(file)
+        
+        jobs = meta['jobs']
+    
+        dtype += [('tStart', 'f')]
+        dtype += [('tEnd', 'f')]
+        dtype += [('exitCode', 'i')]
+        
+        for job_key in jobs:
+            branch = jobs[job_key]['branches'][0]
+            if jobs[job_key]['status'] == 'finished':
+                ev = evaluate_runtime(DATA_ROOT=DATA_ROOT, branch=branch, WITH_EXIT_STATUS=WITH_EXIT_STATUS)
+                results.append(ev)
+    else:
+        raise Exception('No data source given')
+    
+    results = np.array(results, dtype=dtype)
+                
+    return results
+
+def get_adjusted_time_per_event(runtime_analysis:np.ndarray,
+                                 MAX_CAP:Optional[float]=None,
+                                 MIN_CAP:Optional[float]=0.01):
+    
+    unique_processes = np.unique(runtime_analysis['process'])
+
+    dtype = [
+        ('process', '<U64'),
+        ('tAvg', 'f'),
+        ('n_processed', 'i'),
+        ('tPE', 'f')]
+
+    results = np.zeros(len(unique_processes), dtype=dtype)
+
+    for i, process in enumerate(unique_processes):
+        # Average for
+        subset = runtime_analysis[runtime_analysis['process'] == process]
+
+        tAvg = np.average(subset['tDuration'])
+        n_processed = subset['n_processed'].sum()
+        tPE = subset['tDuration'].sum()/ n_processed
+        
+        results['process'][i] = process
+        results['tAvg'][i] = tAvg
+        results['n_processed'][i] = n_processed
+        results['tPE'][i] = tPE
+        
+    if MAX_CAP is not None:
+        results['tPE'][results['tPE'] > MIN_CAP] = np.minimum(results['tPE'], MAX_CAP)
+        
+    if MIN_CAP is not None:
+        results['tPE'][results['tPE'] < MIN_CAP] = MIN_CAP
+    
+    return results

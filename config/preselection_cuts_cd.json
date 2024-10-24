@@ -1,0 +1,41 @@
+{
+    "ll": {
+        "nAskedJets": 4,
+        "nAskedIsoLeps": 2,
+        "maxDileptonMassDiff": 40.0,
+        "maxDijetMassDiff": 80.0,
+        "dijetMass": [60.0, 180.0],
+        "missingPT": [0.0, 70.0],
+        "maxThrust": 0.9,
+        "minBLikeliness": 0.0,
+        "minNBJets": 0,
+        "maxEvis": 999.0,
+        "minHHmass": 0.0
+    },
+    "vv": {
+        "nAskedJets": 4,
+        "nAskedIsoLeps": 0,
+        "maxDileptonMassDiff": 999.0,
+        "maxDijetMassDiff": 80.0,
+        "dijetMass": [60.0, 180.0],
+        "missingPT": [10.0, 180.0],
+        "maxThrust": 0.9,
+        "minBLikeliness": 0.2,
+        "minNBJets": 3,
+        "maxEvis": 400.0,
+        "minHHmass": 220.0
+    },
+    "qq": {
+        "nAskedJets": 6,
+        "nAskedIsoLeps": 0,
+        "maxDileptonMassDiff": 999.0,
+        "maxDijetMassDiff": 999.0,
+        "dijetMass": [60.0, 180.0],
+        "missingPT": [0.0, 70.0],
+        "maxThrust": 0.9,
+        "minBLikeliness": 0.16,
+        "minNBJets": 4,
+        "maxEvis": 999.0,
+        "minHHmass": 0.0
+    }
+}

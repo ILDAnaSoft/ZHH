@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="us-ascii"?>
+<marlin xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://ilcsoft.desy.de/marlin/marlin.xsd">
+  
+  <constants>
+    <constant name="lcgeo_DIR" value="/cvmfs/ilc.desy.de/sw/x86_64_gcc82_centos7/v02-02-02/lcgeo/v00-16-06" />
+    <constant name="DetectorModel" value="ILD_l5_o1_v02" />
+    <constant name="CompactFile" value="${lcgeo_DIR}/ILD/compact/${DetectorModel}/${DetectorModel}.xml" />
+    <constant name="OutputDirectory" value="." />
+    <constant name="OutputBaseName" value="zh" />
+    <constant name="OutputRootFile" value="${OutputBaseName}.root" />
+    <constant name="createRootTree" value="false" />
+    <constant name="displayEvent" value="false" />
+    <constant name="Verbosity" value="DEBUG"/>
+  </constants>
+
+  <execute>
+    <processor name="InitDD4hep" />
+    <processor name="MyAIDAProcessor" />
+    <processor name="MyCheatedMCOverlayRemoval" />
+    <processor name="MyIsolatedLeptonTaggingProcessor" />
+    <processor name="MyLCIOOutputProcessor"/>
+  </execute>
+
+  <global>
+    <!--parameter name="LCIOInputFiles">/pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/250-SetA/4f_ZZ_hadronic/ILD_l5_o1_v02/v02-02/rv02-02.sv02-02.mILD_l5_o1_v02.E250-SetA.I500062.P4f_zz_h.eL.pR.n000.d_dstm_15122_0.slcio</parameter-->
+    <parameter name="LCIOInputFiles">
+      /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/250-SetA/higgs/ILD_l5_o1_v02/v02-02/rv02-02.sv02-02.mILD_l5_o1_v02.E250-SetA.I402001.Pe1e1h.eL.pR.n000.d_dstm_15089_0.slcio
+    </parameter>
+    <!-- limit the number of processed records (run+evt): -->
+    <!--parameter name="MaxRecordNumber" value="0" /to process all events--> 
+    <!--parameter name="MaxRecordNumber" value="1000" /to process 1000 events--> 
+    <parameter name="MaxRecordNumber" value="0"/>
+    <parameter name="SkipNEvents" value="0" />
+    <parameter name="SupressCheck" value="false" />
+    <parameter name="GearXMLFile">/cvmfs/ilc.desy.de/sw/ILDConfig/v02-02-02/StandardConfig/production/Gear/gear_ILD_l5_v02.xml</parameter>
+    <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT">DEBUG</parameter>
+    <parameter name="RandomSeed" value="1234567890" />
+    <parameter name="OutputSteeringFile" value="" />
+    <parameter name="AllowToModifyEvent" value="true" />
+    <!-- optionally limit the collections that are read from the input file: -->
+    <!--parameter name="LCIOReadCollectionNames">MCParticle PandoraPFOs</parameter-->
+  </global>
+
+  <processor name="InitDD4hep" type="InitializeDD4hep">
+    <!--InitializeDD4hep reads a compact xml file and initializes the DD4hep::LCDD object-->
+    <!--Name of the DD4hep compact xml file to load-->
+    <parameter name="DD4hepXMLFile" type="string">${CompactFile}</parameter>
+    <parameter name="Verbosity" type="string">SILENT </parameter>
+  </processor>
+
+  <processor name="MyAIDAProcessor" type="AIDAProcessor">
+    <!--Processor that handles AIDA files. Creates on directory per processor.  Processors only need to create and fill the histograms,clouds and tuples. Needs to be the first ActiveProcessor-->
+    <!-- compression of output file 0: false >0: true (default) -->
+    <parameter name="Compress" type="int">1</parameter>
+    <!-- filename without extension-->
+    <parameter name="FileName" type="string">${OutputDirectory}/root/${OutputBaseName}_AIDA</parameter>
+    <!-- type of output file root (default) or xml )-->
+    <parameter name="FileType" type="string">root</parameter>
+    <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
+    <!--parameter name="Verbosity" type="string">DEBUG </parameter-->
+  </processor>
+
+  <processor name="MyCheatedMCOverlayRemoval" type="CheatedMCOverlayRemoval">
+    <parameter name="RecoParticleCollection" type="string"  lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
+    <parameter name="MCParticleCollection" type="string"  lcioInType="MCParticle">MCParticlesSkimmed</parameter>
+    <parameter name="RecoMCTruthLink" type="string" lcioInType="LCRelation"> RecoMCTruthLink </parameter>
+    <parameter name="MCTruthRecoLink" type="string" lcioInType="LCRelation"> MCTruthRecoLink </parameter>
+    <parameter name="OutputPfoCollection" type="string" lcioOutType="ReconstructedParticle">PFOsWithoutMCOverlay</parameter>
+    <parameter name="Verbosity" type="string">SILENT</parameter>
+  </processor>
+
+  <processor name="MyIsolatedLeptonTaggingProcessor" type="IsolatedLeptonTaggingProcessor">
+    <!--IsolatedLeptonTaggingProcessor does whatever it does ...-->
+    <!--cosine of the larger cone-->
+    <parameter name="CosConeLarge" type="float">0.95</parameter>
+    <!--cosine of the smaller cone-->
+    <parameter name="CosConeSmall" type="float">0.98</parameter>
+    <!--Cut on the mva output of isolated electron selection-->
+    <parameter name="CutOnTheISOElectronMVA" type="float">0.5</parameter>
+    <!--Cut on the mva output of isolated muon selection-->
+    <parameter name="CutOnTheISOMuonMVA" type="float">0.7</parameter>
+    <!--Directory of Weights for the Isolated Electron MVA Classification-->
+    <parameter name="DirOfISOElectronWeights" type="string">/cvmfs/ilc.desy.de/sw/x86_64_gcc82_centos7/v02-02-02/MarlinReco/v01-31/Analysis/IsolatedLeptonTagging/example/isolated_electron_weights</parameter>
+    <!--Directory of Weights for the Isolated Muon MVA Classification-->
+    <parameter name="DirOfISOMuonWeights" type="string">/cvmfs/ilc.desy.de/sw/x86_64_gcc82_centos7/v02-02-02/MarlinReco/v01-31/Analysis/IsolatedLeptonTagging/example/isolated_muon_weights_woYoke </parameter>
+    <!--Name of the PandoraPFOs collection-->
+    <parameter name="InputPandoraPFOsCollection" type="string" lcioInType="ReconstructedParticle">PFOsWithoutMCOverlay</parameter>
+    <!--Name of the Primary Vertex collection-->
+    <parameter name="InputPrimaryVertexCollection" type="string" lcioInType="Vertex">PrimaryVertex</parameter>
+    <!--flag to select one most like isolated lepton-->
+    <parameter name="IsSelectingOneIsoLep" type="bool">false</parameter>
+    <!--Maximum d0 significance for electron-->
+    <parameter name="MaxD0SigForElectron" type="float">50</parameter>
+    <!--Maximum D0 significance for muon-->
+    <parameter name="MaxD0SigForMuon" type="float">20</parameter>
+    <!--Maximum ratio of energy in calorimeters over momentum for electron-->
+    <parameter name="MaxEOverPForElectron" type="float">1.3</parameter>
+    <!--Maximum ratio of energy in calorimeters over momentum for muon-->
+    <parameter name="MaxEOverPForMuon" type="float">0.3</parameter>
+    <!--Maximum Z0 significance for electron-->
+    <parameter name="MaxZ0SigForElectron" type="float">50</parameter>
+    <!--Maximum Z0 significance for muon-->
+    <parameter name="MaxZ0SigForMuon" type="float">20</parameter>
+    <!--minimum ratio of energy in calorimeters over momentum for electron-->
+    <parameter name="MinEOverPForElectron" type="float">0.5</parameter>
+    <!--minimum ratio of energy in ecal over energy in ecal+hcal-->
+    <parameter name="MinEecalOverTotEForElectron" type="float">0.9</parameter>
+    <!--Minimum energy in yoke for electron-->
+    <parameter name="MinEyokeForMuon" type="float">1.2</parameter>
+    <!--Minimum momentum for electron-->
+    <parameter name="MinPForElectron" type="float">5</parameter>
+    <!--Minimum momentum for muon-->
+    <parameter name="MinPForMuon" type="float">5</parameter>
+    <!--Name of collection with the selected isolated lepton-->
+    <parameter name="OutputIsoLeptonsCollection" type="string" lcioOutType="ReconstructedParticle">ISOLeptons</parameter>
+    <!--Name of the new PFOs collection without isolated lepton-->
+    <parameter name="OutputPFOsWithoutIsoLepCollection" type="string" lcioOutType="ReconstructedParticle">PandoraPFOsWithoutIsoLep</parameter>
+    <!--use yoke for muon ID-->
+    <parameter name="UseYokeForMuonID" type="bool">false</parameter>
+    <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
+    <parameter name="Verbosity" type="string">MESSAGE</parameter>
+  </processor>
+
+  <processor name="MyLeptonPairing" type="LeptonPairing">
+     <parameter name="ISOLeptons" type="string" lcioInType="ReconstructedParticle">ISOLeptons</parameter>
+     <parameter name="PandoraPFOsWithoutIsoLep" type="string" lcioInType="ReconstructedParticle">PandoraPFOsWithoutIsoLep</parameter>
+     <parameter name="LeptonPair" type="string" lcioOutType="ReconstructedParticle">LeptonPair</parameter>
+     <parameter name="PandoraPFOsWithoutLepPair" type="string" lcioOutType="ReconstructedParticle">PandoraPFOsWithoutLepPair</parameter>
+     <parameter name="fillRootTree" type="bool">true</parameter>
+    <parameter name="RootFile" type="string">${OutputDirectory}/${OutputBaseName}_LeptonPairing.root</parameter>
+    <parameter name="Verbosity" type="string">MESSAGE</parameter>
+  </processor>
+
+  <processor name="MyErrorFlow" type="ErrorFlow">
+    <!--PfoAnalysis analyses output of PandoraPFANew-->
+    <!--Names of input pfo collection-->
+    <parameter name="InputPFOCollection" type="string" lcioInType="ReconstructedParticle">RefinedJets</parameter>
+    <!--Names of output collection-->
+    <parameter name="OutputPFOCollection" type="string" lcioOutType="ReconstructedParticle">OutputErrorFlowJets</parameter>
+    <!--whether use full CovMat for neutral PFOs or use only energy uncertainty-->
+    <parameter name="useFullCovMatforNeutrals" type="bool">true</parameter>
+    <!--Enable/disable confusion term to be added to covariance matrix-->
+    <parameter name="EnableConfusionTerm" type="bool">true</parameter>
+    <!--Enable/disable Propagating uncertainty due to confusion to the Momentum components-->
+    <parameter name="PropagateConfusion2Mom" type="bool">true</parameter>
+    <!-- A correction factor to be multiplied to angular uncertainties of Photons -->
+    <parameter name="CovMatFactorPhotons" type="double">1.3</parameter>
+    <!-- A correction factor to be multiplied to angular uncertainties of Neutral Hadrons -->
+    <parameter name="CovMatFactorNeutralHadrons" type="double">1.8</parameter>
+    <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
+    <parameter name="Verbosity" type="string">MESSAGE</parameter>
+  </processor>
+
+  <processor name="MyLCIOOutputProcessor" type="LCIOOutputProcessor">
+    <!--Writes the current event to the specified LCIO outputfile. Needs to be the last ActiveProcessor.-->
+    <!--drops the named collections from the event-->
+    <parameter name="DropCollectionNames" type="StringVec"> BuildUpVertex BuildUpVertex_RP BuildUpVertex_V0 BuildUpVertex_V0_RP GammaGammaCandidateEtaPrimes GammaGammaCandidateEtas GammaGammaCandidatePi0s MCTruthMarlinTrkTracksLink MCTruthClusterLink MarlinTrkTracks MarlinTrkTracksKaon MarlinTrkTracksMCTruthLink MarlinTrkTracksProton PFOsWithoutOverlay PandoraClusters PandoraPFO_updatedNeutralPFOs PandoraPFOsWithoutIsoLep PrimaryVertex PrimaryVertex_RP RefinedJets_rel RefinedJets_vtx RefinedJets_vtx_RP RefinedVertex_RP V0RecoParticles V0Vertices VertexJets DistilledPFOs GammaGammaParticles DurhamJetsPFOs Durham_2JetsPFOs PandoraPFOsWithoutLepPair </parameter>
+    <!--drops all collections of the given type from the event-->
+    <!--parameter name="DropCollectionTypes" type="StringVec">SimTrackerHit SimCalorimeterHit  </parameter-->
+    <!-- write complete objects in subset collections to the file (i.e. ignore subset flag)-->
+    <!--parameter name="FullSubsetCollections" type="StringVec">MCParticlesSkimmed  </parameter-->
+    <!--force keep of the named collections - overrules DropCollectionTypes (and DropCollectionNames)-->
+    <parameter name="KeepCollectionNames" type="StringVec"> FastJets4_Precluster Durham_2Jets IsolatedLeptons ISOLeptons PandoraPFOsWithoutLepPair RefinedJets RefinedJetsPFOs OutputErrorFlowJets TrueJets FinalColourNeutrals InitialColourNeutrals TrueJetPFOLink TrueJetMCParticleLink FinalElementonLink InitialElementonLink FinalColourNeutralLink InitialColourNeutralLink HdecayMode IsolatedLeptons preselection JetMatching </parameter>
+    <!-- name of output file -->
+
+    <parameter name="LCIOOutputFile" type="string">${OutputDirectory}/${OutputBaseName}.slcio</parameter>
+    <!--write mode for output file:  WRITE_APPEND or WRITE_NEW-->
+    <parameter name="LCIOWriteMode" type="string">WRITE_NEW</parameter>
+    <!--will split output file if size in kB exceeds given value - doesn't work with APPEND and NEW-->
+    <!--parameter name="SplitFileSizekB" type="int">1992294 </parameter-->
+    <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
+    <parameter name="Verbosity" type="string">DEBUG</parameter>
+  </processor>
+</marlin>

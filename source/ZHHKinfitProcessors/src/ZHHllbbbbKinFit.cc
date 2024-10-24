@@ -1118,7 +1118,7 @@ ZHHllbbbbKinFit::FitResult ZHHllbbbbKinFit::performFIT( pfoVector jets,
     } else if (m_fithypothesis == "ZZHsoft") {
       fitter->addConstraint( h1m.get() );
       fitter->addConstraint( zmsoft.get() );
-    } else {
+    } else if (m_fithypothesis == "EQM") {
       fitter->addConstraint( eqm.get() );
     }
 

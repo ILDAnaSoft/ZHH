@@ -1,6 +1,7 @@
 #ifndef PreSelection_h
 #define PreSelection_h 1
 
+#include "nlohmann/json.hpp"
 #include "marlin/Processor.h"
 #include "IMPL/LCCollectionVec.h"
 #include "lcio.h"
@@ -17,6 +18,18 @@ class TTree;
 
 using namespace lcio ;
 using namespace marlin ;
+using jsonf = nlohmann::json;
+
+// If the final state is a ZHH (with H -> bbar), the channel is given by the decay channel of the Z boson (else OTHER)
+// NONE is for initialization only and should not occur in practice
+enum EVENT_CATEGORY_ZHH: unsigned int {
+	NONE = 0,
+	OTHER = 1,
+	LEPTONIC = 11,
+	NEUTRINO = 21,
+	HADRONIC = 31
+};
+
 class PreSelection : public Processor
 {
 	public:
@@ -52,9 +65,14 @@ class PreSelection : public Processor
 		std::string m_HiggsCollection{};
 		std::string m_outputFile{};
 		std::string m_whichPreselection{};
-		std::string m_isPassed{};
+		std::string m_isPassedCollection{};
+		std::string m_cutDefinitionsJSONFile{};
+		std::string m_PIDAlgorithmBTag{};
+
 		int m_nAskedJets{};
-                int m_nAskedIsoLeps{};
+        int m_nAskedIsoLeps{};
+		float m_ECM{};
+
 		float m_maxdileptonmassdiff{};
 		float m_maxdijetmassdiff{};
 		float m_mindijetmass{};
@@ -66,24 +84,42 @@ class PreSelection : public Processor
 		int m_minnbjets{};
 		float m_maxEvis{};
 		float m_minHHmass{};
-		float m_ECM{};
-                int m_nRun;
-                int m_nEvt;
+
+		int m_nRun;
+		int m_nEvt;
+		int m_errorCode;
+
 		int m_nJets{};
-                int m_nIsoLeps{};
+		int m_nIsoLeps{};
+		std::vector<int> m_lepTypes{};
+		int m_lepTypesPaired{};
 		float m_missingPT{};
-                float m_Evis{};
-                float m_thrust{};
+		float m_missingPTInvMass{};
+		float m_Evis{};
+		float m_thrust{};
+		float m_dileptonMassPrePairing{};
 		float m_dileptonMass{};
 		float m_dileptonMassDiff{};
-		std::vector<float>  m_dijetMass{};
-		std::vector<float>  m_dijetMassDiff{};
+		float m_chi2min{};
+		
+		int m_isPassed{};
+
+		// Event values for improving/investigating preselection efficiency
+		std::vector<int> m_dijetPairing{};
+		std::vector<float> m_dijetMass{};
+		std::vector<float> m_dijetMassDiff{};
+		std::vector<double> m_bTagValues{};
+		
 		float m_dihiggsMass{};
+		std::vector<int>  m_preselsPassedVec{};
+
+		int m_preselsPassedAll{};
+		int m_preselsPassedConsec{};
 		int m_nbjets{};
 		std::vector<float> m_blikelihoodness{};
 
-		TFile *m_pTFile{};
-                TTree *m_pTTree{};
+		TFile *m_pTFile{};        
+		TTree *m_pTTree{};
 
 };
 
