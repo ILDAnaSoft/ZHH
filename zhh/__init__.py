@@ -4,3 +4,4 @@ from zhh.util import *
 from zhh.processes import *
 from zhh.data import *
 from zhh.analysis import *
+from zhh.tasks import *

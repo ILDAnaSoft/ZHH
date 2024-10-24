@@ -93,6 +93,7 @@ class ZHHllbbbbKinFit : public Processor , public TrueJet_Parser
 		virtual void	getJetParameters( ReconstructedParticle* jet , float (&parameters)[ 3 ] , float (&errors)[ 3 ] );
 		virtual void	getLeptonParameters( ReconstructedParticle* lepton , float (&parameters)[ 3 ] , float (&errors)[ 3 ] );
 		std::vector<double> calculateInitialMasses(pfoVector jets, pfoVector leptons, vector<unsigned int> perm);
+		std::vector<double> calculateMassesFromSimpleChi2Pairing(pfoVector jets, pfoVector leptons);
 		std::vector<double> calculatePulls(std::shared_ptr<ParticleFitObject> fittedobject, ReconstructedParticle* startobject, int type);
 		double calcChi2(shared_ptr<vector<shared_ptr<BaseFitObject>>> fitobjects);
 		virtual void	check( LCEvent * evt );

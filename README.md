@@ -15,7 +15,7 @@ If you wish to use your own local copies of the repositories, create (or edit, i
 source setup.sh --install --install-dir ~/nfs/dependencies_zhh
 ```
 
-This will download the necessary repositories and for ILDConfig extract LCFIPlus weights. Also, if `$CONDA_PREFIX` is not found, mambaforge can be automatically downloaded and installed, setting up an python 3.11 environment called `zhh` with all dependencies defined in the `requirements.txt` file. Also, all ZHH and dependency processors will be compiled. 
+This will download the necessary repositories and for ILDConfig extract LCFIPlus weights. Also, if `$CONDA_ROOT` is not found, mambaforge can be automatically downloaded and installed, setting up an python 3.11 environment called `zhh` with all dependencies defined in the `requirements.txt` file. Also, all ZHH and dependency processors will be compiled. 
 
 After that, the framework is setup for both the analysis of individual files and the submission of batch jobs using `law` (see [here](#For-production)). 
 
@@ -32,11 +32,12 @@ Either you or `source setup.sh --install` should make sure the following environ
 
 | Environment variable           | Target / Description   |
 |--------------------------------|------------------------|
+| REPO_ROOT                      | this repository        |
 | ILD_CONFIG_DIR                 | https://github.com/iLCSoft/ILDConfig |
 | MarlinML                       | https://gitlab.desy.de/ilcsoft/MarlinML |
 | VariablesForDeepMLFlavorTagger | https://gitlab.desy.de/ilcsoft/variablesfordeepmlflavortagger |
 | BTaggingVariables              | https://gitlab.desy.de/ilcsoft/btaggingvariables |
-| CONDA_PREFIX                   | Path to the root of a conda installation. Defaults to `/nfs/dust/ilc/user/$(whoami)/miniforge3` |
+| CONDA_ROOT                     | Path to the root of a conda installation. Defaults to `/nfs/dust/ilc/user/$(whoami)/miniforge3` |
 | CONDA_ENV                      | Name of the environment to use. Defaults to `zhh`. |
 | DATA_PATH                      | Where all batch jobs save their outputs. Defaults to `/nfs/dust/ilc/user/$(whoami)/zhh`. |
 | TORCH_PATH (*)                 | `python -c 'import torch; print(f"{torch.__file__}")'` |
@@ -61,33 +62,49 @@ The absolute path of the resulting library file `*.so` must then be added to `MA
 $MARLIN_DLL=$MARLIN_DLL:<Path to compiled library file>
 ```
 
-#### Helper script
-If you compile a freshly cloned copy of all ZHH processors from scratch, you might want to use the `compile_from_scratch.sh` script.
-For that you need to `source` it from the top level directory of the repository. It saves some typing, that's all.
+#### Helper script to compile all ZHH processors: compile_from_scratch.sh
+If you compile a freshly cloned copy of all ZHH processors from scratch, you might want to use `source compile_from_scratch.sh` from the top level directory of the repository. It saves some typing, that's all.
+
+If you only want to integrate changes, call `source compile_from_scratch.sh keep`. This will not remove any existing build files.
 
 ## Running the analysis
 For development, it is desirable to just use `Marlin` with the given 
 
 ### For testing
-The `v2` analysis runs [Marlin](https://github.com/iLCSoft/Marlin) with a steering file covering the llHH, vvHH and qqHH channels at once, with individual options for jet clustering, ISR recovery + lepton pairing and hypothesis-dependent cuts.
+The analysis runs [Marlin](https://github.com/iLCSoft/Marlin) with a steering file covering the llHH, vvHH and qqHH channels at once, with individual options for jet clustering, ISR recovery + lepton pairing and hypothesis-dependent cuts.
 
 ```shell
-Marlin scripts/ZHH_v2.xml --constant.ILDConfigDir=$ILD_CONFIG_DIR
+Marlin scripts/prod.xml --constant.ILDConfigDir=$ILD_CONFIG_DIR --constant.ZHH_REPO_ROOT=$REPO_ROOT
 ```
+
+For convenience, you can use the `MarlinZHH` shorthand, which automatically attaches `ILDConfigDir` as well as `ZHH_REPO_ROOT` and runs the `prod.xml` file per default. If you wish to use another file, you can use `MarlinZHH path-to-steering-file.xml`.
+
+Supplying the environment variables is necessary because the weight files of LCFIPlus reside within `ILDConfig` and the preselection cuts are read from a JSON file inside `config`. 
 
 ### For production
 For the full analysis, the framework luigi analysis workflows ([law](https://github.com/riga/law)) is used. It handles the automatic submission of batch jobs for all available physics samples. More information can be found in the README of the subdirectory `workflows`.
 
 # Other Information
 
-### Making the conda installation available in your terminal by default
+## Activating conda
+
+### In one shell
+
+```shell
+eval "$($CONDA_ROOT/bin/conda shell.$shell_name hook)"
+```
+
+### In every terminal by default
 
 If you want to make the conda installation by the script available from your terminal by default, run the following command (change `bash` if you're using a different shell):
 
 ```shell
-cd $CONDA_PREFIX/bin
+cd $CONDA_ROOT/bin
 ./conda init bash
 ```
 
 After restarting your shell, `conda activate zhh` should be available.
 
+# Acknowledgements
+
+Y. Radkhorrami for the correction of semi-leptonic decays. See [here](https://github.com/iLCSoft/MarlinReco/tree/master/Analysis/SLDCorrection) for the SLDCorrection processor. Also the processors [here](https://github.com/yradkhorrami/ChargedPFOCorrection) as well as [here](https://github.com/yradkhorrami/AddNeutralPFOCovMat) for necessary corrections of the covariance matrices of charged and neutral particles.

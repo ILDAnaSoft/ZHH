@@ -33,14 +33,10 @@
         <processor name="MyHdecayMode" />
 
         <!-- <processor name="MyFastJetProcessor" /> -->
-        
         <processor name="MyCheatedMCOverlayRemoval" />
         <processor name="MyThrust" />
 
-        <!--
-        For llHH only, run isolated lepton tagging and lepton pairing with BS/FSR recovery
-        In this case LCFIPlus must be rerun as the isolated leptons are removed from the PFO collection
-        -->
+        <!-- Isolated lepton tagging and lepton pairing with BS/FSR recovery is run to separate llbbbb from vv/qqbbbb -->
         <processor name="MyIsolatedLeptonTaggingProcessor" />
         <processor name="MyLeptonPairing" />
         

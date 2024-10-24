@@ -133,9 +133,6 @@ class Misclustering : public Processor , public TrueJet_Parser
   int m_matchMethod{};
   string m_outputFile{};
 
-  string m_b1type{};
-  string m_b2type{};
-
   float m_b1mass{};
   float m_b2mass{};
 };

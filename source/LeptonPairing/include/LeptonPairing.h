@@ -14,7 +14,6 @@
 #include "IMPL/ParticleIDImpl.h"
 #include "UTIL/PIDHandler.h"
 #include "marlin/VerbosityLevels.h"
-#include "Utilities.h"
 #include "TFile.h"
 #include "TH1I.h"
 #include "TTree.h"

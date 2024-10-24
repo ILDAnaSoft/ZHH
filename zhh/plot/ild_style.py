@@ -15,8 +15,8 @@ def fig_ild_style(fig:Figure, xlim:Union[List[float], Tuple[float,float]], bins:
                   colorpalette:Optional[List]=None,
                   ild_offset_x:float=0., ild_offset_y:float=0., ild_status:str='preliminary')->Figure:
     
-    from phc import get_colorpalette
     if colorpalette is None:
+        from phc import get_colorpalette
         colorpalette = get_colorpalette()
     
     if yunit is None or yunit =='':

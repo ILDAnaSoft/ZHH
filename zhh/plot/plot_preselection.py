@@ -2,7 +2,6 @@ from typing import Optional, List, Tuple, Iterable
 from tqdm.auto import tqdm
 from .ild_style import fig_ild_style
 from ..analysis.PreselectionAnalysis import calc_preselection_by_event_categories
-from phc import plot_hist, get_colorpalette
 import numpy as np
 import math
 import matplotlib.pyplot as plt
@@ -104,6 +103,9 @@ def plot_preselection_by_calc_dict(calc_dict, hypothesis:str, xlabel:str, xunit:
                                  bins:int=100, xlim:Optional[Iterable]=None, title_label:str='events',
                                  plot_flat:bool=False, yscale:Optional[str]=None,
                                  ild_style_kwargs:dict={}, plot_hist_kwargs:dict={})->List[Figure]:
+    
+    from phc import plot_hist
+    
     all_figs = []
     
     plot_dict = {}
@@ -199,6 +201,7 @@ def plot_total_efficiency(counts_first:dict, counts_last:dict, hypothesis:str,
         colorpalette = [color_dict[key] for key in signal_categories]
         
     if colorpalette is None:
+        from phc import get_colorpalette
         colorpalette = get_colorpalette()
     
     labels = np.array(signal_categories)
@@ -224,6 +227,7 @@ def plot_cut_efficiencies(counts_all:List[dict], hypothesis:str, signal_categori
         colorpalette = [color_dict[key] for key in signal_categories]
         
     if colorpalette is None:
+        from phc import get_colorpalette
         colorpalette = get_colorpalette()
     
     figs = []

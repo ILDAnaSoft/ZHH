@@ -7,10 +7,17 @@
         the correct values
         -->
         <constant name="ILDConfigDir" value="" />
-        <constant name="lcgeo_DIR" value="/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-centos7-gcc12.2.0-opt/k4geo/0.20-e42drs/share/k4geo" />
+        <constant name="ZHH_REPO_ROOT" value="." />
 
-        <!-- These variables should be constant
+        <!-- Use these variables to study specific channels only
+        In the job submission script, all channels are run
         -->
+        <constant name="Runllbbbb" value="True" />
+        <constant name="Runvvbbbb" value="False" />
+        <constant name="Runqqbbbb" value="False" />
+
+        <!-- These variables should be constant -->
+        <constant name="lcgeo_DIR" value="/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-centos7-gcc12.2.0-opt/k4geo/0.20-e42drs/share/k4geo" />
         <constant name="DetectorModel" value="ILD_l5_o1_v02" />
         <constant name="CompactFile" value="${lcgeo_DIR}/ILD/compact/${DetectorModel}/${DetectorModel}.xml" />
         <constant name="OutputDirectory" value="." />
@@ -30,42 +37,45 @@
         <processor name="MyAddNeutralPFOCovMatLite" />
         <processor name="MyChargedPFOCorrection" />
 
+        <!-- These two do some classification using truth information -->
         <processor name="MyHdecayMode" />
+        <processor name="MyFinalStateRecorder" />
 
+        <!-- Overlay removal so far cheated -->
         <!-- <processor name="MyFastJetProcessor" /> -->
-        
         <processor name="MyCheatedMCOverlayRemoval" />
         <processor name="MyThrust" />
 
-        <!--
-        For llHH only, run isolated lepton tagging and lepton pairing with BS/FSR recovery
-        In this case LCFIPlus must be rerun as the isolated leptons are removed from the PFO collection
-        -->
+        <!-- Isolated lepton tagging and lepton pairing with BS/FSR recovery is run to separate llbbbb from vv/qqbbbb -->
         <processor name="MyIsolatedLeptonTaggingProcessor" />
         <processor name="MyLeptonPairing" />
         
-        <processor name="JC4FT_ll" />
-        <processor name="MySLDCorrection" />
-        <processor name="MyErrorFlow_ll" />
+        <if condition="${Runllbbbb}">
+            <processor name="JC4FT_ll" />
+            <processor name="MySLDCorrection_ll" />
 
-        <if condition="MyHdecayMode.GoodEvent">
-            <processor name="MyZHHKinFitLeptonChannel" condition="" />
-            <!--
-            <processor name="mytruejet"/>
-            <processor name="MyMisclustering"/>
-            -->
-        </if> 
+            <!-- We should do a check on PreSelection.isPassed once that is fixed -->
+            <processor name="MyPreSelection_ll" />
+            <processor name="MyErrorFlow_ll" />
 
-        <!--
-        <processor name="JC4FT_vv" />
-        <processor name="JC4FT_qq" />
+            <if condition="MyHdecayMode.GoodEvent">
+                <processor name="MyZHHKinFit_ll" />
+                <!--
+                <processor name="MyTrueJet"/>
+                <processor name="MyMisclustering"/>
+                -->
+            </if>
+        </if>
 
-        <processor name="MyPreSelectionHHll" />
-        <processor name="MyPreSelectionHHvv" />
-        <processor name="MyPreSelectionHHqq" />
+        <if condition="${Runvvbbbb}">
+            <processor name="JC4FT_vv" />
+            <processor name="MyPreSelection_vv" />
+        </if>
 
-        <processor name="MyFinalStateRecorder" />
-        -->
+        <if condition="${Runqqbbbb}">
+            <processor name="JC4FT_qq" />
+            <processor name="MyPreSelection_qq" />
+        </if>
 
         <processor name="MyLCIOOutputProcessor" />
     </execute>
@@ -93,7 +103,7 @@
         <!--parameter name="LCIOReadCollectionNames">MCParticle PandoraPFOs</parameter-->
     </global>
 
-    <processor name="MyZHHKinFitLeptonChannel" type="ZHHllbbbbKinFit">
+    <processor name="MyZHHKinFit_ll" type="ZHHllbbbbKinFit">
     <!--ZHHKinFit does a 5C fit on 4 jet events and 2 leptons (Px, Py, Pz, E, M12 = M34 (for all three permutations)) -->
     <!--Name of the input collections: isolated leptons, jets, SLD vertices, Jet-SLDvertex relations, and SLDvertex-neutrino relations -->
     <parameter name="InputIsoLeptonsCollection" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
@@ -163,6 +173,16 @@
         <parameter name="PFOCollectionName" type="string" lcioInType="ReconstructedParticle">PandoraPFOs </parameter>
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
         <parameter name="Verbosity" type="string">DEBUG4 </parameter>
+    </processor>
+
+    <processor name="MyMisclustering" type="Misclustering">
+        <!--Name of the input reconstructed Jet collection-->
+        <parameter name="RecoJetCollection" type="string" lcioInType="ReconstructedParticle">RefinedJets_ll</parameter>
+        <parameter name="JetMatchingCollection" type="string" lcioOutType="ReconstructedParticle">JetMatching</parameter>
+        <parameter name="matchMethod" type="int">0</parameter>
+        <parameter name="outputFilename" type="string">${OutputDirectory}/${OutputBaseName}_Misclustering.root</parameter>
+        <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
+        <parameter name="Verbosity" type="string">DEBUG</parameter>
     </processor>
 
     <processor name="ComputeCorrectAngulardEdX" type="AngularCorrection_dEdxProcessor">
@@ -350,13 +370,13 @@
         <parameter name="Verbosity" type="string">SILENT</parameter>
     </processor>
 
-    <processor name="MySLDCorrection" type="SLDCorrection">
+    <processor name="MySLDCorrection_ll" type="SLDCorrection">
 		<!--Name of the Input MCParticle Collection-->
 		<parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
 		<!--Name of the Input PFO Collection-->
 		<parameter name="PfoCollection" type="string" lcioInType="ReconstructedParticle">PandoraPFOsWithoutLepPair</parameter>
 		<!--Name of the Input isolated lepton collection-->
-		<parameter name="isoLeptonsCollection" type="string" lcioInType="ReconstructedParticle">ISOLeptons </parameter>
+		<parameter name="isoLeptonsCollection" type="string" lcioInType="ReconstructedParticle">ISOLeptons</parameter>
 		<!--Name of the Input Jet Collection-->
 		<parameter name="JetCollection" type="string" lcioInType="RECONSTRUCTEDPARTICLE">RefinedJets_ll</parameter>
 		<!--Name of Primary Vertex Collection-->
@@ -824,7 +844,7 @@
         </parameter>
     </processor>
 
-    <processor name="MyPreSelectionHHll" type="PreSelection">
+    <processor name="MyPreSelection_ll" type="PreSelection">
         <!--MyPreSelection identified events that have passed the preselection-->
         <!--Name of the input collections-->
         <parameter name="isolatedleptonCollection" type="string" lcioInType="ReconstructedParticle">ISOLeptons</parameter>
@@ -835,6 +855,7 @@
         <parameter name="JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets_ll</parameter>
         <parameter name="inputPfoCollection" type="string" lcioInType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
         <parameter name="PIDAlgorithmBTag" type="string">lcfiplus</parameter>
+        <parameter name="cutDefinitionsJSONFile" type="string">${ZHH_REPO_ROOT}/config/preselection_cuts_cd.json</parameter>
 
         <!--Parameters for preselection -->
         <!--predefined preselection available for llbbbb, vvbbbb, and qqbbbb-->
@@ -846,7 +867,7 @@
         <parameter name="Verbosity" type="string">MESSAGE</parameter>
     </processor>
 
-    <processor name="MyPreSelectionHHvv" type="PreSelection">
+    <processor name="MyPreSelection_vv" type="PreSelection">
         <!--MyPreSelection identified events that have passed the preselection-->
         <!--Name of the input collections-->
         <parameter name="isolatedleptonCollection" type="string" lcioInType="ReconstructedParticle">ISOLeptons</parameter>
@@ -857,6 +878,7 @@
         <parameter name="JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets_vv</parameter>
         <parameter name="inputPfoCollection" type="string" lcioInType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
         <parameter name="PIDAlgorithmBTag" type="string">lcfiplus</parameter>
+        <parameter name="cutDefinitionsJSONFile" type="string">${ZHH_REPO_ROOT}/config/preselection_cuts_cd.json</parameter>
 
         <!--Parameters for preselection -->
         <!--predefined preselection available for llbbbb, vvbbbb, and qqbbbb-->
@@ -868,7 +890,7 @@
         <parameter name="Verbosity" type="string">MESSAGE</parameter>
     </processor>
 
-    <processor name="MyPreSelectionHHqq" type="PreSelection">
+    <processor name="MyPreSelection_qq" type="PreSelection">
         <!--MyPreSelection identified events that have passed the preselection-->
         <!--Name of the input collections-->
         <parameter name="isolatedleptonCollection" type="string" lcioInType="ReconstructedParticle">ISOLeptons</parameter>
@@ -879,6 +901,7 @@
         <parameter name="JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets_qq</parameter>
         <parameter name="inputPfoCollection" type="string" lcioInType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
         <parameter name="PIDAlgorithmBTag" type="string">lcfiplus</parameter>
+        <parameter name="cutDefinitionsJSONFile" type="string">${ZHH_REPO_ROOT}/config/preselection_cuts_cd.json</parameter>
         
         <!--Parameters for preselection -->
         <!--predefined preselection available for llbbbb, vvbbbb, and qqbbbb-->

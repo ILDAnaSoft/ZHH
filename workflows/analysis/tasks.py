@@ -7,9 +7,7 @@ from analysis.framework import HTCondorWorkflow
 
 from zhh import get_raw_files, analysis_stack, ProcessIndex, \
     get_adjusted_time_per_event, get_runtime_analysis, get_sample_chunk_splits, get_process_normalization, \
-    get_chunks_factual
-    
-from phc import BaseTask
+    get_chunks_factual, BaseTask
 
 from typing import Optional, Union, Annotated, List
 
@@ -71,7 +69,7 @@ class CreateAnalysisChunks(BaseTask):
         pn = get_process_normalization(processes, samples, RATIO_BY_EXPECT=self.ratio)
         atpe = get_adjusted_time_per_event(runtime_analysis)
         
-        with open(osp.expandvars(f'$REPO_ROOT/workflows/analysis/custom_statistics.json'), 'r') as f:
+        with open(osp.expandvars(f'$REPO_ROOT/config/custom_statistics.json'), 'r') as f:
             custom_statistics = json.load(f)
 
         chunk_splits = get_sample_chunk_splits(samples, process_normalization=pn,
@@ -117,7 +115,7 @@ class UpdateAnalysisChunks(BaseTask):
         chunks_in_path = chunks_in.path
         existing_chunks = np.load(chunks_in_path)
         
-        with open(osp.expandvars(f'$REPO_ROOT/workflows/analysis/custom_statistics.json'), 'r') as f:
+        with open(osp.expandvars(f'$REPO_ROOT/config/custom_statistics.json'), 'r') as f:
             custom_statistics = json.load(f)
         
         new_chunks = get_sample_chunk_splits(samples, atpe, pn, MAXIMUM_TIME_PER_JOB=arguments['jobtime'], \

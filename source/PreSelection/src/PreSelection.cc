@@ -228,7 +228,9 @@ void PreSelection::init()
 
 	streamlog_out(DEBUG) << "   init finished  " << std::endl;
 
-	if (m_cutDefinitionsJSONFile != "") {
+	if (m_cutDefinitionsJSONFile.length() > 0) {
+		streamlog_out(DEBUG) << "Reading preselection cuts from file " << m_cutDefinitionsJSONFile << std::endl;
+
 		std::ifstream ifs(m_cutDefinitionsJSONFile);
 		jsonf cuts = jsonf::parse(ifs);
 		

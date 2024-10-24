@@ -250,39 +250,11 @@ if [[ $MARLIN_DLL != *"libFinalStateRecorder"* ]]; then
     zhh_attach_marlin_dlls
 fi
 
-alias MarlinZHH_ll="Marlin $REPO_ROOT/scripts/ZHH_v3_ll.xml --constant.ParticleNetScriptFile=\"$MarlinML/python/particlenet.pt\" --constant.ILDConfigDir=\"$ILD_CONFIG_DIR\""
-alias MarlinZHH_vv="Marlin $REPO_ROOT/scripts/ZHH_v3_vv.xml --constant.ParticleNetScriptFile=\"$MarlinML/python/particlenet.pt\" --constant.ILDConfigDir=\"$ILD_CONFIG_DIR\""
-alias MarlinZHH_qq="Marlin $REPO_ROOT/scripts/ZHH_v3_qq.xml --constant.ParticleNetScriptFile=\"$MarlinML/python/particlenet.pt\" --constant.ILDConfigDir=\"$ILD_CONFIG_DIR\""
-alias MarlinZHH="Marlin $REPO_ROOT/scripts/ZHH_v2.xml --constant.ILDConfigDir=\"$ILD_CONFIG_DIR\""
+function MarlinZHH() {
+    local steering_file=${1:-"$REPO_ROOT/scripts/prod.xml"}
+    Marlin $steering_file --constant.ILDConfigDir="$ILD_CONFIG_DIR" --constant.ZHH_REPO_ROOT="$REPO_ROOT"
+}
 
-is_root_readable() (
-    source $REPO_ROOT/shell/zhh_activate_conda.sh
-    zhh_activate_conda
-    
-    local root_tree=${2:-None}
-
-    if [ "$root_tree" != "None" ]; then
-        local root_tree="'$root_tree'"
-    fi
-
-    local res=$(python -c "from phc import root_file_readable; print(root_file_readable('${1}', ${root_tree}))")
-    
-    if [ "$res" = "True" ]; then
-        return 0
-    else
-        return 1
-    fi
-)
-
-is_json_readable() (
-    source $REPO_ROOT/shell/zhh_activate_conda.sh
-    zhh_activate_conda
-
-    local res=$(python -c "from phc import json_file_readable; print(json_file_readable('${1}'))")
-    
-    if [ "$res" = "True" ]; then
-        return 0
-    else
-        return 1
-    fi
-)
+# Helpful for running batch jobs
+source $REPO_ROOT/shell/is_json_readable.sh
+source $REPO_ROOT/shell/is_root_readable.sh

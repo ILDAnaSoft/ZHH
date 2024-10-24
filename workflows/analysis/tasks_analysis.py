@@ -6,18 +6,22 @@ import law
 class AnalysisAbstract(MarlinJob):
     debug = True
     
-    check_output_root_ttrees = None #[
-        #('zhh_PreSelection_llHH.root', 'eventTree'),
-        #('zhh_PreSelection_vvHH.root', 'eventTree'),
-        #('zhh_PreSelection_qqHH.root', 'eventTree'),
-        #('zhh_FinalStates.root', 'eventTree')
-    #]
+    constants = [
+        ('ILDConfigDir', '$ILD_CONFIG_DIR'), # read from environment variable
+        ('Runllbbbb', 'True'),
+        ('Runvvbbbb', 'True'),
+        ('Runqqbbbb', 'True'),
+        ('OutputDirectory', '.')
+    ]
+    
+    check_output_root_ttrees = [
+        ('zhh_PreSelection_llHH.root', 'eventTree'),
+        ('zhh_PreSelection_vvHH.root', 'eventTree'),
+        ('zhh_PreSelection_qqHH.root', 'eventTree'),
+        ('zhh_FinalStates.root', 'eventTree')
+    ]
     
     check_output_files_exist = [
-        'zhh_PreSelection_llHH.root',
-        'zhh_PreSelection_vvHH.root',
-        'zhh_PreSelection_qqHH.root',
-        'zhh_FinalStates.root',
         'zhh_FinalStateMeta.json'
     ]
     
