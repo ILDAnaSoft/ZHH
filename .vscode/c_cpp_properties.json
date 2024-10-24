@@ -18,12 +18,8 @@
                 "${workspaceFolder}/source/FinalStateRecorder/include/**",
                 "${workspaceFolder}/source/legacy/include/**",
                 "${workspaceFolder}/source/JetTaggingComparison/include/**",
-                //"/cvmfs/ilc.desy.de/key4hep/spackages/physsim/0.4.2/x86_64-centos7-gcc11.2.0-opt/e26yiqeeecuwnx563aoawj2yhovjquox/include/**", // Physsim
-                //"${HOME}/public/ILCSoft/Physsim/include/**", // Physsim
-                //"${HOME}/public/ILCSoft/MarlinReco/Analysis/PIDTools/include/**",
             ],
             "defines": [],
-            //"compilerPath": "/cvmfs/ilc.desy.de/key4hep/spackages/gcc/11.2.0/x86_64-centos7-gcc4.8.5-opt/7isdlpuoi7cbcsugpa2hzuqhh5zgeapj/bin/g++",
             "compilerPath": "/usr/bin/g++",
             "cStandard": "gnu17",
             "cppStandard": "gnu++17",
