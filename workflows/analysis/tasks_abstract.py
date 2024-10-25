@@ -100,7 +100,7 @@ class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         
         cmd += f' && ( {executable} {steering_file} {self.parse_marlin_constants()} {self.parse_marlin_globals()}{str_max_record_number}{str_skip_n_events} --constant.MCParticleCollectionName={mcp_col_name} || true )'
         cmd += f' && echo "Finished Marlin at $(date)"'
-        cmd += f' && {{ sleep 2'
+        cmd += f' && ( sleep 2'
         
         if self.check_output_root_ttrees is not None:
             for name, ttree in self.check_output_root_ttrees:
@@ -110,7 +110,97 @@ class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
             for name in self.check_output_files_exist:
                 cmd += f' && [[ -f ./{name} ]]'
         
-        cmd += f' && echo "{self.branch_map[self.branch]}" >> Source.txt'
-        cmd += f' && cd .. && mv "{temp}" "{target}" }} || rm -rf "{temp}"'
+        cmd += f' && echo "{input_file}" >> Source.txt'
+        cmd += f' && cd .. && mv "{temp}" "{target}" ) || rm -rf "{temp}"'
 
         return cmd
+    
+    def output(self):
+        return self.local_directory_target(self.branch)
+
+class FastSimSGVExternalReadJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
+    """Abstract class for fast simulation jobs using SGV, reading in
+    LCIO/STDHEP and out-putting LCIO files
+    
+    We assume a working installation of SGV using the -EXTREAD option
+    with LCIO/STDHEP support. This can be achieved by following the
+    steps in https://gitlab.desy.de/mikael.berggren/sgv specifically
+    in the samples directory.
+    
+    We assume sourcing sgv_env and calling the executable usesgvlcio
+    works provided the input_file exists. We thus copy the directory
+    including the executable to the working node, symlink the input
+    file to a location given by input_file and expect the output at
+    output_file (again within the current working directory).
+    
+    Assign the location to SGV_DIR in the workflows/analysis/.env file
+    
+    The parameters for running SGV can be set here or overwritten in a
+    child class by a custom implementation of get_steering_file.
+    """
+    
+    executable = '$SGV_DIR/tests/usesgvlcio.exe'
+    
+    # this can be changed, if desired
+    steering_file_src = '$SGV_DIR/tests/sgv.steer'
+    
+    # this must fit the compilation of usesgvlcio (here: default)
+    # copied from steering_file_src to the working directory
+    steering_file_name = 'sgv.steer'
+    
+    sgv_env = '$SGV_DIR/sgvenv.sh'
+    sgv_input = 'input.slcio' # this must fit the steering file, also the GENERATOR_INPUT_TYPE
+    sgv_output = 'sgvout.slcio' # this must fit the steering file
+    
+    # Whether or not to check if the output file is readable
+    check_output_lcio:bool = True 
+    
+    def get_steering_file(self, branch:int, input_file:str) -> dict:
+        """The branch map self.branch_map is a dictionary
+        branch => src_location (LCIO file)
+
+        Args:
+            branch (int): _description_
+            input_file (str): _description_
+
+        Returns:
+            dict: _description_
+        """
+        
+        steering = {
+            'steering_file_src': self.steering_file_src,
+            'steering_file_name': self.steering_file_name,
+            'input_file': input_file,      
+        }
+        
+        return steering
+    
+    def build_command(self, fallback_level):
+        branch = self.branch
+        
+        steering = self.get_steering_file(branch, str(self.branch_map[branch]))
+        steering_file_src, steering_file_name, input_file = steering.values()
+        
+        executable = osp.basename(self.executable)
+        
+        target_path = str(self.output().path)
+        os.makedirs(osp.dirname(target_path), exist_ok=True)
+        
+        cmd  = f'source $REPO_ROOT/setup.sh && source "{self.sgv_env}"'
+        cmd += f' && echo "SRC={input_file} DST={target_path}"'
+        cmd += f' && export TEMPDIR=$(mktemp -d) && cd "$TEMPDIR"'
+        cmd += f' && cp -R $(dirname {self.executable})/* .'
+        cmd += f' && ( [[ -f {steering_file_name} ]] && rm {steering_file_name} && echo "Existing steering file removed" || echo "No existing steering file removed" )'
+        cmd += f' && cp "{steering_file_src}" "{steering_file_name}"'
+        cmd += f' && ln -s "{input_file}" {self.sgv_input}'
+        cmd += f' && echo "Starting SGV at $(date)"'
+        cmd += f' && ( ./{executable}'
+        cmd += f' && echo "Finished SGV at $(date)"'
+        cmd += f' && echo "Moving from worker node to destination"'
+        cmd += f' && mv "{self.sgv_output}" "{target_path}" )'
+        cmd += f' || [[ -d "$TEMPDIR" ]] && rm -rf "$TEMPDIR"'
+        
+        return cmd
+    
+    def output(self):
+        return self.local_target(f'{self.branch}.slcio')
