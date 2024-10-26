@@ -20,7 +20,7 @@ function usage() {
     echo "       LCIO: absolute path to LCIO installation (see https://github.com/iLCSoft/LCIO)"
 }
 
-ZHH_K4H_RELEASE_DEFAULT="2024-04-12"
+ZHH_K4H_RELEASE_DEFAULT="2024-10-03"
 
 function zhh_echo() {
     echo "ZHH> $1"
@@ -251,8 +251,15 @@ if [[ $MARLIN_DLL != *"libFinalStateRecorder"* ]]; then
 fi
 
 function MarlinZHH() {
-    local steering_file=${1:-"$REPO_ROOT/scripts/prod.xml"}
-    Marlin $steering_file --constant.ILDConfigDir="$ILD_CONFIG_DIR" --constant.ZHH_REPO_ROOT="$REPO_ROOT"
+    local steering_file
+    if [[ -f "$1" ]]; then
+        steering_file=$1
+        shift
+    else
+        steering_file="$REPO_ROOT/scripts/prod.xml"
+    fi
+
+    Marlin $steering_file --constant.ILDConfigDir="$ILD_CONFIG_DIR" --constant.ZHH_REPO_ROOT="$REPO_ROOT" "$@"
 }
 
 # Helpful for running batch jobs
