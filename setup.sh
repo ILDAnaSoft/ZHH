@@ -212,7 +212,7 @@ if [[ "$ZHH_COMMAND" = "install" ]]; then
         ZHH_INSTALL_DIR=$( realpath "$REPO_ROOT/dependencies" )
 
         read -p "Where do you wish to install all the dependencies? ($ZHH_INSTALL_DIR)" zhh_install_dir
-        zhh_install_dir=${$ZHH_INSTALL_DIR:-zhh_install_dir}
+        zhh_install_dir=${$ZHH_INSTALL_DIR:-$zhh_install_dir}
     else
         zhh_install_dir="$ZHH_INSTALL_DIR"
     fi
@@ -225,7 +225,7 @@ fi
 
 if [[ ! -d "$REPO_ROOT/$ZHH_VENV_NAME" || ! -f "$REPO_ROOT/$ZHH_VENV_NAME/bin/activate" ]]; then
     zhh_echo "Warning: <$ZHH_VENV_NAME> does not seem to point to a valid venv."
-    zhh_echo "    Job submissions via law may fail. Consider running setup.sh --install"
+    zhh_echo "    Job submissions via law may fail. Consider running source setup.sh --install"
 fi
 
 if [[ "$ZHH_COMMAND" = "compile" ]]; then

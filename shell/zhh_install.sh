@@ -23,29 +23,26 @@ function zhh_install_venv() {
         # Add $REPO_ROOT to PYTHONPATH
         echo "$REPO_ROOT" >> "$(realpath $REPO_ROOT/$ZHH_VENV_NAME/lib/python*/site-packages)/zhh.pth"
         
-        read -p "Do you want to make the kernel available for Jupyter Notebook? (y)" yn
-        if [[ -z $yn || $yn == "y" ]]; then
-            pip install ipykernel
-            python -m ipykernel install --user --name=$ZHH_VENV_NAME
+        # Replace the python executable with a shim so it is guaranteed
+        # that the key4hep stack is sourced and the correct env active.
+        local PYVER=$( python -c "from sys import version_info as v; print(f'{v.major}.{v.minor}')" )
+        local PYLOC="$REPO_ROOT/$ZHH_VENV_NAME/bin/python$PYVER"
+        mv $PYLOC "$REPO_ROOT/$ZHH_VENV_NAME/bin/python.exe"
 
-            # Shim that activates the venv and runs python
-            cat > $REPO_ROOT/$ZHH_VENV_NAME/bin/pywithenv <<EOF
+        cat > $PYLOC <<EOF
 #!/bin/bash
 
 REPO_ROOT="$REPO_ROOT"
 
 setupwrapper() { source \$REPO_ROOT/setup.sh 2>&1 >/dev/null; }
-setupwrapper && source \$REPO_ROOT/$ZHH_VENV_NAME/bin/activate && exec python \$@
+setupwrapper && source \$REPO_ROOT/$ZHH_VENV_NAME/bin/activate && exec python.exe "\$@"
 EOF
-            chmod 755 $REPO_ROOT/$ZHH_VENV_NAME/bin/pywithenv
+        chmod 755 $PYLOC
 
-            # Make the jupyter kernel use the shim instead of just python
-            if [[ -f "$HOME/.local/share/jupyter/kernels/$ZHH_VENV_NAME/kernel.json" ]]; then
-                sed -i "s|$ZHH_VENV_NAME/bin/python|$ZHH_VENV_NAME/bin/pywithenv|g" "$HOME/.local/share/jupyter/kernels/$ZHH_VENV_NAME/kernel.json"
-            else
-                echo "Warning: Could not find jupyter kernel file. Edit the kernelspec"
-                echo "    to make it use <$ZHH_VENV_NAME/bin/pywithenv> instead of <$ZHH_VENV_NAME/bin/python>."
-            fi
+        read -p "Do you want to make the kernel available for Jupyter Notebook? (y)" yn
+        if [[ -z $yn || $yn == "y" ]]; then
+            pip install ipykernel
+            python -m ipykernel install --user --name=$ZHH_VENV_NAME
         fi
     else
         echo "Python venv <$ZHH_VENV_NAME> already exists. If you want to redo the setup, delete the directory <$REPO_ROOT/$ZHH_VENV_NAME>."
