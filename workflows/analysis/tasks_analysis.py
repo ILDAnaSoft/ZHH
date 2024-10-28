@@ -26,10 +26,10 @@ class AnalysisAbstract(MarlinJob):
     ]
     
     def workflow_requires(self):
-        from analysis.tasks import CreateRawIndex, CreateAnalysisChunks
+        from analysis.tasks import RawIndex, CreateAnalysisChunks
         
         reqs = super().workflow_requires()
-        reqs['raw_index'] = CreateRawIndex.req(self)
+        reqs['raw_index'] = RawIndex.req(self)
         
         # In debug mode (runtime analysis), the CreateAnalysisChunks task is not required
         if not self.debug:
@@ -47,7 +47,7 @@ class AnalysisAbstract(MarlinJob):
     
     # The decorator @workflow_condition.create_branch_map is required
     # for all workflows which require a branch map conditioned on the
-    # output of a previous task (in this case, CreateRawIndex)
+    # output of a previous task (in this case, RawIndex)
     @workflow_condition.create_branch_map
     def create_branch_map(self) -> Union[
         dict[int, str],
@@ -94,3 +94,4 @@ class AnalysisFinal(AnalysisAbstract):
         AnalysisAbstract (_type_): _description_
     """
     debug = False
+    

@@ -1,7 +1,7 @@
 from analysis.framework import HTCondorWorkflow
 import law, os, uuid
 import os.path as osp
-from zhh import ShellTask
+from zhh import ShellTask, BaseTask, ProcessIndex
 from typing import Optional, Union, List
 
 class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):

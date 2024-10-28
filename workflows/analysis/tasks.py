@@ -9,18 +9,43 @@ from zhh import get_raw_files, analysis_stack, ProcessIndex, \
     get_adjusted_time_per_event, get_runtime_analysis, get_sample_chunk_splits, get_process_normalization, \
     get_chunks_factual, BaseTask
 
-from typing import Optional, Union, Annotated, List
-
+from typing import Optional, Union, Annotated
+from glob import glob
 import numpy as np
 import os.path as osp
 
-class CreateRawIndex(BaseTask):
-    """
-    This task creates two indeces:
+class RawIndex(BaseTask):
+    """This task creates two indeces:
     1. samples.npy: An index of available SLCIO sample files with information about the file location, number of events, physics process and polarization
     2. processes.npy: An index containing all encountered physics processes for each polarization and their cross section-section values 
     """
     index: Optional[ProcessIndex] = None
+    
+    def requires(self):
+        if str(self.version).startswith('550-hh-fast'):
+            from analysis.tasks_reco import FastSimSGV
+            return [FastSimSGV.req(self)]
+        else:
+            return []
+    
+    def get_raw_files(self) -> list[str]:
+        if str(self.version).startswith('500-full'):
+            return get_raw_files()
+        elif str(self.version).startswith('550-hh-full'):
+            files = glob(f'/pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/550-Test/hh/ILD_l5_o1_v02/v02-02-03/**/*.slcio', recursive=True)
+            files.sort()
+            
+            return files
+        elif str(self.version).startswith('550-hh-fast'):
+            # This requires a run of SGV beforehand
+            input_targets = self.input()[0]['collection'].targets.values()
+
+            reco_files = [f.path for f in input_targets]
+            reco_files.sort()
+            
+            return reco_files
+        else:
+            raise Exception(f'Cannot process version/source type <{self.version}>')
     
     def output(self):
         return [
@@ -29,10 +54,10 @@ class CreateRawIndex(BaseTask):
         ]
     
     def run(self):
-        temp_files: List[LocalFileTarget] = self.output()
+        temp_files: list[law.LocalFileTarget] = self.output()
         
         temp_files[0].parent.touch()
-        self.index = index = ProcessIndex(temp_files[0].path, temp_files[1].path, get_raw_files())
+        self.index = index = ProcessIndex(temp_files[0].path, temp_files[1].path, self.get_raw_files())
         self.index.load()
         
         self.publish_message(f'Loaded {len(index.samples)} samples and {len(index.processes)} processes')
@@ -45,7 +70,7 @@ class CreateAnalysisChunks(BaseTask):
         from analysis.tasks_analysis import AnalysisRuntime
         
         return [
-            CreateRawIndex.req(self),
+            RawIndex.req(self),
             AnalysisRuntime.req(self)
         ]
 
@@ -98,7 +123,7 @@ class UpdateAnalysisChunks(BaseTask):
     
     def requires(self):
         return [
-            CreateRawIndex.req(self),
+            RawIndex.req(self),
             CreateAnalysisChunks.req(self)
         ]
 
@@ -141,7 +166,7 @@ class AnalysisSummary(BaseTask, HTCondorWorkflow):
         reqs = super().workflow_requires()
         reqs['analysis_final'] = AnalysisFinal.req(self)
         reqs['analysis_chunks'] = CreateAnalysisChunks.req(self)
-        reqs['raw_index'] = CreateRawIndex.req(self)
+        reqs['raw_index'] = RawIndex.req(self)
         
         return reqs
     

@@ -3,7 +3,7 @@ import law
 import os
 
 class BaseTask(law.Task):
-    version = luigi.Parameter(default='v1')
+    version = luigi.Parameter(default='500-full')
 
     def local_path(self, *path):
         # DATA_PATH is defined in setup.sh

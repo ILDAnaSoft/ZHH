@@ -1,11 +1,63 @@
 #!/bin/bash
 
+function zhh_install_venv() {
+    echo "Checking python venv installation with name <$ZHH_VENV_NAME>..."
+    
+    if [[ -z $REPO_ROOT || ! -d "$REPO_ROOT" ]]; then
+        echo "REPO_ROOT is not set or does not point to a valid directory"
+        return 1
+    fi
+
+    if [[ -z $ZHH_VENV_NAME ]]; then
+        echo "ZHH_VENV_NAME is not set. Please set it to the desired name of the virtual environment."
+        return 1
+    fi
+
+    if [[ ! -d "$REPO_ROOT/$ZHH_VENV_NAME" ]]; then
+        unset PYTHONPATH
+        cd $REPO_ROOT
+        python -m venv $ZHH_VENV_NAME
+        source $REPO_ROOT/$ZHH_VENV_NAME/bin/activate
+        pip install -r $REPO_ROOT/requirements.txt
+        
+        # Add $REPO_ROOT to PYTHONPATH
+        echo "$REPO_ROOT" >> "$(realpath $REPO_ROOT/$ZHH_VENV_NAME/lib/python*/site-packages)/zhh.pth"
+        
+        read -p "Do you want to make the kernel available for Jupyter Notebook? (y)" yn
+        if [[ -z $yn || $yn == "y" ]]; then
+            pip install ipykernel
+            python -m ipykernel install --user --name=$ZHH_VENV_NAME
+
+            # Shim that activates the venv and runs python
+            cat > $REPO_ROOT/$ZHH_VENV_NAME/bin/pywithenv <<EOF
+#!/bin/bash
+
+REPO_ROOT="$REPO_ROOT"
+
+setupwrapper() { source \$REPO_ROOT/setup.sh 2>&1 >/dev/null; }
+setupwrapper && source \$REPO_ROOT/$ZHH_VENV_NAME/bin/activate && exec python \$@
+EOF
+            chmod 755 $REPO_ROOT/$ZHH_VENV_NAME/bin/pywithenv
+
+            # Make the jupyter kernel use the shim instead of just python
+            if [[ -f "$HOME/.local/share/jupyter/kernels/$ZHH_VENV_NAME/kernel.json" ]]; then
+                sed -i "s|$ZHH_VENV_NAME/bin/python|$ZHH_VENV_NAME/bin/pywithenv|g" "$HOME/.local/share/jupyter/kernels/$ZHH_VENV_NAME/kernel.json"
+            else
+                echo "Warning: Could not find jupyter kernel file. Edit the kernelspec"
+                echo "    to make it use <$ZHH_VENV_NAME/bin/pywithenv> instead of <$ZHH_VENV_NAME/bin/python>."
+            fi
+        fi
+    else
+        echo "Python venv <$ZHH_VENV_NAME> already exists. If you want to redo the setup, delete the directory <$REPO_ROOT/$ZHH_VENV_NAME>."
+    fi
+}
+
 function zhh_install_deps() {
     local INSTALL_DIR="$1"
     echo "Installing ZHH dependencies to $INSTALL_DIR"
 
-    if [[ ! -d "${REPO_ROOT}" ]]; then
-        echo "REPO_ROOT does not point to a valid directory"
+    if [[ -z $REPO_ROOT || ! -d "$REPO_ROOT" ]]; then
+        echo "REPO_ROOT is not set or does not point to a valid directory"
         return 1
     fi
 
