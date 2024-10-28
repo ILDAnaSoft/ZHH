@@ -15,11 +15,12 @@ action(){
         if [[ $delete_existing == "True" ]]; then
             echo "Deleting any existing build directory..."
             rm -rf build
-            cmake -DCMAKE_CXX_STANDARD=17 ..
         fi
 
         mkdir -p build
         cd build
+	cmake -DCMAKE_CXX_STANDARD=17 ..
+	#cmake -C $ILCSOFT/ILCSoft.cmake ..
         make install || { cd ../.. ; return 1; }
         cd ../..
     }
