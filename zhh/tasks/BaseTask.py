@@ -4,12 +4,15 @@ import os
 
 class BaseTask(law.Task):
     version = luigi.Parameter(default='500-full')
+    
+    # Custom postifx to be appended by inheriting tasks
+    postfix:str = ''
 
     def local_path(self, *path):
         # DATA_PATH is defined in setup.sh
         parts = ("$DATA_PATH", )
         parts += (self.__class__.__name__ ,)
-        parts += (self.version,)
+        parts += (str(self.version) + self.postfix,)
         parts += path
         
         return os.path.join(*map(str, parts))

@@ -97,5 +97,11 @@
         "${workspaceFolder}/source/ZHHKinfitProcessors",
         "${workspaceFolder}/source/JetTaggingComparison",
         "${workspaceFolder}/source/FinalStateRecorder"
-    ]
+    ],
+    "terminal.integrated.profiles.linux": {
+        "bash": {
+            "path": "/bin/bash"
+        },
+
+    },
 }

@@ -30,7 +30,7 @@ class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     # Optional: list of files
     check_output_files_exist:Optional[list[str]] = None
     
-    def get_steering_parameters(self, branch:int, branch_value:Union[tuple[str,int,int], str]) -> dict:
+    def get_steering_parameters(self, branch:int) -> dict:
         """The branch map self.branch_map is a dictionary
         branch => value where value has one of the following form:
         
@@ -39,11 +39,13 @@ class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
 
         Args:
             branch (int): _description_
-            branch_value (Union[tuple[str,int,int], str]): _description_
 
         Returns:
             dict: _description_
         """
+        
+        branch_value = self.branch_map[branch]
+        
         if isinstance(branch_value, tuple):
             input_file, n_events_skip, n_events_max = branch_value
         else:
@@ -74,7 +76,7 @@ class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     
     def build_command(self, fallback_level):
         branch = self.branch
-        steering = self.get_steering_parameters(branch, self.branch_map[branch])
+        steering = self.get_steering_parameters(branch)
         
         executable, steering_file, input_file, n_events_skip, n_events_max = steering.values()
         
@@ -104,14 +106,14 @@ class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         
         if self.check_output_root_ttrees is not None:
             for name, ttree in self.check_output_root_ttrees:
-                cmd += f' && is_root_readable ./{name} {ttree}'
+                cmd += f' && ( is_root_readable ./{name} {ttree} && echo "Success: TTree <{ttree}> exists" ) '
                 
         if self.check_output_files_exist is not None:
             for name in self.check_output_files_exist:
-                cmd += f' && [[ -f ./{name} ]]'
+                cmd += f' && [[ -f ./{name} ]] && echo "Success: File <{name}> exists"'
         
         cmd += f' && echo "{input_file}" >> Source.txt'
-        cmd += f' && cd .. && mv "{temp}" "{target}" ) || rm -rf "{temp}"'
+        cmd += f' && cd .. && mv "{temp}" "{target}" )'
 
         return cmd
     

@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Helper script that sources setup.sh and activates
+# the python virtual environment (venv)
+
 if [[ ! -d "$REPO_ROOT" ]]; then
     REPO_ROOT=$(dirname $(dirname $(readlink -f "$0")))
 

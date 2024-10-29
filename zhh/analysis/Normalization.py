@@ -14,7 +14,7 @@ def get_process_normalization(
     Args:
         processes (np.ndarray): _description_
         samples (np.ndarray): _description_
-        RATIO_BY_EXPECT (Optional[float], optional): If None, will use all the data. Defaults to 1..
+        RATIO_BY_EXPECT (Optional[float], optional): If None or 0, will use all the data. Defaults to 1..
 
     Returns:
         _type_: _description_
@@ -51,7 +51,7 @@ def get_process_normalization(
         
     # Normalize by cross-section
     results = results[np.argsort(results['proc_pol'])]
-    if RATIO_BY_EXPECT is None:
+    if RATIO_BY_EXPECT is None or RATIO_BY_EXPECT == 0:
         results['n_events_target'] = results['n_events_tot']
     else:
         results['n_events_target'] = np.maximum(

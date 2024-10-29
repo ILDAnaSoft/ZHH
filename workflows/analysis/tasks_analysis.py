@@ -1,5 +1,6 @@
 from analysis.tasks_abstract import MarlinJob
 from typing import Union, Optional
+from law.util import flatten
 import numpy as np
 import law
 
@@ -8,6 +9,7 @@ class AnalysisAbstract(MarlinJob):
     
     constants = [
         ('ILDConfigDir', '$ILD_CONFIG_DIR'), # read from environment variable
+        ('ZHH_REPO_ROOT', '$REPO_ROOT'),
         ('Runllbbbb', 'True'),
         ('Runvvbbbb', 'True'),
         ('Runqqbbbb', 'True'),
@@ -43,7 +45,7 @@ class AnalysisAbstract(MarlinJob):
         # the decorator will trigger a run of workflow_requires beforehand
         # because of the decorator, self.input() will refer to the outputs of tasks defined in workflow_requires()
         
-        return all(elem.exists() for elem in law.util.flatten(self.input()))
+        return all(elem.exists() for elem in flatten(self.input()))
     
     # The decorator @workflow_condition.create_branch_map is required
     # for all workflows which require a branch map conditioned on the

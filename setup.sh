@@ -38,8 +38,7 @@ function zhh_recompile() {
         rm -rf build
         mkdir -p build
         cd build
-        cmake -DCMAKE_CXX_STANDARD=17 ..
-        make install || ( cd ../.. && return 1 )
+        (cmake -DCMAKE_CXX_STANDARD=17 .. && make install ) || ( cd ../.. && return 1 )
         cd ../..
     }
 
@@ -212,7 +211,7 @@ if [[ "$ZHH_COMMAND" = "install" ]]; then
         ZHH_INSTALL_DIR=$( realpath "$REPO_ROOT/dependencies" )
 
         read -p "Where do you wish to install all the dependencies? ($ZHH_INSTALL_DIR)" zhh_install_dir
-        zhh_install_dir=${$ZHH_INSTALL_DIR:-$zhh_install_dir}
+        zhh_install_dir="${$ZHH_INSTALL_DIR:-$zhh_install_dir}"
     else
         zhh_install_dir="$ZHH_INSTALL_DIR"
     fi

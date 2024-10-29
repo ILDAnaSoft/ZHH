@@ -66,6 +66,11 @@ class CreateAnalysisChunks(BaseTask):
     ratio: Annotated[float, luigi.FloatParameter()] = 1.
     jobtime: Annotated[int, luigi.IntParameter()] = 7200
     
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        
+        self.postfix = f'-{self.ratio}-{self.jobtime}'
+    
     def requires(self):
         from analysis.tasks_analysis import AnalysisRuntime
         
@@ -80,7 +85,7 @@ class CreateAnalysisChunks(BaseTask):
             self.local_target('runtime_analysis.npy'),
             self.local_target('atpe.npy'),
             self.local_target('process_normalization.npy'),
-            self.local_target('arguments.json')
+            #self.local_target('arguments.json')
         ]
     
     def run(self):
@@ -108,9 +113,10 @@ class CreateAnalysisChunks(BaseTask):
         np.save(self.output()[2].path, atpe)
         np.save(self.output()[3].path, pn)
         
-        self.output()[4].dump({'ratio': float(self.ratio), 'jobtime': int(self.jobtime)})
+        #self.output()[4].dump({'ratio': float(self.ratio), 'jobtime': int(self.jobtime)})
         
         self.publish_message(f'Compiled analysis chunks')
+    
 
 class UpdateAnalysisChunks(BaseTask):
     """Updates the chunk definitions by only appending new chunks
