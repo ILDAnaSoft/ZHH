@@ -53,12 +53,6 @@ HdecayMode::HdecayMode() :
 					m_outputFile,
 					std::string("")
 					);
-
-	registerProcessorParameter(     "outputFilename",
-					"name of output root file",
-					m_outputFile,
-					std::string("")
-					);
 }
 
 void HdecayMode::init()
