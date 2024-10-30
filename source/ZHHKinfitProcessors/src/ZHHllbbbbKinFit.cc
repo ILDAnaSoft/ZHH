@@ -273,9 +273,11 @@ void ZHHllbbbbKinFit::init()
 	m_pTTree->Branch( "ZMassBeforeFit_woNu" , &m_ZMassBeforeFit_woNu , "ZMassBeforeFit_woNu/F" );
 	m_pTTree->Branch( "H1MassBeforeFit_woNu" , &m_H1MassBeforeFit_woNu , "H1MassBeforeFit_woNu/F" );
 	m_pTTree->Branch( "H2MassBeforeFit_woNu" , &m_H2MassBeforeFit_woNu , "H2MassBeforeFit_woNu/F" );
+	m_pTTree->Branch( "ISREnergyBeforeFit_woNu" , &m_ISREnergyBeforeFit_woNu , "ISREnergyBeforeFit_woNu/F" );
 	m_pTTree->Branch( "ZMassAfterFit_woNu" , &m_ZMassAfterFit_woNu , "ZMassAfterFit_woNu/F" );
 	m_pTTree->Branch( "H1MassAfterFit_woNu" , &m_H1MassAfterFit_woNu , "H1MassAfterFit_woNu/F" );
 	m_pTTree->Branch( "H2MassAfterFit_woNu" , &m_H2MassAfterFit_woNu , "H2MassAfterFit_woNu/F" );
+	m_pTTree->Branch( "ISREnergyAfterFit_woNu" , &m_ISREnergyAfterFit_woNu , "ISREnergyAfterFit_woNu/F" );
 	m_pTTree->Branch( "FitProbability_woNu" , &m_FitProbability_woNu , "FitProbability_woNu/F" );
 	m_pTTree->Branch( "FitChi2_woNu" , &m_FitChi2_woNu , "FitChi2_woNu/F" );
 	m_pTTree->Branch( "pullJetEnergy_woNu" , &m_pullJetEnergy_woNu );
@@ -303,9 +305,11 @@ void ZHHllbbbbKinFit::init()
 	m_pTTree->Branch( "ZMassBeforeFit" , &m_ZMassBeforeFit , "ZMassBeforeFit/F" );
 	m_pTTree->Branch( "H1MassBeforeFit" , &m_H1MassBeforeFit , "H1MassBeforeFit/F" );
 	m_pTTree->Branch( "H2MassBeforeFit" , &m_H2MassBeforeFit , "H2MassBeforeFit/F" );
+	m_pTTree->Branch( "ISREnergyBeforeFit" , &m_ISREnergyBeforeFit , "ISREnergyBeforeFit/F" );
 	m_pTTree->Branch( "ZMassAfterFit" , &m_ZMassAfterFit , "ZMassAfterFit/F" );
 	m_pTTree->Branch( "H1MassAfterFit" , &m_H1MassAfterFit , "H1MassAfterFit/F" );
 	m_pTTree->Branch( "H2MassAfterFit" , &m_H2MassAfterFit , "H2MassAfterFit/F" );
+	m_pTTree->Branch( "ISREnergyAfterFit" , &m_ISREnergyAfterFit , "ISREnergyAfterFit/F" );
 	m_pTTree->Branch( "FitProbability" , &m_FitProbability , "FitProbability/F" );
 	m_pTTree->Branch( "FitChi2" , &m_FitChi2 , "FitChi2/F" );
 	m_pTTree->Branch( "pullJetEnergy" , &m_pullJetEnergy );
@@ -347,9 +351,11 @@ void ZHHllbbbbKinFit::Clear()
 	m_ZMassBeforeFit_woNu = 0.0;
 	m_H1MassBeforeFit_woNu = 0.0;
 	m_H2MassBeforeFit_woNu = 0.0;
+	m_ISREnergyBeforeFit_woNu = 0.0;
 	m_ZMassAfterFit_woNu = 0.0;
 	m_H1MassAfterFit_woNu = 0.0;
 	m_H2MassAfterFit_woNu = 0.0;
+	m_ISREnergyAfterFit_woNu = 0.0;
 	m_FitProbability_woNu = 0.0;
 	m_FitChi2_woNu = 0.0;
 	m_pullJetEnergy_woNu.clear();
@@ -377,9 +383,11 @@ void ZHHllbbbbKinFit::Clear()
 	m_ZMassBeforeFit = 0.0;
 	m_H1MassBeforeFit = 0.0;
 	m_H2MassBeforeFit = 0.0;
+	m_ISREnergyBeforeFit = 0.0;
 	m_ZMassAfterFit = 0.0;
 	m_H1MassAfterFit = 0.0;
 	m_H2MassAfterFit = 0.0;
+	m_ISREnergyAfterFit = 0.0;
 	m_FitProbability = 0.0;
 	m_FitChi2 = 0.0;
 	m_pullJetEnergy.clear();

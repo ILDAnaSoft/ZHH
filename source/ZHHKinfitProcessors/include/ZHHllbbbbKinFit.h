@@ -159,10 +159,12 @@ class ZHHllbbbbKinFit : public Processor , public TrueJet_Parser
 		int					m_FitErrorCode_woNu{};
 		float					m_ZMassBeforeFit_woNu{};
 		float					m_H1MassBeforeFit_woNu{};
-		float					m_H2MassBeforeFit_woNu{};
+                float					m_H2MassBeforeFit_woNu{};
+                float                                   m_ISREnergyBeforeFit_woNu{};
 		float					m_ZMassAfterFit_woNu{};
 		float					m_H1MassAfterFit_woNu{};
 		float					m_H2MassAfterFit_woNu{};
+                float                                   m_ISREnergyAfterFit_woNu{};
 		float					m_FitProbability_woNu{};
 		float					m_FitChi2_woNu{};
 		std::vector<float>			m_pullJetEnergy_woNu{};
@@ -175,9 +177,11 @@ class ZHHllbbbbKinFit : public Processor , public TrueJet_Parser
 		float					m_ZMassBeforeFit{};
 		float					m_H1MassBeforeFit{};
 		float					m_H2MassBeforeFit{};
+                float                                   m_ISREnergyBeforeFit{};
 		float					m_ZMassAfterFit{};
 		float					m_H1MassAfterFit{};
 		float					m_H2MassAfterFit{};
+                float                                   m_ISREnergyAfterFit{};
 		float					m_FitProbability{};
 		float					m_FitChi2{};
 		std::vector<float>			m_pullJetEnergy{};
