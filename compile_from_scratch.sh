@@ -12,15 +12,18 @@ action(){
     {
         echo "Compiling $1..."
         cd $1
-        if [[ $delete_existing == "True" ]]; then
+        if [[ $delete_existing = "True" ]]; then
             echo "Deleting any existing build directory..."
             rm -rf build
         fi
 
         mkdir -p build
         cd build
-	cmake -DCMAKE_CXX_STANDARD=17 ..
-	#cmake -C $ILCSOFT/ILCSoft.cmake ..
+
+        if [[ $delete_existing = "True" || ! -f Makefile  ]]; then
+            cmake -DCMAKE_CXX_STANDARD=17 ..
+        fi
+        
         make install || { cd ../.. ; return 1; }
         cd ../..
     }
@@ -29,11 +32,24 @@ action(){
 
     for module_to_compile in CheatedMCOverlayRemoval ChargedPFOCorrection AddNeutralPFOCovMat LeptonPairing HdecayMode JetErrorAnalysis JetTaggingComparison LeptonErrorAnalysis PreSelection ZHHKinfitProcessors Misclustering
     do
-        compile_pkg $module_to_compile && echo "${GREEN}+++ Successfully compiled $module_to_compile +++${NC}" || { echo "${RED}!!! Error [$?] while trying to compile $module_to_compile !!!${NC}"; cd ..; return 1; }
+        compile_pkg $module_to_compile && echo "${GREEN}+++ Successfully compiled $module_to_compile +++${NC}" || { echo "${RED}!!! Error [$?] while trying to compile $module_to_compile !!!${NC}"; cd $start_dir; return 1; }
     done
-    cd ..
+    cd $start_dir
 
     echo "${GREEN}+++ Successfully compiled ZHH projects +++${NC}"
+
+    echo "Compiling ZHH dependencies..."
+
+    for module_to_compile in "$VariablesForDeepMLFlavorTagger" "$BTaggingVariables" "$MarlinML"
+    do
+        if [[ -d $module_to_compile ]]; then
+            compile_pkg $module_to_compile && echo "${GREEN}+++ Successfully compiled $module_to_compile +++${NC}" || { echo "${RED}!!! Error [$?] while trying to compile $module_to_compile !!!${NC}"; cd $start_dir; return 1; }
+        else
+            echo "${RED}!!! Error: $module_to_compile not found !!!${NC}"
+        fi
+    done
+
+    echo "${GREEN}+++ Successfully compiled ZHH dependencies +++${NC}"
 
     unset compile_pkg
 
