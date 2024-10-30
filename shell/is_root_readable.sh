@@ -25,7 +25,7 @@ def root_file_readable(file_path:str, tree_name=None):
                 tree = file[tree_name]
                 rf_keys = tree.keys()
 
-                res = len(tree[rf_keys[0]].array()) > 0
+                return tree.num_entries > 0
             else:
                 res = True
             

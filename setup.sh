@@ -88,8 +88,7 @@ function zhh_attach_marlin_dlls() {
 if [[ ! -d "$REPO_ROOT" ]]; then
     zhh_echo "Info: Trying to infer REPO_ROOT..."
 
-    REPO_ROOT=$(realpath "${BASH_SOURCE[${#BASH_SOURCE[@]} - 1]}")
-    REPO_ROOT=$(dirname "$REPO_ROOT")
+    REPO_ROOT=$(dirname $(readlink -f "$0"))
 
     if [[ -d "$REPO_ROOT/zhh" && -d "$REPO_ROOT/source" ]]; then
         zhh_echo "Success: Found REPO_ROOT at <$REPO_ROOT>"
@@ -173,6 +172,11 @@ if [[ -f "${REPO_ROOT}/.env.sh" ]]; then
     source "${REPO_ROOT}/.env.sh"
 fi
 
+# Use default venv name if not set
+if [[ -z $ZHH_VENV_NAME ]]; then
+    export ZHH_VENV_NAME="zhhvenv"
+fi
+
 # Automatically find pytorch
 if [[ -z "${TORCH_PATH}" ]]; then
     zhh_echo "Trying to find pytorch..."
@@ -193,37 +197,25 @@ fi
 if [[ "$ZHH_COMMAND" = "install" ]]; then
     unset zhh_install_dir
 
+    source $REPO_ROOT/shell/zhh_install.sh
+
+    # Python virtual environment (venv)
+    zhh_install_venv
+
+    # Dependencies
     if [[ -z "$ZHH_INSTALL_DIR" ]]; then
         ZHH_INSTALL_DIR=$( realpath "$REPO_ROOT/dependencies" )
 
         read -p "Where do you wish to install all the dependencies? ($ZHH_INSTALL_DIR)" zhh_install_dir
-        zhh_install_dir=${$ZHH_INSTALL_DIR:-zhh_install_dir}
+        zhh_install_dir="${$ZHH_INSTALL_DIR:-$zhh_install_dir}"
     else
         zhh_install_dir="$ZHH_INSTALL_DIR"
     fi
 
     zhh_echo "Attempting to install dependencies to <$zhh_install_dir>..."
-
-    source $REPO_ROOT/shell/zhh_install_conda.sh
-    zhh_install_conda && zhh_echo "Successfully located conda installation." || ( zhh_echo "Could not locate conda installation. Aborting."; return 1; )
-
-    ( echo "Initializing sub-shell to install python dependencies..."
-    shell_name="$( [ -z "${ZSH_VERSION}" ] && echo "bash" || echo "zsh" )"
-    eval "$($CONDA_ROOT/bin/conda shell.$shell_name hook)"
-    conda activate $CONDA_ENV
-    pip install -r $REPO_ROOT/requirements.txt
-    )
-
-    source $REPO_ROOT/shell/zhh_install_deps.sh
     zhh_install_deps $zhh_install_dir
     
     ZHH_COMMAND="compile"
-fi
-
-if [[ ! -d "$CONDA_ROOT/envs/$CONDA_ENV" ]]; then
-    zhh_echo "Warning: <$CONDA_ROOT/envs/$CONDA_ENV> does not point to a valid conda environment."
-    zhh_echo "    Job submissions via law may and calls to is_root_readable/is_json_readable will fail."
-    zhh_echo "    Check your conda installation."
 fi
 
 if [[ "$ZHH_COMMAND" = "compile" ]]; then
@@ -239,22 +231,27 @@ if [[ ! -d "$MarlinML" || ! -d "$VariablesForDeepMLFlavorTagger" || ! -d "$BTagg
     return 1
 fi
 
-if [[ ! -f "$LCIO/lib64/rootDict_rdict.pcm" ]]; then
-    zhh_echo "Error: LCIO is not correctly compiled. Make sure to compile"
-    zhh_echo "    it with 'cmake -DBUILD_ROOTDICT=ON'. Aborting."
-    
-    return 1
-fi
-
 if [[ $MARLIN_DLL != *"libFinalStateRecorder"* ]]; then
     zhh_attach_marlin_dlls
 fi
 
 function MarlinZHH() {
-    local steering_file=${1:-"$REPO_ROOT/scripts/prod.xml"}
-    Marlin $steering_file --constant.ILDConfigDir="$ILD_CONFIG_DIR" --constant.ZHH_REPO_ROOT="$REPO_ROOT"
+    local steering_file
+    if [[ -f "$1" ]]; then
+        steering_file=$1
+        shift
+    else
+        steering_file="$REPO_ROOT/scripts/prod.xml"
+    fi
+
+    Marlin $steering_file --constant.ILDConfigDir="$ILD_CONFIG_DIR" --constant.ZHH_REPO_ROOT="$REPO_ROOT" "$@"
+}
+function zhhvenv() {
+    source $REPO_ROOT/$ZHH_VENV_NAME/bin/activate
 }
 
 # Helpful for running batch jobs
 source $REPO_ROOT/shell/is_json_readable.sh
 source $REPO_ROOT/shell/is_root_readable.sh
+
+export ZHH_SETUP=1

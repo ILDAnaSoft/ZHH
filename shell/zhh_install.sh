@@ -1,32 +1,60 @@
 #!/bin/bash
 
-function zhh_compile_pylcio() {
-    (
-    # Add pyLCIO to PYTHONPATH for the conda environment
-    if [[ ! -f "$CONDA_ROOT/envs/$CONDA_ENV/lib/python$PYTHON_VERSION/site-packages/lcio.pth" ]]; then
-        echo "$LCIO/python" >> "$CONDA_ROOT/envs/$CONDA_ENV/lib/python$PYTHON_VERSION/site-packages/lcio.pth"
+function zhh_install_venv() {
+    echo "Checking python venv installation with name <$ZHH_VENV_NAME>..."
+    
+    if [[ -z $REPO_ROOT || ! -d "$REPO_ROOT" ]]; then
+        echo "REPO_ROOT is not set or does not point to a valid directory"
+        return 1
     fi
 
-    # Activate conda environment and build LCIO
-    source "${CONDA_ROOT}/etc/profile.d/conda.sh" && conda activate $CONDA_ROOT/envs/$CONDA_ENV && cd $LCIO && rm -rf build && mkdir -p build && cd build && cmake -DBUILD_ROOTDICT=ON -D CMAKE_CXX_STANDARD=17 .. && make install
+    if [[ -z $ZHH_VENV_NAME ]]; then
+        echo "ZHH_VENV_NAME is not set. Please set it to the desired name of the virtual environment."
+        return 1
+    fi
 
-    # Add compiled LCIO to LD_LIBRARY_PATH
-    if [[ $(conda env config vars list) == *"LD_LIBRARY_PATH"* ]]; then
-        echo "LD_LIBRARY_PATH already set"
+    if [[ ! -d "$REPO_ROOT/$ZHH_VENV_NAME" ]]; then
+        unset PYTHONPATH
+        cd $REPO_ROOT
+        python -m venv $ZHH_VENV_NAME
+        source $REPO_ROOT/$ZHH_VENV_NAME/bin/activate
+        pip install -r $REPO_ROOT/requirements.txt
+        
+        # Add $REPO_ROOT to PYTHONPATH
+        echo "$REPO_ROOT" >> "$(realpath $REPO_ROOT/$ZHH_VENV_NAME/lib/python*/site-packages)/zhh.pth"
+        
+        # Replace the python executable with a shim so it is guaranteed
+        # that the key4hep stack is sourced and the correct env active.
+        local PYVER=$( python -c "from sys import version_info as v; print(f'{v.major}.{v.minor}')" )
+        local PYLOC="$REPO_ROOT/$ZHH_VENV_NAME/bin/python$PYVER"
+        mv $PYLOC "$REPO_ROOT/$ZHH_VENV_NAME/bin/python.exe"
+
+        cat > $PYLOC <<EOF
+#!/bin/bash
+
+REPO_ROOT="$REPO_ROOT"
+
+setupwrapper() { source \$REPO_ROOT/setup.sh 2>&1 >/dev/null; }
+setupwrapper && source \$REPO_ROOT/$ZHH_VENV_NAME/bin/activate && exec python.exe "\$@"
+EOF
+        chmod 755 $PYLOC
+
+        read -p "Do you want to make the kernel available for Jupyter Notebook? (y)" yn
+        if [[ -z $yn || $yn == "y" ]]; then
+            pip install ipykernel
+            python -m ipykernel install --user --name=$ZHH_VENV_NAME
+        fi
     else
-        echo "Adding LCIO to LD_LIBRARY_PATH"
-        conda env config vars set LD_LIBRARY_PATH=$LCIO/build/lib64:$LD_LIBRARY_PATH
+        echo "Python venv <$ZHH_VENV_NAME> already exists. If you want to redo the setup, delete the directory <$REPO_ROOT/$ZHH_VENV_NAME>."
     fi
-
-    ) || return 1
 }
 
 function zhh_install_deps() {
     local INSTALL_DIR="$1"
     echo "Installing ZHH dependencies to $INSTALL_DIR"
 
-    if [[ ! -d "${REPO_ROOT}" ]]; then
-        echo "REPO_ROOT does not point to a valid directory"
+    if [[ -z $REPO_ROOT || ! -d "$REPO_ROOT" ]]; then
+        echo "REPO_ROOT is not set or does not point to a valid directory"
         return 1
     fi
 
@@ -51,7 +79,7 @@ function zhh_install_deps() {
         fi
     fi
 
-    if [[ -z $MarlinML || -z $VariablesForDeepMLFlavorTagger || -z $BTaggingVariables || -z $LCIO || -z $ILD_CONFIG_DIR ]]; then
+    if [[ -z $MarlinML || -z $VariablesForDeepMLFlavorTagger || -z $BTaggingVariables || -z $ILD_CONFIG_DIR ]]; then
         echo "At least one of the dependencies could not be found. Retrieving them..."
 
         local ind="$( [ -z "${ZSH_VERSION}" ] && echo "0" || echo "1" )" # ZSH arrays are 1-indexed
@@ -59,10 +87,9 @@ function zhh_install_deps() {
             https://gitlab.desy.de/ilcsoft/MarlinML
             https://gitlab.desy.de/ilcsoft/variablesfordeepmlflavortagger
             https://gitlab.desy.de/ilcsoft/btaggingvariables
-            https://github.com/iLCSoft/LCIO.git
             https://github.com/iLCSoft/ILDConfig.git)
-        local varnames=(MarlinML VariablesForDeepMLFlavorTagger BTaggingVariables LCIO ILD_CONFIG_DIR)
-        local dirnames=(MarlinML variablesfordeepmlflavortagger btaggingvariables LCIO ILDConfig)
+        local varnames=(MarlinML VariablesForDeepMLFlavorTagger BTaggingVariables ILD_CONFIG_DIR)
+        local dirnames=(MarlinML variablesfordeepmlflavortagger btaggingvariables ILDConfig)
 
         mkdir -p $INSTALL_DIR
 
@@ -98,11 +125,6 @@ function zhh_install_deps() {
                 export $dependency="$install_dir"
                 echo "$dependency=$install_dir" >> $REPO_ROOT/.env
 
-                if [[ $dependency = "LCIO" ]]; then
-                    echo "Compiling LCIO+pyLCIO..."
-                    zhh_compile_pylcio
-                fi
-
             else
                 echo "Dependency $dependency already found."
             fi
@@ -131,7 +153,7 @@ function zhh_install_deps() {
     mkdir -p "$data_dir"
 
     # Save directories to .env
-    # For CONDA_PREFIX, CONDA_ENV and PYTHON_VERSION, see zhh_install_conda.sh
+    # For ZHH_ENV_NAME, see zhh_install_venv.sh
     cat > "$REPO_ROOT/.env" <<EOF
 REPO_ROOT="$REPO_ROOT"
 MarlinML="$MarlinML"
@@ -140,9 +162,7 @@ BTaggingVariables="$BTaggingVariables"
 LCIO="$LCIO"
 TORCH_PATH="$TORCH_PATH"
 ILD_CONFIG_DIR="$ILD_CONFIG_DIR"
-CONDA_PREFIX="$CONDA_PREFIX"
-CONDA_ENV="$CONDA_ENV"
-PYTHON_VERSION="$PYTHON_VERSION"
+ZHH_VENV_NAME="zhhvenv"
 DATA_PATH="$data_dir"
 
 EOF
