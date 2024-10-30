@@ -211,13 +211,13 @@ if [[ "$ZHH_COMMAND" = "install" ]]; then
         ZHH_INSTALL_DIR=$( realpath "$REPO_ROOT/dependencies" )
 
         read -p "Where do you wish to install all the dependencies? ($ZHH_INSTALL_DIR)" zhh_install_dir
-        zhh_install_dir="${$ZHH_INSTALL_DIR:-$zhh_install_dir}"
-    else
-        zhh_install_dir="$ZHH_INSTALL_DIR"
+        if [[ ! -z "$zhh_install_dir" ]]; then 
+            ZHH_INSTALL_DIR=$zhh_install_dir
+        fi
     fi
 
-    zhh_echo "Attempting to install dependencies to <$zhh_install_dir>..."
-    zhh_install_deps $zhh_install_dir
+    zhh_echo "Attempting to install dependencies to <$ZHH_INSTALL_DIR>..."
+    zhh_install_deps $ZHH_INSTALL_DIR
     
     ZHH_COMMAND="compile"
 fi
