@@ -88,6 +88,7 @@ def get_sample_chunk_splits(
     
     dtype = [
         ('branch', 'I'),
+        ('sid', 'I'),
         ('process', '<U60'),
         ('proc_pol', '<U64'),
         ('location', '<U512'),
@@ -153,7 +154,7 @@ def get_sample_chunk_splits(
                     
                 while n_accounted < n_target and n_accounted_sample < n_tot_sample:
                     c_chunk_size = min(min(n_tot_sample - n_accounted_sample, max_chunk_size), n_target - n_accounted)
-                    c_chunks.append((n_chunks_tot, p['process'], p['proc_pol'], sample['location'], n_chunks, n_accounted_sample, c_chunk_size))
+                    c_chunks.append((n_chunks_tot, sample['sid'], p['process'], p['proc_pol'], sample['location'], n_chunks, n_accounted_sample, c_chunk_size))
                     
                     n_accounted += c_chunk_size
                     n_accounted_sample += c_chunk_size

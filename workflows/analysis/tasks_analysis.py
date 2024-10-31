@@ -60,7 +60,7 @@ class AnalysisAbstract(MarlinJob):
         if not self.debug:
             # The calculated chunking is used
             scs = np.load(self.input()['preselection_chunks'][0].path)
-            branch_map = { k: v for k, v in zip(scs['branch'].tolist(), zip(scs['location'], scs['chunk_start'], scs['chunk_size']))}
+            branch_map = { k: v for k, v in zip(scs['branch'].tolist(), zip(scs['location'], scs['chunk_start'], scs['chunk_size'], ['MCParticlesSkimmed']*len(scs))) }
         else:
             # A debug run. The default settings
             # from the steering file are used

@@ -23,6 +23,7 @@ class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     globals:List[tuple[str,str]] = []
     
     steering_file:str = '$REPO_ROOT/scripts/prod.xml'
+    mcp_col_name:str = 'MCParticle'
     
     # Optional: list of tuples of structure (file-name.root, TTree-name)
     check_output_root_ttrees:Optional[list[tuple[str,str]]] = None 
@@ -47,16 +48,17 @@ class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         branch_value = self.branch_map[branch]
         
         if isinstance(branch_value, tuple):
-            input_file, n_events_skip, n_events_max = branch_value
+            input_file, n_events_skip, n_events_max, mcp_col_name = branch_value
         else:
-            input_file, n_events_skip, n_events_max = branch_value, self.n_events_skip, self.n_events_max
+            input_file, n_events_skip, n_events_max, mcp_col_name = branch_value, self.n_events_skip, self.n_events_max, self.mcp_col_name
         
         steering = {
             'executable': self.executable,
             'steering_file': self.steering_file,
             'input_file': input_file,
             'n_events_skip': n_events_skip,
-            'n_events_max': n_events_max,            
+            'n_events_max': n_events_max,
+            'mcp_col_name': mcp_col_name
         }
         
         return steering
@@ -78,29 +80,19 @@ class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         branch = self.branch
         steering = self.get_steering_parameters(branch)
         
-        executable, steering_file, input_file, n_events_skip, n_events_max = steering.values()
+        executable, steering_file, input_file, n_events_skip, n_events_max, mcp_col_name = steering.values()
         
         target, temp = self.get_target_and_temp(branch)
         os.makedirs(osp.dirname(target), exist_ok=True)
         
-        # Check if sample belongs to new or old MC production to change MCParticleCollectionName
-        # TODO: Check if this is sufficient
-        mcp_col_name = 'MCParticlesSkimmed' if '/mc-2020/' in input_file else 'MCParticle'
-        
         cmd =  f'source $REPO_ROOT/setup.sh'
         cmd += f' && echo "Starting Marlin at $(date)"'
         cmd += f' && mkdir -p "{temp}" && cd "{temp}"'
-
-        # Marlin fix for SkipNEvents=0
-        # If SkipNEvents=0 is supplied, Marlin will actually process the event header as event 0
-        # and increse the event counter by one. To keep the counting correct, we use this workaround.
-        if n_events_skip == 0:
-            n_events_max = n_events_max + 1
             
-        str_max_record_number = f' --global.MaxRecordNumber={str(n_events_max)}' if n_events_max is not None else ''
-        str_skip_n_events = f' --global.SkipNEvents={str(n_events_skip)}' if n_events_skip is not None else ''
+        str_max_record_number = f' --global.MaxRecordNumber={str(n_events_max)}' if (n_events_max is not None and n_events_max != 0)  else ''
+        str_skip_n_events = f' --global.SkipNEvents={str(n_events_skip)}' if (n_events_skip is not None and n_events_skip != 0) else ''
         
-        cmd += f' && ( {executable} {steering_file} {self.parse_marlin_constants()} {self.parse_marlin_globals()}{str_max_record_number}{str_skip_n_events} --constant.MCParticleCollectionName={mcp_col_name} || true )'
+        cmd += f' && ( {executable} {steering_file} {self.parse_marlin_constants()} {self.parse_marlin_globals()}{str_max_record_number}{str_skip_n_events} --global.LCIOInputFiles={input_file} --constant.MCParticleCollectionName={mcp_col_name} || true )'
         cmd += f' && echo "Finished Marlin at $(date)"'
         cmd += f' && ( sleep 2'
         

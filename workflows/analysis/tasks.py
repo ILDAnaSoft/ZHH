@@ -63,13 +63,11 @@ class RawIndex(BaseTask):
         self.publish_message(f'Loaded {len(index.samples)} samples and {len(index.processes)} processes')
 
 class CreateAnalysisChunks(BaseTask):
-    ratio: Annotated[float, luigi.FloatParameter()] = 1.
+    ratio = 0
     jobtime: Annotated[int, luigi.IntParameter()] = 7200
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        
-        self.postfix = f'-{self.ratio}-{self.jobtime}'
     
     def requires(self):
         from analysis.tasks_analysis import AnalysisRuntime
@@ -99,8 +97,10 @@ class CreateAnalysisChunks(BaseTask):
         pn = get_process_normalization(processes, samples, RATIO_BY_EXPECT=self.ratio)
         atpe = get_adjusted_time_per_event(runtime_analysis)
         
-        with open(osp.expandvars(f'$REPO_ROOT/config/custom_statistics.json'), 'r') as f:
-            custom_statistics = json.load(f)
+        custom_statistics = None
+        if self.ratio != 0 and self.ratio is not None:
+            with open(osp.expandvars(f'$REPO_ROOT/config/custom_statistics.json'), 'r') as f:
+                custom_statistics = json.load(f)
 
         chunk_splits = get_sample_chunk_splits(samples, process_normalization=pn,
                     adjusted_time_per_event=atpe, MAXIMUM_TIME_PER_JOB=self.jobtime,

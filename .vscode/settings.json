@@ -102,6 +102,7 @@
         "bash": {
             "path": "/bin/bash"
         },
-
     },
+    "python.terminal.activateEnvironment": false,
+    "python.terminal.activateEnvInCurrentTerminal": false
 }
