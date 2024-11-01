@@ -88,7 +88,8 @@ function zhh_attach_marlin_dlls() {
 if [[ ! -d "$REPO_ROOT" ]]; then
     zhh_echo "Info: Trying to infer REPO_ROOT..."
 
-    REPO_ROOT=$(dirname $(readlink -f "$0"))
+    REPO_ROOT="${BASH_SOURCE[${#BASH_SOURCE[@]} - 1]}"
+    export REPO_ROOT="$(dirname $REPO_ROOT)"
 
     if [[ -d "$REPO_ROOT/zhh" && -d "$REPO_ROOT/source" ]]; then
         zhh_echo "Success: Found REPO_ROOT at <$REPO_ROOT>"
@@ -253,5 +254,9 @@ function zhhvenv() {
 # Helpful for running batch jobs
 source $REPO_ROOT/shell/is_json_readable.sh
 source $REPO_ROOT/shell/is_root_readable.sh
+
+if typeset -f zhh_post_setup > /dev/null; then
+    zhh_post_setup
+fi
 
 export ZHH_SETUP=1
