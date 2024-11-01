@@ -15,6 +15,7 @@
         <constant name="Runllbbbb" value="True" />
         <constant name="Runvvbbbb" value="False" />
         <constant name="Runqqbbbb" value="False" />
+        <constant name="RunllKinfit" value="True" />
 
         <!-- These variables should be constant -->
         <constant name="lcgeo_DIR" value="/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-centos7-gcc12.2.0-opt/k4geo/0.20-e42drs/share/k4geo" />
@@ -52,19 +53,23 @@
         
         <if condition="${Runllbbbb}">
             <processor name="JC4FT_ll" />
-            <processor name="MySLDCorrection_ll" />
 
-            <!-- We should do a check on PreSelection.isPassed once that is fixed -->
-            <processor name="MyPreSelection_ll" />
-            <processor name="MyErrorFlow_ll" />
+            <if condition="${RunllKinfit}">
+                <processor name="MySLDCorrection_ll" />
 
-            <if condition="MyHdecayMode.GoodEvent">
-                <processor name="MyZHHKinFit_ll" />
-                <!--
-                <processor name="MyTrueJet"/>
-                <processor name="MyMisclustering"/>
-                -->
+                <!-- We should do a check on PreSelection.isPassed once that is fixed -->
+                <processor name="MyErrorFlow_ll" />
+
+                <if condition="MyHdecayMode.GoodEvent">
+                    <processor name="MyZHHKinFit_ll" />
+                    <!--
+                    <processor name="MyTrueJet"/>
+                    <processor name="MyMisclustering"/>
+                    -->
+                </if>
             </if>
+
+            <processor name="MyPreSelection_ll" />
         </if>
 
         <if condition="${Runvvbbbb}">
@@ -462,7 +467,7 @@
 		<!--Whether create root file for new pfo collection or not true:create / false: do not create-->
         <parameter name="fillRootTree" type="bool">true</parameter>
 		<!--Name of the output root file-->
-        <parameter name="RootFile" type="string">${OutputDirectory}/${OutputBaseName}_SLDCorrection.root</parameter>
+        <parameter name="RootFile" type="string">${OutputDirectory}/${OutputBaseName}_SLDCorrection_ll.root</parameter>
 		<!--Event selection based on semi-leptonic decays of B-hadrons: (0): without BSLD (1): with >= 0 BSLD(all events) (2): with >= 1 BSLD (3): with correctable BSLD -->
         <parameter name="BSLDMode" type="int">1</parameter>
 		<!--Event selection based on semi-leptonic decays of C-hadrons: (0): without CSLD (1): with >= 0 CSLD(all events) (2): with >= 1 CSLD (3): with correctable CSLD -->

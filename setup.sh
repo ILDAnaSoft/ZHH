@@ -63,9 +63,9 @@ function zhh_attach_marlin_dlls() {
         "$REPO_ROOT/source/PreSelection/lib/libPreSelection.so"
         "$REPO_ROOT/source/FinalStateRecorder/lib/libFinalStateRecorder.so"
         "$REPO_ROOT/source/ZHHKinfitProcessors/lib/libZHHKinfitProcessors.so"
-        "$MarlinML/lib64/libJetTaggers.so"
-        "$VariablesForDeepMLFlavorTagger/lib/libVariablesForDeepMLFlavorTagger.so"
-        "$BTaggingVariables/lib/libBTaggingVariables.so"
+        #"$MarlinML/lib64/libJetTaggers.so"
+        #"$VariablesForDeepMLFlavorTagger/lib/libVariablesForDeepMLFlavorTagger.so"
+        #"$BTaggingVariables/lib/libBTaggingVariables.so"
     )
 
     for lib in "${libs[@]}"; do
@@ -262,5 +262,9 @@ function zhhvenv() {
 # Helpful for running batch jobs
 source $REPO_ROOT/shell/is_json_readable.sh
 source $REPO_ROOT/shell/is_root_readable.sh
+
+if typeset -f zhh_post_setup > /dev/null; then
+    zhh_post_setup
+fi
 
 export ZHH_SETUP=1
