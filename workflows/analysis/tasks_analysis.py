@@ -13,6 +13,7 @@ class AnalysisAbstract(MarlinJob):
         ('Runllbbbb', 'True'),
         ('Runvvbbbb', 'True'),
         ('Runqqbbbb', 'True'),
+        ('RunllKinfit', 'True'),
         ('OutputDirectory', '.')
     ]
     
@@ -26,6 +27,17 @@ class AnalysisAbstract(MarlinJob):
     check_output_files_exist = [
         'zhh_FinalStateMeta.json'
     ]
+    
+    # Attach MCParticleCollectionName
+    def pre_run_command(self):
+        input_file:str = self.get_steering_parameters()['input_file']
+        
+        if not ('/mc-2020/' in input_file) and not ('FastSimSGV' in input_file):
+            raise Exception(f'Input file <{input_file}> does not seem to be a valid input file')
+        
+        mcp_col_name = 'MCParticlesSkimmed'
+        
+        self.constants.append(('MCParticleCollectionName', mcp_col_name))
     
     def workflow_requires(self):
         from analysis.tasks import RawIndex, CreateAnalysisChunks
@@ -60,7 +72,7 @@ class AnalysisAbstract(MarlinJob):
         if not self.debug:
             # The calculated chunking is used
             scs = np.load(self.input()['preselection_chunks'][0].path)
-            branch_map = { k: v for k, v in zip(scs['branch'].tolist(), zip(scs['location'], scs['chunk_start'], scs['chunk_size'], ['MCParticlesSkimmed']*len(scs))) }
+            branch_map = { k: v for k, v in zip(scs['branch'].tolist(), zip(scs['location'], scs['chunk_start'], scs['chunk_size'])) }
         else:
             # A debug run. The default settings
             # from the steering file are used

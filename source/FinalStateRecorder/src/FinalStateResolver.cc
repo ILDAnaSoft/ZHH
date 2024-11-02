@@ -9,13 +9,15 @@ FinalStateResolver::FinalStateResolver(
     int process_id,
     int event_category,
     int n_fermions,
-    int n_higgs
+    int n_higgs,
+    std::vector<int> isr_indices
 ){
     m_process_name = process_name;
     m_process_id = process_id;
     m_event_category = event_category;
     m_n_fermions = n_fermions;
     m_n_higgs = n_higgs;
+    m_isr_indices = isr_indices;
 };
 FinalStateResolver::~FinalStateResolver() {};
 

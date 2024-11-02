@@ -11,32 +11,43 @@ using namespace std;
 class p6: public FinalStateResolver {
     public:
         // Set process ID and event category
-        p6( string process_name, int process_id, int event_category ): FinalStateResolver( process_name, process_id, event_category, 6, 0 ) {};
-        p6( string process_name, int process_id, int event_category, int n_fermions, int n_higgs ): FinalStateResolver( process_name, process_id, event_category, n_fermions, n_higgs ) {};
+        p6( string process_name, int process_id, int event_category ): FinalStateResolver( process_name, process_id, event_category, 6, 0, vector<int> {4,5} ) {};
+        p6( string process_name, int process_id, int event_category, int n_fermions, int n_higgs, vector<int> isr_particles ): FinalStateResolver( process_name, process_id, event_category, n_fermions, n_higgs, isr_particles ) {};
+
+        vector<MCParticle*> resolve_fs_particles(LCCollection *mcp_collection, bool resolve_higgs = false) {
+            (void) resolve_higgs;
+
+            vector<MCParticle*> fs_particles;
+
+            // Get fermions
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(6 ));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(7 ));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(8 ));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(9 ));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(10));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(11));
+
+            return fs_particles;
+        }
 
         vector<int> resolve(LCCollection *mcp_collection) {
-            MCParticle* part1 = (MCParticle*)mcp_collection->getElementAt(6);
-            MCParticle* part2 = (MCParticle*)mcp_collection->getElementAt(7);
-            MCParticle* part3 = (MCParticle*)mcp_collection->getElementAt(8);
-            MCParticle* part4 = (MCParticle*)mcp_collection->getElementAt(9);
-            MCParticle* part5 = (MCParticle*)mcp_collection->getElementAt(10);
-            MCParticle* part6 = (MCParticle*)mcp_collection->getElementAt(11);
+            vector<MCParticle*> fs_particles = resolve_fs_particles(mcp_collection);
 
             assert_true(
-                abs(part1->getPDG()) < 17 &&
-                abs(part2->getPDG()) < 17 &&
-                abs(part3->getPDG()) < 17 &&
-                abs(part4->getPDG()) < 17 &&
-                abs(part5->getPDG()) < 17 &&
-                abs(part6->getPDG()) < 17, RESOLVER_ERRORS::UNALLOWED_VALUES);
+                abs(fs_particles[0]->getPDG()) < 17 &&
+                abs(fs_particles[1]->getPDG()) < 17 &&
+                abs(fs_particles[2]->getPDG()) < 17 &&
+                abs(fs_particles[3]->getPDG()) < 17 &&
+                abs(fs_particles[4]->getPDG()) < 17 &&
+                abs(fs_particles[5]->getPDG()) < 17, RESOLVER_ERRORS::UNALLOWED_VALUES);
 
             return vector<int>{
-                part1->getPDG(),
-                part2->getPDG(),
-                part3->getPDG(),
-                part4->getPDG(),
-                part5->getPDG(),
-                part6->getPDG()
+                fs_particles[0]->getPDG(),
+                fs_particles[1]->getPDG(),
+                fs_particles[2]->getPDG(),
+                fs_particles[3]->getPDG(),
+                fs_particles[4]->getPDG(),
+                fs_particles[5]->getPDG()
             };
         };
 

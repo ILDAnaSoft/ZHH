@@ -10,32 +10,43 @@ using namespace std;
 
 class p4: public FinalStateResolver {
     protected:
-        vector<int> m_z_decay_filter;
+        vector<int> m_final_state_filter;
 
     public:
         // Set process ID and event category
-        p4( string process_name, int process_id, int event_category, vector<int> z_decay_filter ):
-            FinalStateResolver( process_name, process_id, event_category, 4, 0 ),
-            m_z_decay_filter {z_decay_filter} {};
+        p4( string process_name, int process_id, int event_category, vector<int> decay_filter ):
+            FinalStateResolver( process_name, process_id, event_category, 4, 0, vector<int> {4,5} ),
+            m_final_state_filter {decay_filter} {};
+
+        vector<MCParticle*> resolve_fs_particles(LCCollection *mcp_collection, bool resolve_higgs = false) {
+            (void) resolve_higgs;
+
+            vector<MCParticle*> fs_particles;
+
+            // Get fermions
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(6 ));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(7 ));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(8 ));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(9 ));
+
+            return fs_particles;
+        }
 
         vector<int> resolve(LCCollection *mcp_collection) {
-            // Get Z-decayed fermions
-            MCParticle* part1 = (MCParticle*)mcp_collection->getElementAt(6);
-            MCParticle* part2 = (MCParticle*)mcp_collection->getElementAt(7);
-            MCParticle* part3 = (MCParticle*)mcp_collection->getElementAt(8);
-            MCParticle* part4 = (MCParticle*)mcp_collection->getElementAt(9);
+            // Get fermions
+            vector<MCParticle*> fs_particles = resolve_fs_particles(mcp_collection);
 
             assert_true(
-                vec_contains(m_z_decay_filter, abs(part1->getPDG())) &&
-                vec_contains(m_z_decay_filter, abs(part2->getPDG())) &&
-                vec_contains(m_z_decay_filter, abs(part3->getPDG())) &&
-                vec_contains(m_z_decay_filter, abs(part4->getPDG())), RESOLVER_ERRORS::UNALLOWED_VALUES);
+                vec_contains(m_final_state_filter, abs(fs_particles[0]->getPDG())) &&
+                vec_contains(m_final_state_filter, abs(fs_particles[1]->getPDG())) &&
+                vec_contains(m_final_state_filter, abs(fs_particles[2]->getPDG())) &&
+                vec_contains(m_final_state_filter, abs(fs_particles[3]->getPDG())), RESOLVER_ERRORS::UNALLOWED_VALUES);
 
             return vector<int>{
-                part1->getPDG(),
-                part2->getPDG(),
-                part3->getPDG(),
-                part4->getPDG(),
+                fs_particles[0]->getPDG(),
+                fs_particles[1]->getPDG(),
+                fs_particles[2]->getPDG(),
+                fs_particles[3]->getPDG(),
             };
         };
 

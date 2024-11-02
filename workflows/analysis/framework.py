@@ -73,7 +73,7 @@ class HTCondorWorkflow(law.htcondor.HTCondorWorkflow):
             if key == 'initialdir':
                 name = os.path.basename(os.path.dirname(value))
         
-        if False and name is not None and name in session_submissions:
+        if name is not None and name in session_submissions:
             print(f'Re-Running task {name} with increased requirements')
             
             config.custom_content.append(('request_memory', '16000 Mb'))

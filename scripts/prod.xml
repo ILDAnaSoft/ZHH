@@ -13,8 +13,8 @@
         In the job submission script, all channels are run
         -->
         <constant name="Runllbbbb" value="True" />
-        <constant name="Runvvbbbb" value="False" />
-        <constant name="Runqqbbbb" value="False" />
+        <constant name="Runvvbbbb" value="True" />
+        <constant name="Runqqbbbb" value="True" />
         <constant name="RunllKinfit" value="True" />
 
         <!-- These variables should be constant -->
@@ -26,7 +26,7 @@
         <constant name="OutputRootFile" value="${OutputBaseName}.root" />
         <constant name="NumberOfHiggs" value="2" />
         <constant name="MCParticleCollectionName" value="MCParticlesSkimmed" />
-        <constant name="CMSEnergy" value="500." />
+        <constant name="CMSEnergy" value="550." />
         <constant name="Verbosity" value="SILENT" />
     </constants>
 
@@ -97,7 +97,7 @@
         <!-- limit the number of processed records (run+evt): -->
         <!--parameter name="MaxRecordNumber" value="0" /to process all events--> 
         <!--parameter name="MaxRecordNumber" value="1000" /to process 1000 events--> 
-        <parameter name="MaxRecordNumber" value="100"/>
+        <parameter name="MaxRecordNumber" value="50"/>
         <parameter name="SkipNEvents" value="0" />
         <parameter name="SupressCheck" value="false" />
         <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT">SILENT</parameter>
@@ -118,7 +118,7 @@
     <parameter name="SLDNeutrinoRelationCollection" type="string" lcioInType="LCRelation">SLDNuLink</parameter>
     <parameter name="recoNumcNuLinkName" type="string" lcioInType="LCRelation">recoNumcNuLink</parameter>
     <!-- center-of-mass energy (default: 500.) -->
-    <parameter name="ECM" type="float"> 500. </parameter>
+    <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
     <!-- maximum energy (=|p_z|) for a single ISR photon  (default: 125.6) -->
     <parameter name="ISRPzMax" type="float"> 125.6 </parameter>
     <!-- include ISR in fit hypothesis?    0: false >0: true (default) -->
@@ -477,7 +477,7 @@
 		<!--Event selection based on semi-leptonic decays: (0): without SLD (1): with >= 0 SLD(all events) (2): with >= 1 SLD (3): with correctable SLD -->
         <parameter name="SLDMode" type="int">1</parameter>
 		<!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-		<parameter name="Verbosity" type="string">${Verbosity}</parameter>
+		<parameter name="Verbosity" type="string">DEBUG</parameter>
 	</processor>
 
     <processor name="JC4FT_ll" type="LcfiplusProcessor">
@@ -943,6 +943,10 @@
         <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
         <parameter name="outputRootFilename" type="string">${OutputDirectory}/${OutputBaseName}_FinalStates.root</parameter>
         <parameter name="outputJsonFilename" type="string">${OutputDirectory}/${OutputBaseName}_FinalStateMeta.json</parameter>
+
+        <parameter name="outputKinematics" type="bool">True</parameter>
+        <parameter name="ECM" type="float">${CMSEnergy}</parameter>
+
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
         <parameter name="Verbosity" type="string">DEBUG</parameter>
     </processor>

@@ -2,7 +2,7 @@ from analysis.framework import HTCondorWorkflow
 import law, os, uuid
 import os.path as osp
 from zhh import ShellTask, BaseTask, ProcessIndex
-from typing import Optional, Union, List
+from typing import Optional, Union
 
 class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     """Abstract class for Marlin jobs
@@ -17,13 +17,12 @@ class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     n_events_max:Optional[int] = None
     n_events_skip:Optional[int] = None
     
-    # Use add_constant and add_global to append to these
-    # to avoid conflicts
-    constants:List[tuple[str,str]] = []
-    globals:List[tuple[str,str]] = []
+    # Append to these of you want to set additional constants or globals
+    # You may define a pre_run_command to do so in a dynamic way 
+    constants:list[tuple[str,str]] = []
+    globals:list[tuple[str,str]] = []
     
     steering_file:str = '$REPO_ROOT/scripts/prod.xml'
-    mcp_col_name:str = 'MCParticle'
     
     # Optional: list of tuples of structure (file-name.root, TTree-name)
     check_output_root_ttrees:Optional[list[tuple[str,str]]] = None 
@@ -31,42 +30,38 @@ class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     # Optional: list of files
     check_output_files_exist:Optional[list[str]] = None
     
-    def get_steering_parameters(self, branch:int) -> dict:
+    def get_steering_parameters(self) -> dict:
         """The branch map self.branch_map is a dictionary
         branch => value where value has one of the following form:
         
         a) tuples: (input_file:str, n_events_skip:int, n_events_max:int)
         b) string: input_file
 
-        Args:
-            branch (int): _description_
-
         Returns:
             dict: _description_
         """
         
-        branch_value = self.branch_map[branch]
+        branch_value = self.branch_map[self.branch]
         
         if isinstance(branch_value, tuple):
-            input_file, n_events_skip, n_events_max, mcp_col_name = branch_value
+            input_file, n_events_skip, n_events_max = branch_value
         else:
-            input_file, n_events_skip, n_events_max, mcp_col_name = branch_value, self.n_events_skip, self.n_events_max, self.mcp_col_name
+            input_file, n_events_skip, n_events_max = branch_value, self.n_events_skip, self.n_events_max
         
         steering = {
             'executable': self.executable,
             'steering_file': self.steering_file,
             'input_file': input_file,
             'n_events_skip': n_events_skip,
-            'n_events_max': n_events_max,
-            'mcp_col_name': mcp_col_name
+            'n_events_max': n_events_max
         }
         
         return steering
     
-    def get_target_and_temp(self, branch):
+    def get_target_and_temp(self):
         return (
-            f'{self.htcondor_output_directory().path}/{branch}',
-            f'{self.htcondor_output_directory().path}/{branch}-{str(uuid.uuid4())}'
+            f'{self.htcondor_output_directory().path}/{self.branch}',
+            f'{self.htcondor_output_directory().path}/{self.branch}-{str(uuid.uuid4())}'
         )
     
     def parse_marlin_globals(self) -> str:
@@ -77,12 +72,11 @@ class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         return ' '.join([f'--constant.{key}="{value}"' for key, value in self.constants])
     
     def build_command(self, fallback_level):
-        branch = self.branch
-        steering = self.get_steering_parameters(branch)
+        steering = self.get_steering_parameters()
         
-        executable, steering_file, input_file, n_events_skip, n_events_max, mcp_col_name = steering.values()
+        executable, steering_file, input_file, n_events_skip, n_events_max = steering.values()
         
-        target, temp = self.get_target_and_temp(branch)
+        target, temp = self.get_target_and_temp()
         os.makedirs(osp.dirname(target), exist_ok=True)
         
         cmd =  f'source $REPO_ROOT/setup.sh'
@@ -92,19 +86,19 @@ class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         str_max_record_number = f' --global.MaxRecordNumber={str(n_events_max)}' if (n_events_max is not None and n_events_max != 0)  else ''
         str_skip_n_events = f' --global.SkipNEvents={str(n_events_skip)}' if (n_events_skip is not None and n_events_skip != 0) else ''
         
-        cmd += f' && ( {executable} {steering_file} {self.parse_marlin_constants()} {self.parse_marlin_globals()}{str_max_record_number}{str_skip_n_events} --global.LCIOInputFiles={input_file} --constant.MCParticleCollectionName={mcp_col_name} || true )'
+        cmd += f' && ( {executable} {steering_file} {self.parse_marlin_constants()} {self.parse_marlin_globals()}{str_max_record_number}{str_skip_n_events} --global.LCIOInputFiles={input_file} || true )'
+        cmd += f' && echo "{input_file}" >> Source.txt'
         cmd += f' && echo "Finished Marlin at $(date)"'
         cmd += f' && ( sleep 2'
         
         if self.check_output_root_ttrees is not None:
             for name, ttree in self.check_output_root_ttrees:
-                cmd += f' && ( is_root_readable ./{name} {ttree} && echo "Success: TTree <{ttree}> exists" ) '
+                cmd += f' && ( is_root_readable ./{name} {ttree} && echo "Success: TTree <{ttree}> in file <{name}> exists" ) '
                 
         if self.check_output_files_exist is not None:
             for name in self.check_output_files_exist:
                 cmd += f' && [[ -f ./{name} ]] && echo "Success: File <{name}> exists"'
         
-        cmd += f' && echo "{input_file}" >> Source.txt'
         cmd += f' && cd .. && mv "{temp}" "{target}" )'
 
         return cmd
