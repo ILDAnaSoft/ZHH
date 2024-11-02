@@ -10,9 +10,10 @@
 #include <TTree.h>
 #include <TH1F.h>
 #include <vector>
-#include "FinalStateResolver.h"
 #include "TLorentzVector.h"
 #include "UTIL/LCRelationNavigator.h"
+#include "EVENT/ReconstructedParticle.h"
+#include "EVENT/MCParticle.h"
 
 class TFile;
 class TTree;
@@ -110,8 +111,8 @@ class TruthRecoComparison : public Processor
 		TTree *m_pTTree{};
 
 		// Truth kinematics
-		EVENT::ReconstructedParticle* TruthRecoComparison::getLinkedPFO( EVENT::MCParticle *mcParticle , LCRelationNavigator RecoMCParticleNav , LCRelationNavigator MCParticleRecoNav , bool getChargedPFO , bool getNeutralPFO , float &weightPFOtoMCP , float &weightMCPtoPFO );
-		void TruthRecoComparison::updateKinematics();
+		EVENT::ReconstructedParticle* getLinkedPFO( EVENT::MCParticle *mcParticle , LCRelationNavigator RecoMCParticleNav , LCRelationNavigator MCParticleRecoNav , bool getChargedPFO , bool getNeutralPFO , float &weightPFOtoMCP , float &weightMCPtoPFO );
+		void updateKinematics();
 };
 
 #endif

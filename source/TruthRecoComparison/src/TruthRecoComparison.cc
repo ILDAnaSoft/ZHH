@@ -187,7 +187,7 @@ void TruthRecoComparison::processEvent( EVENT::LCEvent *pLCEvent )
 		streamlog_out(DEBUG) << "        getting TruthRecoLink relation: " << m_mcTruthRecoLink << std::endl ;
       	LCRelationNavigator MCParticleRecoNav = pLCEvent->getCollection(m_mcTruthRecoLink);
 
-		for (size_t i=0; i < inputMCParticleCollection->getNumberOfElements(); i++) {
+		for (int i=0; i < inputMCParticleCollection->getNumberOfElements(); i++) {
 			MCParticle* mcp = (MCParticle*) inputMCParticleCollection->getElementAt(i);
 
 			if (mcp->getDaughters().size() == 0) {
@@ -206,7 +206,7 @@ void TruthRecoComparison::processEvent( EVENT::LCEvent *pLCEvent )
 			}
 		}
 
-		for (size_t i=0; i < inputPFOCollection->getNumberOfElements(); i++) {
+		for (int i=0; i < inputPFOCollection->getNumberOfElements(); i++) {
 			ReconstructedParticle* pfo = (ReconstructedParticle*) inputPFOCollection->getElementAt(i);
 			m_pfo_mom_tot += TLorentzVector( pfo->getMomentum() , pfo->getEnergy() );
 		}
