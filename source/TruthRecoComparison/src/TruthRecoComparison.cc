@@ -81,8 +81,22 @@ void TruthRecoComparison::init()
 	m_pTTree->Branch("event", &m_n_evt, "event/I");
 	m_pTTree->Branch("error_code", &m_error_code);
 
-	m_pTTree->Branch("true_p_t", &m_true_p_t);
-	m_pTTree->Branch("reco_p_t", &m_reco_p_t);
+	m_pTTree->Branch("true_Et", &m_true_Et);
+	m_pTTree->Branch("reco_Et", &m_reco_Et);
+
+	m_pTTree->Branch("true_pt_miss", &m_true_pt_miss);
+	m_pTTree->Branch("reco_pt_miss", &m_reco_pt_miss);
+
+	m_pTTree->Branch("true_m_miss", &m_true_m_miss);
+	m_pTTree->Branch("reco_m_miss", &m_reco_m_miss);
+
+	m_pTTree->Branch("true_E_miss", &m_true_E_miss);
+	m_pTTree->Branch("reco_E_miss", &m_reco_E_miss);
+
+	m_pTTree->Branch("mcp_mom_tot", &m_mcp_mom_tot);
+	m_pTTree->Branch("mcp_mom_detected", &m_mcp_mom_detected);
+	m_pTTree->Branch("mcp_mom_undetected", &m_mcp_mom_undetected);
+	m_pTTree->Branch("pfo_mom_tot", &m_pfo_mom_tot);
 
 	streamlog_out(DEBUG) << "   init finished  " << std::endl;
 }
@@ -198,6 +212,8 @@ void TruthRecoComparison::processEvent( EVENT::LCEvent *pLCEvent )
 		}
 
 		updateKinematics();
+
+		m_error_code = ERROR_CODES::OK;
 
 	} catch(DataNotAvailableException &e) {
 		m_error_code = ERROR_CODES::COLLECTION_NOT_FOUND;
