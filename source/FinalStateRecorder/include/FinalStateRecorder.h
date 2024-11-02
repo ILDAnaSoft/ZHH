@@ -116,9 +116,6 @@ class FinalStateRecorder : public Processor
 
 		// Output JSON file
 		jsonf m_jsonFile{};
-
-		// Truth kinematics
-
 };
 
 #endif

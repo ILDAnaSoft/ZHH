@@ -96,7 +96,8 @@
         "${workspaceFolder}/source/PreSelection",
         "${workspaceFolder}/source/ZHHKinfitProcessors",
         "${workspaceFolder}/source/JetTaggingComparison",
-        "${workspaceFolder}/source/FinalStateRecorder"
+        "${workspaceFolder}/source/FinalStateRecorder",
+        "${workspaceFolder}/source/TruthKinematicsRecorder",
     ],
     "terminal.integrated.profiles.linux": {
         "bash": {
