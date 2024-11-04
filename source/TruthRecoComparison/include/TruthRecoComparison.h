@@ -10,6 +10,7 @@
 #include <TTree.h>
 #include <TH1F.h>
 #include <vector>
+#include <map>
 #include "TLorentzVector.h"
 #include "UTIL/LCRelationNavigator.h"
 #include "EVENT/ReconstructedParticle.h"
@@ -33,9 +34,7 @@ struct ERROR_CODES {
 
 class TruthRecoComparison : public Processor
 {
-	private:
-		float m_beam_pol1{};
-		
+	private:		
 		TLorentzVector m_mcp_mom_tot{0., 0., 0., 0.};
 		TLorentzVector m_mcp_mom_detected{0., 0., 0., 0.};
 		TLorentzVector m_mcp_mom_undetected{0., 0., 0., 0.};
@@ -68,6 +67,9 @@ class TruthRecoComparison : public Processor
 		float m_true_E_miss{};
 		float m_reco_E_miss{};
 
+		float m_true_E_vis{};
+		float m_reco_E_vis{};
+
 	public:
 		virtual Processor*  newProcessor()
 		{
@@ -94,6 +96,7 @@ class TruthRecoComparison : public Processor
 		/** Input collection name.
 		 */
 		std::string m_inputPfoCollection{};
+		std::string m_inputJetCollection{};
 		std::string m_recoMCTruthLink{};
 		std::string m_mcTruthRecoLink{};
 		std::string m_mcParticleCollection{};
@@ -103,7 +106,6 @@ class TruthRecoComparison : public Processor
 
 		int m_n_run;
 		int m_n_evt = 0;
-		int m_n_evt_sum = 0;
 		int m_error_code;
 
 		// Output ROOT file
@@ -113,6 +115,23 @@ class TruthRecoComparison : public Processor
 		// Truth kinematics
 		EVENT::ReconstructedParticle* getLinkedPFO( EVENT::MCParticle *mcParticle , LCRelationNavigator RecoMCParticleNav , LCRelationNavigator MCParticleRecoNav , bool getChargedPFO , bool getNeutralPFO , float &weightPFOtoMCP , float &weightMCPtoPFO );
 		void updateKinematics();
+
+		// charged Kaons K+, charged Pions, Protons, neutral pions, Neutrons, Electron, Muons
+		std::vector<int> m_species_abs_pdgs = {321, 211, 2212, 111, 2112, 11, 13};
+		std::vector<std::string> m_species_labels = { "charged Kaons K+", "charged Pions", "Protons", "neutral Pions", "Neutrons", "Electron", "Muons" }; 
+		std::vector<std::string> m_species_names = { "ch_kaon", "ch_pion", "proton", "neut_pion", "neutron", "electron", "muon" }; 
+
+		// These have to match each other
+		std::vector<std::string> m_species_features = { "E", "theta", "phi", "pt" };
+		void extract_true_particle_features(std::vector<EVENT::MCParticle*> mcparticles, std::vector<std::vector<float>> &feature_vec);
+		void extract_reco_particle_features(std::vector<EVENT::ReconstructedParticle*> reco_particles, std::vector<std::vector<float>> &feature_vec);
+
+		// Features are stored in [true, reco] alternating order for each feature
+		// Even indices are truth, odd are reco
+		std::map<int, std::vector<std::vector<float>>> m_species {};
+
+		std::map<int, std::vector<MCParticle*>> m_species_particles_true {};
+		std::map<int, std::vector<ReconstructedParticle*>> m_species_particles_reco {};
 };
 
 #endif

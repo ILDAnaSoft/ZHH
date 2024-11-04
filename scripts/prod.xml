@@ -16,6 +16,7 @@
         <constant name="Runvvbbbb" value="True" />
         <constant name="Runqqbbbb" value="True" />
         <constant name="RunllKinfit" value="True" />
+        <constant name="RunTruthRecoComparison" value="True" />
 
         <!-- These variables should be constant -->
         <constant name="lcgeo_DIR" value="/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-centos7-gcc12.2.0-opt/k4geo/0.20-e42drs/share/k4geo" />
@@ -79,6 +80,10 @@
         <if condition="${Runqqbbbb}">
             <processor name="JC4FT_qq" />
             <processor name="MyPreSelection_qq" />
+        </if>
+
+        <if condition="${RunTruthRecoComparison} && ${Runllbbbb}">
+            <processor name="MyTruthRecoComparison" />
         </if>
 
         <processor name="MyLCIOOutputProcessor" />
@@ -283,7 +288,7 @@
         <parameter name="RecoMCTruthLink" type="string" lcioInType="LCRelation">RecoMCTruthLink</parameter>
         <parameter name="MCTruthRecoLink" type="string" lcioInType="LCRelation">MCTruthRecoLink</parameter>
         <parameter name="OutputPfoCollection" type="string" lcioOutType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
-        <parameter name="Verbosity" type="string">SILENT</parameter>
+        <parameter name="Verbosity" type="string">DEBUG</parameter>
     </processor>
 
     <processor name="MyTrueJet" type="TrueJet">
@@ -942,6 +947,21 @@
         <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
         <parameter name="outputRootFilename" type="string">${OutputDirectory}/${OutputBaseName}_FinalStates.root</parameter>
         <parameter name="outputJsonFilename" type="string">${OutputDirectory}/${OutputBaseName}_FinalStateMeta.json</parameter>
+
+        <parameter name="outputKinematics" type="bool">True</parameter>
+
+        <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
+        <parameter name="Verbosity" type="string">DEBUG</parameter>
+    </processor>
+
+    <processor name="MyTruthRecoComparison" type="TruthRecoComparison">
+        <!--MyFinalStateRecorder identified events that have passed the preselection-->
+        <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
+        <parameter name="inputJetCollection" type="string" lcioInType="ReconstructedParticle">RefinedJets_ll</parameter>
+        <parameter name="inputPfoCollection" type="string" lcioInType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
+
+        <parameter name="outputRootFilename" type="string">${OutputDirectory}/${OutputBaseName}_TruthRecoComparison.root</parameter>
+        <parameter name="ECM" type="float">${CMSEnergy}</parameter>
 
         <parameter name="outputKinematics" type="bool">True</parameter>
 

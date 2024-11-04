@@ -382,7 +382,7 @@ def analysis_stack(DATA_ROOT:str,
                         chunk['xx_thrust'] = rf['thrust'].array()
                         chunk['xx_e_vis'] = rf['Evis'].array()
                         chunk['xx_pt_miss'] = rf['missingPT'].array()
-                        chunk['xx_invmass_miss'] = rf['missingPTInvMass'].array()
+                        chunk['xx_invmass_miss'] = rf['missingInvMass'].array()
                         chunk['xx_nisoleps'] = rf['nIsoLeptons'].array()
                     
                 if kinematics:

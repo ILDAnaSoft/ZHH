@@ -207,7 +207,8 @@ void PreSelection::init()
 	m_pTTree->Branch("lepTypes", &m_lepTypes);
 	m_pTTree->Branch("lepTypesPaired", &m_lepTypesPaired, "lepTypesPaired/I");
 	m_pTTree->Branch("missingPT", &m_missingPT, "missingPT/F");
-	m_pTTree->Branch("missingPTInvMass", &m_missingPTInvMass, "missingPTInvMass/F");
+	m_pTTree->Branch("missingInvMass", &m_missingMass, "missingInvMass/F");
+	m_pTTree->Branch("missingEnergy", &m_missingE, "missingEnergy/F");
 	m_pTTree->Branch("Evis", &m_Evis, "Evis/F");
 	m_pTTree->Branch("thrust", &m_thrust, "thrust/F");
 	m_pTTree->Branch("dileptonMassPrePairing", &m_dileptonMassPrePairing, "dileptonMassPrePairing/F");
@@ -307,7 +308,8 @@ void PreSelection::Clear()
 	m_lepTypes.clear();
 	m_lepTypesPaired = 0;
 	m_missingPT = -999.;
-	m_missingPTInvMass = -999.;
+	m_missingMass = -999.;
+	m_missingE = -999.;
 	m_Evis  = -999.;
 	m_thrust = -999.;
 	m_dileptonMassPrePairing = -999.;
@@ -373,7 +375,8 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
 		}
 		TLorentzVector pmis = ecms - pfosum;
 		m_missingPT = pmis.Pt();
-		m_missingPTInvMass = pmis.M();
+		m_missingMass = pmis.M();
+		m_missingE = pmis.E();
 		
 		// ---------- VISIBLE ENERGY ----------                                          
 		m_Evis = pfosum.E();

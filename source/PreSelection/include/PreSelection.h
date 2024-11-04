@@ -94,7 +94,8 @@ class PreSelection : public Processor
 		std::vector<int> m_lepTypes{};
 		int m_lepTypesPaired{};
 		float m_missingPT{};
-		float m_missingPTInvMass{};
+		float m_missingMass{};
+		float m_missingE{};
 		float m_Evis{};
 		float m_thrust{};
 		float m_dileptonMassPrePairing{};
