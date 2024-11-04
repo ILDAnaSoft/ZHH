@@ -157,6 +157,8 @@ class AnalysisSummary(BaseTask, HTCondorWorkflow):
         return self.local_target(f'{self.branch}_Presel.{"npy" if self.dtype == "numpy" else "root"}')
 
     def run(self):
+        from zhh import numpy2root
+        
         src = self.branch_map[self.branch]
         DATA_ROOT, branches, analysis_chunks, processes_index = src
         
@@ -171,7 +173,10 @@ class AnalysisSummary(BaseTask, HTCondorWorkflow):
         presel_result = analysis_stack(DATA_ROOT, processes, chunks_factual, branches,
                                      kinematics=True, b_tagging=True, final_states=True)
         
-        np.save(output.path, presel_result)
+        if self.dtype == 'numpy':
+            np.save(output.path, presel_result)
+        else:
+            numpy2root(presel_result, output.path, 'summary')
         
         self.publish_message(f'Processed {len(branches)} branches')
 

@@ -54,12 +54,9 @@ def get_process_normalization(
     if RATIO_BY_TOTAL is None:
         results['n_events_target'] = results['n_events_tot']
     else:
-        results['n_events_target'] = np.maximum(
-            np.minimum(results['n_events_tot'], np.ceil(RATIO_BY_TOTAL * results['n_events_tot'])),
-            50*np.ones(len(results), dtype=int)
-        )
+        results['n_events_target'] = np.minimum(results['n_events_tot'], np.ceil(RATIO_BY_TOTAL * results['n_events_tot']))
     
-    assert(len(results['n_events_target'] < 0) == 0)
+    assert(np.sum(results['n_events_target'] < 0) == 0)
     
     return results
 
