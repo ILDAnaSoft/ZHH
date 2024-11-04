@@ -44,16 +44,22 @@ class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         branch_value = self.branch_map[self.branch]
         
         if isinstance(branch_value, tuple):
-            input_file, n_events_skip, n_events_max = branch_value
+            input_file, n_events_skip, n_events_max, mcp_col_name = branch_value
+        elif isinstance(branch_value, dict):
+            n_events_skip, n_events_max = self.n_events_skip, self.n_events_max
+            
+            input_file = branch_value['location']
+            mcp_col_name = branch_value['mcp_col_name']
         else:
-            input_file, n_events_skip, n_events_max = branch_value, self.n_events_skip, self.n_events_max
+            raise Exception('Invalid format of branch value')
         
         steering = {
             'executable': self.executable,
             'steering_file': self.steering_file,
             'input_file': input_file,
             'n_events_skip': n_events_skip,
-            'n_events_max': n_events_max
+            'n_events_max': n_events_max,
+            'mcp_col_name': mcp_col_name
         }
         
         return steering
@@ -74,7 +80,11 @@ class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     def build_command(self, fallback_level):
         steering = self.get_steering_parameters()
         
-        executable, steering_file, input_file, n_events_skip, n_events_max = steering.values()
+        executable = steering['executable']
+        steering_file = steering['steering_file']
+        input_file = steering['input_file']
+        n_events_skip = steering['n_events_skip']
+        n_events_max = steering['n_events_max']
         
         target, temp = self.get_target_and_temp()
         os.makedirs(osp.dirname(target), exist_ok=True)

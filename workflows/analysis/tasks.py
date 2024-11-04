@@ -3,7 +3,7 @@ from law.util import flatten
 from math import ceil
 from law import LocalFileTarget
 
-from analysis.framework import HTCondorWorkflow
+from analysis.framework import HTCondorWorkflow, zhh_configs, AnalysisConfiguration
 
 from zhh import get_raw_files, analysis_stack, ProcessIndex, \
     get_adjusted_time_per_event, get_runtime_analysis, get_sample_chunk_splits, get_process_normalization, \
@@ -22,30 +22,21 @@ class RawIndex(BaseTask):
     index: Optional[ProcessIndex] = None
     
     def requires(self):
-        if str(self.version).startswith('550-hh-fast'):
-            from analysis.tasks_reco import FastSimSGV
-            return [FastSimSGV.req(self)]
+        config = zhh_configs.get(str(self.tag))
+        if config.index_requires is not None:
+            return config.index_requires(self)
         else:
             return []
     
-    def get_raw_files(self) -> list[str]:
-        if str(self.version).startswith('500-full'):
-            return get_raw_files()
-        elif str(self.version).startswith('550-hh-full'):
-            files = glob(f'/pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/550-Test/hh/ILD_l5_o1_v02/v02-02-03/**/*.slcio', recursive=True)
-            files.sort()
-            
-            return files
-        elif str(self.version).startswith('550-hh-fast'):
-            # This requires a run of SGV beforehand
-            input_targets = self.input()[0]['collection'].targets.values()
-
-            reco_files = [f.path for f in input_targets]
-            reco_files.sort()
-            
-            return reco_files
+    def slcio_files(self) -> list[str]:
+        config = zhh_configs.get(str(self.tag))
+        if callable(config.slcio_files):
+            files = config.slcio_files(self)
         else:
-            raise Exception(f'Cannot process version/source type <{self.version}>')
+            files = config.slcio_files
+            
+        files.sort()
+        return files
     
     def output(self):
         return [
@@ -57,13 +48,12 @@ class RawIndex(BaseTask):
         temp_files: list[law.LocalFileTarget] = self.output()
         
         temp_files[0].parent.touch()
-        self.index = index = ProcessIndex(temp_files[0].path, temp_files[1].path, self.get_raw_files())
+        self.index = index = ProcessIndex(temp_files[0].path, temp_files[1].path, self.slcio_files())
         self.index.load()
         
         self.publish_message(f'Loaded {len(index.samples)} samples and {len(index.processes)} processes')
 
 class CreateAnalysisChunks(BaseTask):
-    ratio = 0
     jobtime: Annotated[int, luigi.IntParameter()] = 7200
     
     def __init__(self, **kwargs):
@@ -87,6 +77,8 @@ class CreateAnalysisChunks(BaseTask):
         ]
     
     def run(self):
+        config = zhh_configs.get(str(self.tag))
+        
         SAMPLE_INDEX = self.input()[0][1].path
         DATA_ROOT = osp.dirname(self.input()[1]['collection'][0].path)
         
@@ -94,17 +86,12 @@ class CreateAnalysisChunks(BaseTask):
         samples = np.load(SAMPLE_INDEX)
         
         runtime_analysis = get_runtime_analysis(DATA_ROOT)
-        pn = get_process_normalization(processes, samples, RATIO_BY_EXPECT=self.ratio)
+        pn = get_process_normalization(processes, samples, RATIO_BY_TOTAL=config.statistics)
         atpe = get_adjusted_time_per_event(runtime_analysis)
-        
-        custom_statistics = None
-        if self.ratio != 0 and self.ratio is not None:
-            with open(osp.expandvars(f'$REPO_ROOT/config/custom_statistics.json'), 'r') as f:
-                custom_statistics = json.load(f)
 
         chunk_splits = get_sample_chunk_splits(samples, process_normalization=pn,
                     adjusted_time_per_event=atpe, MAXIMUM_TIME_PER_JOB=self.jobtime,
-                    custom_statistics=custom_statistics)
+                    custom_statistics=config.custom_statistics)
         
         self.output()[0].parent.touch()
         
@@ -118,49 +105,8 @@ class CreateAnalysisChunks(BaseTask):
         self.publish_message(f'Compiled analysis chunks')
     
 
-class UpdateAnalysisChunks(BaseTask):
-    """Updates the chunk definitions by only appending new chunks
-    for greater statistics. Useful only if the reconstruction has not
-    changed.
-
-    Args:
-        BaseTask (_type_): _description_
-    """
-    
-    def requires(self):
-        return [
-            RawIndex.req(self),
-            CreateAnalysisChunks.req(self)
-        ]
-
-    def output(self):
-        return self.local_target('chunks.npy')
-    
-    def run(self):
-        chunks_in = self.input()[1][0]
-        samples = np.load(self.input()[0][1].path)
-        atpe = np.load(self.input()[1][2].path)
-        pn = np.load(self.input()[1][3].path)
-        arguments = self.input()[1][4].load()
-        
-        chunks_in_path = chunks_in.path
-        existing_chunks = np.load(chunks_in_path)
-        
-        with open(osp.expandvars(f'$REPO_ROOT/config/custom_statistics.json'), 'r') as f:
-            custom_statistics = json.load(f)
-        
-        new_chunks = get_sample_chunk_splits(samples, atpe, pn, MAXIMUM_TIME_PER_JOB=arguments['jobtime'], \
-                    custom_statistics=custom_statistics, existing_chunks=existing_chunks)
-        
-        chunks_in.remove()
-        np.save(chunks_in_path, new_chunks)
-        
-        self.output().parent.touch()
-        np.save(self.output().path, new_chunks)
-        
-        self.publish_message(f'Updated chunks. Added {len(new_chunks)-len(existing_chunks)} branches.')
-
 class AnalysisSummary(BaseTask, HTCondorWorkflow):
+    dtype: Annotated[str, luigi.Parameter()] = 'numpy'
     branchesperjob: Annotated[int, luigi.IntParameter()] = 256
     
     analysis_chunks: Optional[str] = None
@@ -205,7 +151,10 @@ class AnalysisSummary(BaseTask, HTCondorWorkflow):
                 )))
     
     def output(self):
-        return self.local_target(f'{self.branch}_Presel.npy')
+        if not (str(self.dtype).lower() in ['root', 'numpy']):
+            raise ValueError(f'Unknown output dtype <{self.dtype}>')
+        
+        return self.local_target(f'{self.branch}_Presel.{"npy" if self.dtype == "numpy" else "root"}')
 
     def run(self):
         src = self.branch_map[self.branch]
@@ -225,3 +174,5 @@ class AnalysisSummary(BaseTask, HTCondorWorkflow):
         np.save(output.path, presel_result)
         
         self.publish_message(f'Processed {len(branches)} branches')
+
+import analysis.configurations

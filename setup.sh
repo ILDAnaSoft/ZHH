@@ -63,7 +63,7 @@ function zhh_attach_marlin_dlls() {
         "$REPO_ROOT/source/PreSelection/lib/libPreSelection.so"
         "$REPO_ROOT/source/FinalStateRecorder/lib/libFinalStateRecorder.so"
         "$REPO_ROOT/source/ZHHKinfitProcessors/lib/libZHHKinfitProcessors.so"
-        "$REPO_ROOT/source/TruthKinematicsRecorder/lib/libTruthRecoComparison.so"
+        "$REPO_ROOT/source/TruthRecoComparison/lib/libTruthRecoComparison.so"
         #"$MarlinML/lib64/libJetTaggers.so"
         #"$VariablesForDeepMLFlavorTagger/lib/libVariablesForDeepMLFlavorTagger.so"
         #"$BTaggingVariables/lib/libBTaggingVariables.so"

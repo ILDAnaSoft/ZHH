@@ -15,7 +15,7 @@ class SampleMeta():
                 beamPol1:float, beamPol2:float, \
                 beamPol1Alt:float, beamPol2Alt:float, \
                 crossSection:float, crossSection_err:float, \
-                process_id:int):
+                process_id:int, mcpColName:str):
         
         self.process = process
         self.nEvtSum = n_events
@@ -27,16 +27,28 @@ class SampleMeta():
         self.crossSection = crossSection
         self.crossSection_err = crossSection_err
         self.process_id = process_id
+        self.mcp_col_name = mcpColName
         
     @classmethod
-    def fromevent(cls, params, n_events:int, run_number:int):
+    def fromevent(cls, event, n_events:int, run_number:int):
         "Initialize SampleMeta from LCIO event data"
+        
+        params = event.getParameters()
+        
+        col_names = event.getCollectionNames()
+        mcp_col_name = ''
+        for name in ['MCParticlesSkimmed', 'MCParticle']:
+            if name in col_names:
+                mcp_col_name = name
+                
+        if mcp_col_name == '':
+            print('Warning: No collection storing MCParticles found! Empty string will be stored.')
         
         return cls(params.getStringVal('processName'), n_events, run_number, \
                    params.getFloatVal('Pol0'), params.getFloatVal('Pol1'), \
                    params.getFloatVal('beamPol1'), params.getFloatVal('beamPol2'), \
                    params.getFloatVal('crossSection'), params.getFloatVal('crossSectionError'), \
-                   params.getIntVal('ProcessID'))
+                   params.getIntVal('ProcessID'), mcp_col_name)
 
 def per_chunk(q:Queue, file_paths:List[str]):
     from pyLCIO import IOIMPL
@@ -47,9 +59,8 @@ def per_chunk(q:Queue, file_paths:List[str]):
         reader.open(location)
         
         event = reader.readNextEvent()
-        params = event.getParameters()
         
-        file_meta = SampleMeta.fromevent(params, reader.getNumberOfEvents(), event.getRunNumber())
+        file_meta = SampleMeta.fromevent(event, reader.getNumberOfEvents(), event.getRunNumber())
         
         q.put(file_meta)
 
@@ -65,7 +76,8 @@ class ProcessIndex:
         ('n_events', 'i'),
         ('pol_e', 'i'),
         ('pol_p', 'i'),
-        ('location', '<U512'),]
+        ('location', '<U512'),
+        ('mcp_col_name', '<U24')]
 
     dtype_process = [
         ('pid', 'i'),
@@ -146,7 +158,7 @@ class ProcessIndex:
                     
                 if not location in self.samples['location']:
                     self.samples = np.append(self.samples, [np.array([
-                        (n_sample, meta.run, process, proc_pol, meta.nEvtSum, pol_em, pol_ep, location)
+                        (n_sample, meta.run, process, proc_pol, meta.nEvtSum, pol_em, pol_ep, location, meta.mcp_col_name)
                     ], dtype=self.dtype_sample)])
                     n_sample += 1
                     

@@ -1,6 +1,7 @@
 from analysis.tasks_abstract import MarlinJob
 from typing import Union, Optional
 from law.util import flatten
+from analysis.framework import zhh_configs
 import numpy as np
 import law
 
@@ -13,7 +14,7 @@ class AnalysisAbstract(MarlinJob):
         ('Runllbbbb', 'True'),
         ('Runvvbbbb', 'True'),
         ('Runqqbbbb', 'True'),
-        ('RunllKinfit', 'True'),
+        ('RunllKinfit', 'False'),
         ('OutputDirectory', '.')
     ]
     
@@ -28,16 +29,19 @@ class AnalysisAbstract(MarlinJob):
         'zhh_FinalStateMeta.json'
     ]
     
-    # Attach MCParticleCollectionName
+    # Attach MCParticleCollectionName and constants/globals for Marlin
     def pre_run_command(self):
-        input_file:str = self.get_steering_parameters()['input_file']
-        
-        if not ('/mc-2020/' in input_file) and not ('FastSimSGV' in input_file):
-            raise Exception(f'Input file <{input_file}> does not seem to be a valid input file')
-        
-        mcp_col_name = 'MCParticlesSkimmed'
+        config = zhh_configs.get(str(self.tag))
+ 
+        mcp_col_name:str = self.get_steering_parameters()['mcp_col_name']
         
         self.constants.append(('MCParticleCollectionName', mcp_col_name))
+        
+        for key, value in config.marlin_constants.items():
+            self.constants.append((key, str(value)))
+        
+        for key, value in config.marlin_globals.items():
+            self.globals.append((key, str(value)))
     
     def workflow_requires(self):
         from analysis.tasks import RawIndex, CreateAnalysisChunks
@@ -64,28 +68,37 @@ class AnalysisAbstract(MarlinJob):
     # output of a previous task (in this case, RawIndex)
     @workflow_condition.create_branch_map
     def create_branch_map(self) -> Union[
-        dict[int, str],
-        dict[int, tuple[str, int, int]]
+        dict[int, dict],
+        dict[int, tuple[str, int, int, str]]
         ]:
         samples = np.load(self.input()['raw_index'][1].path)
         
         if not self.debug:
             # The calculated chunking is used
             scs = np.load(self.input()['preselection_chunks'][0].path)
-            branch_map = { k: v for k, v in zip(scs['branch'].tolist(), zip(scs['location'], scs['chunk_start'], scs['chunk_size'])) }
+            branch_map = { k: v for k, v in zip(
+                scs['branch'].tolist(),
+                zip(scs['location'],
+                    scs['chunk_start'],
+                    scs['chunk_size'],
+                    samples['mcp_col_name'][scs['sid']])) }
         else:
             # A debug run. The default settings
             # from the steering file are used
             selection = samples[np.lexsort((samples['location'], samples['proc_pol']))]
+            branch_map = {}
+            i = 0
             
-            # Average over three runs for each proc_pol
-            # run to get a more accurate runtime estimate
-            arr = []
             for proc_pol in np.unique(selection['proc_pol']):
-                for location in selection['location'][selection['proc_pol'] == proc_pol][:3]:
-                    arr.append(location)
-                
-            branch_map = { k: v for k, v in zip(list(range(len(arr))), arr) }
+                for entry in selection[selection['proc_pol'] == proc_pol][:3]:
+                    branch_map[i] = {
+                        'location': entry['location'],
+                        'mcp_col_name': entry['mcp_col_name'] 
+                    }
+                    i += 1
+        
+        temp = {  }
+        temp[0] = branch_map[0]
         
         return branch_map
 

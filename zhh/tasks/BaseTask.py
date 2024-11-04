@@ -3,7 +3,7 @@ import law
 import os
 
 class BaseTask(law.Task):
-    version = luigi.Parameter(default='500-full')
+    tag = luigi.Parameter(default='500-all-full')
     
     # Custom postifx to be appended by inheriting tasks
     postfix:str = ''
@@ -12,7 +12,7 @@ class BaseTask(law.Task):
         # DATA_PATH is defined in setup.sh
         parts = ("$DATA_PATH", )
         parts += (self.__class__.__name__ ,)
-        parts += (str(self.version) + self.postfix,)
+        parts += (str(self.tag) + self.postfix,)
         parts += path
         
         return os.path.join(*map(str, parts))

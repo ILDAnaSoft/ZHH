@@ -57,7 +57,6 @@
             <if condition="${RunllKinfit}">
                 <processor name="MySLDCorrection_ll" />
 
-                <!-- We should do a check on PreSelection.isPassed once that is fixed -->
                 <processor name="MyErrorFlow_ll" />
 
                 <if condition="MyHdecayMode.GoodEvent">
@@ -493,7 +492,7 @@
         <parameter name="ReadSubdetectorEnergies" type="int" value="1"/> <!-- true for ILD -->
         <parameter name="UpdateVertexRPDaughters" type="int" value="0"/> <!-- false for non-updative PandoraPFOs -->
         <parameter name="TrackHitOrdering" type="int" value="1"/> <!-- Track hit ordering: 0=ILD-LOI,SID-DBD, 1=ILD-DBD -->
-        <parameter name="PrintEventNumber" type="int" value="100"/> <!-- 0 for not printing event number, n for printing every n events -->
+        <parameter name="PrintEventNumber" type="int" value="1"/> <!-- 0 for not printing event number, n for printing every n events -->
 
         <!-- jet clustering parameters -->
         <parameter name="JetClustering.PrimaryVertexCollectionName" type="string" value="PrimaryVertex" />

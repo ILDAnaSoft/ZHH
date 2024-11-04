@@ -10,7 +10,7 @@ and only needs to be defined once per user / group / etc.
 
 import os, luigi, law, math
 from law.config import Config
-from typing import List, Optional
+from typing import Optional, Callable, Union
 
 # the htcondor workflow implementation is part of a law contrib package
 # so we need to explicitly load it
@@ -58,7 +58,7 @@ class HTCondorWorkflow(law.htcondor.HTCondorWorkflow):
         bootstrap_file = law.util.rel_path(__file__, "bootstrap.sh")
         return law.JobInputFile(bootstrap_file, share=True, render_job=True)
 
-    def htcondor_job_config(self, config:Config, branch_keys:List, branch_values:List)->Config:
+    def htcondor_job_config(self, config:Config, branch_keys:list, branch_values:list)->Config:
         # render_variables are rendered into all files sent with a job
         config.render_variables["analysis_path"] = os.getenv("ANALYSIS_PATH")
         config.render_variables["REPO_ROOT"] = os.getenv("REPO_ROOT")
@@ -92,3 +92,61 @@ class HTCondorWorkflow(law.htcondor.HTCondorWorkflow):
         config.custom_content.append(('materialize_max_idle', 1000))
 
         return config
+
+"""_summary_
+
+Raises:
+    ValueError: _description_
+"""
+class AnalysisConfiguration:
+    tag:str
+    
+    """If not None, a RawIndex will require the output
+    of this task to exist.
+    """
+    index_requires:Optional[Callable] = None 
+    
+    slcio_files:Union[list[str], Callable]
+    
+    """Fration of available events that will be used for all channels
+    """
+    statistics:float = 1. 
+    
+    """If custom_statistics is a list of entries, it will be assumed as custom_statistics
+    input for the get_chunk_splits function. Each entry should have the following
+    shape:
+        first: a number/ratio.
+        second: the physics processes
+        third, optional: reference; either 'expected' or 'total'. defaults to total.
+        
+    Example: [100, ["e1e1hh", "e2e2hh", "e3e3hh", "e1e1qqh", "e2e2qqh", "e3e3qqh",
+    "n1n1hh", "n23n23hh", "n1n1qqh", "n23n23qqh",
+    "qqhh", "qqqqh"], "expected"]
+    """
+    custom_statistics:Optional[list] = None
+    
+    marlin_globals:dict[str,Union[int,float,str]] = {}
+    marlin_constants:dict[str,Union[int,float,str]] = {}
+
+class AnalysisConfigurationRegistry:
+    definitions:dict[str,AnalysisConfiguration] = {}
+    
+    def add(self, config:AnalysisConfiguration):
+        if config.tag == '':
+            raise ValueError(f'Tag must be defined for configuration')
+        
+        if config.tag in self.definitions:
+            raise ValueError(f'Configuration with tag <{config.tag}> already exists')
+        
+        self.definitions[config.tag] = config
+        
+    def get(self, tag:str)->AnalysisConfiguration:
+        if not tag in self.definitions:
+            raise ValueError(f'Tag <{tag}> not a known configuration. Check configurations.py')
+        
+        return self.definitions[tag]
+
+# Create the registry and load the configurations
+zhh_configs = AnalysisConfigurationRegistry()
+
+import analysis.configurations
