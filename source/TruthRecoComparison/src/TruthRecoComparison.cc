@@ -182,21 +182,6 @@ void TruthRecoComparison::clear()
 
 void TruthRecoComparison::updateKinematics()
 {
-	m_mcp_E_tot = m_mcp_mom_tot.E();
-	m_mcp_px_tot = m_mcp_mom_tot.Px();
-	m_mcp_py_tot = m_mcp_mom_tot.Py();
-	m_mcp_pz_tot = m_mcp_mom_tot.Pz();
-
-	m_mcp_E_detected = m_mcp_mom_detected.E();
-	m_mcp_px_detected = m_mcp_mom_detected.Px();
-	m_mcp_py_detected = m_mcp_mom_detected.Py();
-	m_mcp_pz_detected = m_mcp_mom_detected.Pz();
-
-	m_mcp_E_undetected = m_mcp_mom_undetected.E();
-	m_mcp_px_undetected = m_mcp_mom_undetected.Px();
-	m_mcp_py_undetected = m_mcp_mom_undetected.Py();
-	m_mcp_pz_undetected = m_mcp_mom_undetected.Pz();
-
 	// Transverse energy
 
 	m_true_Et = m_mcp_mom_detected.Et();

@@ -40,21 +40,6 @@ class TruthRecoComparison : public Processor
 		ROOT::Math::PxPyPzEVector m_mcp_mom_undetected{0., 0., 0., 0.};
 		ROOT::Math::PxPyPzEVector m_pfo_mom_tot{0.,0.,0.,0.};
 
-		float m_mcp_E_tot{};
-		float m_mcp_px_tot{};
-		float m_mcp_py_tot{};
-		float m_mcp_pz_tot{};
-
-		float m_mcp_E_detected{};
-		float m_mcp_px_detected{};
-		float m_mcp_py_detected{};
-		float m_mcp_pz_detected{};
-
-		float m_mcp_E_undetected{};
-		float m_mcp_px_undetected{};
-		float m_mcp_py_undetected{};
-		float m_mcp_pz_undetected{};
-
 		float m_true_Et{};
 		float m_reco_Et{};
 
