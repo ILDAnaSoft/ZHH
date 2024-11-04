@@ -14,6 +14,13 @@
 using namespace lcio ;
 using namespace marlin ;
 
+ROOT::Math::PxPyPzEVector vec4(const EVENT::MCParticle* mcp) {
+	return ROOT::Math::PxPyPzEVector(mcp->getMomentum()[0], mcp->getMomentum()[1], mcp->getMomentum()[2], mcp->getEnergy());
+}
+ROOT::Math::PxPyPzEVector vec4(const EVENT::ReconstructedParticle* pfo) {
+	return ROOT::Math::PxPyPzEVector(pfo->getMomentum()[0], pfo->getMomentum()[1], pfo->getMomentum()[2], pfo->getEnergy());
+}
+
 TruthRecoComparison aTruthRecoComparison ;
 
 TruthRecoComparison::TruthRecoComparison() :
@@ -82,19 +89,21 @@ void TruthRecoComparison::init()
 
 	// Construct data structure to store data of particle species
 	// kaons, pions, protons, electrons, muons
-	for (size_t i = 0; i < m_species_abs_pdgs.size(); i++) {
-		streamlog_out(DEBUG) << "Preparing output for " << m_species_names[i];
+	for (int pdg: m_species_abs_pdgs) {
+		streamlog_out(DEBUG) << "Preparing output for " << pdg << std::endl;
 
+		std::vector<std::vector<float>> species_data;
 		for (size_t j = 0; j < 2*m_species_features.size(); j++) {
-			std::vector<float> entries;
-			m_species[i].push_back(entries);
+			std::vector<float> feature_data;
+			species_data.push_back(feature_data);
 		}
+		m_species[pdg] = species_data;
 
 		std::vector<EVENT::MCParticle*> truth_particles_vec;
-		m_species_particles_true[i] = truth_particles_vec;
+		m_species_particles_true[pdg] = truth_particles_vec;
 
 		std::vector<EVENT::ReconstructedParticle*> reco_particles_vec;
-		m_species_particles_reco[i] = reco_particles_vec;
+		m_species_particles_reco[pdg] = reco_particles_vec;
 	}
 	
 	this->clear();
@@ -127,14 +136,17 @@ void TruthRecoComparison::init()
 	m_pTTree->Branch("mcp_mom_undetected", &m_mcp_mom_undetected);
 	m_pTTree->Branch("pfo_mom_tot", &m_pfo_mom_tot);
 
+	m_pTTree->Branch("reco_jet_pt", &m_reco_jet_pt);
+	m_pTTree->Branch("reco_jet_E", &m_reco_jet_E);
+
 	for (size_t i = 0; i < m_species_abs_pdgs.size(); i++) {
 		streamlog_out(DEBUG) << "Attaching branches for species " << m_species_names[i];
 
 		for (size_t j = 0; j < m_species_features.size(); j++) {
 			streamlog_out(DEBUG) << "Attaching branch for feature " << m_species_features[j];
 
-			m_pTTree->Branch((m_species_names[i] + "_" + m_species_features[j] + "_true").c_str(), &m_species[i][j*2]);
-			m_pTTree->Branch((m_species_names[i] + "_" + m_species_features[j] + "_reco").c_str(), &m_species[i][j*2+1]);
+			m_pTTree->Branch((m_species_names[i] + "_" + m_species_features[j] + "_true").c_str(), &m_species[m_species_abs_pdgs[i]][j*2]);
+			m_pTTree->Branch((m_species_names[i] + "_" + m_species_features[j] + "_reco").c_str(), &m_species[m_species_abs_pdgs[i]][j*2+1]);
 		}
 	}
 
@@ -155,14 +167,17 @@ void TruthRecoComparison::clear()
 	updateKinematics();
 
 	// Reset data of particle species
-	for (size_t i = 0; i < m_species_abs_pdgs.size(); i++) {
-		for (size_t j = 0; j < m_species[i].size(); j++) {
-			m_species[i][j].clear();
+	for (int pdg : m_species_abs_pdgs) {
+		for (size_t j = 0; j < m_species[pdg].size(); j++) {
+			m_species[pdg][j].clear();
 		}
 
-		m_species_particles_true[i].clear();
-		m_species_particles_reco[i].clear();
+		m_species_particles_true[pdg].clear();
+		m_species_particles_reco[pdg].clear();
 	}
+
+	m_reco_jet_pt.clear();
+	m_reco_jet_E.clear();
 }
 
 void TruthRecoComparison::updateKinematics()
@@ -192,10 +207,10 @@ void TruthRecoComparison::updateKinematics()
 	float target_p_due_crossing_angle = m_ECM * 0.007; // crossing angle = 14 mrad
 	double E_lab = 2 * sqrt( std::pow( 0.548579909e-3 , 2 ) + std::pow( m_ECM / 2 , 2 ) + std::pow( target_p_due_crossing_angle , 2 ) + 0. + 0.);
 
-	TLorentzVector ecms(target_p_due_crossing_angle, 0., 0., E_lab) ;
+	ROOT::Math::PxPyPzEVector ecms(target_p_due_crossing_angle, 0., 0., E_lab) ;
 
-	TLorentzVector p_miss_true = ecms - m_mcp_mom_detected;
-	TLorentzVector p_miss_reco = ecms - m_pfo_mom_tot;
+	ROOT::Math::PxPyPzEVector p_miss_true = ecms - m_mcp_mom_detected;
+	ROOT::Math::PxPyPzEVector p_miss_reco = ecms - m_pfo_mom_tot;
 
 	m_true_pt_miss = p_miss_true.Pt();
 	m_reco_pt_miss = p_miss_reco.Pt();
@@ -229,13 +244,13 @@ void TruthRecoComparison::processEvent( EVENT::LCEvent *pLCEvent )
 		LCCollection *inputMCParticleCollection;
 
 		streamlog_out(DEBUG) << "        getting PFO collection: " << m_inputPfoCollection << std::endl ;
-		inputPFOCollection = pLCEvent->getCollection( m_inputPfoCollection );
+		inputPFOCollection = pLCEvent->getCollection(m_inputPfoCollection);
 
 		streamlog_out(DEBUG) << "        getting jet collection: " << m_inputJetCollection << std::endl ;
-		inputJetCollection = pLCEvent->getCollection( m_inputJetCollection );
+		inputJetCollection = pLCEvent->getCollection(m_inputJetCollection);
 
 		streamlog_out(DEBUG) << "        getting MCParticle collection: " << m_mcParticleCollection << std::endl ;
-		inputMCParticleCollection = pLCEvent->getCollection( m_mcParticleCollection );
+		inputMCParticleCollection = pLCEvent->getCollection(m_mcParticleCollection);
 
 		streamlog_out(DEBUG) << "        getting RecoMCTruthLink relation: " << m_recoMCTruthLink << std::endl ;
 		LCRelationNavigator RecoMCParticleNav = pLCEvent->getCollection(m_recoMCTruthLink);
@@ -249,17 +264,17 @@ void TruthRecoComparison::processEvent( EVENT::LCEvent *pLCEvent )
 			MCParticle* mcp = (MCParticle*) inputMCParticleCollection->getElementAt(i);
 
 			if (mcp->getDaughters().size() == 0) {
-				TLorentzVector mcp_mom (mcp->getMomentum() , mcp->getEnergy());
+				ROOT::Math::PxPyPzEVector mcp_mom = vec4(mcp);
 				m_mcp_mom_tot += mcp_mom;
 
 				float weightPFOtoMCP = 0.0;
 	  			float weightMCPtoPFO = 0.0;
 
 				ReconstructedParticle* linkedPFO = getLinkedPFO( mcp , RecoMCParticleNav , MCParticleRecoNav , false , false , weightPFOtoMCP , weightMCPtoPFO );
-				if ( linkedPFO == NULL ) {
-					m_mcp_mom_detected += mcp_mom;
-				} else {
+				if (linkedPFO == NULL) {
 					m_mcp_mom_undetected += mcp_mom;
+				} else {
+					m_mcp_mom_detected += mcp_mom;
 				}
 
 				// Check if we're interested in this particle species
@@ -271,7 +286,7 @@ void TruthRecoComparison::processEvent( EVENT::LCEvent *pLCEvent )
 
 		for (int i = 0; i < inputPFOCollection->getNumberOfElements(); i++) {
 			ReconstructedParticle* pfo = (ReconstructedParticle*) inputPFOCollection->getElementAt(i);
-			m_pfo_mom_tot += TLorentzVector( pfo->getMomentum() , pfo->getEnergy() );
+			m_pfo_mom_tot += vec4(pfo);
 
 			// Check if we're interested in this particle species
 			if (std::find(m_species_abs_pdgs.begin(), m_species_abs_pdgs.end(), abs(pfo->getType())) != m_species_abs_pdgs.end()) {
@@ -279,9 +294,20 @@ void TruthRecoComparison::processEvent( EVENT::LCEvent *pLCEvent )
 			}
 		}
 
-		for (size_t i = 0; i < m_species_abs_pdgs.size(); i++) {
-			extract_true_particle_features(m_species_particles_true[m_species_abs_pdgs[i]], m_species[m_species_abs_pdgs[i]]);
-			extract_reco_particle_features(m_species_particles_reco[m_species_abs_pdgs[i]], m_species[m_species_abs_pdgs[i]]);
+		for (int i = 0; i < inputJetCollection->getNumberOfElements(); i++) {
+			ReconstructedParticle* jet = (ReconstructedParticle*) inputJetCollection->getElementAt(i);
+			ROOT::Math::PxPyPzEVector jet_mom = vec4(jet);
+
+			m_reco_jet_pt.push_back(jet_mom.Pt());
+			m_reco_jet_E.push_back(jet_mom.E());
+		}
+
+		for (int pdg : m_species_abs_pdgs) {
+			streamlog_out(DEBUG) << "Extracting " << m_species[pdg].size() << " features for species " << pdg << std::endl;
+			streamlog_out(DEBUG) << "    True particles: " << m_species_particles_true[pdg].size() << std::endl;
+
+			extract_true_particle_features(m_species_particles_true[pdg], m_species[pdg]);
+			extract_reco_particle_features(m_species_particles_reco[pdg], m_species[pdg]);
 		}
 
 		updateKinematics();
@@ -407,7 +433,7 @@ EVENT::ReconstructedParticle* TruthRecoComparison::getLinkedPFO( EVENT::MCPartic
 
 void TruthRecoComparison::extract_true_particle_features(std::vector<EVENT::MCParticle*> mcparticles, std::vector<std::vector<float>> &feature_vec){
 	for (size_t i = 0; i < mcparticles.size(); i++) {
-		TLorentzVector mom4vec (mcparticles[i]->getMomentum() , mcparticles[i]->getEnergy());
+		ROOT::Math::PxPyPzEVector mom4vec = vec4(mcparticles[i]);
 
 		feature_vec[0].push_back(mom4vec.E());
 		feature_vec[2].push_back(mom4vec.Theta());
@@ -418,7 +444,7 @@ void TruthRecoComparison::extract_true_particle_features(std::vector<EVENT::MCPa
 
 void TruthRecoComparison::extract_reco_particle_features(std::vector<EVENT::ReconstructedParticle*> reco_particles, std::vector<std::vector<float>> &feature_vec) {
 	for (size_t i = 0; i < reco_particles.size(); i++) {
-		TLorentzVector mom4vec (reco_particles[i]->getMomentum() , reco_particles[i]->getEnergy());
+		ROOT::Math::PxPyPzEVector mom4vec = vec4(reco_particles[i]);
 
 		feature_vec[1].push_back(mom4vec.E());
 		feature_vec[3].push_back(mom4vec.Theta());

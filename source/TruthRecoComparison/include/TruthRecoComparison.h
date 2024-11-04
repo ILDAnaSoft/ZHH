@@ -11,7 +11,7 @@
 #include <TH1F.h>
 #include <vector>
 #include <map>
-#include "TLorentzVector.h"
+#include "Math/Vector4D.h"
 #include "UTIL/LCRelationNavigator.h"
 #include "EVENT/ReconstructedParticle.h"
 #include "EVENT/MCParticle.h"
@@ -35,10 +35,10 @@ struct ERROR_CODES {
 class TruthRecoComparison : public Processor
 {
 	private:		
-		TLorentzVector m_mcp_mom_tot{0., 0., 0., 0.};
-		TLorentzVector m_mcp_mom_detected{0., 0., 0., 0.};
-		TLorentzVector m_mcp_mom_undetected{0., 0., 0., 0.};
-		TLorentzVector m_pfo_mom_tot{0.,0.,0.,0.};
+		ROOT::Math::PxPyPzEVector m_mcp_mom_tot{0., 0., 0., 0.};
+		ROOT::Math::PxPyPzEVector m_mcp_mom_detected{0., 0., 0., 0.};
+		ROOT::Math::PxPyPzEVector m_mcp_mom_undetected{0., 0., 0., 0.};
+		ROOT::Math::PxPyPzEVector m_pfo_mom_tot{0.,0.,0.,0.};
 
 		float m_mcp_E_tot{};
 		float m_mcp_px_tot{};
@@ -69,6 +69,9 @@ class TruthRecoComparison : public Processor
 
 		float m_true_E_vis{};
 		float m_reco_E_vis{};
+
+		std::vector<float> m_reco_jet_pt{};
+		std::vector<float> m_reco_jet_E{};
 
 	public:
 		virtual Processor*  newProcessor()

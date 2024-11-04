@@ -155,7 +155,7 @@
     <!--parameter name="JetPullsOutputColection" type="string" lcioOutType="LCFloatVec">JetPulls</parameter-->
     <!--parameter name="StartOutputCollection" type="string" lcioOutType="ReconstructedParticle">StartReco</parameter-->
     <!-- verbosity level - DEBUG only works if compiled in debug mode! -->
-    <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> SILENT  </parameter>
+    <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT">SILENT</parameter>
   </processor>
 
     <processor name="InitDD4hep" type="InitializeDD4hep">
