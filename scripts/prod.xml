@@ -28,6 +28,7 @@
         <constant name="NumberOfHiggs" value="2" />
         <constant name="MCParticleCollectionName" value="MCParticlesSkimmed" />
         <constant name="CMSEnergy" value="500." />
+	<constant name="ISRPzMax" value="125.6" />
         <constant name="Verbosity" value="SILENT" />
     </constants>
 
@@ -124,7 +125,7 @@
     <!-- center-of-mass energy (default: 500.) -->
     <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
     <!-- maximum energy (=|p_z|) for a single ISR photon  (default: 125.6) -->
-    <parameter name="ISRPzMax" type="float"> 125.6 </parameter>
+    <parameter name="ISRPzMax" type="float"> ${ISRPzMax} </parameter>
     <!-- include ISR in fit hypothesis?    0: false >0: true (default) -->
     <parameter name="includeISR" type="bool">true</parameter>
     <!-- 0 = OPALFitter, 1 = NewFitter, 2 = NewtonFitter (default: 0) -->
