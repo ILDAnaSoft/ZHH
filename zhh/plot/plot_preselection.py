@@ -117,8 +117,14 @@ def plot_preselection_by_calc_dict(calc_dict, hypothesis:str, xlabel:str, xunit:
     
     fig1, _, counts_wt = plot_hist(plot_dict, xlim=xlim, bins=bins, custom_styling=True, stacked=True, weights=plot_weights, return_hist=True, **plot_hist_kwargs)
     
+    fig_plot_hist_kwargs = {
+        'stacked': True
+    } | plot_hist_kwargs
+    
+    fig1, _, counts_wt = plot_hist(plot_dict, xlim=xlim, bins=bins, custom_styling=True, weights=plot_weights, return_hist=True, **fig_plot_hist_kwargs)
+    
     if plot_flat:
-        fig2, _, counts_flat = plot_hist(plot_dict, xlim=xlim, bins=bins, custom_styling=True, stacked=True, return_hist=True, **plot_hist_kwargs)
+        fig2, _, counts_flat = plot_hist(plot_dict, xlim=xlim, bins=bins, custom_styling=True, return_hist=True, **fig_plot_hist_kwargs)
     
     if yscale is None:
         if plot_flat:
