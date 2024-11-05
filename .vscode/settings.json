@@ -105,5 +105,6 @@
         },
     },
     "python.terminal.activateEnvironment": false,
-    "python.terminal.activateEnvInCurrentTerminal": false
+    "python.terminal.activateEnvInCurrentTerminal": false,
+    "git.detectSubmodules": false
 }
