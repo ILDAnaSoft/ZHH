@@ -89,6 +89,8 @@ if [[ ! -d "$REPO_ROOT" ]]; then
 
     REPO_ROOT="${BASH_SOURCE[${#BASH_SOURCE[@]} - 1]}"
     export REPO_ROOT="$(dirname $REPO_ROOT)"
+    REPO_ROOT="${BASH_SOURCE[${#BASH_SOURCE[@]} - 1]}"
+    export REPO_ROOT="$(dirname $REPO_ROOT)"
 
     if [[ -d "$REPO_ROOT/zhh" && -d "$REPO_ROOT/source" ]]; then
         zhh_echo "Success: Found REPO_ROOT at <$REPO_ROOT>"
@@ -203,6 +205,12 @@ if [[ "$ZHH_COMMAND" = "install" ]]; then
     zhh_install_venv
 
     # Dependencies
+    source $REPO_ROOT/shell/zhh_install.sh
+
+    # Python virtual environment (venv)
+    zhh_install_venv
+
+    # Dependencies
     if [[ -z "$ZHH_INSTALL_DIR" ]]; then
         ZHH_INSTALL_DIR=$( realpath "$REPO_ROOT/dependencies" )
 
@@ -241,6 +249,18 @@ if [[ $MARLIN_DLL != *"libFinalStateRecorder"* ]]; then
 fi
 
 function MarlinZHH() {
+    local steering_file
+    if [[ -f "$1" ]]; then
+        steering_file=$1
+        shift
+    else
+        steering_file="$REPO_ROOT/scripts/prod.xml"
+    fi
+
+    Marlin $steering_file --constant.ILDConfigDir="$ILD_CONFIG_DIR" --constant.ZHH_REPO_ROOT="$REPO_ROOT" "$@"
+}
+function zhhvenv() {
+    source $REPO_ROOT/$ZHH_VENV_NAME/bin/activate
     local steering_file
     if [[ -f "$1" ]]; then
         steering_file=$1
