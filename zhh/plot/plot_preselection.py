@@ -114,9 +114,7 @@ def plot_preselection_by_calc_dict(calc_dict, hypothesis:str, xlabel:str, xunit:
     for key in calc_dict:
         plot_dict[key] = calc_dict[key][0]
         plot_weights.append(calc_dict[key][1])
-    
-    fig1, _, counts_wt = plot_hist(plot_dict, xlim=xlim, bins=bins, custom_styling=True, stacked=True, weights=plot_weights, return_hist=True, **plot_hist_kwargs)
-    
+        
     fig_plot_hist_kwargs = {
         'stacked': True
     } | plot_hist_kwargs
