@@ -12,7 +12,7 @@ If you wish to use your own local copies of the repositories, create (or edit, i
 ### Fresh install
 
 ```shell
-. setup.sh --install --install-dir ./dependencies
+source setup.sh --install --install-dir ./dependencies
 ```
 
 This will download the necessary repositories and for ILDConfig extract LCFIPlus weights. Also, if the directory `$ZHH_VENV_NAME` (defaults `zhhvenv`) is not found, a virtual environment can be automatically set up, including python 3.11 and all dependencies defined in the `requirements.txt` file. Also, all ZHH and dependency processors will be compiled. 
@@ -22,13 +22,13 @@ After that, the framework is setup for both the analysis of individual files and
 ### Using an existing setup
 
 ```shell
-. setup.sh
+source setup.sh
 ```
 
 
 ### List of required dependencies
 
-Either you or `. setup.sh --install` should make sure the following environment variables exist. If you want to specify values yourself, please use the `.env` file with the `KEY="VALUE"` syntax for compatability.
+Either you or `source setup.sh --install` should make sure the following environment variables exist. If you want to specify values yourself, please use the `.env` file with the `KEY="VALUE"` syntax for compatability.
 
 | Environment variable           | Target / Description   |
 |--------------------------------|------------------------|
