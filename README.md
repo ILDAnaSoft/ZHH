@@ -12,10 +12,10 @@ If you wish to use your own local copies of the repositories, create (or edit, i
 ### Fresh install
 
 ```shell
-. setup.sh --install --install-dir ~/nfs/dependencies_zhh
+. setup.sh --install --install-dir ./dependencies
 ```
 
-This will download the necessary repositories and for ILDConfig extract LCFIPlus weights. Also, if `$CONDA_ROOT` is not found, mambaforge can be automatically downloaded and installed, setting up an python 3.11 environment called `zhh` with all dependencies defined in the `requirements.txt` file. Also, all ZHH and dependency processors will be compiled. 
+This will download the necessary repositories and for ILDConfig extract LCFIPlus weights. Also, if the directory `$ZHH_VENV_NAME` (defaults `zhhvenv`) is not found, a virtual environment can be automatically set up, including python 3.11 and all dependencies defined in the `requirements.txt` file. Also, all ZHH and dependency processors will be compiled. 
 
 After that, the framework is setup for both the analysis of individual files and the submission of batch jobs using `law` (see [here](#For-production)). 
 

@@ -3,12 +3,12 @@
         {
             "name": "Linux",
             "includePath": [
-                "/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/root/6.32.04-vms5ij/include/**", // Root
-                "/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/lcio/2.22.2-k45h3z/include/**", // LCIO
-                "/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-dbg/marlin/1.19.3-w222n5/include/**", // Marlin
-                "/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/marlinutil/1.18.1-saqg4z/include/**", // MarlinUtil
-                "/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/ilcutil/1.7.3-hyslz7/include/**", // streamlog
-                "/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/nlohmann-json/3.11.3-wv4sd3/include", // nlohmann-json
+                "/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-almalinux9-gcc11.3.1-opt/root/6.28.10-j6yheu/include/**", // Root
+                "/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-almalinux9-gcc11.3.1-opt/lcio/2.21-66idkb/include/**", // LCIO
+                "/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-almalinux9-gcc11.3.1-opt/marlin/1.19.2-23csbl/include/**", // Marlin
+                "/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-almalinux9-gcc11.3.1-opt/marlinutil/1.17.2-vbff32/include/**", // MarlinUtil
+                "/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-almalinux9-gcc11.3.1-opt/ilcutil/1.7.2-vamvj5/include/**", // streamlog
+                "/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-almalinux9-gcc11.3.1-opt/nlohmann-json/3.11.2-mxh7ki/include", // nlohmann-json
                 "${workspaceFolder}/source/PreSelection/include/**",
                 "${workspaceFolder}/source/Misclustering/include/**",
                 "${workspaceFolder}/source/HdecayMode/include/**",

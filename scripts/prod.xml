@@ -27,7 +27,7 @@
         <constant name="OutputRootFile" value="${OutputBaseName}.root" />
         <constant name="NumberOfHiggs" value="2" />
         <constant name="MCParticleCollectionName" value="MCParticlesSkimmed" />
-        <constant name="CMSEnergy" value="550." />
+        <constant name="CMSEnergy" value="500." />
         <constant name="Verbosity" value="SILENT" />
     </constants>
 
@@ -101,7 +101,7 @@
         <!-- limit the number of processed records (run+evt): -->
         <!--parameter name="MaxRecordNumber" value="0" /to process all events--> 
         <!--parameter name="MaxRecordNumber" value="1000" /to process 1000 events--> 
-        <parameter name="MaxRecordNumber" value="50"/>
+        <parameter name="MaxRecordNumber" value="100"/>
         <parameter name="SkipNEvents" value="0" />
         <parameter name="SupressCheck" value="false" />
         <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT">SILENT</parameter>
@@ -155,7 +155,7 @@
     <!--parameter name="JetPullsOutputColection" type="string" lcioOutType="LCFloatVec">JetPulls</parameter-->
     <!--parameter name="StartOutputCollection" type="string" lcioOutType="ReconstructedParticle">StartReco</parameter-->
     <!-- verbosity level - DEBUG only works if compiled in debug mode! -->
-    <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT">SILENT</parameter>
+    <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> SILENT  </parameter>
   </processor>
 
     <processor name="InitDD4hep" type="InitializeDD4hep">
@@ -288,7 +288,7 @@
         <parameter name="RecoMCTruthLink" type="string" lcioInType="LCRelation">RecoMCTruthLink</parameter>
         <parameter name="MCTruthRecoLink" type="string" lcioInType="LCRelation">MCTruthRecoLink</parameter>
         <parameter name="OutputPfoCollection" type="string" lcioOutType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
-        <parameter name="Verbosity" type="string">DEBUG</parameter>
+        <parameter name="Verbosity" type="string">SILENT</parameter>
     </processor>
 
     <processor name="MyTrueJet" type="TrueJet">
@@ -481,7 +481,7 @@
 		<!--Event selection based on semi-leptonic decays: (0): without SLD (1): with >= 0 SLD(all events) (2): with >= 1 SLD (3): with correctable SLD -->
         <parameter name="SLDMode" type="int">1</parameter>
 		<!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-		<parameter name="Verbosity" type="string">DEBUG</parameter>
+		<parameter name="Verbosity" type="string">${Verbosity}</parameter>
 	</processor>
 
     <processor name="JC4FT_ll" type="LcfiplusProcessor">
@@ -948,8 +948,6 @@
         <parameter name="outputRootFilename" type="string">${OutputDirectory}/${OutputBaseName}_FinalStates.root</parameter>
         <parameter name="outputJsonFilename" type="string">${OutputDirectory}/${OutputBaseName}_FinalStateMeta.json</parameter>
 
-        <parameter name="outputKinematics" type="bool">True</parameter>
-
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
         <parameter name="Verbosity" type="string">DEBUG</parameter>
     </processor>
@@ -966,7 +964,7 @@
         <parameter name="outputKinematics" type="bool">True</parameter>
 
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">DEBUG</parameter>
+        <parameter name="Verbosity" type="string">SILENT</parameter>
     </processor>
 
     <processor name="MyLCIOOutputProcessor" type="LCIOOutputProcessor">

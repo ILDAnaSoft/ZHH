@@ -39,7 +39,7 @@ setupwrapper && source \$REPO_ROOT/$ZHH_VENV_NAME/bin/activate && exec python.ex
 EOF
         chmod 755 $PYLOC
 
-        read -p "Do you want to make the kernel available for Jupyter Notebook? (y)" yn
+        read -p "Do you want to make the kernel available for Jupyter Notebook? (y) " yn
         if [[ -z $yn || $yn == "y" ]]; then
             pip install ipykernel
             python -m ipykernel install --user --name=$ZHH_VENV_NAME
@@ -87,9 +87,10 @@ function zhh_install_deps() {
             https://gitlab.desy.de/ilcsoft/MarlinML
             https://gitlab.desy.de/ilcsoft/variablesfordeepmlflavortagger
             https://gitlab.desy.de/ilcsoft/btaggingvariables
-            https://github.com/iLCSoft/ILDConfig.git)
-        local varnames=(MarlinML VariablesForDeepMLFlavorTagger BTaggingVariables ILD_CONFIG_DIR)
-        local dirnames=(MarlinML variablesfordeepmlflavortagger btaggingvariables ILDConfig)
+            https://github.com/iLCSoft/ILDConfig.git
+            https://github.com/nVentis/MarlinReco.git)
+        local varnames=(MarlinML VariablesForDeepMLFlavorTagger BTaggingVariables ILD_CONFIG_DIR MarlinReco)
+        local dirnames=(MarlinML variablesfordeepmlflavortagger btaggingvariables ILDConfig MarlinReco)
 
         mkdir -p $INSTALL_DIR
 
@@ -153,7 +154,7 @@ function zhh_install_deps() {
     mkdir -p "$data_dir"
 
     # Save directories to .env
-    # For ZHH_ENV_NAME, see zhh_install_venv.sh
+    # For $ZHH_ENV_NAME, see zhh_install_venv.sh
     cat > "$REPO_ROOT/.env" <<EOF
 REPO_ROOT="$REPO_ROOT"
 MarlinML="$MarlinML"
@@ -162,8 +163,9 @@ BTaggingVariables="$BTaggingVariables"
 LCIO="$LCIO"
 TORCH_PATH="$TORCH_PATH"
 ILD_CONFIG_DIR="$ILD_CONFIG_DIR"
-ZHH_VENV_NAME="zhhvenv"
+ZHH_VENV_NAME="$ZHH_VENV_NAME"
 DATA_PATH="$data_dir"
+MarlinReco="$MarlinReco"
 
 EOF
 }

@@ -7,7 +7,6 @@ function usage() {
     echo "       --install-dir, -d: defaults to dependencies"
     echo "       --compile, -c: recompiles all dependencies. requires all paths (dependencies) to be set"
     echo "       --help, -h: print this help message"
-    echo "       --force, -f: forces to re-load all environment variables and the key4hep stack"
     echo "--install and --compile are mutually exclusive"
     echo ""
     echo "Additional files which may be sourced after the key4hep stack is sourced (optional, not commited to git repository):"
@@ -18,10 +17,9 @@ function usage() {
     echo "       MarlinML: absolute path to MarlinML repository with binaries inside lib64 (see https://gitlab.desy.de/ilcsoft/MarlinML)"
     echo "       VariablesForDeepMLFlavorTagger: absolute path to repository with binaries inside lib (see https://gitlab.desy.de/ilcsoft/variablesfordeepmlflavortagger)"
     echo "       BTaggingVariables: absolute path to repository with binaries inside lib (see https://gitlab.desy.de/ilcsoft/btaggingvariables)"
-    echo "       LCIO: absolute path to LCIO installation (see https://github.com/iLCSoft/LCIO)"
 }
 
-ZHH_K4H_RELEASE_DEFAULT="2024-10-03"
+ZHH_K4H_RELEASE_DEFAULT="2024-04-12"
 
 function zhh_echo() {
     echo "ZHH> $1"
@@ -103,7 +101,6 @@ fi
 # Parse user input
 ZHH_K4H_RELEASE=$ZHH_K4H_RELEASE_DEFAULT
 ZHH_COMMAND=""
-ZHH_FORCE_RELOAD=0
 
 for ((i=1; i<=$#; i++)); do
     eval arg=\$$i
@@ -112,9 +109,6 @@ for ((i=1; i<=$#; i++)); do
         --help|-h)
             usage
             return 0
-            ;;
-        --force|-f)
-            ZHH_FORCE_RELOAD=1
             ;;
         --install)
             ZHH_COMMAND="install"
@@ -156,7 +150,7 @@ for ((i=1; i<=$#; i++)); do
     esac
 done
 
-if [[ -z "${MARLIN_DLL}" || $ZHH_FORCE_RELOAD -eq 1 ]]; then
+if [[ -z "${MARLIN_DLL}" ]]; then
     if [[ ! -f "/cvmfs/sw.hsf.org/key4hep/setup.sh" ]]; then
         zhh_echo "Error: key4hep stack not found. Make sure CVMFS is available and sw.hsf.org loaded. Aborting." && return 1
     fi
@@ -167,13 +161,13 @@ fi
 
 #########################################
 
-if [[ ( -f "${REPO_ROOT}/.env" && -z $ZHH_ENV_DOT ) || $ZHH_FORCE_RELOAD -eq 1 ]]; then
+if [[ -f "${REPO_ROOT}/.env" && -z $ZHH_ENV_DOT ]]; then
     zhh_echo "Loading local environment file .env..."
     export $(grep -v '^#' "${REPO_ROOT}/.env" | xargs)
     export ZHH_ENV_DOT=true
 fi
 
-if [[ -f "${REPO_ROOT}/.env.sh" || $ZHH_FORCE_RELOAD -eq 1 ]]; then
+if [[ -f "${REPO_ROOT}/.env.sh" ]]; then
     zhh_echo "Sourcing local sh file .env.sh..." 
     source "${REPO_ROOT}/.env.sh"
 fi
@@ -265,6 +259,8 @@ function zhhvenv() {
 source $REPO_ROOT/shell/is_json_readable.sh
 source $REPO_ROOT/shell/is_root_readable.sh
 
+# Define a zhh_post_setup function in .env.sh to finalize the environment
+# This is useful e.g. if you need to link to a custom version of MarlinReco etc 
 if typeset -f zhh_post_setup > /dev/null; then
     zhh_post_setup
 fi
