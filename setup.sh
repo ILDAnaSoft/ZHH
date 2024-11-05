@@ -28,7 +28,13 @@ function zhh_echo() {
 function zhh_recompile() {
     # Compile ZHH processors
     cd $REPO_ROOT
-    source compile_from_scratch.sh
+    unset yn
+    read -p "Do you wish to keep existing binaries of compiled ZHH processors? (y) " yn
+    if [[  "$yn" = "y" || -z "$yn" ]]; then
+        source compile_from_scratch.sh keep
+    else
+        source compile_from_scratch.sh
+    fi
 
     compile_pkg ()
     {
@@ -41,7 +47,7 @@ function zhh_recompile() {
     }
 
     # Compile the ML and helper libraries
-    for module_to_compile in "$MarlinML" "$VariablesForDeepMLFlavorTagger" "$BTaggingVariables"
+    for module_to_compile in "$MarlinML" "$VariablesForDeepMLFlavorTagger" "$BTaggingVariables" "$MarlinReco"
     do
         compile_pkg $module_to_compile && zhh_echo "+++ Successfully compiled $module_to_compile +++" || { zhh_echo "!!! Error [$?] while trying to compile $module_to_compile !!!"; cd $REPO_ROOT; return 1; }
     done
