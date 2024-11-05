@@ -3,13 +3,13 @@ from law.util import flatten
 from math import ceil
 from law import LocalFileTarget
 
-from analysis.framework import HTCondorWorkflow, zhh_configs, AnalysisConfiguration
+from analysis.framework import HTCondorWorkflow, zhh_configs
 
 from zhh import get_raw_files, analysis_stack, ProcessIndex, \
     get_adjusted_time_per_event, get_runtime_analysis, get_sample_chunk_splits, get_process_normalization, \
     get_chunks_factual, BaseTask
 
-from typing import Optional, Union, Annotated
+from typing import Optional, cast
 from glob import glob
 import numpy as np
 import os.path as osp
@@ -46,15 +46,19 @@ class RawIndex(BaseTask):
     
     def run(self):
         temp_files: list[law.LocalFileTarget] = self.output()
-        
-        temp_files[0].parent.touch()
-        self.index = index = ProcessIndex(temp_files[0].path, temp_files[1].path, self.slcio_files())
+        BaseTask.touch_parent(temp_files[0])
+
+        self.index = index = ProcessIndex(str(temp_files[0].path), str(temp_files[1].path), self.slcio_files())
         self.index.load()
+        
+        # For compatability, also save as CSV
+        np.savetxt(osp.join(osp.dirname(str(temp_files[0].path)), 'samples.csv'), index.samples, delimiter=',', fmt='%s')
+        np.savetxt(osp.join(osp.dirname(str(temp_files[1].path)), 'processes.csv'), index.processes, delimiter=',', fmt='%s')
         
         self.publish_message(f'Loaded {len(index.samples)} samples and {len(index.processes)} processes')
 
 class CreateAnalysisChunks(BaseTask):
-    jobtime: Annotated[int, luigi.IntParameter()] = 7200
+    jobtime = cast(int, luigi.IntParameter(default=7200))
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -90,24 +94,28 @@ class CreateAnalysisChunks(BaseTask):
         atpe = get_adjusted_time_per_event(runtime_analysis)
 
         chunk_splits = get_sample_chunk_splits(samples, process_normalization=pn,
-                    adjusted_time_per_event=atpe, MAXIMUM_TIME_PER_JOB=self.jobtime,
+                    adjusted_time_per_event=atpe, MAXIMUM_TIME_PER_JOB=cast(int, self.jobtime),
                     custom_statistics=config.custom_statistics)
         
-        self.output()[0].parent.touch()
+        BaseTask.touch_parent(self.output()[0])
         
-        np.save(self.output()[0].path, chunk_splits)
-        np.save(self.output()[1].path, runtime_analysis)
-        np.save(self.output()[2].path, atpe)
-        np.save(self.output()[3].path, pn)
+        np.save(str(self.output()[0].path), chunk_splits)
+        np.save(str(self.output()[1].path), runtime_analysis)
+        np.save(str(self.output()[2].path), atpe)
+        np.save(str(self.output()[3].path), pn)
         
-        #self.output()[4].dump({'ratio': float(self.ratio), 'jobtime': int(self.jobtime)})
+        # For compatability, also save the final results as CSV
+        np.savetxt(osp.join(osp.dirname(str(self.output()[0].path)), 'chunk_splits.csv'), chunk_splits, delimiter=',', fmt='%s')
+        np.savetxt(osp.join(osp.dirname(str(self.output()[1].path)), 'runtime_analysis.csv'), runtime_analysis, delimiter=',', fmt='%s')
+        np.savetxt(osp.join(osp.dirname(str(self.output()[2].path)), 'time_per_event.csv'), atpe, delimiter=',', fmt='%s')
+        np.savetxt(osp.join(osp.dirname(str(self.output()[3].path)), 'normalization.csv'), pn, delimiter=',', fmt='%s')
         
         self.publish_message(f'Compiled analysis chunks')
     
 
 class AnalysisSummary(BaseTask, HTCondorWorkflow):
-    dtype: Annotated[str, luigi.Parameter()] = 'numpy'
-    branchesperjob: Annotated[int, luigi.IntParameter()] = 256
+    dtype = cast(str, luigi.Parameter(default='numpy'))
+    branchesperjob = cast(int, luigi.IntParameter(default=256))
     
     analysis_chunks: Optional[str] = None
     processes_index: Optional[str] = None
@@ -126,7 +134,7 @@ class AnalysisSummary(BaseTask, HTCondorWorkflow):
     def workflow_condition(self):
         if len(self.input()) > 0:
             # here: self.input() refers to the outputs of tasks defined in workflow_requires()
-            return all(elem.exists() for elem in flatten(self.input()))
+            return all(elem.exists() for elem in cast(list[LocalFileTarget], flatten(self.input())))
         else:
             return True
     
@@ -151,10 +159,13 @@ class AnalysisSummary(BaseTask, HTCondorWorkflow):
                 )))
     
     def output(self):
-        if not (str(self.dtype).lower() in ['root', 'numpy']):
-            raise ValueError(f'Unknown output dtype <{self.dtype}>')
+        dtype = self.dtype.lower()
+        if not (dtype in ['root', 'numpy']):
+            raise ValueError(f'Unknown output dtype <{dtype}>')
         
-        return self.local_target(f'{self.branch}_Presel.{"npy" if self.dtype == "numpy" else "root"}')
+        self.postfix = f'-{dtype}'
+        
+        return self.local_target(f'{self.branch}_Presel.{"npy" if dtype == "numpy" else "root"}')
 
     def run(self):
         from zhh import numpy2root
@@ -168,15 +179,19 @@ class AnalysisSummary(BaseTask, HTCondorWorkflow):
         processes = np.load(processes_index)
         
         output = self.output()
-        output.parent.touch()
+        BaseTask.touch_parent(output)
         
         presel_result = analysis_stack(DATA_ROOT, processes, chunks_factual, branches,
                                      kinematics=True, b_tagging=True, final_states=True)
         
         if self.dtype == 'numpy':
-            np.save(output.path, presel_result)
+            np.save(str(output.path), presel_result)
         else:
-            numpy2root(presel_result, output.path, 'summary')
+            numpy2root(presel_result, str(output.path), 'summary')
+            
+        if self.branch == 0:
+            np.save(osp.join(osp.dirname(str(output.path)), 'chunks_factual.npy'), chunks_factual)
+            np.savetxt(osp.join(osp.dirname(str(output.path)), 'chunks_factual.csv'), chunks_factual, delimiter=',', fmt='%s')
         
         self.publish_message(f'Processed {len(branches)} branches')
 

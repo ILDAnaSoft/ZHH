@@ -14,7 +14,8 @@ class AnalysisAbstract(MarlinJob):
         ('Runllbbbb', 'True'),
         ('Runvvbbbb', 'True'),
         ('Runqqbbbb', 'True'),
-        ('RunllKinfit', 'False'),
+        ('RunKinfit', 'True'),
+        ('RunTruthRecoComparison', 'False'),
         ('OutputDirectory', '.')
     ]
     
@@ -22,6 +23,7 @@ class AnalysisAbstract(MarlinJob):
         ('zhh_PreSelection_llHH.root', 'eventTree'),
         ('zhh_PreSelection_vvHH.root', 'eventTree'),
         ('zhh_PreSelection_qqHH.root', 'eventTree'),
+        #('zhh_TruthRecoComparison.root', 'eventTree'),
         ('zhh_FinalStates.root', 'eventTree')
     ]
     

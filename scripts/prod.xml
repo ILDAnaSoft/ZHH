@@ -13,10 +13,10 @@
         In the job submission script, all channels are run
         -->
         <constant name="Runllbbbb" value="True" />
-        <constant name="Runvvbbbb" value="True" />
-        <constant name="Runqqbbbb" value="True" />
-        <constant name="RunllKinfit" value="True" />
-        <constant name="RunTruthRecoComparison" value="True" />
+        <constant name="Runvvbbbb" value="False" />
+        <constant name="Runqqbbbb" value="False" />
+        <constant name="RunKinfit" value="True" />
+        <constant name="RunTruthRecoComparison" value="False" />
 
         <!-- These variables should be constant -->
         <constant name="lcgeo_DIR" value="/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-centos7-gcc12.2.0-opt/k4geo/0.20-e42drs/share/k4geo" />
@@ -55,7 +55,7 @@
         <if condition="${Runllbbbb}">
             <processor name="JC4FT_ll" />
 
-            <if condition="${RunllKinfit}">
+            <if condition="${RunKinfit}">
                 <processor name="MySLDCorrection_ll" />
 
                 <processor name="MyErrorFlow_ll" />

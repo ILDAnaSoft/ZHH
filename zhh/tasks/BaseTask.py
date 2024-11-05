@@ -7,6 +7,11 @@ class BaseTask(law.Task):
     
     # Custom postifx to be appended by inheriting tasks
     postfix:str = ''
+    
+    @staticmethod
+    def touch_parent(target:law.LocalTarget):
+        if target.parent is not None:
+            target.parent.touch()
 
     def local_path(self, *path):
         # DATA_PATH is defined in setup.sh
