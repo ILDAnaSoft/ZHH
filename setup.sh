@@ -87,9 +87,7 @@ function zhh_attach_marlin_dlls() {
 if [[ ! -d "$REPO_ROOT" ]]; then
     zhh_echo "Info: Trying to infer REPO_ROOT..."
 
-    REPO_ROOT="${BASH_SOURCE[${#BASH_SOURCE[@]} - 1]}"
-    export REPO_ROOT="$(dirname $REPO_ROOT)"
-    REPO_ROOT="${BASH_SOURCE[${#BASH_SOURCE[@]} - 1]}"
+    REPO_ROOT="$(realpath "${BASH_SOURCE[${#BASH_SOURCE[@]} - 1]}" )"
     export REPO_ROOT="$(dirname $REPO_ROOT)"
 
     if [[ -d "$REPO_ROOT/zhh" && -d "$REPO_ROOT/source" ]]; then
@@ -103,6 +101,7 @@ fi
 # Parse user input
 ZHH_K4H_RELEASE=$ZHH_K4H_RELEASE_DEFAULT
 ZHH_COMMAND=""
+ZHH_FORCE_RELOAD=0
 
 for ((i=1; i<=$#; i++)); do
     eval arg=\$$i
@@ -111,6 +110,9 @@ for ((i=1; i<=$#; i++)); do
         --help|-h)
             usage
             return 0
+            ;;
+        --force|-f)
+            ZHH_FORCE_RELOAD=1
             ;;
         --install)
             ZHH_COMMAND="install"
@@ -152,7 +154,7 @@ for ((i=1; i<=$#; i++)); do
     esac
 done
 
-if [[ -z "${MARLIN_DLL}" ]]; then
+if [[ -z "${MARLIN_DLL}" || $ZHH_FORCE_RELOAD -eq 1 ]]; then
     if [[ ! -f "/cvmfs/sw.hsf.org/key4hep/setup.sh" ]]; then
         zhh_echo "Error: key4hep stack not found. Make sure CVMFS is available and sw.hsf.org loaded. Aborting." && return 1
     fi
@@ -163,13 +165,13 @@ fi
 
 #########################################
 
-if [[ -f "${REPO_ROOT}/.env" && -z $ZHH_ENV_DOT ]]; then
+if [[ ( -f "${REPO_ROOT}/.env" && -z $ZHH_ENV_DOT ) || $ZHH_FORCE_RELOAD -eq 1 ]]; then
     zhh_echo "Loading local environment file .env..."
     export $(grep -v '^#' "${REPO_ROOT}/.env" | xargs)
     export ZHH_ENV_DOT=true
 fi
 
-if [[ -f "${REPO_ROOT}/.env.sh" ]]; then
+if [[ -f "${REPO_ROOT}/.env.sh" || $ZHH_FORCE_RELOAD -eq 1 ]]; then
     zhh_echo "Sourcing local sh file .env.sh..." 
     source "${REPO_ROOT}/.env.sh"
 fi
@@ -205,16 +207,10 @@ if [[ "$ZHH_COMMAND" = "install" ]]; then
     zhh_install_venv
 
     # Dependencies
-    source $REPO_ROOT/shell/zhh_install.sh
-
-    # Python virtual environment (venv)
-    zhh_install_venv
-
-    # Dependencies
     if [[ -z "$ZHH_INSTALL_DIR" ]]; then
         ZHH_INSTALL_DIR=$( realpath "$REPO_ROOT/dependencies" )
 
-        read -p "Where do you wish to install all the dependencies? ($ZHH_INSTALL_DIR)" zhh_install_dir
+        read -p "Where do you wish to install all the dependencies? ($ZHH_INSTALL_DIR) " zhh_install_dir
         if [[ ! -z "$zhh_install_dir" ]]; then 
             ZHH_INSTALL_DIR=$zhh_install_dir
         fi
@@ -249,18 +245,6 @@ if [[ $MARLIN_DLL != *"libFinalStateRecorder"* ]]; then
 fi
 
 function MarlinZHH() {
-    local steering_file
-    if [[ -f "$1" ]]; then
-        steering_file=$1
-        shift
-    else
-        steering_file="$REPO_ROOT/scripts/prod.xml"
-    fi
-
-    Marlin $steering_file --constant.ILDConfigDir="$ILD_CONFIG_DIR" --constant.ZHH_REPO_ROOT="$REPO_ROOT" "$@"
-}
-function zhhvenv() {
-    source $REPO_ROOT/$ZHH_VENV_NAME/bin/activate
     local steering_file
     if [[ -f "$1" ]]; then
         steering_file=$1
