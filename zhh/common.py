@@ -1,34 +1,6 @@
 from glob import glob
 from typing import Optional, Union
 
-pdg_map = {
-    1: 'd',
-    2: 'u',
-    3: 's',
-    4: 'c',
-    5: 'b',
-    6: 't',
-    11: 'e',
-    12: 'nu_e',
-    13: 'mu',
-    14: 'nu_mu',
-    15: 'tau',
-    16: 'nu_tau',
-    21: 'g',
-    22: 'gamma',
-    23: 'Z',
-    24: 'W',
-    25: 'H',
-    211: 'pi',
-    111: 'pi0',
-    130: 'K_L0',
-    310: 'K_S0',
-    321: 'K',
-    2112: 'n',
-    2212: 'p',
-    3122: 'Lambda',    
-}
-
 default_locations = [
     '2f_Z_bhabhaNg',
     '2f_Z_hadronic',

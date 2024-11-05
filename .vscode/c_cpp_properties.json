@@ -16,8 +16,8 @@
                 "${workspaceFolder}/source/LeptonPairing/include/**",
                 "${workspaceFolder}/source/ZHHKinfitProcessors/include/**",
                 "${workspaceFolder}/source/FinalStateRecorder/include/**",
-                "${workspaceFolder}/source/legacy/include/**",
                 "${workspaceFolder}/source/JetTaggingComparison/include/**",
+                "${workspaceFolder}/source/TruthRecoComparison/include/**"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/g++",

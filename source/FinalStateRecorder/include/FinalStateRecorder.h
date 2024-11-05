@@ -11,6 +11,7 @@
 #include <vector>
 #include "nlohmann/json.hpp"
 #include "FinalStateResolver.h"
+#include "TLorentzVector.h"
 
 class TFile;
 class TTree;
@@ -37,11 +38,11 @@ class FinalStateRecorder : public Processor
 		void register_process(FinalStateResolver* resolver) { resolvers[resolver->get_process_name()] = resolver;  };
 		std::map<std::string, FinalStateResolver*> resolvers{};
 
-		float m_beamPol1{};
-		float m_beamPol2{};
-		float m_crossSection{};
-		float m_crossSection_err{};
-		float m_eventWeight{};
+		float m_beam_pol1{};
+		float m_beam_pol2{};
+		float m_cross_section{};
+		float m_cross_section_err{};
+		float m_event_weight{};
 		int m_process_id{};
 		std::time_t m_t_start{};
 		std::string m_process_name{};
@@ -56,7 +57,7 @@ class FinalStateRecorder : public Processor
 		virtual ~FinalStateRecorder() = default;
 		FinalStateRecorder(const FinalStateRecorder&) = delete;
 		FinalStateRecorder& operator=(const FinalStateRecorder&) = delete;
-		
+
 		virtual void init();
 		virtual void clear();
 		virtual void processRunHeader( LCRunHeader*  /*run*/);
@@ -115,7 +116,6 @@ class FinalStateRecorder : public Processor
 
 		// Output JSON file
 		jsonf m_jsonFile{};
-
 };
 
 #endif

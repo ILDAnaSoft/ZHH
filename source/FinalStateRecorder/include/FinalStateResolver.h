@@ -18,6 +18,8 @@ struct RESOLVER_ERRORS {
         UNALLOWED_VALUES = 5002,
         UNEXPECTED_CHILDREN = 5020,
         HIGGS_NOT_FOUND = 5030,
+        UNEXPECTED_SIZE = 5040,
+        ISR_NOT_FOUND = 5050
     };
 };
 
@@ -28,6 +30,8 @@ class FinalStateResolver {
         int m_event_category;
         int m_n_fermions;
         int m_n_higgs;
+        std::vector<int> m_isr_indices;
+
         int m_n_b_from_higgs = 0;
 
         void assert_true(bool check) {
@@ -49,7 +53,7 @@ class FinalStateResolver {
         std::vector<int> pdgs_of_nth_semilept_decay(LCCollection *mcp_collection, int n);
 
     public:
-        FinalStateResolver(std::string process_name, int process_id, int event_category, int n_fermions, int n_higgs);
+        FinalStateResolver(std::string process_name, int process_id, int event_category, int n_fermions, int n_higgs, std::vector<int> isr_indices);
         virtual ~FinalStateResolver();
 
         std::string get_process_name() { return m_process_name; };
@@ -58,11 +62,25 @@ class FinalStateResolver {
         int get_n_fermions() { return m_n_fermions; };
         int get_n_higgs() { return m_n_higgs; };
         int get_n_b_from_higgs() { return m_n_b_from_higgs; };
-        
-        virtual int get_event_category(std::map<int, int> m_final_state_counts) = 0;
-        virtual std::vector<int> resolve(LCCollection *mcp_collection) = 0;
-        //virtual int m_get_category(LCCollection *mcp_collection) = 0;
 
+        std::vector<EVENT::MCParticle*> resolve_isr_particles(LCCollection *mcp_collection) {
+            std::vector<EVENT::MCParticle*> isr_particles;
+
+            for (size_t i = 0; i < m_isr_indices.size(); i++) {
+                MCParticle* isr_photon = (MCParticle*)mcp_collection->getElementAt(m_isr_indices[i]);
+
+                assert_true(isr_photon->getPDG() == 22, RESOLVER_ERRORS::ISR_NOT_FOUND);
+
+                isr_particles.push_back(isr_photon);
+            }
+            
+            return isr_particles;
+        };
+        
+        // To be overwritten by deriving class definitions, the lower three MUST be defined
+        virtual int get_event_category(std::map<int, int> m_final_state_counts) { return m_event_category; };
+        virtual std::vector<EVENT::MCParticle*> resolve_fs_particles(LCCollection *mcp_collection, bool resolve_higgs = false) = 0;
+        virtual std::vector<int> resolve(LCCollection *mcp_collection) = 0;
 };
 
 #endif

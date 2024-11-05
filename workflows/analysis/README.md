@@ -7,51 +7,58 @@ law itself is based on the luigi framework. The terminology in both frameworks r
 
 An example on the NAF can be found [here](https://github.com/riga/law/tree/master/examples/htcondor_at_naf) and more information on the concepts [here](https://indico.cern.ch/event/1375573/contributions/6090022/attachments/2917075/5119365/2024-08-28_pyhepdev_law.pdf).
 
+## Goal
+For the ZHH analysis, this framework has been developed with law+luigi to minimize job times by running with the highest possible number of parallel jobs.
+
+## Implementation and Configuration
+Running an analysis requires defining and registering a configuration in `configurations.py` with a tag (name), a list of SLCIO source files and, optionally, a list of globals/constants for Marlin. Then, an index of available SLCIO files (number of events) and encountered physics processes including cross section is created. It follows a runtime analysis for a subset of each physics process sample (e.g. e2e2hh, 2f_Z_hadronic etc.) and the calculation of the chunks such that they fit the default queue of the NAF. Only after that, the jobs are finally submitted.
+
+Some standard configurations are given, see e.g. the tags `500-all-full`, `550-hh-fast` and `550-hh-full`.
+
 ### Usage
-The submission of jobs requires the environment to be fully setup. Specifically, a conda environment setup with the packages defined in `requirements.txt` must be installed, all processors compiled and all environment variables set. Check the main README for more information.
+The submission of jobs requires the environment to be fully set up. Specifically, a Python venv with the packages defined in `requirements.txt` must be installed, all processors compiled and all environment variables set. You can let the setup script do this by calling `source setup.sh --install`. After that, `source zhhvenv/bin/activate` loads the Python environment. Check the main README for more information.
 
 To prepare law for submitting jobs, first `cd workflows && source setup.sh`. The first time `law` is executed and every time the task definitions change, running `law index --verbose` is necessary. After that, all implemented tasks can be executed by running `law run <task name>`.
 
-For example, to create the index of all available physics samples, execute
+For example, to create the index of all available physics samples using the `500-all-full` configuration, execute
 
 ```shell
-law run CreateRawIndex --poll-interval=30sec
+law run RawIndex --poll-interval=30sec --tag=500-all-full
 ```
 
 Note I: It is very advisable to run all law job submissions through a `screen -R job`. Otherwise, closing the current terminal session would terminate law as well. In that case, all running batch jobs would still continue, but no jobs will be rescheduled if there are failing ones.
 
-Note II: You might need to ssh into another NAF worker node to be able to submit condor jobs.
+Note II: In case you get an error that the local condor scheduler does not run, you might need to ssh into the same or another NAF worker node.
+
+Note III: Per default, all batch jobs are 
 
 To run all tasks including `AnalysisSummary`, execute
 
 ```shell
-law run CreateRawIndex --poll-interval=120sec
+law run AnalysisSummary --poll-interval=120sec --tag=500-all-full
 ```
 
-This will run the tasks CreateRawIndex, AnalysisRuntime, CreateAnalysisChunks and then AnalysisFinal one after another and make use of the NAF when called at DESY. For each task, a folder of the same name will be created inside `$DATA_PATH`.
+This will run the tasks RawIndex, AnalysisRuntime, CreateAnalysisChunks and then AnalysisFinal one after another and make use of the NAF when called at DESY. Each task will create a folder of the same name under `$DATA_PATH`. The results are stored in a sub-directory that starts with the tag value.
 
 ### Task Overview
 
 | Task name                 | Batch job | Description                                                                                                         | Parameters with defaults |
 |---------------------------|-----------|---------------------------------------------------------------------------------------------------------------------|--------------------------|
-| CreateRawIndex            | No        | Creates an index of all readable sample files and physics processes associated to them. See `ProcessIndex`.          | - |
+| RawIndex            | No        | Creates an index of all readable sample files and physics processes associated to them. See `ProcessIndex`.          | - |
 | AnalysisRuntime           | Yes       | Runs the Marlin analysis for each proc_pol (process polarization) combination over 50 events to estimate the runtime per event.            | - |
 | CreateAnalysisChunks      | No        | Calculates chunks according to a desired target, physics sample size and maximum duration per job (2h, to stay below limit of 3h). `ratio` controls the number of desired events as fraction of the number of expected events (`1.` equates to ca. 45M events of the available 60M). Setting this to `None` will use all available data.     | `jobtime=7200` <br> `ratio=1.` |
 | AnalysisFinal             | Yes       | Runs the Marlin analysis with the chunking as given above.                                                          | - |
 | AnalysisSummary           | Yes       | Extracts data for analyzing the preselection and final selection, kinematic distributions etc.                      | - |
 
-All tasks use a versioning that is by default `v1`. To use the maximum number of jobs, the chunking is done in a way such that only the normal quota is used (see [here](https://docs.desy.de/naf/documentation/job-requirements/)). 
+To use the maximum number of jobs, the chunking is done in a way such that only the normal quota is used (see [here](https://docs.desy.de/naf/documentation/job-requirements/)). 
 
 ### Task Definitions
 Tasks are defined as Python classed in `tasks*.py`. Jobs which should run on HTCondor simply inherit from `HTCondorWorkflow`. Custom HTCondor settings are defined in `framework.py`. All ZHH analysis tasks which require running Marlin inherit from the `MarlinJob` class.
 
 ## Central Bookkeeping
 
-### Samples and Processes: CreateRawIndex
-
-The task `CreateRawIndex` will use the `ProcessIndex` class to create the files `processes.npy` and `samples.npy` with lists of all available physics samples (per default: all `mc-opt-3` samples and the `hh` signal sample from the `mc-2020` production; see `get_raw_files()`) and all thereby encountered combinations of physics process and polarization.
-
-As for all law tasks, the result will be saved at `$DATA_PATH/CreateRawIndex/v1`.
+### Samples and Processes: RawIndex
+The task `RawIndex` will use the `ProcessIndex` class to create the files `processes.npy` and `samples.npy` with lists of all available physics samples (per default: all `mc-opt-3` samples and the `hh` signal sample from the `mc-2020` production; see `get_raw_files()`) and all thereby encountered combinations of physics process and polarization.
 
 #### samples.npy
 

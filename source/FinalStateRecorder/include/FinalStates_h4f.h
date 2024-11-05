@@ -15,49 +15,61 @@ class ffffh: public p6 {
     public:
         // Set process ID and event category
         ffffh( string process_name, int process_id, int event_category, vector<int> z_decay_filter ):
-            p6( process_name, process_id, event_category, 4, 1 ),
+            p6( process_name, process_id, event_category, 4, 1, vector<int> {6,7} ),
             m_z_decay_filter { z_decay_filter } {};
 
-        vector<int> resolve(LCCollection *mcp_collection) {
+        vector<MCParticle*> resolve_fs_particles(LCCollection *mcp_collection, bool resolve_higgs) {
+            vector<MCParticle*> fs_particles;
+
             // Get Z-decayed fermions
-            MCParticle* part1 = (MCParticle*)mcp_collection->getElementAt(8);
-            MCParticle* part2 = (MCParticle*)mcp_collection->getElementAt(9);
-            MCParticle* part3 = (MCParticle*)mcp_collection->getElementAt(10);
-            MCParticle* part4 = (MCParticle*)mcp_collection->getElementAt(11);
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(8));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(9));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(10));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(11));
+
+            // Get Higgs boson
+            MCParticle* h = (MCParticle*)mcp_collection->getElementAt(12);
+
+            if (resolve_higgs) {
+                // Get H-decayed fermions
+                fs_particles.push_back(h->getDaughters()[0]);
+                fs_particles.push_back(h->getDaughters()[1]);
+            } else {
+                fs_particles.push_back(h);
+            }
+        
+            return fs_particles;
+        }
+
+        vector<int> resolve(LCCollection *mcp_collection) {
+            vector<MCParticle*> fs_particles = resolve_fs_particles(mcp_collection, false);
+
+            assert_true(fs_particles.size() == 5, RESOLVER_ERRORS::UNEXPECTED_SIZE);
 
             assert_true(
-                vec_contains(m_z_decay_filter, abs(part1->getPDG())) &&
-                vec_contains(m_z_decay_filter, abs(part2->getPDG())) &&
-                vec_contains(m_z_decay_filter, abs(part3->getPDG())) &&
-                vec_contains(m_z_decay_filter, abs(part4->getPDG())), RESOLVER_ERRORS::UNALLOWED_VALUES);
+                vec_contains(m_z_decay_filter, abs(fs_particles[0]->getPDG())) &&
+                vec_contains(m_z_decay_filter, abs(fs_particles[1]->getPDG())) &&
+                vec_contains(m_z_decay_filter, abs(fs_particles[2]->getPDG())) &&
+                vec_contains(m_z_decay_filter, abs(fs_particles[3]->getPDG())), RESOLVER_ERRORS::UNALLOWED_VALUES);
 
             // Get H-decayed fermions
-            MCParticle* h1 = (MCParticle*)mcp_collection->getElementAt(12);
+            assert_true(fs_particles[4]->getPDG() == 25, RESOLVER_ERRORS::HIGGS_NOT_FOUND);
 
-            assert_true(h1->getPDG() == 25, RESOLVER_ERRORS::HIGGS_NOT_FOUND);
-
-            vector<int> d1 = pdgs_of_daughter_particles(h1);
+            vector<int> d1 = pdgs_of_daughter_particles(fs_particles[4]);
 
             assert_true(d1.size() == 2, RESOLVER_ERRORS::UNEXPECTED_CHILDREN);
 
             m_n_b_from_higgs = count(d1.begin(), d1.end(), 5);
 
             return vector<int>{
-                part1->getPDG(),
-                part2->getPDG(),
-                part3->getPDG(),
-                part4->getPDG(),
+                fs_particles[0]->getPDG(),
+                fs_particles[1]->getPDG(),
+                fs_particles[2]->getPDG(),
+                fs_particles[3]->getPDG(),
                 d1[0],
                 d1[1]
             };
         };
-
-        virtual int get_event_category(std::map<int, int> m_final_state_counts) {
-            // Takes priority over p6::get_event_category
-            (void) m_final_state_counts;
-
-            return m_event_category;
-        }
 
 };
 

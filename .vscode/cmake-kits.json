@@ -2,8 +2,8 @@
     {
       "name": "key4hep",
       "compilers": {
-        "C": "/usr/bin/gcc",
-        "CXX": "/usr/bin/g++"
+        "C": "/cvmfs/sw.hsf.org/contrib/x86_64-almalinux9-gcc11.4.1-opt/gcc/14.2.0-yuyjov/bin/gcc",
+        "CXX": "/cvmfs/sw.hsf.org/contrib/x86_64-almalinux9-gcc11.4.1-opt/gcc/14.2.0-yuyjov/bin/g++"
       },
       "environmentSetupScript" : "${workspaceFolder}/setup.sh"
     }

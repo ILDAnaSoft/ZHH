@@ -14,22 +14,32 @@ class p2: public FinalStateResolver {
 
     public:
         // Set process ID and event category
-        p2( string process_name, int process_id, int event_category, vector<int> final_state_filter ): FinalStateResolver( process_name, process_id, event_category, 2, 0 ) {
+        p2( string process_name, int process_id, int event_category, vector<int> final_state_filter ): FinalStateResolver( process_name, process_id, event_category, 2, 0, vector<int> {4,5} ) {
             m_final_state_filter = final_state_filter;
         };
 
+        vector<MCParticle*> resolve_fs_particles(LCCollection *mcp_collection, bool resolve_higgs = false) {
+            (void) resolve_higgs;
+
+            vector<MCParticle*> fs_particles;
+
+            // Get fermions
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(6 ));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(7 ));
+
+            return fs_particles;
+        }
+
         vector<int> resolve(LCCollection *mcp_collection) {
-            // Get final state fermions
-            MCParticle* part1 = (MCParticle*)mcp_collection->getElementAt(6);
-            MCParticle* part2 = (MCParticle*)mcp_collection->getElementAt(7);
+            vector<MCParticle*> fs_particles = resolve_fs_particles(mcp_collection, false);
 
             assert_true(
-                vec_contains(m_final_state_filter, abs(part1->getPDG())) &&
-                vec_contains(m_final_state_filter, abs(part2->getPDG())), RESOLVER_ERRORS::UNALLOWED_VALUES);
+                vec_contains(m_final_state_filter, abs(fs_particles[0]->getPDG())) &&
+                vec_contains(m_final_state_filter, abs(fs_particles[1]->getPDG())), RESOLVER_ERRORS::UNALLOWED_VALUES);
 
             return vector<int>{
-                part1->getPDG(),
-                part2->getPDG(),
+                fs_particles[0]->getPDG(),
+                fs_particles[1]->getPDG(),
             };
         };
 

@@ -21,11 +21,11 @@ FinalStateRecorder aFinalStateRecorder ;
 FinalStateRecorder::FinalStateRecorder() :
 
   Processor("FinalStateRecorder"),
-  m_beamPol1(0.),
-  m_beamPol2(0.),
-  m_crossSection(0.),
-  m_crossSection_err(0.),
-  m_eventWeight(1.),
+  m_beam_pol1(0.),
+  m_beam_pol2(0.),
+  m_cross_section(0.),
+  m_cross_section_err(0.),
+  m_event_weight(1.),
   m_process_id(0),
   m_n_run(0),
   m_n_evt(0),
@@ -253,8 +253,6 @@ void FinalStateRecorder::init()
 	this->register_process(new p6_llWW_llxyyx());
 	this->register_process(new p6_llWW_llvllv());
 
-
-
 	streamlog_out(DEBUG) << "   init finished  " << std::endl;
 }
 
@@ -285,16 +283,16 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 	// Initialize JSON metadata file
 	if (m_n_evt == 0) {
 		if (m_mcParticleCollection == "MCParticlesSkimmed") {
-			m_beamPol1 = pLCEvent->getParameters().getFloatVal("beamPol1");
-			m_beamPol2 = pLCEvent->getParameters().getFloatVal("beamPol2");
+			m_beam_pol1 = pLCEvent->getParameters().getFloatVal("beamPol1");
+			m_beam_pol2 = pLCEvent->getParameters().getFloatVal("beamPol2");
 		} else {
-			m_beamPol1 = pLCEvent->getParameters().getFloatVal("Pol0");
-			m_beamPol2 = pLCEvent->getParameters().getFloatVal("Pol1");
+			m_beam_pol1 = pLCEvent->getParameters().getFloatVal("Pol0");
+			m_beam_pol2 = pLCEvent->getParameters().getFloatVal("Pol1");
 		}
 
-		m_crossSection = pLCEvent->getParameters().getFloatVal("crossSection");
-		m_crossSection_err = pLCEvent->getParameters().getFloatVal("crossSectionError");
-		m_eventWeight = pLCEvent->getWeight();
+		m_cross_section = pLCEvent->getParameters().getFloatVal("crossSection");
+		m_cross_section_err = pLCEvent->getParameters().getFloatVal("crossSectionError");
+		m_event_weight = pLCEvent->getWeight();
 		m_process_id = pLCEvent->getParameters().getIntVal("ProcessID");
 		m_process_name = pLCEvent->getParameters().getStringVal("processName");
 	}
@@ -387,11 +385,11 @@ void FinalStateRecorder::end()
 	// Write JSON metadata file
 	m_jsonFile["run"] = m_n_run;
 	m_jsonFile["nEvtSum"] = m_n_evt_sum;
-	m_jsonFile["polElectron"] = m_beamPol1;
-	m_jsonFile["polPositron"] = m_beamPol2;
-	m_jsonFile["crossSection"] = m_crossSection;
-	m_jsonFile["crossSectionError"] = m_crossSection_err;
-	m_jsonFile["eventWeight"] = m_eventWeight;
+	m_jsonFile["polElectron"] = m_beam_pol1;
+	m_jsonFile["polPositron"] = m_beam_pol2;
+	m_jsonFile["crossSection"] = m_cross_section;
+	m_jsonFile["crossSectionError"] = m_cross_section_err;
+	m_jsonFile["eventWeight"] = m_event_weight;
 	m_jsonFile["processId"] = m_process_id;
 	m_jsonFile["processName"] = m_process_name;
 	m_jsonFile["tStart"] = m_t_start;

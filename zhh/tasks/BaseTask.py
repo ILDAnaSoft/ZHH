@@ -3,13 +3,21 @@ import law
 import os
 
 class BaseTask(law.Task):
-    version = luigi.Parameter(default='v1')
+    tag = luigi.Parameter(default='500-all-full')
+    
+    # Custom postifx to be appended by inheriting tasks
+    postfix:str = ''
+    
+    @staticmethod
+    def touch_parent(target:law.LocalTarget):
+        if target.parent is not None:
+            target.parent.touch()
 
     def local_path(self, *path):
         # DATA_PATH is defined in setup.sh
         parts = ("$DATA_PATH", )
         parts += (self.__class__.__name__ ,)
-        parts += (self.version,)
+        parts += (str(self.tag) + self.postfix,)
         parts += path
         
         return os.path.join(*map(str, parts))

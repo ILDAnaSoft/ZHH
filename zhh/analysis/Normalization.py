@@ -8,13 +8,13 @@ from .PreselectionAnalysis import sample_weight
 def get_process_normalization(
         processes:np.ndarray,
         samples:np.ndarray,
-        RATIO_BY_EXPECT:Optional[float]=1.):
+        RATIO_BY_TOTAL:Optional[float]=1.):
     """Returns a np.ndarray with
 
     Args:
         processes (np.ndarray): _description_
         samples (np.ndarray): _description_
-        RATIO_BY_EXPECT (Optional[float], optional): If None, will use all the data. Defaults to 1..
+        RATIO_BY_TOTAL (Optional[float], optional): If None, will use all the data. Defaults to 1..
 
     Returns:
         _type_: _description_
@@ -51,13 +51,10 @@ def get_process_normalization(
         
     # Normalize by cross-section
     results = results[np.argsort(results['proc_pol'])]
-    if RATIO_BY_EXPECT is None:
+    if RATIO_BY_TOTAL is None:
         results['n_events_target'] = results['n_events_tot']
     else:
-        results['n_events_target'] = np.maximum(
-            np.minimum(results['n_events_tot'], np.ceil(RATIO_BY_EXPECT * results['n_events_expected'])),
-            50*np.ones(len(results), dtype=int)
-        )
+        results['n_events_target'] = np.minimum(results['n_events_tot'], np.ceil(RATIO_BY_TOTAL * results['n_events_tot']))
     
     assert(np.sum(results['n_events_target'] < 0) == 0)
     
@@ -88,6 +85,7 @@ def get_sample_chunk_splits(
     
     dtype = [
         ('branch', 'I'),
+        ('sid', 'I'),
         ('process', '<U60'),
         ('proc_pol', '<U64'),
         ('location', '<U512'),
@@ -106,6 +104,9 @@ def get_sample_chunk_splits(
         for entry in custom_statistics:
             if len(entry) == 2:
                 fraction, processes = entry
+                if isinstance(processes, str):
+                    processes = [processes]
+                    
                 reference = 'total'
             elif len(entry) == 3:
                 fraction, processes, reference = entry
@@ -153,7 +154,7 @@ def get_sample_chunk_splits(
                     
                 while n_accounted < n_target and n_accounted_sample < n_tot_sample:
                     c_chunk_size = min(min(n_tot_sample - n_accounted_sample, max_chunk_size), n_target - n_accounted)
-                    c_chunks.append((n_chunks_tot, p['process'], p['proc_pol'], sample['location'], n_chunks, n_accounted_sample, c_chunk_size))
+                    c_chunks.append((n_chunks_tot, sample['sid'], p['process'], p['proc_pol'], sample['location'], n_chunks, n_accounted_sample, c_chunk_size))
                     
                     n_accounted += c_chunk_size
                     n_accounted_sample += c_chunk_size

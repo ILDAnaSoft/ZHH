@@ -6,7 +6,7 @@ function usage() {
     echo "       --install, -i: downloads all dependencies, attempts to compile and install them as well as all libraries inside this repository"
     echo "       --install-dir, -d: defaults to dependencies"
     echo "       --compile, -c: recompiles all dependencies. requires all paths (dependencies) to be set"
-    ecgo "       --help, -h   : print this help message"
+    echo "       --help, -h: print this help message"
     echo "--install and --compile are mutually exclusive"
     echo ""
     echo "Additional files which may be sourced after the key4hep stack is sourced (optional, not commited to git repository):"
@@ -17,7 +17,6 @@ function usage() {
     echo "       MarlinML: absolute path to MarlinML repository with binaries inside lib64 (see https://gitlab.desy.de/ilcsoft/MarlinML)"
     echo "       VariablesForDeepMLFlavorTagger: absolute path to repository with binaries inside lib (see https://gitlab.desy.de/ilcsoft/variablesfordeepmlflavortagger)"
     echo "       BTaggingVariables: absolute path to repository with binaries inside lib (see https://gitlab.desy.de/ilcsoft/btaggingvariables)"
-    echo "       LCIO: absolute path to LCIO installation (see https://github.com/iLCSoft/LCIO)"
 }
 
 ZHH_K4H_RELEASE_DEFAULT="2024-04-12"
@@ -37,8 +36,7 @@ function zhh_recompile() {
         rm -rf build
         mkdir -p build
         cd build
-        cmake -DCMAKE_CXX_STANDARD=17 ..
-        make install || ( cd ../.. && return 1 )
+        (cmake -DCMAKE_CXX_STANDARD=17 .. && make install ) || ( cd ../.. && return 1 )
         cd ../..
     }
 
@@ -63,9 +61,10 @@ function zhh_attach_marlin_dlls() {
         "$REPO_ROOT/source/PreSelection/lib/libPreSelection.so"
         "$REPO_ROOT/source/FinalStateRecorder/lib/libFinalStateRecorder.so"
         "$REPO_ROOT/source/ZHHKinfitProcessors/lib/libZHHKinfitProcessors.so"
-        "$MarlinML/lib64/libJetTaggers.so"
-        "$VariablesForDeepMLFlavorTagger/lib/libVariablesForDeepMLFlavorTagger.so"
-        "$BTaggingVariables/lib/libBTaggingVariables.so"
+        "$REPO_ROOT/source/TruthRecoComparison/lib/libTruthRecoComparison.so"
+        #"$MarlinML/lib64/libJetTaggers.so"
+        #"$VariablesForDeepMLFlavorTagger/lib/libVariablesForDeepMLFlavorTagger.so"
+        #"$BTaggingVariables/lib/libBTaggingVariables.so"
     )
 
     for lib in "${libs[@]}"; do
@@ -88,7 +87,7 @@ function zhh_attach_marlin_dlls() {
 if [[ ! -d "$REPO_ROOT" ]]; then
     zhh_echo "Info: Trying to infer REPO_ROOT..."
 
-    REPO_ROOT="${BASH_SOURCE[${#BASH_SOURCE[@]} - 1]}"
+    REPO_ROOT="$(realpath "${BASH_SOURCE[${#BASH_SOURCE[@]} - 1]}" )"
     export REPO_ROOT="$(dirname $REPO_ROOT)"
 
     if [[ -d "$REPO_ROOT/zhh" && -d "$REPO_ROOT/source" ]]; then
@@ -102,6 +101,7 @@ fi
 # Parse user input
 ZHH_K4H_RELEASE=$ZHH_K4H_RELEASE_DEFAULT
 ZHH_COMMAND=""
+ZHH_FORCE_RELOAD=0
 
 for ((i=1; i<=$#; i++)); do
     eval arg=\$$i
@@ -110,6 +110,9 @@ for ((i=1; i<=$#; i++)); do
         --help|-h)
             usage
             return 0
+            ;;
+        --force|-f)
+            ZHH_FORCE_RELOAD=1
             ;;
         --install)
             ZHH_COMMAND="install"
@@ -151,7 +154,7 @@ for ((i=1; i<=$#; i++)); do
     esac
 done
 
-if [[ -z "${MARLIN_DLL}" ]]; then
+if [[ -z "${MARLIN_DLL}" || $ZHH_FORCE_RELOAD -eq 1 ]]; then
     if [[ ! -f "/cvmfs/sw.hsf.org/key4hep/setup.sh" ]]; then
         zhh_echo "Error: key4hep stack not found. Make sure CVMFS is available and sw.hsf.org loaded. Aborting." && return 1
     fi
@@ -162,13 +165,13 @@ fi
 
 #########################################
 
-if [[ -f "${REPO_ROOT}/.env" && -z $ZHH_ENV_DOT ]]; then
+if [[ ( -f "${REPO_ROOT}/.env" && -z $ZHH_ENV_DOT ) || $ZHH_FORCE_RELOAD -eq 1 ]]; then
     zhh_echo "Loading local environment file .env..."
     export $(grep -v '^#' "${REPO_ROOT}/.env" | xargs)
     export ZHH_ENV_DOT=true
 fi
 
-if [[ -f "${REPO_ROOT}/.env.sh" ]]; then
+if [[ -f "${REPO_ROOT}/.env.sh" || $ZHH_FORCE_RELOAD -eq 1 ]]; then
     zhh_echo "Sourcing local sh file .env.sh..." 
     source "${REPO_ROOT}/.env.sh"
 fi
@@ -178,7 +181,7 @@ if [[ -z $ZHH_VENV_NAME ]]; then
     export ZHH_VENV_NAME="zhhvenv"
 fi
 
-# Automatically find pytorch
+# Automatically find pytorch (if not included in .env)
 if [[ -z "${TORCH_PATH}" ]]; then
     zhh_echo "Trying to find pytorch..."
     export TORCH_PATH=$(dirname $(python -c 'import torch; print(f"{torch.__file__}")'))
@@ -207,16 +210,21 @@ if [[ "$ZHH_COMMAND" = "install" ]]; then
     if [[ -z "$ZHH_INSTALL_DIR" ]]; then
         ZHH_INSTALL_DIR=$( realpath "$REPO_ROOT/dependencies" )
 
-        read -p "Where do you wish to install all the dependencies? ($ZHH_INSTALL_DIR)" zhh_install_dir
-        zhh_install_dir="${$ZHH_INSTALL_DIR:-$zhh_install_dir}"
-    else
-        zhh_install_dir="$ZHH_INSTALL_DIR"
+        read -p "Where do you wish to install all the dependencies? ($ZHH_INSTALL_DIR) " zhh_install_dir
+        if [[ ! -z "$zhh_install_dir" ]]; then 
+            ZHH_INSTALL_DIR=$zhh_install_dir
+        fi
     fi
 
-    zhh_echo "Attempting to install dependencies to <$zhh_install_dir>..."
-    zhh_install_deps $zhh_install_dir
+    zhh_echo "Attempting to install dependencies to <$ZHH_INSTALL_DIR>..."
+    zhh_install_deps $ZHH_INSTALL_DIR
     
     ZHH_COMMAND="compile"
+fi
+
+if [[ ! -d "$REPO_ROOT/$ZHH_VENV_NAME" || ! -f "$REPO_ROOT/$ZHH_VENV_NAME/bin/activate" ]]; then
+    zhh_echo "Warning: <$ZHH_VENV_NAME> does not seem to point to a valid venv."
+    zhh_echo "    Job submissions via law may fail. Consider running source setup.sh --install"
 fi
 
 if [[ "$ZHH_COMMAND" = "compile" ]]; then
@@ -255,6 +263,8 @@ function zhhvenv() {
 source $REPO_ROOT/shell/is_json_readable.sh
 source $REPO_ROOT/shell/is_root_readable.sh
 
+# Define a zhh_post_setup function in .env.sh to finalize the environment
+# This is useful e.g. if you need to link to a custom version of MarlinReco etc 
 if typeset -f zhh_post_setup > /dev/null; then
     zhh_post_setup
 fi

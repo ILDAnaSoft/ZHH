@@ -1,12 +1,12 @@
 awkward==2.6.7
-law @ git+https://github.com/riga/law#673c2ac16eb8da9304a6c749e557f9c42ad4d976
+law==0.1.19
 luigi==3.5.1
-matplotlib==3.7.2
-numpy==1.24.4
-pandas==2.0.3
+matplotlib==3.9.2
+numpy==1.26.4
+pandas==2.2.2
 phc @ git+https://github.com/nVentis/pyhepcommon@2857dff
 python_dateutil==2.8.2
 seaborn==0.13.2
-tqdm==4.65.0
-uproot==5.3.12
+tqdm==4.66.3
+uproot==5.0.5
 tabulate==0.9.0

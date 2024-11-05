@@ -15,6 +15,8 @@
         <constant name="Runllbbbb" value="True" />
         <constant name="Runvvbbbb" value="False" />
         <constant name="Runqqbbbb" value="False" />
+        <constant name="RunKinfit" value="True" />
+        <constant name="RunTruthRecoComparison" value="False" />
 
         <!-- These variables should be constant -->
         <constant name="lcgeo_DIR" value="/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-centos7-gcc12.2.0-opt/k4geo/0.20-e42drs/share/k4geo" />
@@ -52,19 +54,22 @@
         
         <if condition="${Runllbbbb}">
             <processor name="JC4FT_ll" />
-            <processor name="MySLDCorrection_ll" />
 
-            <!-- We should do a check on PreSelection.isPassed once that is fixed -->
-            <processor name="MyPreSelection_ll" />
-            <processor name="MyErrorFlow_ll" />
+            <if condition="${RunKinfit}">
+                <processor name="MySLDCorrection_ll" />
 
-            <if condition="MyHdecayMode.GoodEvent">
-                <processor name="MyZHHKinFit_ll" />
-                <!--
-                <processor name="MyTrueJet"/>
-                <processor name="MyMisclustering"/>
-                -->
+                <processor name="MyErrorFlow_ll" />
+
+                <if condition="MyHdecayMode.GoodEvent">
+                    <processor name="MyZHHKinFit_ll" />
+                    <!--
+                    <processor name="MyTrueJet"/>
+                    <processor name="MyMisclustering"/>
+                    -->
+                </if>
             </if>
+
+            <processor name="MyPreSelection_ll" />
         </if>
 
         <if condition="${Runvvbbbb}">
@@ -75,6 +80,10 @@
         <if condition="${Runqqbbbb}">
             <processor name="JC4FT_qq" />
             <processor name="MyPreSelection_qq" />
+        </if>
+
+        <if condition="${RunTruthRecoComparison} && ${Runllbbbb}">
+            <processor name="MyTruthRecoComparison" />
         </if>
 
         <processor name="MyLCIOOutputProcessor" />
@@ -113,7 +122,7 @@
     <parameter name="SLDNeutrinoRelationCollection" type="string" lcioInType="LCRelation">SLDNuLink</parameter>
     <parameter name="recoNumcNuLinkName" type="string" lcioInType="LCRelation">recoNumcNuLink</parameter>
     <!-- center-of-mass energy (default: 500.) -->
-    <parameter name="ECM" type="float"> 500. </parameter>
+    <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
     <!-- maximum energy (=|p_z|) for a single ISR photon  (default: 125.6) -->
     <parameter name="ISRPzMax" type="float"> 125.6 </parameter>
     <!-- include ISR in fit hypothesis?    0: false >0: true (default) -->
@@ -462,7 +471,7 @@
 		<!--Whether create root file for new pfo collection or not true:create / false: do not create-->
         <parameter name="fillRootTree" type="bool">true</parameter>
 		<!--Name of the output root file-->
-        <parameter name="RootFile" type="string">${OutputDirectory}/${OutputBaseName}_SLDCorrection.root</parameter>
+        <parameter name="RootFile" type="string">${OutputDirectory}/${OutputBaseName}_SLDCorrection_ll.root</parameter>
 		<!--Event selection based on semi-leptonic decays of B-hadrons: (0): without BSLD (1): with >= 0 BSLD(all events) (2): with >= 1 BSLD (3): with correctable BSLD -->
         <parameter name="BSLDMode" type="int">1</parameter>
 		<!--Event selection based on semi-leptonic decays of C-hadrons: (0): without CSLD (1): with >= 0 CSLD(all events) (2): with >= 1 CSLD (3): with correctable CSLD -->
@@ -488,7 +497,7 @@
         <parameter name="ReadSubdetectorEnergies" type="int" value="1"/> <!-- true for ILD -->
         <parameter name="UpdateVertexRPDaughters" type="int" value="0"/> <!-- false for non-updative PandoraPFOs -->
         <parameter name="TrackHitOrdering" type="int" value="1"/> <!-- Track hit ordering: 0=ILD-LOI,SID-DBD, 1=ILD-DBD -->
-        <parameter name="PrintEventNumber" type="int" value="100"/> <!-- 0 for not printing event number, n for printing every n events -->
+        <parameter name="PrintEventNumber" type="int" value="1"/> <!-- 0 for not printing event number, n for printing every n events -->
 
         <!-- jet clustering parameters -->
         <parameter name="JetClustering.PrimaryVertexCollectionName" type="string" value="PrimaryVertex" />
@@ -938,8 +947,24 @@
         <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
         <parameter name="outputRootFilename" type="string">${OutputDirectory}/${OutputBaseName}_FinalStates.root</parameter>
         <parameter name="outputJsonFilename" type="string">${OutputDirectory}/${OutputBaseName}_FinalStateMeta.json</parameter>
+
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
         <parameter name="Verbosity" type="string">DEBUG</parameter>
+    </processor>
+
+    <processor name="MyTruthRecoComparison" type="TruthRecoComparison">
+        <!--MyFinalStateRecorder identified events that have passed the preselection-->
+        <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
+        <parameter name="inputJetCollection" type="string" lcioInType="ReconstructedParticle">RefinedJets_ll</parameter>
+        <parameter name="inputPfoCollection" type="string" lcioInType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
+
+        <parameter name="outputRootFilename" type="string">${OutputDirectory}/${OutputBaseName}_TruthRecoComparison.root</parameter>
+        <parameter name="ECM" type="float">${CMSEnergy}</parameter>
+
+        <parameter name="outputKinematics" type="bool">True</parameter>
+
+        <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
+        <parameter name="Verbosity" type="string">SILENT</parameter>
     </processor>
 
     <processor name="MyLCIOOutputProcessor" type="LCIOOutputProcessor">

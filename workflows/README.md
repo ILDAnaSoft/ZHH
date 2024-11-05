@@ -15,7 +15,7 @@ To prepare law for submitting jobs, first `cd workflows && source setup.sh`. The
 For example, to create the index of all available physics samples, execute
 
 ```shell
-law run CreateRawIndex --poll-interval=30sec
+law run RawIndex --poll-interval=30sec
 ```
 
 Note I: It is very advisable to run all law job submissions through a `screen -R job`. Otherwise, closing the current terminal session would terminate law as well. In that case, all running batch jobs would still continue, but no jobs will be rescheduled if there are failing ones.
@@ -25,16 +25,16 @@ Note II: You might need to ssh into another NAF worker node to be able to submit
 To run all tasks including `AnalysisSummary`, execute
 
 ```shell
-law run CreateRawIndex --poll-interval=120sec
+law run RawIndex --poll-interval=120sec
 ```
 
-This will run the tasks CreateRawIndex, AnalysisRuntime, CreateAnalysisChunks and then AnalysisFinal one after another and make use of the NAF when called at DESY. For each task, a folder of the same name will be created inside `$DATA_PATH`.
+This will run the tasks RawIndex, AnalysisRuntime, CreateAnalysisChunks and then AnalysisFinal one after another and make use of the NAF when called at DESY. For each task, a folder of the same name will be created inside `$DATA_PATH`.
 
 ### Task Overview
 
 | Task name                 | Batch job | Description                                                                                                         | Parameters with defaults |
 |---------------------------|-----------|---------------------------------------------------------------------------------------------------------------------|--------------------------|
-| CreateRawIndex            | No        | Creates an index of all readable sample files and physics processes associated to them. See `ProcessIndex`.          | - |
+| RawIndex            | No        | Creates an index of all readable sample files and physics processes associated to them. See `ProcessIndex`.          | - |
 | AnalysisRuntime           | Yes       | Runs the Marlin analysis for each proc_pol (process polarization) combination over 50 events to estimate the runtime per event.            | - |
 | CreateAnalysisChunks      | No        | Calculates chunks according to a desired target, physics sample size and maximum duration per job (2h, to stay below limit of 3h). `ratio` controls the number of desired events as fraction of the number of expected events (`1.` equates to ca. 45M events of the available 60M). Setting this to `None` will use all available data.     | `jobtime=7200` <br> `ratio=1.` |
 | AnalysisFinal             | Yes       | Runs the Marlin analysis with the chunking as given above.                                                          | - |
@@ -47,11 +47,11 @@ Tasks are defined as Python classed in `tasks*.py`. Jobs which should run on HTC
 
 ## Central Bookkeeping
 
-### Samples and Processes: CreateRawIndex
+### Samples and Processes: RawIndex
 
-The task `CreateRawIndex` will use the `ProcessIndex` class to create the files `processes.npy` and `samples.npy` with lists of all available physics samples (per default: all `mc-opt-3` samples and the `hh` signal sample from the `mc-2020` production; see `get_raw_files()`) and all thereby encountered combinations of physics process and polarization.
+The task `RawIndex` will use the `ProcessIndex` class to create the files `processes.npy` and `samples.npy` with lists of all available physics samples (per default: all `mc-opt-3` samples and the `hh` signal sample from the `mc-2020` production; see `get_raw_files()`) and all thereby encountered combinations of physics process and polarization.
 
-As for all law tasks, the result will be saved at `$DATA_PATH/CreateRawIndex/v1`.
+As for all law tasks, the result will be saved at `$DATA_PATH/RawIndex/v1`.
 
 #### samples.npy
 

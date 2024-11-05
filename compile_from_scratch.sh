@@ -30,7 +30,7 @@ action(){
 
     cd source
 
-    for module_to_compile in CheatedMCOverlayRemoval ChargedPFOCorrection AddNeutralPFOCovMat LeptonPairing HdecayMode JetErrorAnalysis JetTaggingComparison LeptonErrorAnalysis PreSelection ZHHKinfitProcessors Misclustering
+    for module_to_compile in AddNeutralPFOCovMat ChargedPFOCorrection CheatedMCOverlayRemoval FinalStateRecorder HdecayMode JetErrorAnalysis JetTaggingComparison LeptonErrorAnalysis LeptonPairing Misclustering PreSelection TruthRecoComparison ZHHKinfitProcessors
     do
         compile_pkg $module_to_compile && echo "${GREEN}+++ Successfully compiled $module_to_compile +++${NC}" || { echo "${RED}!!! Error [$?] while trying to compile $module_to_compile !!!${NC}"; cd $start_dir; return 1; }
     done

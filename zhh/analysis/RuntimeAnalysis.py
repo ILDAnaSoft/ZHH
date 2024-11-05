@@ -101,6 +101,7 @@ def get_adjusted_time_per_event(runtime_analysis:np.ndarray,
     dtype = [
         ('process', '<U64'),
         ('tAvg', 'f'),
+        ('tMax', 'f'),
         ('n_processed', 'i'),
         ('tPE', 'f')]
 
@@ -111,11 +112,14 @@ def get_adjusted_time_per_event(runtime_analysis:np.ndarray,
         subset = runtime_analysis[runtime_analysis['process'] == process]
 
         tAvg = np.average(subset['tDuration'])
+        i_max = np.argmax(subset['tDuration'])
+        tMax = subset['tDuration'][i_max]
         n_processed = subset['n_processed'].sum()
-        tPE = subset['tDuration'].sum()/ n_processed
+        tPE = tMax/subset['n_processed'][i_max] #subset['tDuration'].sum()/ n_processed
         
         results['process'][i] = process
         results['tAvg'][i] = tAvg
+        results['tMax'][i] = tMax
         results['n_processed'][i] = n_processed
         results['tPE'][i] = tPE
         
