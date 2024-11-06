@@ -47,7 +47,7 @@ class Config_550_hh_fast(AnalysisConfiguration):
 class Config_550_hh_full(AnalysisConfiguration):
     tag = '550-hh-full'
     
-    def slcio_files(self):        
+    def slcio_files(self, raw_index_task: 'RawIndex'):        
         return glob(f'/pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/550-Test/hh/ILD_l5_o1_v02/v02-02-03/**/*.slcio', recursive=True)  
     
     # Use only e2e2hh (because the generator samples are only available for e2e2hh)
