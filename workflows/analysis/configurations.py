@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 class Config_500_all_full(AnalysisConfiguration):
     tag = '500-all-full'
     
-    def slcio_files(self):
+    def slcio_files(self, raw_index_task: 'RawIndex'):
         return get_raw_files()
     
     statistics = 1.
