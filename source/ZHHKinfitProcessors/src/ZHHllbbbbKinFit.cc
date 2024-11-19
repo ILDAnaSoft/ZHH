@@ -269,14 +269,17 @@ void ZHHllbbbbKinFit::init()
 	m_pTTree->Branch("nSLDecayTauLepton",&m_nSLDecayTauLepton,"nSLDecayTauLepton/I") ;
 	m_pTTree->Branch("nSLDecayTotal",&m_nSLDecayTotal,"nSLDecayTotal/I") ;
 	m_pTTree->Branch("nCorrectedSLD",&m_nCorrectedSLD,"nCorrectedSLD/I") ;
+	m_pTTree->Branch("ISREnergyTrue",&m_ISREnergyTrue,"ISREnergyTrue/F") ;
 	m_pTTree->Branch( "FitErrorCode_woNu" , &m_FitErrorCode_woNu , "FitErrorCode_woNu/I" );
 	m_pTTree->Branch( "ZMassBeforeFit_woNu" , &m_ZMassBeforeFit_woNu , "ZMassBeforeFit_woNu/F" );
 	m_pTTree->Branch( "H1MassBeforeFit_woNu" , &m_H1MassBeforeFit_woNu , "H1MassBeforeFit_woNu/F" );
 	m_pTTree->Branch( "H2MassBeforeFit_woNu" , &m_H2MassBeforeFit_woNu , "H2MassBeforeFit_woNu/F" );
+	m_pTTree->Branch( "HHMassBeforeFit_woNu" , &m_HHMassBeforeFit_woNu , "HHMassBeforeFit_woNu/F" );
 	m_pTTree->Branch( "ISREnergyBeforeFit_woNu" , &m_ISREnergyBeforeFit_woNu , "ISREnergyBeforeFit_woNu/F" );
 	m_pTTree->Branch( "ZMassAfterFit_woNu" , &m_ZMassAfterFit_woNu , "ZMassAfterFit_woNu/F" );
 	m_pTTree->Branch( "H1MassAfterFit_woNu" , &m_H1MassAfterFit_woNu , "H1MassAfterFit_woNu/F" );
 	m_pTTree->Branch( "H2MassAfterFit_woNu" , &m_H2MassAfterFit_woNu , "H2MassAfterFit_woNu/F" );
+	m_pTTree->Branch( "HHMassAfterFit_woNu" , &m_HHMassAfterFit_woNu , "HHMassAfterFit_woNu/F" );
 	m_pTTree->Branch( "ISREnergyAfterFit_woNu" , &m_ISREnergyAfterFit_woNu , "ISREnergyAfterFit_woNu/F" );
 	m_pTTree->Branch( "FitProbability_woNu" , &m_FitProbability_woNu , "FitProbability_woNu/F" );
 	m_pTTree->Branch( "FitChi2_woNu" , &m_FitChi2_woNu , "FitChi2_woNu/F" );
@@ -305,10 +308,12 @@ void ZHHllbbbbKinFit::init()
 	m_pTTree->Branch( "ZMassBeforeFit" , &m_ZMassBeforeFit , "ZMassBeforeFit/F" );
 	m_pTTree->Branch( "H1MassBeforeFit" , &m_H1MassBeforeFit , "H1MassBeforeFit/F" );
 	m_pTTree->Branch( "H2MassBeforeFit" , &m_H2MassBeforeFit , "H2MassBeforeFit/F" );
+	m_pTTree->Branch( "HHMassBeforeFit" , &m_HHMassBeforeFit , "HHMassBeforeFit/F" );
 	m_pTTree->Branch( "ISREnergyBeforeFit" , &m_ISREnergyBeforeFit , "ISREnergyBeforeFit/F" );
 	m_pTTree->Branch( "ZMassAfterFit" , &m_ZMassAfterFit , "ZMassAfterFit/F" );
 	m_pTTree->Branch( "H1MassAfterFit" , &m_H1MassAfterFit , "H1MassAfterFit/F" );
 	m_pTTree->Branch( "H2MassAfterFit" , &m_H2MassAfterFit , "H2MassAfterFit/F" );
+	m_pTTree->Branch( "HHMassAfterFit" , &m_HHMassAfterFit , "HHMassAfterFit/F" );
 	m_pTTree->Branch( "ISREnergyAfterFit" , &m_ISREnergyAfterFit , "ISREnergyAfterFit/F" );
 	m_pTTree->Branch( "FitProbability" , &m_FitProbability , "FitProbability/F" );
 	m_pTTree->Branch( "FitChi2" , &m_FitChi2 , "FitChi2/F" );
@@ -347,14 +352,17 @@ void ZHHllbbbbKinFit::Clear()
 	m_nSLDecayTauLepton = 0;
 	m_nSLDecayTotal = 0;
 	m_nCorrectedSLD = 0;
+	m_ISREnergyTrue = 0.0;
 	m_FitErrorCode_woNu = 1;
 	m_ZMassBeforeFit_woNu = 0.0;
 	m_H1MassBeforeFit_woNu = 0.0;
 	m_H2MassBeforeFit_woNu = 0.0;
+	m_HHMassBeforeFit_woNu = 0.0;
 	m_ISREnergyBeforeFit_woNu = 0.0;
 	m_ZMassAfterFit_woNu = 0.0;
 	m_H1MassAfterFit_woNu = 0.0;
 	m_H2MassAfterFit_woNu = 0.0;
+	m_HHMassAfterFit_woNu = 0.0;
 	m_ISREnergyAfterFit_woNu = 0.0;
 	m_FitProbability_woNu = 0.0;
 	m_FitChi2_woNu = 0.0;
@@ -383,10 +391,12 @@ void ZHHllbbbbKinFit::Clear()
 	m_ZMassBeforeFit = 0.0;
 	m_H1MassBeforeFit = 0.0;
 	m_H2MassBeforeFit = 0.0;
+	m_HHMassBeforeFit = 0.0;
 	m_ISREnergyBeforeFit = 0.0;
 	m_ZMassAfterFit = 0.0;
 	m_H1MassAfterFit = 0.0;
 	m_H2MassAfterFit = 0.0;
+	m_HHMassAfterFit = 0.0;
 	m_ISREnergyAfterFit = 0.0;
 	m_FitProbability = 0.0;
 	m_FitChi2 = 0.0;
@@ -429,6 +439,7 @@ void ZHHllbbbbKinFit::processEvent( EVENT::LCEvent *pLCEvent )
   LCCollection *inputJetCollection = NULL;
   LCCollection *inputLeptonCollection = NULL;
   LCCollection *inputSLDecayCollection = NULL;
+  LCCollection *inputMCParticleCollection = NULL;
   IMPL::LCCollectionVec* outputLeptonCollection = NULL;
   outputLeptonCollection = new IMPL::LCCollectionVec(LCIO::RECONSTRUCTEDPARTICLE);
   outputLeptonCollection->setSubset( true );
@@ -453,6 +464,8 @@ void ZHHllbbbbKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     inputLeptonCollection = pLCEvent->getCollection( m_inputIsolatedleptonCollection );
     streamlog_out(DEBUG0) << "	getting semi-leptonic vertex collection: " << m_inputSLDVertexCollection << std::endl ;
     inputSLDecayCollection = pLCEvent->getCollection( m_inputSLDVertexCollection );
+    streamlog_out(DEBUG0) << "  getting mc particle collection: " << _MCParticleColllectionName << std::endl ;
+    inputMCParticleCollection = pLCEvent->getCollection( _MCParticleColllectionName );
     JetSLDNav = new LCRelationNavigator( pLCEvent->getCollection( m_inputJetSLDLink ) );
     SLDNuNav = new LCRelationNavigator( pLCEvent->getCollection( m_inputSLDNuLink ) );
     //not needed for the fit itself, only to find corresponding MCParticle for each neutrino:
@@ -476,8 +489,11 @@ void ZHHllbbbbKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     m_pTTree->Fill();
     return;
   }
- 
 
+  MCParticle* ISR1 = (MCParticle*) inputMCParticleCollection->getElementAt(6);
+  MCParticle* ISR2 = (MCParticle*) inputMCParticleCollection->getElementAt(7);
+  m_ISREnergyTrue = ISR1->getEnergy()+ISR2->getEnergy();
+  
   //&& m_nCorrectedSLD == m_nSLDecayTotal )	
   bool traceEvent = false;
   if ( pLCEvent->getEventNumber() == m_ievttrace || m_traceall ) traceEvent = true;
@@ -540,11 +556,16 @@ void ZHHllbbbbKinFit::processEvent( EVENT::LCEvent *pLCEvent )
 	auto mc = dynamic_pointer_cast<MassConstraint>(*it);
 	m_H2MassAfterFit_woNu = mc->getMass();
       }
+      if (strcmp((*it)->getName(), "hh mass")==0) {
+	auto mc = dynamic_pointer_cast<MassConstraint>(*it);
+	m_HHMassAfterFit_woNu = mc->getMass();
+      }
     }
     streamlog_out(MESSAGE) << endl;
     streamlog_out(MESSAGE) << "Z mass postfit = " << m_ZMassAfterFit_woNu << endl;
     streamlog_out(MESSAGE) << "H1 mass postfit = " << m_H1MassAfterFit_woNu << endl;
     streamlog_out(MESSAGE) << "H2 mass postfit = " << m_H2MassAfterFit_woNu << endl;
+    streamlog_out(MESSAGE) << "HH mass postfit = " << m_HHMassAfterFit_woNu << endl;
     
     streamlog_out(MESSAGE) << "Getting fitobjects now... ";
     auto fitobjects = woNuFitResult.fitobjects;
@@ -686,7 +707,8 @@ void ZHHllbbbbKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     m_ZMassBeforeFit  = startmasses[0];
     m_H1MassBeforeFit = startmasses[1];
     m_H2MassBeforeFit = startmasses[2];
-    streamlog_out(MESSAGE) << "masses from simple chi2:" << m_ZMassBeforeFit << ", " << m_H1MassBeforeFit << ", " << m_H2MassBeforeFit << std::endl ; 
+    m_HHMassBeforeFit = startmasses[3];
+    streamlog_out(MESSAGE) << "masses from simple chi2:" << m_ZMassBeforeFit << ", " << m_H1MassBeforeFit << ", " << m_H2MassBeforeFit << ", " << m_HHMassBeforeFit << std::endl ; 
 
     m_pTTree->Fill();
     return;
@@ -718,6 +740,10 @@ void ZHHllbbbbKinFit::processEvent( EVENT::LCEvent *pLCEvent )
       auto mc = dynamic_pointer_cast<MassConstraint>(*it);
       m_H2MassAfterFit = mc->getMass();
     }
+    if (strcmp((*it)->getName(), "hh mass")==0) {
+      auto mc = dynamic_pointer_cast<MassConstraint>(*it);
+      m_HHMassAfterFit = mc->getMass();
+    }
   }
   streamlog_out(MESSAGE) << endl;
 
@@ -739,13 +765,28 @@ void ZHHllbbbbKinFit::processEvent( EVENT::LCEvent *pLCEvent )
   m_ZMassBeforeFit  = startmasses[0];
   m_H1MassBeforeFit = startmasses[1];
   m_H2MassBeforeFit = startmasses[2];
+  m_HHMassBeforeFit = startmasses[3];
 
   streamlog_out(MESSAGE1) << "Z mass prefit = " << m_ZMassBeforeFit << endl;
   streamlog_out(MESSAGE1) << "H1 mass prefit = " << m_H1MassBeforeFit << endl;
   streamlog_out(MESSAGE1) << "H2 mass prefit = " << m_H2MassBeforeFit << endl;
+  streamlog_out(MESSAGE1) << "HH mass prefit = " << m_HHMassBeforeFit << endl;
   streamlog_out(MESSAGE1) << "Z mass postfit = " << m_ZMassAfterFit << endl;
   streamlog_out(MESSAGE1) << "H1 mass postfit = " << m_H1MassAfterFit << endl;
   streamlog_out(MESSAGE1) << "H2 mass postfit = " << m_H2MassAfterFit << endl;
+  streamlog_out(MESSAGE1) << "HH mass postfit = " << m_HHMassAfterFit << endl;
+
+  string photonname = "photon";
+  auto fitphoton = find_if(fitobjects->begin(), fitobjects->end(), [&photonname](const std::shared_ptr<BaseFitObject> obj) {return obj->getName() == photonname;});
+  if (fitphoton == fitobjects->end()) {
+    streamlog_out(MESSAGE) << "Did not find photon" <<endl;
+  }
+  else {
+    auto gamma = dynamic_pointer_cast<ISRPhotonFitObject>(*fitphoton);
+    m_ISREnergyAfterFit = gamma->getE();
+    streamlog_out(MESSAGE) << "ISR energy true    = " << m_ISREnergyTrue << endl;
+    streamlog_out(MESSAGE) << "ISR energy postfit = " << m_ISREnergyAfterFit << endl;
+  }
 
 
   for (int i = 0; i < m_nJets; ++i) {   
@@ -907,7 +948,7 @@ ZHHllbbbbKinFit::FitResult ZHHllbbbbKinFit::performFIT( pfoVector jets,
   //////												  //////
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////
   for (unsigned int i_jet =0; i_jet < jets.size(); i_jet++) {
-    streamlog_out(DEBUG6) << "get jet"<< i_jet+1 <<" parameters"  << std::endl ;
+    streamlog_out(MESSAGE6) << "get jet"<< i_jet+1 <<" parameters"  << std::endl ; //changed from debug level
     float parameters[ 3 ]{ 0.0 } , errors[ 3 ]{ 0.0 };
     getJetParameters( jets[ i_jet ] , parameters , errors );
     auto j = make_shared<JetFitObject> ( parameters[ 0 ] , parameters[ 1 ] , parameters[ 2 ] , errors[ 0 ] , errors[ 1 ] , errors[ 2 ] , jets[ i_jet ]->getMass() );
@@ -923,7 +964,7 @@ ZHHllbbbbKinFit::FitResult ZHHllbbbbKinFit::performFIT( pfoVector jets,
   //////												  //////
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////
   for (unsigned int i_lep =0; i_lep < leptons.size(); i_lep++) {
-    streamlog_out(DEBUG6) << "get lepton"<< i_lep+1 <<" parameters"  << std::endl ;
+    streamlog_out(MESSAGE6) << "get lepton"<< i_lep+1 <<" parameters"  << std::endl ; //changed from debug level 
     float parameters[ 3 ]{ 0.0 } , errors[ 3 ]{ 0.0 };
     getLeptonParameters( leptons[ i_lep ] , parameters , errors );
     auto l = make_shared<LeptonFitObject> ( parameters[ 0 ] , parameters[ 1 ] , parameters[ 2 ] , errors[ 0 ] , errors[ 1 ] , errors[ 2 ] , leptons[ i_lep ]->getMass() );
@@ -943,7 +984,7 @@ ZHHllbbbbKinFit::FitResult ZHHllbbbbKinFit::performFIT( pfoVector jets,
 
   assert(NJETS==4);
   vector<vector<unsigned int>> perms;
-  if (m_fithypothesis == "ZZH" || m_fithypothesis == "MH") {
+  if (m_fithypothesis == "ZZH" || m_fithypothesis == "ZZHsoft" || m_fithypothesis == "MH") {
     perms = {
       {0, 1, 2, 3},
       {0, 2, 1, 3},
@@ -952,12 +993,14 @@ ZHHllbbbbKinFit::FitResult ZHHllbbbbKinFit::performFIT( pfoVector jets,
       {1, 3, 0, 2},
       {2, 3, 0, 1}
     };
-  } else{
+  } else if (m_fithypothesis == "ZHH" || m_fithypothesis == "EQM") {
     perms = {
       {0, 1, 2, 3}, 
       {0, 2, 1, 3}, 
       {0, 3, 1, 2}
     };
+  } else {
+    perms = {{0, 1, 2, 3}};
   }
 
   for (unsigned int iperm = 0; iperm < perms.size(); iperm++) {
@@ -984,7 +1027,7 @@ ZHHllbbbbKinFit::FitResult ZHHllbbbbKinFit::performFIT( pfoVector jets,
     for(auto l : *lfo_perm) fos->push_back(l);
 
     for (auto j : *jfo_perm) 
-      streamlog_out(DEBUG)  << "start four-vector of jet " << j->getName() << ": " << *j  << std::endl ;
+      streamlog_out(MESSAGE)  << "start four-vector of jet " << j->getName() << ": " << *j  << std::endl ;  //changed from debug level 
     //for (int i = 0; i < NJETS; ++i) streamlog_out(DEBUG)  << "original four-vector of jet " << i << ": " << fitjets[i]  << std::endl ;
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1015,12 +1058,12 @@ ZHHllbbbbKinFit::FitResult ZHHllbbbbKinFit::performFIT( pfoVector jets,
     for (auto j : *jfo_perm) ec->addToFOList(*j);
     for (auto l : *lfo_perm) ec->addToFOList(*l);
     
-    streamlog_out(DEBUG8)  << "	Value of E_lab before adding ISR: " << E_lab << std::endl ;
-    streamlog_out(DEBUG8)  << "	Value of target_p_due_crossing_angle before adding ISR: " << target_p_due_crossing_angle << std::endl ;
-    streamlog_out(DEBUG8)  << "	Value of pxc before adding ISR: " << pxc->getValue() << std::endl ;
-    streamlog_out(DEBUG8)  << "	Value of pyc before adding ISR: " << pyc->getValue() << std::endl ;
-    streamlog_out(DEBUG8)  << "	Value of pzc before adding ISR: " << pzc->getValue() << std::endl ;
-    streamlog_out(DEBUG8)  << "	Value of ec before adding ISR: " << ec->getValue() << std::endl ;
+    streamlog_out(MESSAGE8)  << "	Value of E_lab before adding ISR: " << E_lab << std::endl ;  //changed from debug level 
+    streamlog_out(MESSAGE8)  << "	Value of target_p_due_crossing_angle before adding ISR: " << target_p_due_crossing_angle << std::endl ; //changed from debug level 
+    streamlog_out(MESSAGE8)  << "	Value of pxc before adding ISR: " << pxc->getValue() << std::endl ; //changed from debug level 
+    streamlog_out(MESSAGE8)  << "	Value of pyc before adding ISR: " << pyc->getValue() << std::endl ; //changed from debug level 
+    streamlog_out(MESSAGE8)  << "	Value of pzc before adding ISR: " << pzc->getValue() << std::endl ; //changed from debug level 
+    streamlog_out(MESSAGE8)  << "	Value of ec before adding ISR: " << ec->getValue() << std::endl ; //changed from debug level 
     
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////													//////
@@ -1028,23 +1071,23 @@ ZHHllbbbbKinFit::FitResult ZHHllbbbbKinFit::performFIT( pfoVector jets,
     //////													//////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     
-    // TODO might have to make this into shared_ptr too to ensure cleanup
-    ISRPhotonFitObject *photon = new ISRPhotonFitObject (0., 0., -pzc->getValue(), b, ISRPzMaxB);
+    shared_ptr<ISRPhotonFitObject> photon = make_shared<ISRPhotonFitObject>(0., 0., -pzc->getValue(), b, ISRPzMaxB);
     photon->setName("photon");
     if( m_fitISR ) {
-      streamlog_out(DEBUG)  << "start four-vector of ISR photon: " << *(photon) << std::endl ;
+      streamlog_out(MESSAGE)  << "start four-vector of ISR photon: " << *(photon) << std::endl ; //changed from debug level 
+      fos->push_back(photon);
       pxc->addToFOList(*(photon));
       pyc->addToFOList(*(photon));
       pzc->addToFOList(*(photon));
       ec->addToFOList(*(photon));
     }
-    streamlog_out(DEBUG8)  << "	Value of E_lab before fit: " << E_lab << std::endl ;
-    streamlog_out(DEBUG8)  << "	Value of target_p_due_crossing_angle before fit: " << target_p_due_crossing_angle << std::endl ;
-    streamlog_out(DEBUG8)  << "	Value of pxc after adding ISR before fit: " << pxc->getValue() << std::endl ;
-    streamlog_out(DEBUG8)  << "	Value of pyc after adding ISR before fit: " << pyc->getValue() << std::endl ;
-    streamlog_out(DEBUG8)  << "	Value of pzc after adding ISR before fit: " << pzc->getValue() << std::endl ;
-    streamlog_out(DEBUG8)  << "	Value of ec after adding ISR before fit: " << ec->getValue() << std::endl ;
-    
+    streamlog_out(MESSAGE8)  << "	Value of E_lab before fit: " << E_lab << std::endl ; //changed from debug level 
+    streamlog_out(MESSAGE8)  << "	Value of target_p_due_crossing_angle before fit: " << target_p_due_crossing_angle << std::endl ; //changed from debug level 
+    streamlog_out(MESSAGE8)  << "	Value of pxc after adding ISR before fit: " << pxc->getValue() << std::endl ; //changed from debug level 
+    streamlog_out(MESSAGE8)  << "	Value of pyc after adding ISR before fit: " << pyc->getValue() << std::endl ; //changed from debug level 
+    streamlog_out(MESSAGE8)  << "	Value of pzc after adding ISR before fit: " << pzc->getValue() << std::endl ; //changed from debug level 
+    streamlog_out(MESSAGE8)  << "	Value of ec after adding ISR before fit: " << ec->getValue() << std::endl ; //changed from debug level 
+      
     //To be added to fit, depending on fit hypothesis
     shared_ptr<MassConstraint> h1m = make_shared<MassConstraint>(125.);
     h1m->addToFOList (*jfo_perm->at(0), 1);
@@ -1081,26 +1124,33 @@ ZHHllbbbbKinFit::FitResult ZHHllbbbbKinFit::performFIT( pfoVector jets,
     shared_ptr<MassConstraint> z = make_shared<MassConstraint>(91.2);
     z->addToFOList(*lfo_perm->at(0), 1);
     z->addToFOList(*lfo_perm->at(1), 1);
-    z->setName("z mass");  
-
-    streamlog_out(DEBUG) << "start mass of Z  : " << z->getMass(1) << std::endl ;
-    streamlog_out(DEBUG) << "start mass of H 1: " << h1->getMass(1) << std::endl ;
-    streamlog_out(DEBUG) << "start mass of H 2: " << h2->getMass(1) << std::endl ;
+    z->setName("z mass");
+    shared_ptr<MassConstraint> hh = make_shared<MassConstraint>(250.);
+    hh->addToFOList (*jfo_perm->at(0), 1);
+    hh->addToFOList (*jfo_perm->at(1), 1);
+    hh->addToFOList (*jfo_perm->at(2), 1);
+    hh->addToFOList (*jfo_perm->at(3), 1);
+    hh->setName("hh mass");
+      
+    streamlog_out(MESSAGE) << "start mass of Z  : " << z->getMass(1) << std::endl ; //changed from debug level 
+    streamlog_out(MESSAGE) << "start mass of H1: " << h1->getMass(1) << std::endl ; //changed from debug level 
+    streamlog_out(MESSAGE) << "start mass of H2: " << h2->getMass(1) << std::endl ; //changed from debug level 
+    streamlog_out(MESSAGE) << "start mass of HH: " << hh->getMass(1) << std::endl ; //changed from debug level 
     
     shared_ptr<BaseFitter> fitter = NULL;
     if ( m_fitter == 1 ) {
       fitter = shared_ptr<BaseFitter>(new NewFitterGSL());
       if ( traceEvent ) (dynamic_pointer_cast<NewFitterGSL>(fitter))->setDebug( 4 );    
-      streamlog_out(DEBUG6) << "fit using GSL Fitter"  << std::endl ;
+      streamlog_out(MESSAGE6) << "fit using GSL Fitter"  << std::endl ; //changed from debug level 
     } else if ( m_fitter == 2 ) {
       fitter = shared_ptr<BaseFitter>(new NewtonFitterGSL());
       if ( traceEvent ) (dynamic_pointer_cast<NewtonFitterGSL>(fitter))->setDebug( 4 );
-      streamlog_out(DEBUG6) << "fit using Newton GSL Fitter"  << std::endl ;
+      streamlog_out(MESSAGE6) << "fit using Newton GSL Fitter"  << std::endl ; //changed from debug level 
     } else {
       ////		OPALFitter has no method setDebug !
       fitter = shared_ptr<BaseFitter>(new OPALFitterGSL());
       if ( traceEvent ) (dynamic_pointer_cast<OPALFitterGSL>(fitter))->setDebug( 4 );
-      streamlog_out(DEBUG6) << "fit using OPAL GSL Fitter"  << std::endl ;
+      streamlog_out(MESSAGE6) << "fit using OPAL GSL Fitter"  << std::endl ; //changed from debug level 
     }
 
     for(auto j : *jfo_perm) fitter->addFitObject(*j);
@@ -1108,7 +1158,7 @@ ZHHllbbbbKinFit::FitResult ZHHllbbbbKinFit::performFIT( pfoVector jets,
 
     if( m_fitISR ) {
       fitter->addFitObject( *(photon) );
-      streamlog_out(DEBUG8) << "ISR added to fit"  << std::endl ;
+      streamlog_out(MESSAGE8) << "ISR added to fit"  << std::endl ; //changed from debug level 
     }
 
     fitter->addConstraint( pxc.get() );
@@ -1130,14 +1180,14 @@ ZHHllbbbbKinFit::FitResult ZHHllbbbbKinFit::performFIT( pfoVector jets,
       fitter->addConstraint( eqm.get() );
     }
 
-    streamlog_out(DEBUG8) << "constraints added to fit:" << std::endl ;
+    streamlog_out(MESSAGE8) << "constraints added to fit:" << std::endl ; //changed from debug level 
     auto fitconstraints = fitter->getConstraints();
     auto fitsoftconstraints = fitter->getSoftConstraints();
     for (auto it = fitconstraints->begin(); it != fitconstraints->end(); ++it) {
-      streamlog_out(DEBUG8) << (*it)->getName() << " constraint value = " << (*it)->getValue() << std::endl;
+      streamlog_out(MESSAGE8) << (*it)->getName() << " constraint value = " << (*it)->getValue() << std::endl; //changed from debug level 
     }
     for (auto it = fitsoftconstraints->begin(); it != fitsoftconstraints->end(); ++it) {
-      streamlog_out(DEBUG8) << (*it)->getName() << " constraint value = " << (*it)->getValue() << std::endl;
+      streamlog_out(MESSAGE8) << (*it)->getName() << " constraint value = " << (*it)->getValue() << std::endl; //changed from debug level 
     }
 
     //perform fit: 
@@ -1150,6 +1200,7 @@ ZHHllbbbbKinFit::FitResult ZHHllbbbbKinFit::performFIT( pfoVector jets,
     fitter->addConstraint( h1.get() );
     fitter->addConstraint( h2.get() );
     fitter->addConstraint( z.get() );
+    fitter->addConstraint( hh.get() );
     //streamlog_out(MESSAGE) << "chi2 after adding helper constraints" << fitter->getChi2() << endl; 
     shared_ptr<vector<shared_ptr<BaseHardConstraint>>> constraints = make_shared<vector<shared_ptr<BaseHardConstraint>>>();
     constraints->push_back(z);
@@ -1159,9 +1210,10 @@ ZHHllbbbbKinFit::FitResult ZHHllbbbbKinFit::performFIT( pfoVector jets,
     constraints->push_back(ec);
     constraints->push_back(h1);
     constraints->push_back(h2);
+    constraints->push_back(hh);
     //constraints->push_back(h);
 
-    streamlog_out(DEBUG8) << "helper constraints added"  << std::endl ;
+    streamlog_out(MESSAGE8) << "helper constraints added"  << std::endl ; //changed from debug level 
 
     //---------------------------
     if(fitter->getError()==0) {
@@ -1173,6 +1225,11 @@ ZHHllbbbbKinFit::FitResult ZHHllbbbbKinFit::performFIT( pfoVector jets,
 	bestProb = fitProbability;
 	bestChi2 = fitter->getChi2();
 
+	if( m_fitISR ) {
+	  streamlog_out(MESSAGE)  << "After fit four-vector of ISR photon: " << *(photon) << std::endl ; //changed from debug level
+	  streamlog_out(MESSAGE)  << "After fit ISR energy" << photon->getE() << endl;
+	}
+	
 	FitResult fitresult(fitter, constraints, fos);
 	/*for(auto it = fitresult.constraints->begin(); it != fitresult.constraints->end(); it++) {
 	  streamlog_out(MESSAGE) << "   testing " << (*it)->getName() << endl;
@@ -1359,10 +1416,16 @@ std::vector<double> ZHHllbbbbKinFit::calculateInitialMasses(pfoVector jets, pfoV
     z->addToFOList(*lfo->at(0), 1);
     z->addToFOList(*lfo->at(1), 1);
     z->setName("z mass");  
+    shared_ptr<MassConstraint> hh = make_shared<MassConstraint>(250.);
+    hh->addToFOList (*jfo_perm->at(0), 1);
+    hh->addToFOList (*jfo_perm->at(1), 1);
+    hh->addToFOList (*jfo_perm->at(2), 1);
+    hh->addToFOList (*jfo_perm->at(3), 1);
+    hh->setName("hh mass");
     masses.push_back(z->getMass(1));
     masses.push_back(h1->getMass(1));
     masses.push_back(h2->getMass(1));
-
+    masses.push_back(hh->getMass(1));
     return masses;
 }
 
@@ -1398,6 +1461,11 @@ std::vector<double> ZHHllbbbbKinFit::calculateMassesFromSimpleChi2Pairing(pfoVec
   double z = inv_mass(leptons.at(0),leptons.at(1));
   double h1 = 0. ;
   double h2 = 0. ;
+  ROOT::Math::PxPyPzEVector hhFourMomentum(0.,0.,0.,0.);
+  for (auto jet : jets) {
+    hhFourMomentum +=  ROOT::Math::PxPyPzEVector( jet->getMomentum()[0], jet->getMomentum()[1], jet->getMomentum()[2] , jet->getEnergy() );
+  }
+  double hh = hhFourMomentum.M();
   double chi2min = 99999. ;
   for (auto perm : perms) {
     double temp1 = inv_mass(jets.at(perm[0]),jets.at(perm[1]));
@@ -1417,8 +1485,9 @@ std::vector<double> ZHHllbbbbKinFit::calculateMassesFromSimpleChi2Pairing(pfoVec
   masses.push_back(z);
   masses.push_back(h1);
   masses.push_back(h2);
+  masses.push_back(hh);
 
-  streamlog_out(MESSAGE) << "masses from simple chi2:" << z << ", " << h1 << ", " << h2 << std::endl ; 
+  streamlog_out(MESSAGE) << "masses from simple chi2:" << z << ", " << h1 << ", " << h2 << ", " << hh << std::endl ; 
 
   return masses;
 
