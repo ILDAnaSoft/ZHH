@@ -1398,7 +1398,7 @@ std::vector<double> ZHHllbbbbKinFit::calculateInitialMasses(pfoVector jets, pfoV
     l->setName(name.c_str());
   }
   shared_ptr<vector<shared_ptr<JetFitObject>>> jfo_perm = make_shared<vector<shared_ptr<JetFitObject>>>();
-  for (auto i = perm.begin(); i != perm.begin()+4 ; ++i) {
+  for (auto i = perm.begin(); i != perm.begin()+m_nJets; ++i) {
     //for(auto i : perm) {
     streamlog_out(MESSAGE) << " Picking jet for start masses " << *i << std::endl ;
     auto jsp = make_shared<JetFitObject>(*jfo->at(*i));
@@ -1458,9 +1458,10 @@ std::vector<double> ZHHllbbbbKinFit::calculateMassesFromSimpleChi2Pairing(pfoVec
     m1 = 125.; 
     m2 = 125.; 
   }
-  double z = inv_mass(leptons.at(0),leptons.at(1));
+  double z = 0. ;
   double h1 = 0. ;
   double h2 = 0. ;
+  z = inv_mass(leptons.at(0),leptons.at(1));
   ROOT::Math::PxPyPzEVector hhFourMomentum(0.,0.,0.,0.);
   for (auto jet : jets) {
     hhFourMomentum +=  ROOT::Math::PxPyPzEVector( jet->getMomentum()[0], jet->getMomentum()[1], jet->getMomentum()[2] , jet->getEnergy() );

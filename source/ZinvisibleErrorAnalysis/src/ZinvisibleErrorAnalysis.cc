@@ -189,7 +189,7 @@ void ZinvisibleErrorAnalysis::processEvent( LCEvent* pLCEvent)
     ReconstructedParticle* jet = dynamic_cast<ReconstructedParticle*>( inputJetCollection->getElementAt( i_jet ) );
     seenFourMomentum += ROOT::Math::PxPyPzEVector(jet->getMomentum()[0],jet->getMomentum()[1],jet->getMomentum()[2], jet->getEnergy());
   }
-  ROOT::Math::PxPyPzMVector ZinvFourMomentum(seenFourMomentum.Px(), seenFourMomentum.Pz(), seenFourMomentum.Pz(),91.1880); // PDG average in 2024 review
+  ROOT::Math::PxPyPzMVector ZinvFourMomentum(-seenFourMomentum.Px(), -seenFourMomentum.Pz(), -seenFourMomentum.Pz(),91.1880); // PDG average in 2024 review
   
   //calculate 4-momentum of Z->vv (true)
   ROOT::Math::PxPyPzEVector ZvvFourMomentum(0.,0.,0.,0.);
