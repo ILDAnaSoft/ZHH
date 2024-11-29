@@ -79,18 +79,18 @@ function zhh_install_deps() {
         fi
     fi
 
-    if [[ -z $MarlinML || -z $VariablesForDeepMLFlavorTagger || -z $BTaggingVariables || -z $ILD_CONFIG_DIR ]]; then
+    if [[ -z $MarlinMLFlavorTagging || -z $ILD_CONFIG_DIR || -z $MarlinReco ]]; then
         echo "At least one of the dependencies could not be found. Retrieving them..."
 
         local ind="$( [ -z "${ZSH_VERSION}" ] && echo "0" || echo "1" )" # ZSH arrays are 1-indexed
         local repositories=(
-            https://gitlab.desy.de/ilcsoft/MarlinML
-            https://gitlab.desy.de/ilcsoft/variablesfordeepmlflavortagger
-            https://gitlab.desy.de/ilcsoft/btaggingvariables
+            https://gitlab.desy.de/bryan.bliewert/MarlinMLFlavorTagging.git
             https://github.com/iLCSoft/ILDConfig.git
             https://github.com/nVentis/MarlinReco.git)
-        local varnames=(MarlinML VariablesForDeepMLFlavorTagger BTaggingVariables ILD_CONFIG_DIR MarlinReco)
-        local dirnames=(MarlinML variablesfordeepmlflavortagger btaggingvariables ILDConfig MarlinReco)
+        local varnames=(MarlinMLFlavorTagging ILD_CONFIG_DIR MarlinReco)
+        local dirnames=(MarlinMLFlavorTagging ILDConfig MarlinReco)
+        local commits=(latest fb10b66cdc2335d8f84443a14ec7fda64ab389ed latest)
+        local cwd=$(pwd)
 
         mkdir -p $INSTALL_DIR
 
@@ -104,11 +104,17 @@ function zhh_install_deps() {
 
                 if [[ $ypath = "y" || -z $ypath ]]; then
                     local dirnamecur="${dirnames[$ind]}"
+                    local commitcur="${commits[$ind]}"
                     install_dir="$INSTALL_DIR/$dirnamecur"
 
                     if [[ ! -d "$install_dir" ]]; then
                         echo "Cloning to $INSTALL_DIR/$dirnamecur"
                         git clone --recurse-submodules ${repositories[$ind]} "$install_dir"
+
+                        if [[ $commitcur != "latest" ]]; then
+                            echo "Checking out commit $commitcur"
+                            ( cd "$install_dir" && git checkout $commitcur && cd $cwd )
+                        fi
                     else
                         echo "Directory $install_dir already exists. Assume it's correct."
                     fi
@@ -157,15 +163,13 @@ function zhh_install_deps() {
     # For $ZHH_ENV_NAME, see zhh_install_venv.sh
     cat > "$REPO_ROOT/.env" <<EOF
 REPO_ROOT="$REPO_ROOT"
-MarlinML="$MarlinML"
-VariablesForDeepMLFlavorTagger="$VariablesForDeepMLFlavorTagger"
-BTaggingVariables="$BTaggingVariables"
+MarlinMLFlavorTagging="$MarlinMLFlavorTagging"
+ILD_CONFIG_DIR="$ILD_CONFIG_DIR"
+MarlinReco="$MarlinReco"
 LCIO="$LCIO"
 TORCH_PATH="$TORCH_PATH"
-ILD_CONFIG_DIR="$ILD_CONFIG_DIR"
 ZHH_VENV_NAME="$ZHH_VENV_NAME"
 DATA_PATH="$data_dir"
-MarlinReco="$MarlinReco"
 
 EOF
 }

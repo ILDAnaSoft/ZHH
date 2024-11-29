@@ -14,12 +14,12 @@ function usage() {
     echo "       .env.sh: shell script for additional environment setup"
     echo ""
     echo "Dependencies"
-    echo "       MarlinML: absolute path to MarlinML repository with binaries inside lib64 (see https://gitlab.desy.de/ilcsoft/MarlinML)"
-    echo "       VariablesForDeepMLFlavorTagger: absolute path to repository with binaries inside lib (see https://gitlab.desy.de/ilcsoft/variablesfordeepmlflavortagger)"
-    echo "       BTaggingVariables: absolute path to repository with binaries inside lib (see https://gitlab.desy.de/ilcsoft/btaggingvariables)"
+    echo "       MarlinMLFlavorTagging: absolute path to MarlinMLFlavorTagging repository with binaries inside lib (see https://gitlab.desy.de/bryan.bliewert/MarlinMLFlavorTagging)"
 }
 
-ZHH_K4H_RELEASE_DEFAULT="2024-10-03"
+# before: 2024-10-03
+ZHH_K4H_RELEASE_DEFAULT="2024-11-28"
+# ILDConfig release: fb10b66
 
 function zhh_echo() {
     echo "ZHH> $1"
@@ -47,7 +47,7 @@ function zhh_recompile() {
     }
 
     # Compile the ML and helper libraries
-    for module_to_compile in "$MarlinML" "$VariablesForDeepMLFlavorTagger" "$BTaggingVariables" "$MarlinReco"
+    for module_to_compile in "$MarlinMLFlavorTagging" "$MarlinReco"
     do
         compile_pkg $module_to_compile && zhh_echo "+++ Successfully compiled $module_to_compile +++" || { zhh_echo "!!! Error [$?] while trying to compile $module_to_compile !!!"; cd $REPO_ROOT; return 1; }
     done
@@ -68,9 +68,7 @@ function zhh_attach_marlin_dlls() {
         "$REPO_ROOT/source/FinalStateRecorder/lib/libFinalStateRecorder.so"
         "$REPO_ROOT/source/ZHHKinfitProcessors/lib/libZHHKinfitProcessors.so"
         "$REPO_ROOT/source/TruthRecoComparison/lib/libTruthRecoComparison.so"
-        "$MarlinML/lib64/libJetTaggers.so"
-        "$VariablesForDeepMLFlavorTagger/lib/libVariablesForDeepMLFlavorTagger.so"
-        "$BTaggingVariables/lib/libBTaggingVariables.so"
+        "$MarlinMLFlavorTagging/lib/libMarlinMLFlavorTagging.so"
     )
 
     for lib in "${libs[@]}"; do
@@ -80,13 +78,11 @@ function zhh_attach_marlin_dlls() {
         fi
 
         zhh_echo "Attaching library $(basename $lib)"
-        export MARLIN_DLL=$MARLIN_DLL:"$lib"
+        export MARLIN_DLL="$lib":$MARLIN_DLL
     done
 
     # v3 requires a recent version of ReconstructedParticleParticleIDFilterProcessor.cc 
     # https://github.com/iLCSoft/MarlinReco/blob/master/Analysis/PIDTools/src/ReconstructedParticleParticleIDFilterProcessor.cc
-    # As a quick fix, one may use Uli's version
-    # export MARLIN_DLL="/afs/desy.de/user/u/ueinhaus/pool/MarlinReco_v01-35/lib/libMarlinReco.so.1.35.0:$MARLIN_DLL"
 }
 
 # Inferring REPO_ROOT
@@ -240,8 +236,8 @@ if [[ "$ZHH_COMMAND" = "compile" ]]; then
     zhh_echo "Successfully compiled all dependencies and libraries"
 fi
 
-if [[ ! -d "$MarlinML" || ! -d "$VariablesForDeepMLFlavorTagger" || ! -d "$BTaggingVariables" ||  ! -d "$LCIO" || ! -d "${ILD_CONFIG_DIR}" ]]; then
-    zhh_echo "Error: MarlinML, VariablesForDeepMLFlavorTagger, BTaggingVariables, LCIO and ILD_CONFIG_DIR must be set and point to valid directories."
+if [[ ! -d "$MarlinMLFlavorTagging" || ! -d "$LCIO" || ! -d "${ILD_CONFIG_DIR}" ]]; then
+    zhh_echo "Error: MarlinMLFlavorTagging, LCIO and ILD_CONFIG_DIR must be set and point to valid directories."
     zhh_echo "    Use --install to download and/or compile them here. Aborting."
     return 1
 fi

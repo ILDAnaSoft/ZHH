@@ -1,0 +1,18 @@
+executable = per_job.sh
+
+arguments = $(raw_file) $(suffix) $(env_file) $(JobId)
+should_transfer_files = True
+transfer_executable = True
+
+max_retries = 3
+Requirements = (Machine =!= LastRemoteHost)
+request_cpus = 1
+request_memory = 2000 Mb
+
+log = $(JobId).log
+output = $(JobId).out
+error = $(JobId).err
+
+transfer_output_files = ""
+
+queue raw_file,suffix,env_file from job_parameters/paramlist_all.txt
