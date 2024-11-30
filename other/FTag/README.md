@@ -1,8 +1,12 @@
+# Requirements
+
+Required python packages: pip install python-dotenv
+
 # Setup
 
 Create an `.env`file in the FTag folder with the following entries:
 
-`FT_DATA_PATH` data directory, preferably on NFS
+`TASK_ROOT` data directory, preferably on NFS
 `REPO_ROOT` ZHH Repo root
 
 Optionally: 

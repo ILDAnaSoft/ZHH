@@ -6,6 +6,9 @@ suffix=${2}
 env_file=${3}
 job_id=${4}
 
+# Prepare ZHH working environment
+export $(grep -v '^#' "${env_file}" | xargs)
+
 # Meta information for preparing output structure
 TASK_NAME="FeatureExtraction"
 
@@ -17,9 +20,6 @@ echo "  env_file: $env_file"
 echo "  job_id: $job_id"
 echo ""
 echo "Starting $(date)"
-
-# Prepare ZHH working environment
-export $(grep -v '^#' "${env_file}" | xargs)
 
 if [[ ! -d $REPO_ROOT ]]; then
     exit "Critical error: REPO_ROOT is not set or does not point to a valid directory"
@@ -35,23 +35,46 @@ load_env() {
 load_env
 
 # Create output directories
-mkdir -p "$FT_DATA_PATH/$TASK_NAME/logs"
-mkdir -p "$FT_DATA_PATH/$TASK_NAME/output"
+mkdir -p "$TASK_ROOT/$TASK_NAME/logs"
+mkdir -p "$TASK_ROOT/$TASK_NAME/output"
+
+# Expected output files
+outputs=(AIDAFile_$suffix.root.root FT_$suffix.slcio)
 
 # Only execute Marlin if the job has not been run before
-if [[ ! -f "$FT_DATA_PATH/$TASK_NAME/output/AIDAFile_$suffix.root" ]]; then
+outputs_exist_all="True"
+outputs_exist_any="False"
+
+for output_file in ${outputs[*]}
+do
+    if [[ -f "$TASK_ROOT/$TASK_NAME/$output_file" ]]; then
+        outputs_exist_any="True"
+    else
+        outputs_exist_all="False"
+    fi
+done
+
+if [[ $outputs_exist_all = "False" ]]; then
 
     # Run Marlin and transfer outputs
     echo "Running Marlin"
-    Marlin "$REPO_ROOT/scripts/dev_flavortag.xml" --global.LCIOInputFiles=$raw_file --constant.ILDConfigDir=$ILD_CONFIG_DIR  --constant.MaxRecordNumber=0 --constant.OutputSuffix=$suffix --constant.RunInference=false
+    Marlin "$REPO_ROOT/scripts/dev_flavortag.xml" --global.LCIOInputFiles=$raw_file --constant.ILDConfigDir=$ILD_CONFIG_DIR  --global.MaxRecordNumber=0 --constant.OutputSuffix=$suffix --constant.RunInference=false
+
+    echo "Finished Marlin at $(date)"
+    echo "Directory contents: $(ls)"
+
     sleep 5
-    (mv "FT_$suffix.slcio" "$FT_DATA_PATH/$TASK_NAME/output/FT_$suffix.slcio" && mv "AIDAFile_$suffix.root" "$FT_DATA_PATH/$TASK_NAME/output/AIDAFile_$suffix.root") || echo "Failed transfering either AIDA or Marlin output"
 
-    # Copy logs
-    rm -rf "$FT_DATA_PATH/$TASK_NAME/logs/$job_id.err" "$FT_DATA_PATH/logs/$job_id.out" "$FT_DATA_PATH/logs/$job_id.log"
+    # Transfer outputs
+    for output_file in ${outputs[*]}
+    do
+        if [[ -f "$output_file" ]]; then
+            echo "Transferring output file $output_file"
 
-    cp $job_id.err "$FT_DATA_PATH/$TASK_NAME/logs"
-    cp $job_id.out "$FT_DATA_PATH/$TASK_NAME/logs"
-    cp $job_id.log "$FT_DATA_PATH/$TASK_NAME/logs"
-
+            rm -rf "$TASK_ROOT/$TASK_NAME/output/$output_file"
+            mv "$output_file" "$TASK_ROOT/$TASK_NAME/output/$output_file" && echo "Done transferring $output_file" || echo "Failed to move output file $output_file"
+        else
+            echo "Failed to find output file $output_file"
+        fi
+    done
 fi

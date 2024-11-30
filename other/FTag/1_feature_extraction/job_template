@@ -9,10 +9,10 @@ Requirements = (Machine =!= LastRemoteHost)
 request_cpus = 1
 request_memory = 2000 Mb
 
-log = $(JobId).log
-output = $(JobId).out
-error = $(JobId).err
+log = $LOG_ROOT/$(JobId).log
+output = $LOG_ROOT/$(JobId).out
+error = $LOG_ROOT/$(JobId).err
 
 transfer_output_files = ""
 
-queue raw_file,suffix,env_file from job_parameters/paramlist_all.txt
+queue raw_file,suffix,env_file from job_parameters/paramlist_$TARGET_SUFFIX.txt
