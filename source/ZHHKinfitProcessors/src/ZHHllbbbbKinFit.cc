@@ -1548,6 +1548,7 @@ std::vector<double> ZHHllbbbbKinFit::calculateMassesFromSimpleChi2Pairing(pfoVec
   for (auto jet : jets) {
     hhFourMomentum +=  ROOT::Math::PxPyPzEVector( jet->getMomentum()[0], jet->getMomentum()[1], jet->getMomentum()[2] , jet->getEnergy() );
   }
+  zhhFourMomentum += hhFourMomentum;
   for (auto lepton : leptons) {
     zhhFourMomentum +=  ROOT::Math::PxPyPzEVector( lepton->getMomentum()[0], lepton->getMomentum()[1], lepton->getMomentum()[2] , lepton->getEnergy() );
   }  
