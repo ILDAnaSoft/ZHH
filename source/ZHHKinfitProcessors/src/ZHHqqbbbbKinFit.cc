@@ -1,4 +1,4 @@
-#include "ZHHllbbbbKinFit.h"
+#include "ZHHqqbbbbKinFit.h"
 
 using namespace lcio ;
 using namespace marlin ;
@@ -15,10 +15,10 @@ double inv_mass(T* p1, T* p2){
   return( sqrt( e*e - px*px - py*py - pz*pz  ) );
 }
 
-ZHHllbbbbKinFit aZHHllbbbbKinFit ;
+ZHHqqbbbbKinFit aZHHqqbbbbKinFit ;
 
-ZHHllbbbbKinFit::ZHHllbbbbKinFit() :
-Processor("ZHHllbbbbKinFit"),
+ZHHqqbbbbKinFit::ZHHqqbbbbKinFit() :
+Processor("ZHHqqbbbbKinFit"),
 m_nRun(0),
 m_nEvt(0),
 m_nRunSum(0),
@@ -31,7 +31,7 @@ eB(0.0)
 {
 
 //	modify processor description
-	_description = "ZHHllbbbbKinFit does a fit on 2 lepton + 4 jet events (Px, Py, Pz, E, M12 = MZ)" ;
+	_description = "ZHHqqbbbbKinFit does a kinematic fit on 6 jet events" ;
 
 //	register steering parameters: name, description, class-variable, default value
 
@@ -46,7 +46,7 @@ eB(0.0)
 					"JetCollectionName" ,
 					"Name of the Jet collection"  ,
 					m_inputJetCollection ,
-					std::string("Durham4Jets")
+					std::string("DurhamJets")
 				);
 
 	registerInputCollection( 	LCIO::VERTEX,
@@ -101,13 +101,13 @@ eB(0.0)
 	registerProcessorParameter(	"nJets",
 					"Number of jet should be in the event",
 					m_nAskedJets,
-					int(4)
+					int(6)
 				);
 
 	registerProcessorParameter(	"nIsoLeps",
 					"Number of Isolated Leptons should be in the event",
 					m_nAskedIsoLeps,
-					int(2)
+					int(0)
 				);
 
 	registerProcessorParameter(	"ECM" ,
@@ -231,7 +231,7 @@ eB(0.0)
 				  std::string("JetPulls"));
 }
 
-void ZHHllbbbbKinFit::init()
+void ZHHqqbbbbKinFit::init()
 {
 //	usually a good idea to
 	streamlog_out(DEBUG) << "   init called  " << std::endl;
@@ -347,7 +347,7 @@ void ZHHllbbbbKinFit::init()
 
 }
 
-void ZHHllbbbbKinFit::Clear()
+void ZHHqqbbbbKinFit::Clear()
 {
 	streamlog_out(DEBUG) << "   Clear called  " << std::endl;
 
@@ -360,7 +360,7 @@ void ZHHllbbbbKinFit::Clear()
 	m_nCorrectedSLD = 0;
 	m_ISREnergyTrue = 0.0;
 	m_BSEnergyTrue = 0.0;
-	m_HHMassHardProcess = 0.0;
+        m_HHMassHardProcess = 0.0;
 	m_FitErrorCode_woNu = 1;
 	m_ZMassBeforeFit_woNu = 0.0;
 	m_H1MassBeforeFit_woNu = 0.0;
@@ -434,18 +434,18 @@ void ZHHllbbbbKinFit::Clear()
 
 }
 
-void ZHHllbbbbKinFit::processRunHeader()
+void ZHHqqbbbbKinFit::processRunHeader()
 {
 	m_nRun++ ;
 }
 
-void ZHHllbbbbKinFit::processEvent( EVENT::LCEvent *pLCEvent )
+void ZHHqqbbbbKinFit::processEvent( EVENT::LCEvent *pLCEvent )
 {
   this->Clear();
   m_nRun = pLCEvent->getRunNumber();
   m_nEvt = pLCEvent->getEventNumber();
   streamlog_out(MESSAGE1) << "	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
-  streamlog_out(WARNING) << "	////////////////////////////////// processing event " << m_nEvt << " in run " << m_nRun << " /////////////////////////////////////////////////" << std::endl;
+  streamlog_out(MESSAGE1) << "	////////////////////////////////// processing event " << m_nEvt << " in run " << m_nRun << " /////////////////////////////////////////////////" << std::endl;
   streamlog_out(MESSAGE1) << "	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
   
   LCCollection *inputJetCollection = NULL;
@@ -497,7 +497,7 @@ void ZHHllbbbbKinFit::processEvent( EVENT::LCEvent *pLCEvent )
   streamlog_out(MESSAGE8) << "	Number of isolatedLeptons: " << m_nIsoLeps << std::endl ;
   streamlog_out(MESSAGE8) << "	Number of found semi-leptonic decays: " << m_nSLDecayTotal << std::endl ;
   streamlog_out(MESSAGE8) << "	Number of corrected semi-leptonic decays: " << m_nCorrectedSLD << std::endl ;
-  //Beamstrahlung
+    //Beamstrahlung
   ROOT::Math::PxPyPzEVector bsFourMomentum(0.,0.,0.,0.);
   for (int i_mc = 0; i_mc < 2; i_mc++){ //no. 0 and 1 are e+e- pre bs
     MCParticle* mcp = (MCParticle*) inputMCParticleCollection->getElementAt(i_mc);
@@ -527,7 +527,7 @@ void ZHHllbbbbKinFit::processEvent( EVENT::LCEvent *pLCEvent )
   if ( m_nJets != m_nAskedJets || m_nIsoLeps != m_nAskedIsoLeps ) {
     m_pTTree->Fill();
     return;
-  }
+  }  
   //&& m_nCorrectedSLD == m_nSLDecayTotal )	
   bool traceEvent = false;
   if ( pLCEvent->getEventNumber() == m_ievttrace || m_traceall ) traceEvent = true;
@@ -600,7 +600,6 @@ void ZHHllbbbbKinFit::processEvent( EVENT::LCEvent *pLCEvent )
       }
     }
     streamlog_out(MESSAGE) << endl;
-
     streamlog_out(MESSAGE) << "Getting fitobjects now... ";
     auto fitobjects_woNu = woNuFitResult.fitobjects;
     vector<unsigned int> perm_woNu;
@@ -666,13 +665,15 @@ void ZHHllbbbbKinFit::processEvent( EVENT::LCEvent *pLCEvent )
   pfoVectorVector neutrinos2 = getNeutrinosInJet(JetSLDNav , SLDNuNav , Jets[1]);
   pfoVectorVector neutrinos3 = getNeutrinosInJet(JetSLDNav , SLDNuNav , Jets[2]);
   pfoVectorVector neutrinos4 = getNeutrinosInJet(JetSLDNav , SLDNuNav , Jets[3]);
+  pfoVectorVector neutrinos5 = getNeutrinosInJet(JetSLDNav , SLDNuNav , Jets[4]);
+  pfoVectorVector neutrinos6 = getNeutrinosInJet(JetSLDNav , SLDNuNav , Jets[5]);
   pfoVectorVector bestNuSolutions = {};
   
   FitResult bestFitResult = woNuFitResult;
 
   pfoVector bestJets = {};
   if (woNuFitter && woNuFitter->getError()==0) {
-    bestJets = {Jets[0], Jets[1], Jets[2], Jets[3]};
+    bestJets = {Jets[0], Jets[1], Jets[2], Jets[3], Jets[4], Jets[5]};
   };
   
   pfoVector gcJets;
@@ -694,48 +695,58 @@ void ZHHllbbbbKinFit::processEvent( EVENT::LCEvent *pLCEvent )
 	for(pfoVector nu4: combinations({}, neutrinos4, 0, {})) {
 	  ReconstructedParticle* cjet4 = addNeutrinoCorrection(Jets[3],nu4);
 	  gcJets.push_back(cjet4);
-	  
-	  std::vector< ReconstructedParticle* > CorrectedJets{cjet1, cjet2, cjet3, cjet4};
-	  pfoVectorVector NuSolutions{nu1, nu2, nu3, nu4};
-	  FitResult fitResult = performFIT( CorrectedJets, Leptons , traceEvent);
-	  BaseFitter* fitter = fitResult.fitter.get();
-
-	  
-	  if (fitter && fitter->getError() == 0) {
-	    // TODO the next line is just a test
-	    streamlog_out(MESSAGE) << "   OUTER chi2 " << fitter->getChi2() << endl;
-	    /*
-	    for(auto it = fitResult.constraints->begin(); it != fitResult.constraints->end(); it++) {
-	      streamlog_out(MESSAGE) << "   OUTER testing " << (*it)->getName() << endl;
-	      if (strcmp((*it)->getName(), "h1 mass")==0) {
-		auto mc = dynamic_pointer_cast<MassConstraint>(*it);
-		streamlog_out(MESSAGE)<< "   OUTER higgs mass constraint: " << mc->getMass() << endl;
+	  //LOOP 5
+	  for(pfoVector nu5: combinations({}, neutrinos5, 0, {})) {
+	    ReconstructedParticle* cjet5 = addNeutrinoCorrection(Jets[4],nu5);
+	    gcJets.push_back(cjet5);
+	    //LOOP 6
+	    for(pfoVector nu6: combinations({}, neutrinos6, 0, {})) {
+	      ReconstructedParticle* cjet6 = addNeutrinoCorrection(Jets[5],nu6);
+	      gcJets.push_back(cjet6);
+	      
+	      std::vector< ReconstructedParticle* > CorrectedJets{cjet1, cjet2, cjet3, cjet4, cjet5, cjet6};
+	      pfoVectorVector NuSolutions{nu1, nu2, nu3, nu4, nu5, nu6};
+	      FitResult fitResult = performFIT( CorrectedJets, Leptons , traceEvent);
+	      BaseFitter* fitter = fitResult.fitter.get();
+	      
+	      
+	      if (fitter && fitter->getError() == 0) {
+		// TODO the next line is just a test
+		streamlog_out(MESSAGE) << "   OUTER chi2 " << fitter->getChi2() << endl;
+		/*
+		  for(auto it = fitResult.constraints->begin(); it != fitResult.constraints->end(); it++) {
+		    streamlog_out(MESSAGE) << "   OUTER testing " << (*it)->getName() << endl;
+		    if (strcmp((*it)->getName(), "h1 mass")==0) {
+		    auto mc = dynamic_pointer_cast<MassConstraint>(*it);
+		    streamlog_out(MESSAGE)<< "   OUTER higgs mass constraint: " << mc->getMass() << endl;
+		    }
+		    }*/
+		/*for(auto it = fitter->getFitObjects()->begin(); it != fitter->getFitObjects()->end(); it++) {
+		  streamlog_out(MESSAGE)<< "   OUTER FITTER FO : " << (*it)->getName() << endl;
+		  }
+		*/
+		// TODO the next line is just a test
+		/*for(auto it = fitResult.fitobjects->begin(); it != fitResult.fitobjects->end(); it++) streamlog_out(MESSAGE) << "   testing FO " << (*it)->getName() << endl;*/
+		if(!bestFitResult.fitter) {
+		  bestFitResult = fitResult;
+		  bestJets = CorrectedJets;
+		  bestNuSolutions = NuSolutions;
+		  continue;
+		}
+		if(fitter->getChi2() < bestFitResult.fitter->getChi2()) {
+		  streamlog_out(MESSAGE)<< "   New fit result is better than stored! Store the new one instead " << endl;
+		  bestFitResult = fitResult;
+		  bestJets = CorrectedJets;
+		  bestNuSolutions = NuSolutions;
+		  streamlog_out(MESSAGE) << " BestFit has error code: " << bestFitResult.fitter->getError() << endl;
+		}
 	      }
-	      }*/
-	    /*for(auto it = fitter->getFitObjects()->begin(); it != fitter->getFitObjects()->end(); it++) {
-	      streamlog_out(MESSAGE)<< "   OUTER FITTER FO : " << (*it)->getName() << endl;
-	    }
-	    */
-	    // TODO the next line is just a test
-	    /*for(auto it = fitResult.fitobjects->begin(); it != fitResult.fitobjects->end(); it++) streamlog_out(MESSAGE) << "   testing FO " << (*it)->getName() << endl;*/
-	    if(!bestFitResult.fitter) {
-	      bestFitResult = fitResult;
-	      bestJets = CorrectedJets;
-	      bestNuSolutions = NuSolutions;
-	      continue;
-	    }
-	    if(fitter->getChi2() < bestFitResult.fitter->getChi2()) {
-	      streamlog_out(MESSAGE)<< "   New fit result is better than stored! Store the new one instead " << endl;
-	      bestFitResult = fitResult;
-	      bestJets = CorrectedJets;
-	      bestNuSolutions = NuSolutions;
-	      streamlog_out(MESSAGE) << " BestFit has error code: " << bestFitResult.fitter->getError() << endl;
-	    }
-	  }
-	}
-      }
-    }
-  }
+	    }//LOOP 6
+	  }//LOOP 5
+	}//LOOP 4
+      }//LOOP 3
+    }//LOOP 2
+  }//LOOP 1
   /*
    * Clean up all jets we don't use for best solution
    * DISABLE THIS FOR NOW, AS DELETING ALSO DELETES MEMORY
@@ -914,7 +925,7 @@ void ZHHllbbbbKinFit::processEvent( EVENT::LCEvent *pLCEvent )
 }
 
 
-ReconstructedParticle* ZHHllbbbbKinFit::addNeutrinoCorrection(ReconstructedParticle* jet, pfoVector neutrinos) {
+ReconstructedParticle* ZHHqqbbbbKinFit::addNeutrinoCorrection(ReconstructedParticle* jet, pfoVector neutrinos) {
   std::vector< float > jetCovMat = jet->getCovMatrix();
   ROOT::Math::PxPyPzEVector jetFourMomentum(jet->getMomentum()[0],jet->getMomentum()[1],jet->getMomentum()[2], jet->getEnergy());
   for(auto nu : neutrinos) {
@@ -938,7 +949,7 @@ ReconstructedParticle* ZHHllbbbbKinFit::addNeutrinoCorrection(ReconstructedParti
  * all possible vectors of length n where the first
  * element is from A[0], the second from A[1] etc.
  */
-std::vector<std::vector<EVENT::ReconstructedParticle*>> ZHHllbbbbKinFit::combinations(pfoVectorVector collector,
+std::vector<std::vector<EVENT::ReconstructedParticle*>> ZHHqqbbbbKinFit::combinations(pfoVectorVector collector,
 											     pfoVectorVector sets, 
 											     int n,
 											     pfoVector combo) {
@@ -956,7 +967,7 @@ std::vector<std::vector<EVENT::ReconstructedParticle*>> ZHHllbbbbKinFit::combina
 }
 
 
-std::vector<std::vector<EVENT::ReconstructedParticle*>> ZHHllbbbbKinFit::getNeutrinosInJet( LCRelationNavigator* JetSLDNav , 
+std::vector<std::vector<EVENT::ReconstructedParticle*>> ZHHqqbbbbKinFit::getNeutrinosInJet( LCRelationNavigator* JetSLDNav , 
 												   LCRelationNavigator* SLDNuNav , 
 												   EVENT::ReconstructedParticle* jet) {
   pfoVectorVector output;
@@ -975,7 +986,7 @@ std::vector<std::vector<EVENT::ReconstructedParticle*>> ZHHllbbbbKinFit::getNeut
   return output;
 }
 
-std::pair<MCParticle*,ReconstructedParticle*> ZHHllbbbbKinFit::getMCNeutrino(LCRelationNavigator* NuMCNav,
+std::pair<MCParticle*,ReconstructedParticle*> ZHHqqbbbbKinFit::getMCNeutrino(LCRelationNavigator* NuMCNav,
 										    LCRelationNavigator* SLDNuNav,
 										    EVENT::ReconstructedParticle* neutrino) {
   MCParticle* MCNu;
@@ -998,11 +1009,10 @@ std::pair<MCParticle*,ReconstructedParticle*> ZHHllbbbbKinFit::getMCNeutrino(LCR
   return make_pair(MCNu,BestNu);
 }
 
-ZHHllbbbbKinFit::FitResult ZHHllbbbbKinFit::performFIT( pfoVector jets, 
+ZHHqqbbbbKinFit::FitResult ZHHqqbbbbKinFit::performFIT( pfoVector jets, 
 							pfoVector leptons,
 							bool traceEvent) {
   shared_ptr<vector<shared_ptr<JetFitObject>>> jfo = make_shared<vector<shared_ptr<JetFitObject>>>();
-  shared_ptr<vector<shared_ptr<LeptonFitObject>>> lfo= make_shared<vector<shared_ptr<LeptonFitObject>>>();
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //////												  //////
   //////					Set JetFitObjects					  //////
@@ -1019,49 +1029,37 @@ ZHHllbbbbKinFit::FitResult ZHHllbbbbKinFit::performFIT( pfoVector jets,
     //streamlog_out(MESSAGE)  << " start four-vector of jet"<< i_jet+1 <<": " << *j  << std::endl ;
     streamlog_out(MESSAGE)  << " start four-vector of jet"<< i_jet+1 <<": " << "[" << jets[ i_jet ]->getMomentum()[0] << ", " << jets[ i_jet ]->getMomentum()[1] << ", " << jets[ i_jet ]->getMomentum()[2] << ", " << jets[ i_jet ]->getEnergy() << "]" << std::endl ;
   }
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //////							         				  //////
-  //////					Set LeptonFitObjects					  //////
-  //////												  //////
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  for (unsigned int i_lep =0; i_lep < leptons.size(); i_lep++) {
-    streamlog_out(MESSAGE6) << "get lepton"<< i_lep+1 <<" parameters"  << std::endl ; //changed from debug level 
-    float parameters[ 3 ]{ 0.0 } , errors[ 3 ]{ 0.0 };
-    getLeptonParameters( leptons[ i_lep ] , parameters , errors );
-    auto l = make_shared<LeptonFitObject> ( parameters[ 0 ] , parameters[ 1 ] , parameters[ 2 ] , errors[ 0 ] , errors[ 1 ] , errors[ 2 ] , leptons[ i_lep ]->getMass() );
-    lfo->push_back(l);
-    const string name = "lepton"+to_string(i_lep);
-    l->setName(name.c_str());
-    //streamlog_out(MESSAGE)  << " start four-vector of lepton"<< i_lep+1 <<": " << *l  << std::endl ;
-    streamlog_out(MESSAGE)  << " start four-vector of lepton"<< i_lep+1 <<": " << "[" << leptons[ i_lep ]->getMomentum()[0] << ", " << leptons[ i_lep ]->getMomentum()[1] << ", " << leptons[ i_lep ]->getMomentum()[2] << ", " << leptons[ i_lep ]->getEnergy() << "]"  << std::endl ;
-  }
-  
-  const int NJETS = 4;
-  const int NLEPTONS = 2;
+
+  const int NJETS = 6;
+  const int NLEPTONS = 0;
   
   double bestProb = -1;
   double bestChi2 = 9999999999999.;
   FitResult bestFitResult;
 
-  assert(NJETS==4);
+  assert(NJETS==6);
   vector<vector<unsigned int>> perms;
-  if (m_fithypothesis == "ZZH" || m_fithypothesis == "ZZHsoft" || m_fithypothesis == "MH") {
+  if (m_fithypothesis == "ZZH" || m_fithypothesis == "ZZHsoft" || m_fithypothesis == "MH" || m_fithypothesis == "ZHH" || m_fithypothesis == "EQM") {
+    //TO DO: redo permutations for each hypothesis
     perms = {
-      {0, 1, 2, 3},
-      {0, 2, 1, 3},
-      {0, 3, 1, 2},
-      {1, 2, 0, 3},
-      {1, 3, 0, 2},
-      {2, 3, 0, 1}
-    };
-  } else if (m_fithypothesis == "ZHH" || m_fithypothesis == "EQM") {
-    perms = {
-      {0, 1, 2, 3}, 
-      {0, 2, 1, 3}, 
-      {0, 3, 1, 2}
+      {0, 1, 2, 3, 4, 5}, {1, 2, 0, 3, 4, 5}, {2, 4, 0, 1, 3, 5},
+      {0, 1, 2, 4, 3, 5}, {1, 2, 0, 4, 3, 5}, {2, 4, 0, 3, 1, 5},
+      {0, 1, 2, 5, 3, 4}, {1, 2, 0, 5, 3, 4}, {2, 4, 0, 5, 1, 3},
+      {0, 2, 1, 3, 4, 5}, {1, 3, 0, 2, 4, 5}, {2, 5, 0, 1, 3, 4},
+      {0, 2, 1, 4, 3, 5}, {1, 3, 0, 4, 2, 5}, {2, 5, 0, 3, 1, 4},
+      {0, 2, 1, 5, 3, 4}, {1, 3, 0, 5, 2, 4}, {2, 5, 0, 4, 1, 3},
+      {0, 3, 1, 2, 4, 5}, {1, 4, 0, 2, 3, 5}, {3, 4, 0, 1, 2, 5},
+      {0, 3, 1, 4, 2, 5}, {1, 4, 0, 3, 2, 5}, {3, 4, 0, 2, 1, 5},
+      {0, 3, 1, 5, 2, 4}, {1, 4, 0, 5, 2, 3}, {3, 4, 0, 5, 1, 2},
+      {0, 4, 1, 2, 3, 5}, {1, 5, 0, 2, 3, 4}, {3, 5, 0, 1, 2, 4},
+      {0, 4, 1, 3, 2, 5}, {1, 5, 0, 3, 2, 4}, {3, 5, 0, 2, 1, 4},
+      {0, 4, 1, 5, 2, 3}, {1, 5, 0, 4, 2, 3}, {3, 5, 0, 4, 1, 2},
+      {0, 5, 1, 2, 3, 4}, {2, 3, 0, 1, 4, 5}, {4, 5, 0, 1, 2, 3},
+      {0, 5, 1, 3, 2, 4}, {2, 3, 0, 4, 1, 5}, {4, 5, 0, 2, 1, 3},
+      {0, 5, 1, 4, 2, 3}, {2, 3, 0, 5, 1, 4}, {4, 5, 0, 3, 1, 2},
     };
   } else {
-    perms = {{0, 1, 2, 3}};
+    perms = {{0, 1, 2, 3, 4, 5}};
   }
 
   for (unsigned int iperm = 0; iperm < perms.size(); iperm++) {
@@ -1069,7 +1067,6 @@ ZHHllbbbbKinFit::FitResult ZHHllbbbbKinFit::performFIT( pfoVector jets,
     streamlog_out(MESSAGE) << " iperm = " << iperm << std::endl ;
 
     shared_ptr<vector<shared_ptr<JetFitObject>>> jfo_perm = make_shared<vector<shared_ptr<JetFitObject>>>();
-    shared_ptr<vector<shared_ptr<LeptonFitObject>>> lfo_perm = make_shared<vector<shared_ptr<LeptonFitObject>>>();
 
     // important: (re-)set fitjets array!                                                                                                       // keep track of newly created heap particles
     shared_ptr<vector<shared_ptr<BaseFitObject>>> fos = make_shared<vector<shared_ptr<BaseFitObject>>>();
@@ -1079,14 +1076,7 @@ ZHHllbbbbKinFit::FitResult ZHHllbbbbKinFit::performFIT( pfoVector jets,
       auto jsp = make_shared<JetFitObject>(*jfo->at(i));
       jfo_perm->push_back(jsp);
     }
-    streamlog_out(MESSAGE) << std::endl ;
-    for(int i = 0; i < NLEPTONS; ++i) {
-      auto lsp = make_shared<LeptonFitObject>(*lfo->at(i));
-      lfo_perm->push_back(lsp);
-    }
     for(auto j : *jfo_perm) fos->push_back(j);
-    for(auto l : *lfo_perm) fos->push_back(l);
-
     for (auto j : *jfo_perm) 
       streamlog_out(MESSAGE)  << "start four-vector of jet " << j->getName() << ": " << *j  << std::endl ;  //changed from debug level 
     //for (int i = 0; i < NJETS; ++i) streamlog_out(DEBUG)  << "original four-vector of jet " << i << ": " << fitjets[i]  << std::endl ;
@@ -1101,23 +1091,19 @@ ZHHllbbbbKinFit::FitResult ZHHllbbbbKinFit::performFIT( pfoVector jets,
     shared_ptr<MomentumConstraint> pxc = make_shared<MomentumConstraint>( 0 , 1 , 0 , 0 , target_p_due_crossing_angle);//Factor for: (energy sum, px sum, py sum,pz sum,target value of sum)    
     pxc->setName("sum(p_x)");
     for (auto j : *jfo_perm) pxc->addToFOList(*j);
-    for (auto l : *lfo_perm) pxc->addToFOList(*l);
     
     shared_ptr<MomentumConstraint> pyc = make_shared<MomentumConstraint>(0, 0, 1, 0, 0);
     pyc->setName("sum(p_y)");
     for (auto j : *jfo_perm) pyc->addToFOList(*j);
-    for (auto l : *lfo_perm) pyc->addToFOList(*l);
     
     shared_ptr<MomentumConstraint> pzc = make_shared<MomentumConstraint>(0, 0, 0, 1, 0);
     pzc->setName("sum(p_z)");
     for (auto j : *jfo_perm) pzc->addToFOList(*j);
-    for (auto l : *lfo_perm) pzc->addToFOList(*l);
     
     double E_lab = 2 * sqrt( std::pow( 0.548579909e-3 , 2 ) + std::pow( m_ECM / 2 , 2 ) + std::pow( target_p_due_crossing_angle , 2 ) + 0. + 0.); //TODO: check equation
     shared_ptr<MomentumConstraint> ec = make_shared<MomentumConstraint>(1, 0, 0, 0, E_lab);
     ec->setName("sum(E)");
     for (auto j : *jfo_perm) ec->addToFOList(*j);
-    for (auto l : *lfo_perm) ec->addToFOList(*l);
     
     streamlog_out(MESSAGE8)  << "	Value of E_lab before adding ISR: " << E_lab << std::endl ;  //changed from debug level 
     streamlog_out(MESSAGE8)  << "	Value of target_p_due_crossing_angle before adding ISR: " << target_p_due_crossing_angle << std::endl ; //changed from debug level 
@@ -1183,8 +1169,8 @@ ZHHllbbbbKinFit::FitResult ZHHllbbbbKinFit::performFIT( pfoVector jets,
     h2->addToFOList (*jfo_perm->at(3), 1);
     h2->setName("h2 mass");
     shared_ptr<MassConstraint> z = make_shared<MassConstraint>(91.2);
-    z->addToFOList(*lfo_perm->at(0), 1);
-    z->addToFOList(*lfo_perm->at(1), 1);
+    z->addToFOList(*jfo_perm->at(4), 1);
+    z->addToFOList(*jfo_perm->at(5), 1);
     z->setName("z mass");
     shared_ptr<MassConstraint> hh = make_shared<MassConstraint>(250.);
     hh->addToFOList (*jfo_perm->at(0), 1);
@@ -1193,12 +1179,12 @@ ZHHllbbbbKinFit::FitResult ZHHllbbbbKinFit::performFIT( pfoVector jets,
     hh->addToFOList (*jfo_perm->at(3), 1);
     hh->setName("hh mass");
     shared_ptr<MassConstraint> zhh = make_shared<MassConstraint>(340.);
-    zhh->addToFOList(*lfo_perm->at(0), 1);
-    zhh->addToFOList(*lfo_perm->at(1), 1);
     zhh->addToFOList (*jfo_perm->at(0), 1);
     zhh->addToFOList (*jfo_perm->at(1), 1);
     zhh->addToFOList (*jfo_perm->at(2), 1);
     zhh->addToFOList (*jfo_perm->at(3), 1);
+    zhh->addToFOList (*jfo_perm->at(4), 1);
+    zhh->addToFOList (*jfo_perm->at(5), 1);
     zhh->setName("zhh mass");
       
     streamlog_out(MESSAGE) << "start mass of Z  : " << z->getMass(1) << std::endl ; //changed from debug level 
@@ -1224,7 +1210,6 @@ ZHHllbbbbKinFit::FitResult ZHHllbbbbKinFit::performFIT( pfoVector jets,
     }
 
     for(auto j : *jfo_perm) fitter->addFitObject(*j);
-    for(auto l : *lfo_perm) fitter->addFitObject(*l);
 
     if( m_fitISR ) {
       fitter->addFitObject( *(photon) );
@@ -1329,7 +1314,7 @@ ZHHllbbbbKinFit::FitResult ZHHllbbbbKinFit::performFIT( pfoVector jets,
 }
 
 
-void ZHHllbbbbKinFit::getJetParameters(	ReconstructedParticle* jet, float (&parameters)[3], float (&errors)[3])
+void ZHHqqbbbbKinFit::getJetParameters(	ReconstructedParticle* jet, float (&parameters)[3], float (&errors)[3])
 {
   float Px , Py , Pz , P2 , Pt , Pt2;
   float dTheta_dPx , dTheta_dPy , dTheta_dPz , dPhi_dPx , dPhi_dPy;
@@ -1377,7 +1362,7 @@ void ZHHllbbbbKinFit::getJetParameters(	ReconstructedParticle* jet, float (&para
   streamlog_out(DEBUG6) << "			SigmaPhi	= " << errors[ 2 ] << std::endl ;
 }
 
-void ZHHllbbbbKinFit::getLeptonParameters( ReconstructedParticle* lepton , float (&parameters)[ 3 ] , float (&errors)[ 3 ] )
+void ZHHqqbbbbKinFit::getLeptonParameters( ReconstructedParticle* lepton , float (&parameters)[ 3 ] , float (&errors)[ 3 ] )
 {
   TrackVec trackVec = lepton->getTracks();
   if ( trackVec.size() != 1 )
@@ -1446,7 +1431,7 @@ void ZHHllbbbbKinFit::getLeptonParameters( ReconstructedParticle* lepton , float
   streamlog_out(DEBUG6) << "			SigmaPhi	= " << errors[ 2 ] << std::endl ;
 }
 
-std::vector<double> ZHHllbbbbKinFit::calculateInitialMasses(pfoVector jets, pfoVector leptons, vector<unsigned int> perm)
+std::vector<double> ZHHqqbbbbKinFit::calculateInitialMasses(pfoVector jets, pfoVector leptons, vector<unsigned int> perm)
 {
   std::vector<double> masses;
   shared_ptr<vector<shared_ptr<JetFitObject>>> jfo = make_shared<vector<shared_ptr<JetFitObject>>>();
@@ -1470,7 +1455,7 @@ std::vector<double> ZHHllbbbbKinFit::calculateInitialMasses(pfoVector jets, pfoV
     l->setName(name.c_str());
   }
   shared_ptr<vector<shared_ptr<JetFitObject>>> jfo_perm = make_shared<vector<shared_ptr<JetFitObject>>>();
-  for (auto i = perm.begin(); i != perm.begin()+m_nJets; ++i) {
+  for (auto i = perm.begin(); i != perm.begin()+m_nJets ; ++i) {
     //for(auto i : perm) {
     streamlog_out(MESSAGE) << " Picking jet for start masses " << *i << std::endl ;
     auto jsp = make_shared<JetFitObject>(*jfo->at(*i));
@@ -1485,22 +1470,21 @@ std::vector<double> ZHHllbbbbKinFit::calculateInitialMasses(pfoVector jets, pfoV
     h2->addToFOList (*jfo_perm->at(3), 1);
     h2->setName("h2 mass");
     shared_ptr<MassConstraint> z = make_shared<MassConstraint>(91.2);
-    z->addToFOList(*lfo->at(0), 1);
-    z->addToFOList(*lfo->at(1), 1);
+    z->addToFOList(*jfo->at(4), 1);
+    z->addToFOList(*jfo->at(5), 1);
     z->setName("z mass");  
     shared_ptr<MassConstraint> hh = make_shared<MassConstraint>(250.);
     hh->addToFOList (*jfo_perm->at(0), 1);
     hh->addToFOList (*jfo_perm->at(1), 1);
     hh->addToFOList (*jfo_perm->at(2), 1);
     hh->addToFOList (*jfo_perm->at(3), 1);
-    hh->setName("hh mass");
-    shared_ptr<MassConstraint> zhh = make_shared<MassConstraint>(250.);
-    zhh->addToFOList(*lfo->at(0), 1);
-    zhh->addToFOList(*lfo->at(1), 1);
+    shared_ptr<MassConstraint> zhh = make_shared<MassConstraint>(340.);
     zhh->addToFOList (*jfo_perm->at(0), 1);
     zhh->addToFOList (*jfo_perm->at(1), 1);
     zhh->addToFOList (*jfo_perm->at(2), 1);
     zhh->addToFOList (*jfo_perm->at(3), 1);
+    zhh->addToFOList (*jfo_perm->at(4), 1);
+    zhh->addToFOList (*jfo_perm->at(5), 1);
     zhh->setName("zhh mass");
     masses.push_back(z->getMass(1));
     masses.push_back(h1->getMass(1));
@@ -1510,7 +1494,7 @@ std::vector<double> ZHHllbbbbKinFit::calculateInitialMasses(pfoVector jets, pfoV
     return masses;
 }
 
-std::vector<double> ZHHllbbbbKinFit::calculateMassesFromSimpleChi2Pairing(pfoVector jets, pfoVector leptons) 
+std::vector<double> ZHHqqbbbbKinFit::calculateMassesFromSimpleChi2Pairing(pfoVector jets, pfoVector leptons) 
 {
   std::vector<double> masses;
   vector<vector<unsigned int>> perms;
@@ -1539,20 +1523,14 @@ std::vector<double> ZHHllbbbbKinFit::calculateMassesFromSimpleChi2Pairing(pfoVec
     m1 = 125.; 
     m2 = 125.; 
   }
-  double z = 0. ;
+  double z = 0;
   double h1 = 0. ;
   double h2 = 0. ;
-  z = inv_mass(leptons.at(0),leptons.at(1));
-  ROOT::Math::PxPyPzEVector hhFourMomentum(0.,0.,0.,0.);
+  //z = inv_mass(leptons.at(0),leptons.at(1));
   ROOT::Math::PxPyPzEVector zhhFourMomentum(0.,0.,0.,0.);
   for (auto jet : jets) {
-    hhFourMomentum +=  ROOT::Math::PxPyPzEVector( jet->getMomentum()[0], jet->getMomentum()[1], jet->getMomentum()[2] , jet->getEnergy() );
+    zhhFourMomentum +=  ROOT::Math::PxPyPzEVector( jet->getMomentum()[0], jet->getMomentum()[1], jet->getMomentum()[2] , jet->getEnergy() );
   }
-  zhhFourMomentum += hhFourMomentum;
-  for (auto lepton : leptons) {
-    zhhFourMomentum +=  ROOT::Math::PxPyPzEVector( lepton->getMomentum()[0], lepton->getMomentum()[1], lepton->getMomentum()[2] , lepton->getEnergy() );
-  }  
-  double hh = hhFourMomentum.M();
   double zhh = zhhFourMomentum.M();
   double chi2min = 99999. ;
   for (auto perm : perms) {
@@ -1573,10 +1551,9 @@ std::vector<double> ZHHllbbbbKinFit::calculateMassesFromSimpleChi2Pairing(pfoVec
   masses.push_back(z);
   masses.push_back(h1);
   masses.push_back(h2);
-  masses.push_back(hh);
   masses.push_back(zhh);
 
-  streamlog_out(MESSAGE) << "masses from simple chi2:" << z << ", " << h1 << ", " << h2 << ", " << hh << ", " << zhh << std::endl ; 
+  streamlog_out(MESSAGE) << "masses from simple chi2:" << z << ", " << h1 << ", " << h2 << ", " << zhh << std::endl ; 
 
   return masses;
 
@@ -1584,7 +1561,7 @@ std::vector<double> ZHHllbbbbKinFit::calculateMassesFromSimpleChi2Pairing(pfoVec
 
 
 
-std::vector<double> ZHHllbbbbKinFit::calculatePulls(std::shared_ptr<ParticleFitObject> fittedobject, ReconstructedParticle* startobject, int type)
+std::vector<double> ZHHqqbbbbKinFit::calculatePulls(std::shared_ptr<ParticleFitObject> fittedobject, ReconstructedParticle* startobject, int type)
 {
   std::vector<double> pulls;
   double start, fitted;
@@ -1612,7 +1589,7 @@ std::vector<double> ZHHllbbbbKinFit::calculatePulls(std::shared_ptr<ParticleFitO
   return pulls;
 }
 
-double ZHHllbbbbKinFit::calcChi2(shared_ptr<vector<shared_ptr<BaseFitObject>>> fitobjects) {
+double ZHHqqbbbbKinFit::calcChi2(shared_ptr<vector<shared_ptr<BaseFitObject>>> fitobjects) {
   double chi2 = 0;
   for (auto it = fitobjects->begin(); it != fitobjects->end(); ++it) {
     shared_ptr<BaseFitObject> fo = *it;
@@ -1627,13 +1604,13 @@ double ZHHllbbbbKinFit::calcChi2(shared_ptr<vector<shared_ptr<BaseFitObject>>> f
   return chi2;
 }
 
-void ZHHllbbbbKinFit::check( LCEvent* )
+void ZHHqqbbbbKinFit::check( LCEvent* )
 {
 //	nothing to check here - could be used to fill checkplots in reconstruction processor
 }
 
 
-void ZHHllbbbbKinFit::end()
+void ZHHqqbbbbKinFit::end()
 {
 //	streamlog_out(MESSAGE) << "# of events: " << m_nEvt << std::endl;
 //	streamlog_out(ERROR) << "# of nucorrection: " << correction<< std::endl;
