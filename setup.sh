@@ -19,7 +19,7 @@ function usage() {
     echo "       BTaggingVariables: absolute path to repository with binaries inside lib (see https://gitlab.desy.de/ilcsoft/btaggingvariables)"
 }
 
-ZHH_K4H_RELEASE_DEFAULT="2024-04-12"
+ZHH_K4H_RELEASE_DEFAULT="2024-11-28"
 
 function zhh_echo() {
     echo "ZHH> $1"
@@ -68,6 +68,7 @@ function zhh_attach_marlin_dlls() {
         "$REPO_ROOT/source/FinalStateRecorder/lib/libFinalStateRecorder.so"
         "$REPO_ROOT/source/ZHHKinfitProcessors/lib/libZHHKinfitProcessors.so"
         "$REPO_ROOT/source/TruthRecoComparison/lib/libTruthRecoComparison.so"
+	"$REPO_ROOT/source/ZinvisibleErrorAnalysis/lib/libZinvisibleErrorAnalysis.so"
         #"$MarlinML/lib64/libJetTaggers.so"
         #"$VariablesForDeepMLFlavorTagger/lib/libVariablesForDeepMLFlavorTagger.so"
         #"$BTaggingVariables/lib/libBTaggingVariables.so"
