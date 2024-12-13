@@ -15,4 +15,4 @@ error = $LOG_ROOT/$(JobId).err
 
 transfer_output_files = ""
 
-queue raw_file,suffix,env_file from job_parameters/paramlist_$TARGET_SUFFIX.txt
+queue raw_file,suffix,env_file from $TASK_ROOT/job_parameters/paramlist_$TARGET_SUFFIX.txt

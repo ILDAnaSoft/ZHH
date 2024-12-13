@@ -6,7 +6,7 @@ from dotenv import dotenv_values
 
 TASK_NAME = 'FeatureExtraction'
 
-this_dir = os.path.abspath('')
+this_dir = osp.dirname(__file__)
 job_parameters = osp.join(this_dir, 'job_parameters')
 os.makedirs(job_parameters, exist_ok=True)
 
@@ -68,6 +68,9 @@ config = {
     **os.environ,  # override loaded values with environment variables
 }
 
+if not 'TASK_ROOT' in config:
+    raise Exception(f'TASK_ROOT not defined in .env file <{dotenvfile}>')
+
 os.makedirs(f'{config["TASK_ROOT"]}/{TASK_NAME}/logs', exist_ok=True)
 
 for target_suffix in ['all', 'test']:
@@ -77,6 +80,7 @@ for target_suffix in ['all', 'test']:
         
         content = template.replace('$LOG_ROOT', f'{config["TASK_ROOT"]}/{TASK_NAME}/logs')
         content = content.replace('$TARGET_SUFFIX', target_suffix)
+        content = content.replace('$TASK_ROOT', this_dir)
         
         submit_file.write(content)
-# %%
+

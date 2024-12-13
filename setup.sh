@@ -17,7 +17,6 @@ function usage() {
     echo "       MarlinMLFlavorTagging: absolute path to MarlinMLFlavorTagging repository with binaries inside lib (see https://gitlab.desy.de/bryan.bliewert/MarlinMLFlavorTagging)"
 }
 
-# before: 2024-10-03
 ZHH_K4H_RELEASE_DEFAULT="2024-11-28"
 # ILDConfig release: fb10b66
 
@@ -198,6 +197,11 @@ fi
 if [[ $CMAKE_PREFIX_PATH != *"torch/share/cmake"* ]]; then
     export CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:${TORCH_PATH}/share/cmake
     export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${TORCH_PATH}/lib
+fi
+
+# Add correct gcc-runtime to LD_LIBRARY_PATH
+if [[ $LD_LIBRARY_PATH != *"gcc/14.2.0-yuyjov/lib64"* ]]; then
+    export LD_LIBRARY_PATH=/cvmfs/sw.hsf.org/contrib/x86_64-almalinux9-gcc11.4.1-opt/gcc/14.2.0-yuyjov/lib64:$LD_LIBRARY_PATH
 fi
 
 if [[ "$ZHH_COMMAND" = "install" ]]; then

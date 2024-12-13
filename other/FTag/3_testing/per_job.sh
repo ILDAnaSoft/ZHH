@@ -10,7 +10,7 @@ job_id=${4}
 export $(grep -v '^#' "${env_file}" | xargs)
 
 # Meta information for preparing output structure
-TASK_NAME="FeatureExtraction"
+TASK_NAME="MarlinTesting"
 
 # Print status
 echo "Running task $TASK_NAME with parameters"
@@ -39,7 +39,7 @@ mkdir -p "$TASK_ROOT/$TASK_NAME/logs"
 mkdir -p "$TASK_ROOT/$TASK_NAME/output"
 
 # Expected output files
-outputs=(AIDAFile_$suffix.root.root FT_$suffix.slcio)
+outputs=(JT_Comparison_$suffix.root FT_$suffix.slcio)
 
 # Only execute Marlin if the job has not been run before
 outputs_exist_all="True"
@@ -58,7 +58,7 @@ if [[ $outputs_exist_all = "False" ]]; then
 
     # Run Marlin and transfer outputs
     echo "Running Marlin"
-    Marlin "$REPO_ROOT/scripts/dev_flavortag.xml" --global.LCIOInputFiles=$raw_file --constant.ILDConfigDir=$ILD_CONFIG_DIR  --global.MaxRecordNumber=0 --constant.OutputSuffix=$suffix
+    Marlin "$REPO_ROOT/scripts/dev_flavortag_inference.xml" --global.LCIOInputFiles=$raw_file --constant.ILDConfigDir=$ILD_CONFIG_DIR  --global.MaxRecordNumber=0 --constant.OutputSuffix=$suffix
 
     echo "Finished Marlin at $(date)"
     echo "Directory contents: $(ls)"

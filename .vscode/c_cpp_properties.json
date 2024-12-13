@@ -17,7 +17,9 @@
                 "${workspaceFolder}/source/ZHHKinfitProcessors/include/**",
                 "${workspaceFolder}/source/FinalStateRecorder/include/**",
                 "${workspaceFolder}/source/JetTaggingComparison/include/**",
-                "${workspaceFolder}/source/TruthRecoComparison/include/**"
+                "${workspaceFolder}/source/TruthRecoComparison/include/**",
+                "${workspaceFolder}/dependencies/MarlinMLFlavorTagging/VariablesForDeepMLFlavorTagger/include/**",
+                "${workspaceFolder}/dependencies/MarlinMLFlavorTagging/JetTaggers/include/**"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/g++",

@@ -37,17 +37,20 @@ class JetTaggingComparison : public Processor
  protected:
   string m_inputCollection{};
   string m_rootFile{};
+
   string m_pidAlgorithm1{};
   string m_pidAlgorithm2{};
-  string m_pidParameter1{};
-  string m_pidParameter2{};
+
+  std::vector<std::string> m_pidParameters1 = {};
+  std::vector<std::string> m_pidParameters2 = {};
 
   int m_n_run = 0;
 	int m_n_evt = 0;
 
   int m_n_jet = 0;
-  float m_tag1 = 0.;
-  float m_tag2 = 0.;
+
+  std::vector<float> m_tags1 = {};
+  std::vector<float> m_tags2 = {};
 
   TFile *m_pTFile{};
   TTree *m_pTTree{};

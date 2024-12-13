@@ -62,6 +62,7 @@ class CheatedMCOverlayRemoval : public Processor
 		std::string                             _mcTruthRecoLink{};
 		std::string				_OutputPfoCollection{};
 		std::string                             _OutputOverlayCollection{};
+		bool m_keepPID{};
 };
 
 #endif

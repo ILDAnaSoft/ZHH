@@ -63,6 +63,7 @@ CheatedMCOverlayRemoval::CheatedMCOverlayRemoval() :
 				 _OutputOverlayCollection,
 				 std::string("PFOsFromOverlay")
 				 );	
+	registerProcessorParameter("Whether or not to keep PIDs", "Features for ParticleNet : SV features", m_keepPID, true);
 }
 
 void CheatedMCOverlayRemoval::init()
@@ -84,6 +85,18 @@ void CheatedMCOverlayRemoval::processRunHeader()
   streamlog_out(DEBUG0) << "   processRunHeader called" << std::endl ;
   m_nRun++ ;  
   streamlog_out(DEBUG0) << "   processRunHeader finished successfully" << std::endl ;
+}
+
+void copy_pids(ReconstructedParticle* pfo, ReconstructedParticle* new_pfo) {
+  ParticleIDImpl* pid = new ParticleIDImpl();
+  for (int i = 0; i < pfo->getParticleIDs().size(); i++) {
+	pid->setType(pfo->getParticleIDs()[i]->getType());
+	pid->setPDG(pfo->getParticleIDs()[i]->getPDG());
+	pid->setLikelihood(pfo->getParticleIDs()[i]->getLikelihood());
+	pid->setAlgorithmType(pfo->getParticleIDs()[i]->getAlgorithmType());
+	pid->setParameters(pfo->getParticleIDs()[i]->getParameters());
+	new_pfo->addParticleID(pid);
+  }
 }
 
 void CheatedMCOverlayRemoval::processEvent( LCEvent *pLCEvent )

@@ -38,5 +38,7 @@ install/**
 *notebooks/**
 *Notebooks/**
 zhhvenv
-dependencies/**
 *.sub
+scripts/TMVA*
+*.pth
+*.pt

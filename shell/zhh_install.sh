@@ -17,8 +17,8 @@ function zhh_install_venv() {
         unset PYTHONPATH
         cd $REPO_ROOT
         python -m venv $ZHH_VENV_NAME
-        source $REPO_ROOT/$ZHH_VENV_NAME/bin/activate
-        pip install -r $REPO_ROOT/requirements.txt
+
+        ( env -i source $REPO_ROOT/$ZHH_VENV_NAME/bin/activate && pip install -r $REPO_ROOT/requirements.txt )
         
         # Add $REPO_ROOT to PYTHONPATH
         echo "$REPO_ROOT" >> "$(realpath $REPO_ROOT/$ZHH_VENV_NAME/lib/python*/site-packages)/zhh.pth"
@@ -33,6 +33,9 @@ function zhh_install_venv() {
 #!/bin/bash
 
 REPO_ROOT="$REPO_ROOT"
+if [[ $LD_LIBRARY_PATH != *"gcc/14.2.0-yuyjov/lib64"* ]]; then
+    export LD_LIBRARY_PATH=/cvmfs/sw.hsf.org/contrib/x86_64-almalinux9-gcc11.4.1-opt/gcc/14.2.0-yuyjov/lib64:$LD_LIBRARY_PATH
+fi
 
 setupwrapper() { source \$REPO_ROOT/setup.sh 2>&1 >/dev/null; }
 setupwrapper && source \$REPO_ROOT/$ZHH_VENV_NAME/bin/activate && exec python.exe "\$@"
@@ -85,11 +88,12 @@ function zhh_install_deps() {
         local ind="$( [ -z "${ZSH_VERSION}" ] && echo "0" || echo "1" )" # ZSH arrays are 1-indexed
         local repositories=(
             https://gitlab.desy.de/bryan.bliewert/MarlinMLFlavorTagging.git
+            https://gitlab.desy.de/bryan.bliewert/FlavorTagging_ML.git
             https://github.com/iLCSoft/ILDConfig.git
             https://github.com/nVentis/MarlinReco.git)
-        local varnames=(MarlinMLFlavorTagging ILD_CONFIG_DIR MarlinReco)
-        local dirnames=(MarlinMLFlavorTagging ILDConfig MarlinReco)
-        local commits=(latest fb10b66cdc2335d8f84443a14ec7fda64ab389ed latest)
+        local varnames=(MarlinMLFlavorTagging FlavorTagging_ML ILD_CONFIG_DIR MarlinReco)
+        local dirnames=(MarlinMLFlavorTagging FlavorTagging_ML ILDConfig MarlinReco)
+        local commits=(latest latest fb10b66cdc2335d8f84443a14ec7fda64ab389ed latest)
         local cwd=$(pwd)
 
         mkdir -p $INSTALL_DIR
@@ -164,6 +168,7 @@ function zhh_install_deps() {
     cat > "$REPO_ROOT/.env" <<EOF
 REPO_ROOT="$REPO_ROOT"
 MarlinMLFlavorTagging="$MarlinMLFlavorTagging"
+FlavorTagging_ML="$FlavorTagging_ML"
 ILD_CONFIG_DIR="$ILD_CONFIG_DIR"
 MarlinReco="$MarlinReco"
 LCIO="$LCIO"
