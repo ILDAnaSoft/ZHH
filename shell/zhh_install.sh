@@ -154,6 +154,9 @@ function zhh_install_deps() {
         )
     fi
 
+    # Add FlavorTagging_ML to PYTHONPATH in zhhvenv
+    echo "$FlavorTagging_ML" >> "$(realpath $REPO_ROOT/$ZHH_VENV_NAME/lib/python*/site-packages)/FlavorTag.pth"
+
     # Set DATA_PATH
     local default_data_dir="/nfs/dust/ilc/user/$(whoami)/zhh"
 

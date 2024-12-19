@@ -1029,8 +1029,8 @@
   <parameter name="Z0ProbFileName" type="string" value="${LCFIPlusConfig_DIR}/vtxprob/z0probv2_ildl5_4q250_ZZ.root"/>
   <parameter name="dEdxPID" type="string" value="dEdxPIDv2"/>
   <parameter name="ParticleNetFeatures_PFPoints" type="StringVec"> RapidityRelJet PhiRelJet </parameter>
-  <parameter name="ParticleNetFeatures_PFFeatures" type="StringVec"> TransverseMomentumConstituentLOG EnergyConstituentLOG 
-  TransverseMomentumFracConstituentLOG EnergyFracLOG DeltaRJet
+  <parameter name="ParticleNetFeatures_PFFeatures" type="StringVec"> TransverseMomentumLOG EnergyLOG 
+  TransverseMomentumFracLOG EnergyFracLOG DeltaRJet
   Charge IsElectron IsMuon IsChargedHadron IsNeutralHadron IsPhoton
   RapidityRelJet PhiRelJet Rapidity
   D0 D0Sig Z0 Z0Sig 3DImpactPar 3DImpactParSig
@@ -1044,10 +1044,10 @@
   SecondaryVertexRapidityJetAxis SecondaryVertexPhiJetAxis SecondaryVertexCosMomPos SecondaryVertexEnergyJetEnergy
   SecondaryVertexEnergy SecondaryVertexRapidity JetRapidity </parameter> 
   <parameter name="DeepJetFeatures_Jets" type="StringVec"> JetPt JetMomentum NCharged NNeutral NSecondaryVertices </parameter>
-  <parameter name="DeepJetFeatures_Charged" type="StringVec"> ChargedTrackMomentumFrac ChargedTrackPtRelJet ChargedTrackJetDotProductNorm ChargedDeltaRJetTrackRapidity IsElectron
-    IsMuon ChargedD0Sig ChargedD0 ChargedZ0 ChargedZ0Sig Charged3DImpactPar Charged3DImpactParSig ChargedChi2NDF ChargedTrackUsedinPrimVertex LeptonMomRelJet LeptonPtRelJet LeptonMomFraction 
+  <parameter name="DeepJetFeatures_Charged" type="StringVec"> TrackMomentumFrac TrackPtRelJet TrackJetDotProductNorm DeltaRJetTrackRapidity IsElectron
+    IsMuon D0Sig D0 Z0 Z0Sig 3DImpactPar 3DImpactParSig Chi2NDF TrackUsedinPrimVertex LeptonMomRelJet LeptonPtRelJet LeptonMomFraction 
     Kaoness WeightedKaonnessMomFrac </parameter>
-  <parameter name="DeepJetFeatures_Neutral" type="StringVec"> NeutralMomentumConstituent NeutralDeltaRJet NeutralHCalFrac NeutralMomentumFrac IsPhoton </parameter>
+  <parameter name="DeepJetFeatures_Neutral" type="StringVec"> Momentum DeltaRJet HCalFrac MomentumFrac IsPhoton </parameter>
   <parameter name="DeepJetFeatures_SV" type="StringVec"> SecondaryVertexMass SecondaryVertexNTracks SecondaryVertexChi2 SecondaryVertexNDF SecondaryVertexEnergy SecondaryVertexDeltaRJetAxis
     SecondaryVertexEnergyJetEnergy SecondaryVertexCosMomPos SecondaryVertexImpactPar3d SecondaryVertexImpactPar3dSig </parameter>
 </processor>
@@ -1063,8 +1063,8 @@
   <parameter name="CollectionRefinedVertices" type="string" value="RefinedVertex4Jets" />
   <parameter name="CollectionPFOs" type="string" value="PandoraPFOs" /> 
   <parameter name="ParticleNetFeatures_PFPoints" type="StringVec"> RapidityRelJet PhiRelJet</parameter>
-  <parameter name="ParticleNetFeatures_PFFeatures" type="StringVec"> TransverseMomentumConstituentLOG EnergyConstituentLOG 
-    TransverseMomentumFracConstituentLOG EnergyFracLOG DeltaRJet
+  <parameter name="ParticleNetFeatures_PFFeatures" type="StringVec"> TransverseMomentumLOG EnergyLOG 
+    TransverseMomentumFracLOG EnergyFracLOG DeltaRJet
     Charge IsElectron IsMuon IsChargedHadron IsNeutralHadron IsPhoton
     RapidityRelJet PhiRelJet Rapidity
     D0 D0Sig Z0 Z0Sig 3DImpactPar 3DImpactParSig
@@ -1126,8 +1126,8 @@
   <parameter name="TagNames" type="StringVec"> b c s ud </parameter>
   <parameter name="ParticleNetFeatures_PFPoints" type="StringVec"> RapidityRelJet PhiRelJet</parameter>
   <parameter name="ParticleNetFeatures_PFFeatures" type="StringVec">
-      RapidityRelJet Rapidity PhiRelJet TransverseMomentumConstituentLOG
-      EnergyConstituentLOG TransverseMomentumFracConstituentLOG EnergyFracLOG DeltaRJet
+      RapidityRelJet Rapidity PhiRelJet TransverseMomentumLOG
+      EnergyLOG TransverseMomentumFracLOG EnergyFracLOG DeltaRJet
       D0 D0Sig Z0 Z0Sig
       3DImpactPar 3DImpactParSig Charge IsElectron
       IsMuon IsChargedHadron IsNeutralHadron IsPhoton

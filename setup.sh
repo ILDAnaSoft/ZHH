@@ -15,6 +15,7 @@ function usage() {
     echo ""
     echo "Dependencies"
     echo "       MarlinMLFlavorTagging: absolute path to MarlinMLFlavorTagging repository with binaries inside lib (see https://gitlab.desy.de/bryan.bliewert/MarlinMLFlavorTagging)"
+    echo "       FlavorTagging_ML: absolute path to FlavorTagging_ML repository with binaries inside lib (see https://gitlab.desy.de/bryan.bliewert/FlavorTagging_ML)"
 }
 
 ZHH_K4H_RELEASE_DEFAULT="2024-11-28"

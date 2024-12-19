@@ -4,11 +4,6 @@
   <processor name="AIDA"/>
   <processor name="InitDD4hep"/>
   <processor name="Statusmonitor"/>
-  <!--processor name="FastJetOverlay"/> -->
-  <!--
-  <processor name="JC6FT"/>
-  <processor name="EF6"/>
-  -->
 
   <if condition="${RundEdxCorrections}">
     <processor name="ComputeCorrectAngulardEdX"/>
@@ -17,14 +12,14 @@
     <processor name="ComprehensivePID"/>
   </if>
 
+  <processor name="MydEdxAnalyser" />
+
   <!--
   <processor name="MyCheatedMCOverlayRemoval" />
   <processor name="MyIsolatedLeptonTaggingProcessor"/>
   -->
-
-  <!-- 
+ 
   <processor name="LCIOOutputProcessor"/>
-  -->
 </execute>
 
 <global>
@@ -60,9 +55,9 @@
     /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/4f_WW_semileptonic/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I250018.P4f_ww_sl.eL.pR.n003.d_dstm_10318_9.slcio
     /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/4f_WW_semileptonic/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I250018.P4f_ww_sl.eL.pR.n004.d_dstm_10318_10.slcio
     /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/4f_WW_semileptonic/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I250018.P4f_ww_sl.eL.pR.n004.d_dstm_10318_11.slcio
-  </parameter>
-   -->
-   <!-- testing new -->
+  </parameter> -->
+   
+   <!-- testing new  -->
    <parameter name="LCIOInputFiles">
     /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/flavortag/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I110032.Pbbbbbb.eL.pR.n001.d_dstm_10586_0.slcio
     /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/flavortag/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I110033.Pcccccc.eL.pR.n001.d_dstm_10586_0.slcio
@@ -80,7 +75,7 @@
 <constants>
   <constant name="ILDConfigDir" value="" />
   <constant name="OutputDir" value="/nfs/dust/ilc/user/bliewert/CPID_Training" />
-  <constant name="OutputSuffix" value="" />
+  <constant name="OutputSuffix" value="CPID" />
   <constant name="ZHH_REPO_ROOT" value="" />
   
   <constant name="MCParticleCollectionName" value="MCParticle" />
@@ -89,6 +84,33 @@
   <constant name="RunInference" value="false" />
   <constant name="lcgeo_DIR" value=$lcgeo_DIR/>
 </constants>
+
+<processor name="MydEdxAnalyser" type="dEdxAnalyser">
+  <parameter name="TrackCollection" type="string"> MarlinTrkTracks </parameter>
+  <parameter name="TrackMCTruthLink" type="string"> MarlinTrkTracksMCTruthLink </parameter>
+  <parameter name="MCParticleCollection" type="string"> MCParticle </parameter>
+  <parameter name="PFOCollection" type="string"> PandoraPFOs </parameter>
+  
+  <parameter name="nBinsX" type="int"> 100 </parameter>
+  <parameter name="nBinsY" type="int"> 300 </parameter>
+  <parameter name="minBinX" type="int"> -1 </parameter>
+  <parameter name="maxBinX" type="int">  2 </parameter>
+  <parameter name="minBinY" type="int">  0 </parameter>
+  <parameter name="maxBinY" type="int"> 1e-6 </parameter>
+  
+  <parameter name="usePFOTracks" type="bool"> true </parameter>
+  <parameter name="useOneTrack" type="bool"> false </parameter>
+  <parameter name="cutdEdx" type="bool"> false </parameter>
+  <parameter name="cutTrackPurity" type="bool"> false </parameter>
+  <parameter name="cutTrackPurityMom" type="bool"> false </parameter>
+  <parameter name="cutD0" type="double"> 0 </parameter>
+  <parameter name="cutZ0" type="double"> 0 </parameter>
+  <parameter name="cutMomMin" type="double"> 0 </parameter>
+  <parameter name="cutMomMax" type="double"> 0 </parameter>
+  
+  <parameter name="plotStuff" type="bool"> true </parameter>
+  <parameter name="fileFormat" type="string"> .png </parameter>
+</processor>
 
 <processor name="AIDA" type="AIDAProcessor">
   <parameter name="Compress" type="int"> 1 </parameter>
@@ -314,7 +336,8 @@
   <!-- description not set by author -->
   <!--parameter for new angular correction dedx= uncorrected_dedx  / f, with f= pol3(lambda)-->
   <!-- Parameters for 2020 DST (and all generated with v02-02 and v02-02-01 -->
-  <parameter name="AngularCorrectionParameters" type="FloatVec"> 0.970205 0.0007506 4.41781e-8 5.8222e-8 </parameter>
+  <!--parameter name="AngularCorrectionParameters" type="FloatVec"> 0.970205 0.0007506 4.41781e-8 5.8222e-8 </parameter-->
+  <parameter name="AngularCorrectionParameters" type="FloatVec"> 0.982113 0.00061545 -8.34226e-06 9.09825e-08 </parameter>
   <!--LDC track collection name-->
   <parameter name="LDCTrackCollection" type="string" lcioInType="Track">MarlinTrkTracks </parameter>
   <!--parameters used in the outdated angular correction outdated_dedx= uncorrected_dedx / f, with f = 1. / ( 1.0+[1]*cos(theta)*cos(theta)/[0] )-->
@@ -335,11 +358,11 @@
   <parameter name="FileWeightFormupiSeparationName" type="StringVec">${ProductionDir}/HighLevelReco/PIDFiles/LowMomMuPiSeparation/TMVAClassification_BDTG_l5_02GeVP_clusterinfo.weights.xml ${ProductionDir}/HighLevelReco/PIDFiles/LowMomMuPiSeparation/TMVAClassification_BDTG_l5_03GeVP_clusterinfo.weights.xml ${ProductionDir}/HighLevelReco/PIDFiles/LowMomMuPiSeparation/TMVAClassification_BDTG_l5_04GeVP_clusterinfo.weights.xml ${ProductionDir}/HighLevelReco/PIDFiles/LowMomMuPiSeparation/TMVAClassification_BDTG_l5_05GeVP_clusterinfo.weights.xml ${ProductionDir}/HighLevelReco/PIDFiles/LowMomMuPiSeparation/TMVAClassification_BDTG_l5_06GeVP_clusterinfo.weights.xml ${ProductionDir}/HighLevelReco/PIDFiles/LowMomMuPiSeparation/TMVAClassification_BDTG_l5_07GeVP_clusterinfo.weights.xml ${ProductionDir}/HighLevelReco/PIDFiles/LowMomMuPiSeparation/TMVAClassification_BDTG_l5_08GeVP_clusterinfo.weights.xml ${ProductionDir}/HighLevelReco/PIDFiles/LowMomMuPiSeparation/TMVAClassification_BDTG_l5_09GeVP_clusterinfo.weights.xml ${ProductionDir}/HighLevelReco/PIDFiles/LowMomMuPiSeparation/TMVAClassification_BDTG_l5_10GeVP_clusterinfo.weights.xml ${ProductionDir}/HighLevelReco/PIDFiles/LowMomMuPiSeparation/TMVAClassification_BDTG_l5_11GeVP_clusterinfo.weights.xml ${ProductionDir}/HighLevelReco/PIDFiles/LowMomMuPiSeparation/TMVAClassification_BDTG_l5_12GeVP_clusterinfo.weights.xml ${ProductionDir}/HighLevelReco/PIDFiles/LowMomMuPiSeparation/TMVAClassification_BDTG_l5_13GeVP_clusterinfo.weights.xml ${ProductionDir}/HighLevelReco/PIDFiles/LowMomMuPiSeparation/TMVAClassification_BDTG_l5_14GeVP_clusterinfo.weights.xml ${ProductionDir}/HighLevelReco/PIDFiles/LowMomMuPiSeparation/TMVAClassification_BDTG_l5_15GeVP_clusterinfo.weights.xml ${ProductionDir}/HighLevelReco/PIDFiles/LowMomMuPiSeparation/TMVAClassification_BDTG_l5_16GeVP_clusterinfo.weights.xml ${ProductionDir}/HighLevelReco/PIDFiles/LowMomMuPiSeparation/TMVAClassification_BDTG_l5_17GeVP_clusterinfo.weights.xml ${ProductionDir}/HighLevelReco/PIDFiles/LowMomMuPiSeparation/TMVAClassification_BDTG_l5_18GeVP_clusterinfo.weights.xml ${ProductionDir}/HighLevelReco/PIDFiles/LowMomMuPiSeparation/TMVAClassification_BDTG_l5_19GeVP_clusterinfo.weights.xml ${ProductionDir}/HighLevelReco/PIDFiles/LowMomMuPiSeparation/TMVAClassification_BDTG_l5_20GeVP_clusterinfo.weights.xml </parameter>
   <!--dE/dx parameters for each particle-->
   <!-- Parameters for 2020 DST (and all generated with v02-02 and v02-02-01 -->
-  <parameter name="dEdxParameter_electron" type="FloatVec"> -0.00232937 -3.88424e+13 -37881.1 -1.56837 0 </parameter>
-  <parameter name="dEdxParameter_muon" type="FloatVec"> 0.0717375 -16596.5 -4.84028e+07 0.356728 0.000371431 </parameter>
-  <parameter name="dEdxParameter_pion" type="FloatVec"> 0.0733683 51678.4 8.19644e+07 0.453505 0.000404984 </parameter>
-  <parameter name="dEdxParameter_kaon" type="FloatVec"> 0.0792784 3798.12 4.06952e+07 0.450671 0.00050169 </parameter>
-  <parameter name="dEdxParameter_proton" type="FloatVec"> 0.0770318 1053.24 4.95076e+06 0.281489 0.000168616 </parameter>
+  <parameter name="dEdxParameter_electron" type="FloatVec"> -0.0200214 0.000280123 1 -1.80131 -4.16915e-06 </parameter>
+  <parameter name="dEdxParameter_muon" type="FloatVec"> 0.0589155 4.50899e+09 1 -0.11281 -0.000344016 </parameter>
+  <parameter name="dEdxParameter_pion" type="FloatVec"> 0.070979 3.5797e+15 1 0.578623 0.000164251 </parameter>
+  <parameter name="dEdxParameter_kaon" type="FloatVec"> 0.076743 1.73834e+10 1 0.25492 0.000114283 </parameter>
+  <parameter name="dEdxParameter_proton" type="FloatVec"> 0.0718807 1.67218e+10 1 0.187074 -0.0015018 </parameter>
   <!--dE/dx normalization-->
   <parameter name="dEdxNormalization" type="float">1.350e-7</parameter>
   <!--dE/dx error factor(7.55 for l5, 8.53 for s5)-->
@@ -357,6 +380,7 @@
 <processor name="LeptonID" type="LeptonIDProcessor">
   <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
   <parameter name="Verbosity" type="string"> MESSAGE </parameter>
+  <parameter name="dEdxname" type="string">dEdxPIDv2</parameter>
   <parameter name="BuildTree" type="bool">false</parameter>
   <parameter name="EvalMVA" type="bool">true</parameter>
   <parameter name="weightfile">${ProductionDir}/HighLevelReco/PIDFiles/CPID/LeptonID_multi_jet_dEdx_800t_3d_cm50r50_BDTG.weights.xml</parameter>
@@ -371,8 +395,8 @@
   <parameter name="modeTrain"   type="bool" value="false"/>
   <parameter name="modeInfer"   type="bool" value="true"/>
 
-  <parameter name="TTreeFileName" type="string" value="${OutputDir}/CPID_TTreeFile.root"/>
-  <parameter name="reffile" type="string" value="" />
+  <parameter name="TTreeFileName" type="string" value="${OutputDir}/TTreeFile_${OutputSuffix}.root"/>
+  <parameter name="reffile" type="string" value="/afs/desy.de/group/flc/pool/bliewert/MarlinWorkdirs/ZHH/scripts/Ref.txt" />
   <parameter name="signalPDGs" type="FloatVec" value="11 13 211 321 2212"/>
   <parameter name="backgroundPDGs" type="FloatVec" value=""/>
   
@@ -398,20 +422,20 @@
   </parameter>
 
   <parameter name="dEdx_RCD.F" type="FloatVec">
-    -2.40638e-03   7.10337e-01   2.87718e-01   -1.71591e+00   0.00000e+00
-    8.11408e-02   9.92207e-01   7.58509e+05   -1.70167e-01   4.63670e-04
-    8.10756e-02   -1.45051e+06   -3.09843e+04   2.84056e-01   3.38131e-04
-    7.96117e-02   4.13335e+03   1.13577e+06   1.80555e-01   -3.15083e-04
-    7.78772e-02   4.49300e+04   9.13778e+04   1.50088e-01   -6.64184e-04
+    -0.0200214 0.000280123 1 -1.80131 -4.16915e-06
+    0.0589155 4.50899e+09 1 -0.11281 -0.000344016
+    0.070979 3.5797e+15 1 0.578623 0.000164251
+    0.076743 1.73834e+10 1 0.25492 0.000114283
+    0.0718807 1.67218e+10 1 0.187074 -0.0015018
     1
   </parameter>
 
   <parameter name="trainModelSpecs" type="StringVec">
-    TMVA_BDT_MC:TMVA_BDT_MC_12bins_singleP
+    TMVA_BDT_MC:TMVA_BDT_MC_12bins_WWsem
   </parameter>
   <parameter name="trainingObservables" type="StringVec"> </parameter>
 
-  <parameter name="TMVA_BDT_MC_12bins_singleP.S" type="StringVec">
+  <parameter name="TMVA_BDT_MC_12bins_WWsem.S" type="StringVec">
     !V:!Silent:Color:DrawProgressBar:Transformations=I;D;P;G,D:AnalysisType=multiclass
     SplitMode=Random:NormMode=NumEvents:!V
     !V:!H:NTrees=1000:BoostType=Grad:Shrinkage=0.10:UseBaggedBoost:BaggedSampleFraction=0.50:nCuts=30:MaxDepth=5
@@ -436,8 +460,8 @@
   <parameter name="CPIDName" type="string" value="None" />
   <parameter name="WriteDeepjetFeatures" type="bool" value="false"/>
   <parameter name="ParticleNetFeatures_PFPoints" type="StringVec"> RapidityRelJet PhiRelJet </parameter>
-  <parameter name="ParticleNetFeatures_PFFeatures" type="StringVec"> TransverseMomentumConstituentLOG EnergyConstituentLOG 
-  TransverseMomentumFracConstituentLOG EnergyFracLOG DeltaRJet Charge IsElectron IsMuon IsChargedHadron IsNeutralHadron IsPhoton 
+  <parameter name="ParticleNetFeatures_PFFeatures" type="StringVec"> TransverseMomentumLOG EnergyLOG 
+  TransverseMomentumFracLOG EnergyFracLOG DeltaRJet Charge IsElectron IsMuon IsChargedHadron IsNeutralHadron IsPhoton 
   RapidityRelJet PhiRelJet Rapidity D0 D0Sig Z0 Z0Sig 3DImpactPar 3DImpactParSig D0bprob D0cprob D0qprob Z0bprob Z0cprob Z0qprob
   UsedinPrimVertex LeptonMomRelJet Kaoness Chi2NDF LeptonMomFraction WeightedKaonnessMomFrac JetDotProductNorm HCalFrac </parameter>
   <parameter name="ParticleNetFeatures_SVPoints" type="StringVec"> SecondaryVertexRapidityJetAxis SecondaryVertexPhiJetAxis </parameter>
@@ -460,15 +484,15 @@
   <parameter name="TagNames" type="StringVec"> b c s ud </parameter>
   <parameter name="ParticleNetFeatures_PFPoints" type="StringVec"> RapidityRelJet PhiRelJet</parameter>
   <parameter name="ParticleNetFeatures_PFFeatures" type="StringVec">
-      RapidityRelJet Rapidity PhiRelJet TransverseMomentumConstituentLOG
-      EnergyConstituentLOG TransverseMomentumFracConstituentLOG EnergyFracLOG DeltaRJet
+      RapidityRelJet Rapidity PhiRelJet TransverseMomentumLOG
+      EnergyLOG TransverseMomentumFracLOG EnergyFracLOG DeltaRJet
       D0 D0Sig Z0 Z0Sig
       3DImpactPar 3DImpactParSig Charge IsElectron
       IsMuon IsChargedHadron IsNeutralHadron IsPhoton
       D0bprob D0cprob D0qprob Z0bprob 
       Z0cprob Z0qprob UsedinPrimVertex LeptonMomRelJet
       Kaoness Chi2NDF LeptonMomFraction WeightedKaonnessMomFrac
-      <!-- CPID11ness CPID13ness CPID211ness CPID321ness CPID2212ness -->
+      CPID11ness CPID13ness CPID211ness CPID321ness CPID2212ness
       JetDotProductNorm HCalFrac </parameter>
   <parameter name="ParticleNetFeatures_SVPoints" type="StringVec"> SecondaryVertexRapidityJetAxis SecondaryVertexPhiJetAxis</parameter>
   <parameter name="ParticleNetFeatures_SVFeatures" type="StringVec"> SecondaryVertexRapidityJetAxis SecondaryVertexRapidity SecondaryVertexPhiJetAxis SecondaryVertexPtLOG SecondaryVertexMass SecondaryVertexNTracks SecondaryVertexChi2NDF SecondaryVertexD0 SecondaryVertexD0Sig SecondaryVertexImpactPar3d SecondaryVertexImpactPar3dSig SecondaryVertexCosMomPos
@@ -482,7 +506,7 @@
        -5.20339278e+00 -5.22533587e+00 -5.21741391e+00 -5.09274600e+00
        -5.17688543e+00 -5.18726326e+00 -4.90826457e+00 -7.34807843e+00
        -5.05768300e+00 -4.69456532e+00 -7.94565978e+00 -5.23867466e+00
-       <!-- -5.24675695e+00 -5.23477763e+00 -4.91842049e+00 -5.21791657e+00 -5.24074720e+00 -->
+       5.24675695e+00 -5.23477763e+00 -4.91842049e+00 -5.21791657e+00 -5.24074720e+00
        -3.85513216e+00 -4.73270146e+00</parameter>
    <parameter name="MeanSVFeatures" type="FloatVec">
        8.25094525e-04 5.13830793e-03 6.92837612e-04 9.40945104e-01
@@ -498,7 +522,7 @@
        5.04250674e+00 5.01794188e+00 5.02699293e+00 5.16041905e+00
        5.06920965e+00 5.05853967e+00 5.35968971e+00 5.62795562e+00
        5.19791700e+00 5.65526699e+00 4.05476418e+00 5.00348680e+00
-       <!-- 5.01527334e+00 5.02748641e+00 5.36566899e+00 5.04629258e+00 5.02116024e+00 -->
+       5.01527334e+00 5.02748641e+00 5.36566899e+00 5.04629258e+00 5.02116024e+00
        7.25313695e+00 5.02730574e+00 </parameter>
     <parameter name="StdSVFeatures" type="FloatVec">
        1.93090237e-01 7.86925921e-01 2.29787151e-01 3.73752464e-01
@@ -516,7 +540,7 @@
 <processor name="LCIOOutputProcessor" type="LCIOOutputProcessor">
   <!-- DST output: drop all hits, skim MCParticles and keep final Tracks, Clusters, Vertices and  ReconstructedParticles -->
   <parameter name="LCIOOutputFile" type="string" >
-   ${OutputDir}/CPID.slcio
+   ${OutputDir}/${OutputSuffix}.slcio
   </parameter>
   <parameter name="DropCollectionTypes" type="StringVec">
     Track
