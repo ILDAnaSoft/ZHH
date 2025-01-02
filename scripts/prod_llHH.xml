@@ -1,95 +1,86 @@
 <?xml version="1.0" encoding="us-ascii"?>
-    <marlin xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://ilcsoft.desy.de/marlin/marlin.xsd">
-
-    <constants>
-        <!-- These variables must be provided by the call to Marlin
-        The MarlinZHH alias in setup.sh populates these variables with
-        the correct values
-        -->
-        <constant name="ILDConfigDir" value="" />
-        <constant name="ZHH_REPO_ROOT" value="." />
-
-        <!-- Use these variables to study specific channels only
-        In the job submission script, all channels are run
-        -->
-        <constant name="Runllbbbb" value="True" />
-        <constant name="Runvvbbbb" value="False" />
-        <constant name="Runqqbbbb" value="False" />
-        <constant name="RunKinfit" value="True" />
-        <constant name="RunTruthRecoComparison" value="False" />
-
-        <!-- These variables should be constant -->
-        <constant name="lcgeo_DIR" value="/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-centos7-gcc12.2.0-opt/k4geo/0.20-e42drs/share/k4geo" />
-        <constant name="DetectorModel" value="ILD_l5_o1_v02" />
-        <constant name="CompactFile" value="${lcgeo_DIR}/ILD/compact/${DetectorModel}/${DetectorModel}.xml" />
-        <constant name="OutputDirectory" value="." />
-        <constant name="OutputBaseName" value="zhh" />
-        <constant name="OutputRootFile" value="${OutputBaseName}.root" />
-        <constant name="NumberOfHiggs" value="2" />
-        <constant name="MCParticleCollectionName" value="MCParticlesSkimmed" />
-        <constant name="CMSEnergy" value="500." />
-	<constant name="ISRPzMax" value="125.6" />
-        <constant name="Verbosity" value="SILENT" />
-    </constants>
-
-    <execute>
-        <processor name="InitDD4hep" />
-
-        <processor name="MyAIDAProcessor" />
-
-        <processor name="MyAddNeutralPFOCovMatLite" />
-        <processor name="MyChargedPFOCorrection" />
-
-        <!-- These two do some classification using truth information -->
-        <processor name="MyHdecayMode" />
-        <processor name="MyFinalStateRecorder" />
-
-        <!-- Overlay removal so far cheated -->
-        <!-- <processor name="MyFastJetProcessor" /> -->
-        <processor name="MyCheatedMCOverlayRemoval" />
-        <processor name="MyThrust" />
-
-        <!-- Isolated lepton tagging and lepton pairing with BS/FSR recovery is run to separate llbbbb from vv/qqbbbb -->
-        <processor name="MyIsolatedLeptonTaggingProcessor" />
-        <processor name="MyLeptonPairing" />
-        
-        <if condition="${Runllbbbb}">
-            <processor name="JC4FT_ll" />
-
-            <if condition="${RunKinfit}">
-                <processor name="MySLDCorrection_ll" />
-
-                <processor name="MyErrorFlow_ll" />
-
-                <if condition="MyHdecayMode.GoodEvent">
-                    <processor name="MyZHHKinFit_ll" />
-                    <!--
-                    <processor name="MyTrueJet"/>
-                    <processor name="MyMisclustering"/>
-                    -->
-                </if>
-            </if>
-
-            <processor name="MyPreSelection_ll" />
+<marlin xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://ilcsoft.desy.de/marlin/marlin.xsd">
+  
+  <constants>
+    <!-- These variables must be provided by the call to Marlin
+         The MarlinZHH alias in setup.sh populates these variables with
+         the correct values
+    -->
+    <constant name="ILDConfigDir" value="" />
+    <constant name="ZHH_REPO_ROOT" value="." />
+    
+    <!-- Use these variables to study specific channels only
+         In the job submission script, all channels are run
+    -->
+    <constant name="Runllbbbb" value="True" />
+    <constant name="Runvvbbbb" value="False" />
+    <constant name="Runqqbbbb" value="False" />
+    <constant name="RunKinfit" value="True" />
+    <Constant name="RunTruthRecoComparison" value="False" />
+    
+    <!-- These variables should be constant -->
+    <constant name="lcgeo_DIR" value="/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-centos7-gcc12.2.0-opt/k4geo/0.20-e42drs/share/k4geo" />
+    <constant name="DetectorModel" value="ILD_l5_o1_v02" />
+    <constant name="CompactFile" value="${lcgeo_DIR}/ILD/compact/${DetectorModel}/${DetectorModel}.xml" />
+    <constant name="OutputDirectory" value="." />
+    <constant name="OutputBaseName" value="zhh" />
+    <constant name="OutputRootFile" value="${OutputBaseName}.root" />
+    <constant name="NumberOfHiggs" value="2" />
+    <constant name="MCParticleCollectionName" value="MCParticlesSkimmed" />
+    <constant name="CMSEnergy" value="500." />
+    <constant name="ISRPzMax" value="125.6" />
+    <constant name="Verbosity" value="SILENT" />
+  </constants>
+  
+  <execute>
+    <processor name="InitDD4hep" />
+    
+    <processor name="MyAIDAProcessor" />
+    
+    <processor name="MyAddNeutralPFOCovMatLite" />
+    <processor name="MyChargedPFOCorrection" />
+    
+    <!-- These two do some classification using truth information -->
+    <processor name="MyHdecayMode" />
+    <processor name="MyFinalStateRecorder" />
+    
+    <!-- Overlay removal so far cheated -->
+    <!-- <processor name="MyFastJetProcessor" /> -->
+    <processor name="MyCheatedMCOverlayRemoval" />
+    <processor name="MyThrust" />
+    
+    <!-- Isolated lepton tagging and lepton pairing with BS/FSR recovery is run to separate llbbbb from vv/qqbbbb -->
+    <processor name="MyIsolatedLeptonTaggingProcessor" />
+    <processor name="MyLeptonPairing" />
+    
+    <if condition="${Runllbbbb}">
+      <processor name="MyPatchCollections" />
+      <processor name="JC4FT_ll" />
+      
+      <if condition="${RunKinfit}">
+        <processor name="MySLDCorrection_ll" />
+	
+        <processor name="MyErrorFlow_ll" />
+	
+        <if condition="MyHdecayMode.GoodEvent">
+          <processor name="MyZHHKinFit_ll" />
+          <!--
+              <processor name="MyTrueJet"/>
+              <processor name="MyMisclustering"/>
+          -->
         </if>
+      </if>
+      
+      <processor name="MyPreSelection_ll" />
+    </if>
 
-        <if condition="${Runvvbbbb}">
-            <processor name="JC4FT_vv" />
-            <processor name="MyPreSelection_vv" />
-        </if>
-
-        <if condition="${Runqqbbbb}">
-            <processor name="JC4FT_qq" />
-            <processor name="MyPreSelection_qq" />
-        </if>
-
-        <if condition="${RunTruthRecoComparison} && ${Runllbbbb}">
-            <processor name="MyTruthRecoComparison" />
-        </if>
-
-        <processor name="MyLCIOOutputProcessor" />
-    </execute>
-
+    <!--if condition="${RunTruthRecoComparison} && ${Runllbbbb}">
+      <processor name="MyTruthRecoComparison" />
+    </if-->
+    
+    <processor name="MyLCIOOutputProcessor" />
+  </execute>
+  
     <global>
         <parameter name="LCIOInputFiles">
             /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02/v02-02-03/00015739/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n000.d_dstm_15739_0.slcio
@@ -103,7 +94,7 @@
         <!--parameter name="MaxRecordNumber" value="0" /to process all events--> 
         <!--parameter name="MaxRecordNumber" value="1000" /to process 1000 events--> 
         <parameter name="MaxRecordNumber" value="1000"/>
-        <parameter name="SkipNEvents" value="0" />
+        <parameter name="SkipNEvents" value="12" />
         <parameter name="SupressCheck" value="false" />
         <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT">SILENT</parameter>
         <parameter name="RandomSeed" value="1234567890" />
@@ -133,7 +124,7 @@
     <!-- name of fit hypothesis: MH, ZHH, ZZH, equal mass (default), NMC (no mass constraint) -->
     <parameter name="fithypothesis">NMC</parameter>
     <!-- name of Output root file -->
-    <parameter name="outputFilename">${OutputDirectory}/${OutputBaseName}_Kinfit.root</parameter>
+    <parameter name="outputFilename">${OutputDirectory}/${OutputBaseName}_Kinfit_ll.root</parameter>
     <!-- Factor for scaling up inverse pT error for leptons (default: 1)-->
     <parameter name="SigmaInvPtScaleFactor" type="float"> 1.1 </parameter>
     <!-- Factor for scaling up energy error for jets (default: 1)-->
@@ -156,7 +147,7 @@
     <!--parameter name="JetPullsOutputColection" type="string" lcioOutType="LCFloatVec">JetPulls</parameter-->
     <!--parameter name="StartOutputCollection" type="string" lcioOutType="ReconstructedParticle">StartReco</parameter-->
     <!-- verbosity level - DEBUG only works if compiled in debug mode! -->
-    <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> SILENT  </parameter>
+    <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> DEBUG </parameter>
   </processor>
 
     <processor name="InitDD4hep" type="InitializeDD4hep">
@@ -380,6 +371,10 @@
         <parameter name="Verbosity" type="string">SILENT</parameter>
     </processor>
 
+    <processor name="MyPatchCollections" type="PatchCollections">
+      <parameter name="PatchCollections" type="string">BuildUpVertex_V0 Vertex</parameter>
+    </processor>
+
     <processor name="MySLDCorrection_ll" type="SLDCorrection">
 		<!--Name of the Input MCParticle Collection-->
 		<parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
@@ -482,8 +477,9 @@
 		<!--Event selection based on semi-leptonic decays: (0): without SLD (1): with >= 0 SLD(all events) (2): with >= 1 SLD (3): with correctable SLD -->
         <parameter name="SLDMode" type="int">1</parameter>
 		<!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-		<parameter name="Verbosity" type="string">${Verbosity}</parameter>
+		<parameter name="Verbosity" type="string">DEBUG</parameter>
 	</processor>
+
 
     <processor name="JC4FT_ll" type="LcfiplusProcessor">
         <!-- run primary and secondary vertex finders -->
@@ -608,319 +604,37 @@
         </parameter>
     </processor>
 
-    <processor name="JC4FT_vv" type="LcfiplusProcessor">
-        <!-- run primary and secondary vertex finders -->
-        <parameter name="Algorithms" type="stringVec"> JetClustering JetVertexRefiner FlavorTag ReadMVA </parameter>
-        <parameter name="Verbosity" type="string">SILENT</parameter>
-
-        <!-- general parameters -->
-        <parameter name="PFOCollection" type="string" value="PFOsWithoutOverlay" /> <!-- input PFO collection -->
-        <parameter name="UseMCP" type="int" value="0" /> <!-- MC info not used -->
-        <parameter name="MCPCollection" type="string" value="" /> <!-- not used -->
-        <parameter name="MCPFORelation" type="string" value="" /> <!-- not used -->
-        <parameter name="ReadSubdetectorEnergies" type="int" value="1"/> <!-- true for ILD -->
-        <parameter name="UpdateVertexRPDaughters" type="int" value="0"/> <!-- false for non-updative PandoraPFOs -->
-        <parameter name="TrackHitOrdering" type="int" value="1"/> <!-- Track hit ordering: 0=ILD-LOI,SID-DBD, 1=ILD-DBD -->
-        <parameter name="PrintEventNumber" type="int" value="100"/> <!-- 0 for not printing event number, n for printing every n events -->
-
-        <!-- jet clustering parameters -->
-        <parameter name="JetClustering.PrimaryVertexCollectionName" type="string" value="PrimaryVertex" />
-        <parameter name="JetClustering.InputVertexCollectionName" type="string" value="BuildUpVertex" /> <!-- vertex collections to be used in JC -->
-        <parameter name="JetClustering.OutputJetCollectionName" type="stringVec" value="VertexJets_vv" /> <!-- output collection name, may be multiple -->
-        <parameter name="JetClustering.NJetsRequested" type="intVec">4</parameter> <!-- Multiple NJets can be specified -->
-        <parameter name="JetClustering.YCut" type="doubleVec" value="0." /> <!-- specify 0 if not used -->
-
-        <parameter name="JetClustering.JetAlgorithm" type="string" value="DurhamVertex" /> <!-- jet algorithm -->
-        <parameter name="JetClustering.UseBeamJets" type="int" value="0" /> <!-- beam jet rejection -->
-        <!--parameter name="JetClustering.RParameter" type="float" value="1.0" /--> <!-- kt, Valencia -->
-        <!--parameter name="JetClustering.AlphaParameter" type="float" value="1.3" /--> <!-- Durham beam rejection -->
-        <!--parameter name="JetClustering.BetaParameter" type="float" value="1.0" /--> <!-- Valencia -->
-        <!--parameter name="JetClustering.GammaParameter" type="float" value="1.0" /--> <!-- Valencia -->
-
-        <parameter name="JetClustering.UseMuonID" type="int" value="1" /> <!-- jet-muon ID for jet clustering -->
-        <parameter name="JetClustering.MuonIDExternal" type="int" value="0" /> <!-- true to use LikelihoodPID, false for good-old simple one -->
-        <parameter name="JetClustering.MuonIDMinimumD0Significance" type="double" value="5." /> <!-- min D0 significance -->
-        <parameter name="JetClustering.MuonIDMinimumZ0Significance" type="double" value="5." /> <!-- min Z0 significance -->
-        <parameter name="JetClustering.MuonIDMaximum3DImpactParameter" type="double" value="5." /> <!-- max 3D significance -->
-        <parameter name="JetClustering.MuonIDMinimumProbability" type="double" value="0.5" /> <!-- min PID probability, only for external -->
-
-        <parameter name="JetClustering.VertexSelectionMinimumDistance" type="double" value="0.3" /> <!-- in mm -->
-        <parameter name="JetClustering.VertexSelectionMaximumDistance" type="double" value="30." /> <!-- in mm -->
-        <parameter name="JetClustering.VertexSelectionK0MassWidth" type="double" value="0.02" /> <!-- in GeV -->
-        <parameter name="JetClustering.YAddedForJetVertexVertex" type="double" value="100"/> <!-- add penalty for combining vertices -->
-        <parameter name="JetClustering.YAddedForJetLeptonVertex" type="double" value="100"/> <!-- add penalty for combining lepton and vertex -->
-        <parameter name="JetClustering.YAddedForJetLeptonLepton" type="double" value="100"/> <!-- add penalty for combining leptons -->
-
-        <parameter name="JetVertexRefiner.InputJetCollectionName" type="string" value="VertexJets_vv" />
-        <parameter name="JetVertexRefiner.OutputJetCollectionName" type="string" value="RefinedJets_vv" />
-        <parameter name="JetVertexRefiner.PrimaryVertexCollectionName" type="string" value="PrimaryVertex" />
-        <parameter name="JetVertexRefiner.InputVertexCollectionName" type="string" value="BuildUpVertex" />
-        <parameter name="JetVertexRefiner.V0VertexCollectionName" type="string" value="BuildUpVertex_V0" />
-        <parameter name="JetVertexRefiner.OutputVertexCollectionName" type="string" value="RefinedVertex_vv" />
-
-        <parameter name="JetVertexRefiner.MinPosSingle" type="double" value="0.3" />
-        <parameter name="JetVertexRefiner.MaxPosSingle" type="double" value="30." />
-        <parameter name="JetVertexRefiner.MinEnergySingle" type="double" value="1." />
-        <parameter name="JetVertexRefiner.MaxAngleSingle" type="double" value="0.5" />
-        <parameter name="JetVertexRefiner.MaxSeparationPerPosSingle" type="double" value="0.1" />
-        <parameter name="JetVertexRefiner.mind0sigSingle" type="double" value="5." />
-        <parameter name="JetVertexRefiner.minz0sigSingle" type="double" value="5." />
-        <parameter name="JetVertexRefiner.OneVertexProbThreshold" type="double" value="0.001" />
-        <parameter name="JetVertexRefiner.MaxCharmFlightLengthPerJetEnergy" type="double" value="0.1" />
-
-        <!-- FlavorTag parameters -->
-        <parameter name="PrimaryVertexCollectionName" type="string" value="PrimaryVertex" />
-        <parameter name="FlavorTag.JetCollectionName" type="string" value="RefinedJets_vv" />
-        <parameter name="MakeNtuple.AuxiliaryInfo" type="int" value="-1" />
-
-        <!--parameter name="FlavorTag.WeightsDirectory" type="string" value="/afs/desy.de/user/s/skawada/sonas_work/mini-DST/lcfiweights"/--> <!-- e.g. lcfiweights/lcfiweights_6q500_v04_p00_ildl5 -->
-        <!--parameter name="FlavorTag.WeightsPrefix" type="string" value="6q500_v04_p00_ildl5" /--> <!-- e.g. 6q500_v04_p00_ildl5 -->
-        <parameter name="FlavorTag.WeightsDirectory" type="string" value="${ILDConfigDir}/LCFIPlusConfig/lcfiweights"/>
-        <parameter name="FlavorTag.WeightsPrefix" type="string" value="6q500_v04_p00_ildl5" />
-        <parameter name="FlavorTag.BookName" type="string" value="bdt" />
-        <parameter name="FlavorTag.PIDAlgo" type="string" value="lcfiplus" />
-        <!--parameter name="FlavorTag.D0ProbFileName" type="string" value="/afs/desy.de/user/s/skawada/sonas_work/mini-DST/vtxprob/d0probv2_ildl5_6q500.root"/--> <!-- vtxprob/d0probv2_ildl5_6q500.root -->
-        <!--parameter name="FlavorTag.Z0ProbFileName" type="string" value="/afs/desy.de/user/s/skawada/sonas_work/mini-DST/vtxprob/z0probv2_ildl5_6q500.root"/--> <!-- vtxprob/z0probv2_ildl5_6q500.root -->
-        <parameter name="FlavorTag.D0ProbFileName" type="string" value="${ILDConfigDir}/LCFIPlusConfig/vtxprob/d0probv2_ildl5_6q500.root"/>
-        <parameter name="FlavorTag.Z0ProbFileName" type="string" value="${ILDConfigDir}/LCFIPlusConfig/vtxprob/z0probv2_ildl5_6q500.root"/>
-
-        <parameter name="FlavorTag.CategoryDefinition1" type="string">nvtx==0</parameter>
-        <parameter name="FlavorTag.CategoryPreselection1" type="string">trk1d0sig!=0</parameter>
-        <parameter name="FlavorTag.CategoryVariables1" type="stringVec">
-        trk1d0sig trk2d0sig trk1z0sig trk2z0sig trk1pt_jete trk2pt_jete jprobr25sigma jprobz25sigma
-        d0bprob2 d0cprob2 d0qprob2 z0bprob2 z0cprob2 z0qprob2 nmuon nelectron trkmass
-        </parameter>
-        <parameter name="FlavorTag.CategorySpectators1" type="stringVec">
-        aux nvtx
-        </parameter>
-
-        <parameter name="FlavorTag.CategoryDefinition2" type="string">nvtx==1&&nvtxall==1</parameter>
-        <parameter name="FlavorTag.CategoryPreselection2" type="string">trk1d0sig!=0</parameter>
-        <parameter name="FlavorTag.CategoryVariables2" type="stringVec">
-        trk1d0sig trk2d0sig trk1z0sig trk2z0sig trk1pt_jete trk2pt_jete jprobr2 jprobz2
-        vtxlen1_jete vtxsig1_jete vtxdirang1_jete vtxmom1_jete vtxmass1 vtxmult1 vtxmasspc vtxprob
-        d0bprob2 d0cprob2 d0qprob2 z0bprob2 z0cprob2 z0qprob2
-        trkmass nelectron nmuon
-        </parameter>
-        <parameter name="FlavorTag.CategorySpectators2" type="stringVec">
-        aux nvtx
-        </parameter>
-
-        <parameter name="FlavorTag.CategoryDefinition3" type="string">nvtx==1&&nvtxall==2</parameter>
-        <parameter name="FlavorTag.CategoryPreselection3" type="string">trk1d0sig!=0</parameter>
-        <parameter name="FlavorTag.CategoryVariables3" type="stringVec">
-        trk1d0sig trk2d0sig trk1z0sig trk2z0sig trk1pt_jete trk2pt_jete jprobr2 jprobz2
-        vtxlen1_jete vtxsig1_jete vtxdirang1_jete vtxmom1_jete vtxmass1 vtxmult1 vtxmasspc vtxprob
-        1vtxprob vtxlen12all_jete vtxmassall
-        </parameter>
-        <parameter name="FlavorTag.CategorySpectators3" type="stringVec">
-        aux nvtx
-        </parameter>
-
-        <parameter name="FlavorTag.CategoryDefinition4" type="string">nvtx>=2</parameter>
-        <parameter name="FlavorTag.CategoryPreselection4" type="string">trk1d0sig!=0</parameter>
-        <parameter name="FlavorTag.CategoryVariables4" type="stringVec">
-        trk1d0sig trk2d0sig trk1z0sig trk2z0sig trk1pt_jete trk2pt_jete jprobr2 jprobz2
-        vtxlen1_jete vtxsig1_jete vtxdirang1_jete vtxmom1_jete vtxmass1 vtxmult1 vtxmasspc vtxprob
-        vtxlen2_jete vtxsig2_jete vtxdirang2_jete vtxmom2_jete vtxmass2 vtxmult2
-        vtxlen12_jete vtxsig12_jete vtxdirang12_jete vtxmom_jete vtxmass vtxmult
-        1vtxprob
-        </parameter>
-        <parameter name="FlavorTag.CategorySpectators4" type="stringVec">
-        aux nvtx
-        </parameter>
+    <processor name="MyZinvisibleErrorAnalysis" type="ZinvisibleErrorAnalysis">
+      <!--Name of the input collections-->
+      <parameter name="InputJetCollection" type="string" lcioInType="ReconstructedParticle">RefinedJets_vv</parameter>
+      <parameter name="RecoParticleCollection" type="string" lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
+      <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
+      <parameter name="outputFilename" type="string">${OutputDirectory}/${OutputBaseName}_ZinvisibleErrorAnalysis_vvHH.root</parameter>
+      <parameter name="ZinvisibleResidualsOutputCollection" type="string" lcioOutType="LCFloatVec">ZinvisibleResiduals</parameter>
+      <parameter name="Verbosity" type="string">DEBUG</parameter>
     </processor>
-
-    <processor name="JC4FT_qq" type="LcfiplusProcessor">
-        <!-- run primary and secondary vertex finders -->
-        <parameter name="Algorithms" type="stringVec"> JetClustering JetVertexRefiner FlavorTag ReadMVA </parameter>
-        <parameter name="Verbosity" type="string">SILENT</parameter>
-
-        <!-- general parameters -->
-        <parameter name="PFOCollection" type="string" value="PFOsWithoutOverlay" /> <!-- input PFO collection -->
-        <parameter name="UseMCP" type="int" value="0" /> <!-- MC info not used -->
-        <parameter name="MCPCollection" type="string" value="" /> <!-- not used -->
-        <parameter name="MCPFORelation" type="string" value="" /> <!-- not used -->
-        <parameter name="ReadSubdetectorEnergies" type="int" value="1"/> <!-- true for ILD -->
-        <parameter name="UpdateVertexRPDaughters" type="int" value="0"/> <!-- false for non-updative PandoraPFOs -->
-        <parameter name="TrackHitOrdering" type="int" value="1"/> <!-- Track hit ordering: 0=ILD-LOI,SID-DBD, 1=ILD-DBD -->
-        <parameter name="PrintEventNumber" type="int" value="100"/> <!-- 0 for not printing event number, n for printing every n events -->
-
-        <!-- jet clustering parameters -->
-        <parameter name="JetClustering.PrimaryVertexCollectionName" type="string" value="PrimaryVertex" />
-        <parameter name="JetClustering.InputVertexCollectionName" type="string" value="BuildUpVertex" /> <!-- vertex collections to be used in JC -->
-        <parameter name="JetClustering.OutputJetCollectionName" type="stringVec" value="VertexJets_qq" /> <!-- output collection name, may be multiple -->
-        <parameter name="JetClustering.NJetsRequested" type="intVec">6</parameter> <!-- Multiple NJets can be specified -->
-        <parameter name="JetClustering.YCut" type="doubleVec" value="0." /> <!-- specify 0 if not used -->
-
-        <parameter name="JetClustering.JetAlgorithm" type="string" value="DurhamVertex" /> <!-- jet algorithm -->
-        <parameter name="JetClustering.UseBeamJets" type="int" value="0" /> <!-- beam jet rejection -->
-        <!--parameter name="JetClustering.RParameter" type="float" value="1.0" /--> <!-- kt, Valencia -->
-        <!--parameter name="JetClustering.AlphaParameter" type="float" value="1.3" /--> <!-- Durham beam rejection -->
-        <!--parameter name="JetClustering.BetaParameter" type="float" value="1.0" /--> <!-- Valencia -->
-        <!--parameter name="JetClustering.GammaParameter" type="float" value="1.0" /--> <!-- Valencia -->
-
-        <parameter name="JetClustering.UseMuonID" type="int" value="1" /> <!-- jet-muon ID for jet clustering -->
-        <parameter name="JetClustering.MuonIDExternal" type="int" value="0" /> <!-- true to use LikelihoodPID, false for good-old simple one -->
-        <parameter name="JetClustering.MuonIDMinimumD0Significance" type="double" value="5." /> <!-- min D0 significance -->
-        <parameter name="JetClustering.MuonIDMinimumZ0Significance" type="double" value="5." /> <!-- min Z0 significance -->
-        <parameter name="JetClustering.MuonIDMaximum3DImpactParameter" type="double" value="5." /> <!-- max 3D significance -->
-        <parameter name="JetClustering.MuonIDMinimumProbability" type="double" value="0.5" /> <!-- min PID probability, only for external -->
-
-        <parameter name="JetClustering.VertexSelectionMinimumDistance" type="double" value="0.3" /> <!-- in mm -->
-        <parameter name="JetClustering.VertexSelectionMaximumDistance" type="double" value="30." /> <!-- in mm -->
-        <parameter name="JetClustering.VertexSelectionK0MassWidth" type="double" value="0.02" /> <!-- in GeV -->
-        <parameter name="JetClustering.YAddedForJetVertexVertex" type="double" value="100"/> <!-- add penalty for combining vertices -->
-        <parameter name="JetClustering.YAddedForJetLeptonVertex" type="double" value="100"/> <!-- add penalty for combining lepton and vertex -->
-        <parameter name="JetClustering.YAddedForJetLeptonLepton" type="double" value="100"/> <!-- add penalty for combining leptons -->
-
-        <parameter name="JetVertexRefiner.InputJetCollectionName" type="string" value="VertexJets_qq" />
-        <parameter name="JetVertexRefiner.OutputJetCollectionName" type="string" value="RefinedJets_qq" />
-        <parameter name="JetVertexRefiner.PrimaryVertexCollectionName" type="string" value="PrimaryVertex" />
-        <parameter name="JetVertexRefiner.InputVertexCollectionName" type="string" value="BuildUpVertex" />
-        <parameter name="JetVertexRefiner.V0VertexCollectionName" type="string" value="BuildUpVertex_V0" />
-        <parameter name="JetVertexRefiner.OutputVertexCollectionName" type="string" value="RefinedVertex_qq" />
-
-        <parameter name="JetVertexRefiner.MinPosSingle" type="double" value="0.3" />
-        <parameter name="JetVertexRefiner.MaxPosSingle" type="double" value="30." />
-        <parameter name="JetVertexRefiner.MinEnergySingle" type="double" value="1." />
-        <parameter name="JetVertexRefiner.MaxAngleSingle" type="double" value="0.5" />
-        <parameter name="JetVertexRefiner.MaxSeparationPerPosSingle" type="double" value="0.1" />
-        <parameter name="JetVertexRefiner.mind0sigSingle" type="double" value="5." />
-        <parameter name="JetVertexRefiner.minz0sigSingle" type="double" value="5." />
-        <parameter name="JetVertexRefiner.OneVertexProbThreshold" type="double" value="0.001" />
-        <parameter name="JetVertexRefiner.MaxCharmFlightLengthPerJetEnergy" type="double" value="0.1" />
-
-        <!-- FlavorTag parameters -->
-        <parameter name="PrimaryVertexCollectionName" type="string" value="PrimaryVertex" />
-        <parameter name="FlavorTag.JetCollectionName" type="string" value="RefinedJets_qq" />
-        <parameter name="MakeNtuple.AuxiliaryInfo" type="int" value="-1" />
-
-        <!--parameter name="FlavorTag.WeightsDirectory" type="string" value="/afs/desy.de/user/s/skawada/sonas_work/mini-DST/lcfiweights"/--> <!-- e.g. lcfiweights/lcfiweights_6q500_v04_p00_ildl5 -->
-        <!--parameter name="FlavorTag.WeightsPrefix" type="string" value="6q500_v04_p00_ildl5" /--> <!-- e.g. 6q500_v04_p00_ildl5 -->
-        <parameter name="FlavorTag.WeightsDirectory" type="string" value="${ILDConfigDir}/LCFIPlusConfig/lcfiweights"/>
-        <parameter name="FlavorTag.WeightsPrefix" type="string" value="6q500_v04_p00_ildl5" />
-        <parameter name="FlavorTag.BookName" type="string" value="bdt" />
-        <parameter name="FlavorTag.PIDAlgo" type="string" value="lcfiplus" />
-        <!--parameter name="FlavorTag.D0ProbFileName" type="string" value="/afs/desy.de/user/s/skawada/sonas_work/mini-DST/vtxprob/d0probv2_ildl5_6q500.root"/--> <!-- vtxprob/d0probv2_ildl5_6q500.root -->
-        <!--parameter name="FlavorTag.Z0ProbFileName" type="string" value="/afs/desy.de/user/s/skawada/sonas_work/mini-DST/vtxprob/z0probv2_ildl5_6q500.root"/--> <!-- vtxprob/z0probv2_ildl5_6q500.root -->
-        <parameter name="FlavorTag.D0ProbFileName" type="string" value="${ILDConfigDir}/LCFIPlusConfig/vtxprob/d0probv2_ildl5_6q500.root"/>
-        <parameter name="FlavorTag.Z0ProbFileName" type="string" value="${ILDConfigDir}/LCFIPlusConfig/vtxprob/z0probv2_ildl5_6q500.root"/>
-
-        <parameter name="FlavorTag.CategoryDefinition1" type="string">nvtx==0</parameter>
-        <parameter name="FlavorTag.CategoryPreselection1" type="string">trk1d0sig!=0</parameter>
-        <parameter name="FlavorTag.CategoryVariables1" type="stringVec">
-        trk1d0sig trk2d0sig trk1z0sig trk2z0sig trk1pt_jete trk2pt_jete jprobr25sigma jprobz25sigma
-        d0bprob2 d0cprob2 d0qprob2 z0bprob2 z0cprob2 z0qprob2 nmuon nelectron trkmass
-        </parameter>
-        <parameter name="FlavorTag.CategorySpectators1" type="stringVec">
-        aux nvtx
-        </parameter>
-
-        <parameter name="FlavorTag.CategoryDefinition2" type="string">nvtx==1&&nvtxall==1</parameter>
-        <parameter name="FlavorTag.CategoryPreselection2" type="string">trk1d0sig!=0</parameter>
-        <parameter name="FlavorTag.CategoryVariables2" type="stringVec">
-        trk1d0sig trk2d0sig trk1z0sig trk2z0sig trk1pt_jete trk2pt_jete jprobr2 jprobz2
-        vtxlen1_jete vtxsig1_jete vtxdirang1_jete vtxmom1_jete vtxmass1 vtxmult1 vtxmasspc vtxprob
-        d0bprob2 d0cprob2 d0qprob2 z0bprob2 z0cprob2 z0qprob2
-        trkmass nelectron nmuon
-        </parameter>
-        <parameter name="FlavorTag.CategorySpectators2" type="stringVec">
-        aux nvtx
-        </parameter>
-
-        <parameter name="FlavorTag.CategoryDefinition3" type="string">nvtx==1&&nvtxall==2</parameter>
-        <parameter name="FlavorTag.CategoryPreselection3" type="string">trk1d0sig!=0</parameter>
-        <parameter name="FlavorTag.CategoryVariables3" type="stringVec">
-        trk1d0sig trk2d0sig trk1z0sig trk2z0sig trk1pt_jete trk2pt_jete jprobr2 jprobz2
-        vtxlen1_jete vtxsig1_jete vtxdirang1_jete vtxmom1_jete vtxmass1 vtxmult1 vtxmasspc vtxprob
-        1vtxprob vtxlen12all_jete vtxmassall
-        </parameter>
-        <parameter name="FlavorTag.CategorySpectators3" type="stringVec">
-        aux nvtx
-        </parameter>
-
-        <parameter name="FlavorTag.CategoryDefinition4" type="string">nvtx>=2</parameter>
-        <parameter name="FlavorTag.CategoryPreselection4" type="string">trk1d0sig!=0</parameter>
-        <parameter name="FlavorTag.CategoryVariables4" type="stringVec">
-        trk1d0sig trk2d0sig trk1z0sig trk2z0sig trk1pt_jete trk2pt_jete jprobr2 jprobz2
-        vtxlen1_jete vtxsig1_jete vtxdirang1_jete vtxmom1_jete vtxmass1 vtxmult1 vtxmasspc vtxprob
-        vtxlen2_jete vtxsig2_jete vtxdirang2_jete vtxmom2_jete vtxmass2 vtxmult2
-        vtxlen12_jete vtxsig12_jete vtxdirang12_jete vtxmom_jete vtxmass vtxmult
-        1vtxprob
-        </parameter>
-        <parameter name="FlavorTag.CategorySpectators4" type="stringVec">
-        aux nvtx
-        </parameter>
-    </processor>
-
+    
     <processor name="MyPreSelection_ll" type="PreSelection">
-        <!--MyPreSelection identified events that have passed the preselection-->
-        <!--Name of the input collections-->
-        <parameter name="isolatedleptonCollection" type="string" lcioInType="ReconstructedParticle">ISOLeptons</parameter>
-        <parameter name="LepPairCollection" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
-        <parameter name="HiggsCollection" type="string" lcioOutType="ReconstructedParticle">HiggsPair</parameter>
-        <parameter name="PreSelectionCollection" type="string" lcioOutType="ReconstructedParticle">PreSelectionHHll</parameter>
-        <parameter name="isPassed" type="string" lcioOutType="ReconstructedParticle">isPassedHHll</parameter>
-        <parameter name="JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets_ll</parameter>
-        <parameter name="inputPfoCollection" type="string" lcioInType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
-        <parameter name="PIDAlgorithmBTag" type="string">lcfiplus</parameter>
-        <parameter name="cutDefinitionsJSONFile" type="string">${ZHH_REPO_ROOT}/config/preselection_cuts_cd.json</parameter>
-
-        <!--Parameters for preselection -->
-        <!--predefined preselection available for llbbbb, vvbbbb, and qqbbbb-->
-        <parameter name="whichPreselection"> llbbbb </parameter>
-        <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
-
-        <parameter name="outputFilename" type="string">${OutputDirectory}/${OutputBaseName}_PreSelection_llHH.root</parameter>
-        <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">MESSAGE</parameter>
-    </processor>
-
-    <processor name="MyPreSelection_vv" type="PreSelection">
-        <!--MyPreSelection identified events that have passed the preselection-->
-        <!--Name of the input collections-->
-        <parameter name="isolatedleptonCollection" type="string" lcioInType="ReconstructedParticle">ISOLeptons</parameter>
-        <parameter name="LepPairCollection" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
-        <parameter name="HiggsCollection" type="string" lcioOutType="ReconstructedParticle">HiggsPair</parameter>
-        <parameter name="PreSelectionCollection" type="string" lcioOutType="ReconstructedParticle">PreSelectionHHvv</parameter>
-        <parameter name="isPassed" type="string" lcioOutType="ReconstructedParticle">isPassedHHvv</parameter>
-        <parameter name="JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets_vv</parameter>
-        <parameter name="inputPfoCollection" type="string" lcioInType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
-        <parameter name="PIDAlgorithmBTag" type="string">lcfiplus</parameter>
-        <parameter name="cutDefinitionsJSONFile" type="string">${ZHH_REPO_ROOT}/config/preselection_cuts_cd.json</parameter>
-
-        <!--Parameters for preselection -->
-        <!--predefined preselection available for llbbbb, vvbbbb, and qqbbbb-->
-        <parameter name="whichPreselection"> vvbbbb </parameter>
-        <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
-
-        <parameter name="outputFilename" type="string">${OutputDirectory}/${OutputBaseName}_PreSelection_vvHH.root</parameter>
-        <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">MESSAGE</parameter>
-    </processor>
-
-    <processor name="MyPreSelection_qq" type="PreSelection">
-        <!--MyPreSelection identified events that have passed the preselection-->
-        <!--Name of the input collections-->
-        <parameter name="isolatedleptonCollection" type="string" lcioInType="ReconstructedParticle">ISOLeptons</parameter>
-        <parameter name="LepPairCollection" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
-        <parameter name="HiggsCollection" type="string" lcioOutType="ReconstructedParticle">HiggsPair</parameter>
-        <parameter name="PreSelectionCollection" type="string" lcioOutType="ReconstructedParticle">PreSelectionHHqq</parameter>
-        <parameter name="isPassed" type="string" lcioOutType="ReconstructedParticle">isPassedHHqq</parameter>
-        <parameter name="JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets_qq</parameter>
-        <parameter name="inputPfoCollection" type="string" lcioInType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
-        <parameter name="PIDAlgorithmBTag" type="string">lcfiplus</parameter>
-        <parameter name="cutDefinitionsJSONFile" type="string">${ZHH_REPO_ROOT}/config/preselection_cuts_cd.json</parameter>
-        
-        <!--Parameters for preselection -->
-        <!--predefined preselection available for llbbbb, vvbbbb, and qqbbbb-->
-        <parameter name="whichPreselection"> qqbbbb </parameter>
-        <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
-
-        <parameter name="outputFilename" type="string">${OutputDirectory}/${OutputBaseName}_PreSelection_qqHH.root</parameter>
-        <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">MESSAGE</parameter>
+      <!--MyPreSelection identified events that have passed the preselection-->
+      <!--Name of the input collections-->
+      <parameter name="isolatedleptonCollection" type="string" lcioInType="ReconstructedParticle">ISOLeptons</parameter>
+      <parameter name="LepPairCollection" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
+      <parameter name="HiggsCollection" type="string" lcioOutType="ReconstructedParticle">HiggsPair</parameter>
+      <parameter name="PreSelectionCollection" type="string" lcioOutType="ReconstructedParticle">PreSelectionHHll</parameter>
+      <parameter name="isPassed" type="string" lcioOutType="ReconstructedParticle">isPassedHHll</parameter>
+      <parameter name="JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets_ll</parameter>
+      <parameter name="inputPfoCollection" type="string" lcioInType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
+      <parameter name="PIDAlgorithmBTag" type="string">lcfiplus</parameter>
+      <parameter name="cutDefinitionsJSONFile" type="string">${ZHH_REPO_ROOT}/config/preselection_cuts_cd.json</parameter>
+      
+      <!--Parameters for preselection -->
+      <!--predefined preselection available for llbbbb, vvbbbb, and qqbbbb-->
+      <parameter name="whichPreselection"> llbbbb </parameter>
+      <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
+      
+      <parameter name="outputFilename" type="string">${OutputDirectory}/${OutputBaseName}_PreSelection_llHH.root</parameter>
+      <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
+      <parameter name="Verbosity" type="string">MESSAGE</parameter>
     </processor>
 
     <processor name="MyErrorFlow_ll" type="ErrorFlow">
@@ -942,7 +656,7 @@
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
         <parameter name="Verbosity" type="string">MESSAGE</parameter>
     </processor>
-    
+
     <processor name="MyFinalStateRecorder" type="FinalStateRecorder">
         <!--MyFinalStateRecorder identified events that have passed the preselection-->
         <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
@@ -971,13 +685,13 @@
     <processor name="MyLCIOOutputProcessor" type="LCIOOutputProcessor">
         <!--Writes the current event to the specified LCIO outputfile. Needs to be the last ActiveProcessor.-->
         <!--drops the named collections from the event-->
-        <parameter name="DropCollectionNames" type="StringVec"> BuildUpVertex BuildUpVertex_RP BuildUpVertex_V0 BuildUpVertex_V0_RP GammaGammaCandidateEtaPrimes GammaGammaCandidateEtas GammaGammaCandidatePi0s MCTruthMarlinTrkTracksLink MCTruthClusterLink MarlinTrkTracksMCTruthLink PFOsWithoutOverlay PandoraPFO_updatedNeutralPFOs PrimaryVertex PrimaryVertex_RP RefinedJets_rel RefinedJets_vtx RefinedJets_vtx_RP RefinedVertex_RP V0RecoParticles V0Vertices VertexJets DistilledPFOs GammaGammaParticles DurhamJetsPFOs Durham_2JetsPFOs </parameter>
+        <parameter name="DropCollectionNames" type="StringVec"> GammaGammaCandidateEtaPrimes GammaGammaCandidateEtas GammaGammaCandidatePi0s MCTruthMarlinTrkTracksLink MCTruthClusterLink MarlinTrkTracksMCTruthLink PFOsWithoutOverlay PandoraPFO_updatedNeutralPFOs PrimaryVertex PrimaryVertex_RP RefinedJets_rel RefinedJets_vtx RefinedJets_vtx_RP RefinedVertex_RP V0RecoParticles V0Vertices VertexJets DistilledPFOs GammaGammaParticles DurhamJetsPFOs Durham_2JetsPFOs </parameter>
         <!--drops all collections of the given type from the event-->
         <!--parameter name="DropCollectionTypes" type="StringVec">SimTrackerHit SimCalorimeterHit  </parameter-->
         <!-- write complete objects in subset collections to the file (i.e. ignore subset flag)-->
         <!--parameter name="FullSubsetCollections" type="StringVec">${MCParticleCollectionName}</parameter-->
         <!--force keep of the named collections - overrules DropCollectionTypes (and DropCollectionNames)-->
-        <parameter name="KeepCollectionNames" type="StringVec"> recoNeutrinos SemiLeptonicDecay_RP SemiLeptonicDecayVertex PandoraClusters MarlinTrkTracks MarlinTrkTracksKaon MarlinTrkTracksProton JetSLDLink SLDJetLink mcNurecoNuLink recoNumcNuLink NuSLDLink SLDNuLink PandoraPFOs PFOsWithoutOverlay IsolatedLeptons ISOLeptons PandoraPFOsWithoutLepPair PandoraPFOsWithoutIsoLep RefinedJets_ll RefinedJets_qq RefinedJets_vv PreSelectionHHll PreSelectionHHqq PreSelectionHHvv TrueJets FinalColourNeutrals InitialColourNeutrals TrueJetPFOLink TrueJetMCParticleLink FinalElementonLink InitialElementonLink FinalColourNeutralLink InitialColourNeutralLink HdecayMode </parameter>
+        <parameter name="KeepCollectionNames" type="StringVec"> BuildUpVertex BuildUpVertex_RP BuildUpVertex_V0 BuildUpVertex_V0_RP recoNeutrinos SemiLeptonicDecay_RP SemiLeptonicDecayVertex PandoraClusters MarlinTrkTracks MarlinTrkTracksKaon MarlinTrkTracksProton JetSLDLink SLDJetLink mcNurecoNuLink recoNumcNuLink NuSLDLink SLDNuLink PandoraPFOs PFOsWithoutOverlay IsolatedLeptons ISOLeptons PandoraPFOsWithoutLepPair PandoraPFOsWithoutIsoLep RefinedJets_ll RefinedJets_qq RefinedJets_vv PreSelectionHHll PreSelectionHHqq PreSelectionHHvv TrueJets FinalColourNeutrals InitialColourNeutrals TrueJetPFOLink TrueJetMCParticleLink FinalElementonLink InitialElementonLink FinalColourNeutralLink InitialColourNeutralLink HdecayMode </parameter>
         <!-- name of output file -->
         <parameter name="LCIOOutputFile" type="string">${OutputDirectory}/${OutputBaseName}.slcio</parameter>
         <!--write mode for output file:  WRITE_APPEND or WRITE_NEW-->
