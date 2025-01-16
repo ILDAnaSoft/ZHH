@@ -1,12 +1,22 @@
 import luigi
 import law
 import os
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from analysis.configurations import AnalysisConfiguration
 
 class BaseTask(law.Task):
-    tag = luigi.Parameter(default='500-all-full')
+    tag = luigi.Parameter(
+        default='500-all-full',
+        description='Configuration set to run. Check configurations.py')
     
     # Custom postifx to be appended by inheriting tasks
     postfix:str = ''
+    
+    @property
+    def config(self)->'AnalysisConfiguration':
+        from analysis.framework import zhh_configs
+        return zhh_configs.get(str(self.tag))
     
     @staticmethod
     def touch_parent(target:law.LocalTarget):

@@ -100,6 +100,7 @@
         "${workspaceFolder}/source/JetTaggingComparison",
         "${workspaceFolder}/source/FinalStateRecorder",
         "${workspaceFolder}/source/TruthKinematicsRecorder",
+        "${workspaceFolder}/source/ExtractMCParticleFromDST",
     ],
     "terminal.integrated.profiles.linux": {
         "bash": {
@@ -108,5 +109,5 @@
     },
     "python.terminal.activateEnvironment": false,
     "python.terminal.activateEnvInCurrentTerminal": false,
-    "git.detectSubmodules": false
+    "git.detectSubmodules": true
 }

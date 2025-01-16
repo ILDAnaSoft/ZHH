@@ -8,9 +8,13 @@ other tasks to receive the same features. This is usually called "framework"
 and only needs to be defined once per user / group / etc.
 """
 
-import os, luigi, law, math
-from law.config import Config
-from typing import Optional, Callable, Union
+import law.contrib.htcondor.workflow
+import os, luigi, law, law.util, law.contrib, law.contrib.htcondor, law.job.base, math
+from typing import Optional, Union, cast, TYPE_CHECKING
+from collections.abc import Callable
+from .utils.types import SGVOptions
+if TYPE_CHECKING:
+    from analysis.tasks import RawIndex
 
 # the htcondor workflow implementation is part of a law contrib package
 # so we need to explicitly load it
@@ -22,15 +26,7 @@ law.contrib.load("htcondor")
 # samples with many jets, the jobs fail due to memory issues.
 session_submissions = {}
 
-class HTCondorWorkflow(law.htcondor.HTCondorWorkflow):
-    """
-    Batch systems are typically very heterogeneous by design, and so is HTCondor. Law does not aim
-    to "magically" adapt to all possible HTCondor setups which would certainly end in a mess.
-    Therefore we have to configure the base HTCondor workflow in law.contrib.htcondor to work with
-    the NAF environment. In most cases, like in this example, only a minimal amount of
-    configuration is required.
-    """
-
+class HTCondorWorkflow(law.contrib.htcondor.HTCondorWorkflow):
     max_runtime = law.DurationParameter(
         default=3.0, # 10.0
         unit="h",
@@ -44,9 +40,26 @@ class HTCondorWorkflow(law.htcondor.HTCondorWorkflow):
         description="transfer job logs to the output directory; default: True",
     )
     
+    rerun_with_higher_requirements = luigi.BoolParameter(
+        default=True,
+        significant=False,
+        description="whether or not to run with increased RAM and time requirements if the job is failing; default: True",
+    )
+    higher_req_ram_mb = 16000
+    higher_req_time_hours = 12
+    
     def __init__(self, *args, **kwargs):
         super(HTCondorWorkflow, self).__init__(*args, **kwargs)
         self.cwd = self.htcondor_output_directory().path
+        
+        #b = cast(law.contrib.htcondor.workflow.HTCondorWorkflowProxy, self.workflow_proxy)
+        #self.htcondor_scheduler
+        #self.process_resources()
+        #c = cast(law.contrib.htcondor.HTCondorJobManager, b.job_manager)
+        #print(b.job_manager)
+        #c.status_names
+        #raise Exception('err')
+        
 
     def htcondor_output_directory(self):
         # the directory where submission meta data should be stored
@@ -58,7 +71,7 @@ class HTCondorWorkflow(law.htcondor.HTCondorWorkflow):
         bootstrap_file = law.util.rel_path(__file__, "bootstrap.sh")
         return law.JobInputFile(bootstrap_file, share=True, render_job=True)
 
-    def htcondor_job_config(self, config:Config, branch_keys:list, branch_values:list)->Config:
+    def htcondor_job_config(self, config:law.job.base.BaseJobFileFactory.Config, branch_keys:list, branch_values:list):
         # render_variables are rendered into all files sent with a job
         config.render_variables["analysis_path"] = os.getenv("ANALYSIS_PATH")
         config.render_variables["REPO_ROOT"] = os.getenv("REPO_ROOT")
@@ -73,18 +86,18 @@ class HTCondorWorkflow(law.htcondor.HTCondorWorkflow):
             if key == 'initialdir':
                 name = os.path.basename(os.path.dirname(value))
         
-        if name is not None and name in session_submissions:
+        if name is not None and name in session_submissions and self.rerun_with_higher_requirements:
             print(f'Re-Running task {name} with increased requirements')
             
-            config.custom_content.append(('request_memory', '16000 Mb'))
-            config.custom_content.append(("request_runtime", math.floor(12 * 3600)))
+            config.custom_content.append(('request_memory', f'{self.higher_req_ram_mb} Mb'))
+            config.custom_content.append(("request_runtime", math.floor(self.higher_req_time_hours * 3600)))
             
             session_submissions[name] += 1
         else:
             # Default config: 4GB RAM and 3h of runtime
             config.custom_content.append(('request_memory', '4000 Mb'))
             if self.max_runtime:
-                config.custom_content.append(("request_runtime", math.floor(self.max_runtime * 3600)))
+                config.custom_content.append(('request_runtime', math.floor(cast(int|float, self.max_runtime) * 3600)))
                 
             session_submissions[name] = 0
         
@@ -98,15 +111,26 @@ class HTCondorWorkflow(law.htcondor.HTCondorWorkflow):
 Raises:
     ValueError: _description_
 """
-class AnalysisConfiguration:
+class AnalysisConfiguration:    
     tag:str
     
-    """If not None, a RawIndex will require the output
-    of this task to exist.
-    """
-    index_requires:Optional[Callable] = None 
+    sgv_inputs:Optional[Callable[[], tuple[list[str], list[SGVOptions|None]]]] = None
+
+    def index_requires(self, raw_index_task: 'RawIndex'):
+        """We check if sgv_inputs exist and adapt make the index
+        depend on SGV. The 
+        """
+        result = []
+        
+        if isinstance(self.sgv_inputs, Callable):
+             from analysis.tasks_reco import FastSimSGV
+             fast_sim_task = FastSimSGV.req(raw_index_task)
+             result.append(fast_sim_task)
+             
+        return result
     
-    slcio_files:Union[list[str], Callable]
+    """All SLCIO files that should be included in the analysis"""
+    slcio_files:Optional[Union[list[str], Callable]] = None
     
     """Fration of available events that will be used for all channels
     """
@@ -127,6 +151,19 @@ class AnalysisConfiguration:
     
     marlin_globals:dict[str,Union[int,float,str]] = {}
     marlin_constants:dict[str,Union[int,float,str]] = {}
+    
+    def __init__(self):
+        # if not slcio files are supplied, add the outputs from SGV
+        # if any other case, slcio_files must be implemented manually
+        
+        if self.sgv_inputs is not None and self.slcio_files is None:
+            def slcio_files(self, raw_index_task: 'RawIndex'):        
+                input_targets = raw_index_task.input()[0]['collection'].targets.values()
+
+                return [f.path for f in input_targets]
+            
+            self.slcio_files = slcio_files
+        
 
 class AnalysisConfigurationRegistry:
     definitions:dict[str,AnalysisConfiguration] = {}

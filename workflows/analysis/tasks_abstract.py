@@ -1,8 +1,11 @@
 from analysis.framework import HTCondorWorkflow
+from analysis.utils import SGVSteeringModifier
 import law, os, uuid
 import os.path as osp
-from zhh import ShellTask, BaseTask, ProcessIndex
-from typing import Optional, Union
+from typing import Optional, Union, cast
+from .utils.types import SGVOptions
+from zhh import ProcessIndex
+from .utils import ShellTask, BaseTask, RealTimeLoggedTask
 
 class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     """Abstract class for Marlin jobs
@@ -150,55 +153,68 @@ class FastSimSGVExternalReadJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     sgv_input = 'input.slcio' # this must fit the steering file, also the GENERATOR_INPUT_TYPE
     sgv_output = 'sgvout.slcio' # this must fit the steering file
     
-    # Whether or not to check if the output file is readable
-    check_output_lcio:bool = True 
+    # False to allow for checks
+    tmp_steering_name = 'sgv-final.steer'
+    tmp_dir: Optional[str] = None
     
-    def get_steering_file(self, branch:int, input_file:str) -> dict:
-        """The branch map self.branch_map is a dictionary
-        branch => src_location (LCIO file)
+    def get_steering_file(self)->str:
+        """Default implementation for creating a SGV steering
+        file. Reads in steering_file_src, merges any options in
+        input_options and returns the content for the steering
+        file.
 
         Args:
             branch (int): _description_
             input_file (str): _description_
 
         Returns:
-            dict: _description_
+            str: merged steering file content
         """
         
-        steering = {
-            'steering_file_src': self.steering_file_src,
-            'steering_file_name': self.steering_file_name,
-            'input_file': input_file,      
-        }
+        input_file, input_options = cast(tuple[str, SGVOptions], self.branch_data)
         
-        return steering
+        # change the name of the expected input file to SGV if it was supplied
+        # in input_options
+        if isinstance(input_options, dict) and 'external_read_generation_steering.INPUT_FILENAMES' in input_options:
+            self.sgv_input = input_options['external_read_generation_steering.INPUT_FILENAMES']
+        
+        modifier = SGVSteeringModifier(osp.expandvars(self.steering_file_src))
+        
+        return modifier.merge_properties(input_options if isinstance(input_options, dict) else {})
     
-    def build_command(self, fallback_level):
-        branch = self.branch
-        
-        steering = self.get_steering_file(branch, str(self.branch_map[branch]))
-        steering_file_src, steering_file_name, input_file = steering.values()
-        
-        executable = osp.basename(self.executable)
-        
+    def get_temp_dir(self):
+        if not self.tmp_dir:
+            self.tmp_dir = f'{osp.splitext(cast(str, self.output().path))[0]}-TMP-{str(uuid.uuid4())}'
+            
+        return self.tmp_dir
+    
+    def build_command(self, **kwargs):    
+        input_file, input_options = cast(tuple[str, SGVOptions], self.branch_data)
         target_path = str(self.output().path)
-        os.makedirs(osp.dirname(target_path), exist_ok=True)
+        
+        steering_file_content = self.get_steering_file()
+        with open(f'{kwargs["cwd"]}/{self.tmp_steering_name}', 'w') as sf:
+            sf.write(steering_file_content)
+        
+        # create steering file: parse source file and merge input_options into it
         
         cmd  = f'source $REPO_ROOT/setup.sh && source "{self.sgv_env}"'
         cmd += f' && echo "SRC={input_file} DST={target_path}"'
-        cmd += f' && export TEMPDIR=$(mktemp -d) && cd "$TEMPDIR"'
         cmd += f' && cp -R $(dirname {self.executable})/* .'
-        cmd += f' && ( [[ -f {steering_file_name} ]] && rm {steering_file_name} && echo "Existing steering file removed" || echo "No existing steering file removed" )'
-        cmd += f' && cp "{steering_file_src}" "{steering_file_name}"'
+        cmd += f' && ( [[ -f {self.steering_file_name} ]] && rm {self.steering_file_name} && echo "Existing steering file removed" || echo "No existing steering file removed" )'
+        cmd += f' && mv "{self.tmp_steering_name}" "{self.steering_file_name}"'
         cmd += f' && ln -s "{input_file}" {self.sgv_input}'
         cmd += f' && echo "Starting SGV at $(date)"'
-        cmd += f' && ( ./{executable}'
+        cmd += f' && ( ./{osp.basename(self.executable)}'
         cmd += f' && echo "Finished SGV at $(date)"'
         cmd += f' && echo "Moving from worker node to destination"'
-        cmd += f' && mv "{self.sgv_output}" "{target_path}" )'
-        cmd += f' || [[ -d "$TEMPDIR" ]] && rm -rf "$TEMPDIR"'
+        cmd += f' && mv "{self.sgv_output}" "{target_path}"'
+        cmd += f' && rm -rf "" ) '
         
         return cmd
     
     def output(self):
         return self.local_target(f'{self.branch}.slcio')
+    
+    def run(self, **kwargs):
+        ShellTask.run(self, cwd=self.get_temp_dir(), **kwargs)

@@ -31,16 +31,16 @@ def zhh_cuts(hypothesis:str,
     elif hypothesis == 'qqbbbb':
         cuts = [EqualCut('xx_nisoleps', 0)]
         
+        if b_tagging:
+            cuts += [GreaterThanEqualCut('qq_bmax4', 0.16, label='bmax4')]
+        
         if additional:
             cuts += [WindowCut('qq_mh1', 60., 180., label=r'm_{H1}'),
                      WindowCut('qq_mh2', 60., 180., label=r'm_{H2}'),
                      LessThanEqualCut('xx_pt_miss', 70., label=r'p_{t}^{miss}'),
                      LessThanEqualCut('xx_thrust', 0.9, label='thrust')]
-            
-        if b_tagging:
-            cuts += [GreaterThanEqualCut('qq_bmax4', 0.16, label='bmax4')]
         
     else:
-        raise NotImplemented(f'Unknown hypothesis <{hypothesis}>')
+        raise NotImplementedError(f'Unknown hypothesis <{hypothesis}>')
         
     return cuts

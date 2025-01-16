@@ -4,69 +4,39 @@
   <processor name="AIDA"/>
   <processor name="InitDD4hep"/>
   <processor name="Statusmonitor"/>
+  <!--processor name="FastJetOverlay"/> -->
+
+  <!-- <processor name="MyCheatedMCOverlayRemoval" />
+  <processor name="MyIsolatedLeptonTaggingProcessor"/> -->
+
+  <processor name="JC6FT"/>
+  <processor name="EF6"/>
 
   <if condition="${RundEdxCorrections}">
     <processor name="ComputeCorrectAngulardEdX"/>
-    <processor name="LikelihoodPID"/>
-    <processor name="LeptonID"/>
-    <processor name="ComprehensivePID"/>
+    <!-- <processor name="LikelihoodPID"/> -->
+    <!-- <processor name="LeptonID"/> -->
+    <!-- <processor name="ComprehensivePID"/> -->
   </if>
 
-  <processor name="MydEdxAnalyser" />
+<!--
+  <processor name="ParticleIDFilter"/>-->
+  
+  <processor name="MyTrueJet" />
+  <processor name="StoreVariablesForDeepMLFlavorTagger_6J" />
 
-  <!--
-  <processor name="MyCheatedMCOverlayRemoval" />
-  <processor name="MyIsolatedLeptonTaggingProcessor"/>
-  -->
- 
+  <if condition="${FilterTempPID}">
+    <processor name="ParticleIDFilter_6J"/>
+  </if>
+  
   <processor name="LCIOOutputProcessor"/>
 </execute>
 
 <global>
-  <!-- training old
   <parameter name="LCIOInputFiles">
-    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/flavortag/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I110032.Pbbbbbb.eL.pR.n001.d_dstm_10586_0.slcio
-    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/flavortag/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I110033.Pcccccc.eL.pR.n001.d_dstm_10586_0.slcio
-    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/flavortag/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I110035.Pssssss.eL.pR.n001.d_dstm_10586_0.slcio
-    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/flavortag/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I110036.Puuuuuu.eL.pR.n001.d_dstm_10586_0.slcio
-    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/flavortag/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I110034.Pdddddd.eL.pR.n001.d_dstm_10586_0.slcio
+    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/flavortag/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I110032.Pbbbbbb.eL.pR.n009.d_dstm_10586_20.slcio
   </parameter>
-  -->
-  <!-- testing old
-  <parameter name="LCIOInputFiles">
-    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/4f_WW_hadronic/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I250006.P4f_ww_h.eL.pR.n001.d_dstm_10398_0.slcio
-    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/4f_WW_hadronic/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I250006.P4f_ww_h.eL.pR.n001.d_dstm_10398_1.slcio
-    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/4f_WW_hadronic/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I250006.P4f_ww_h.eL.pR.n001.d_dstm_10398_2.slcio
-    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/4f_WW_hadronic/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I250006.P4f_ww_h.eL.pR.n002.d_dstm_10398_3.slcio
-  </parameter>
-
-  !-->
-  <!-- training new
-  <parameter name="LCIOInputFiles">
-    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/4f_WW_semileptonic/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I250018.P4f_ww_sl.eL.pR.n001.d_dstm_10318_0.slcio
-    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/4f_WW_semileptonic/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I250018.P4f_ww_sl.eL.pR.n001.d_dstm_10318_1.slcio
-    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/4f_WW_semileptonic/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I250018.P4f_ww_sl.eL.pR.n001.d_dstm_10318_2.slcio
-    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/4f_WW_semileptonic/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I250018.P4f_ww_sl.eL.pR.n001.d_dstm_10318_3.slcio
-    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/4f_WW_semileptonic/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I250018.P4f_ww_sl.eL.pR.n002.d_dstm_10318_4.slcio
-    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/4f_WW_semileptonic/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I250018.P4f_ww_sl.eL.pR.n002.d_dstm_10318_5.slcio
-    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/4f_WW_semileptonic/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I250018.P4f_ww_sl.eL.pR.n002.d_dstm_10318_6.slcio
-    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/4f_WW_semileptonic/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I250018.P4f_ww_sl.eL.pR.n003.d_dstm_10318_7.slcio
-    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/4f_WW_semileptonic/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I250018.P4f_ww_sl.eL.pR.n003.d_dstm_10318_8.slcio
-    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/4f_WW_semileptonic/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I250018.P4f_ww_sl.eL.pR.n003.d_dstm_10318_9.slcio
-    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/4f_WW_semileptonic/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I250018.P4f_ww_sl.eL.pR.n004.d_dstm_10318_10.slcio
-    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/4f_WW_semileptonic/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I250018.P4f_ww_sl.eL.pR.n004.d_dstm_10318_11.slcio
-  </parameter> -->
-   
-   <!-- testing new  -->
-   <parameter name="LCIOInputFiles">
-    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/flavortag/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I110032.Pbbbbbb.eL.pR.n001.d_dstm_10586_0.slcio
-    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/flavortag/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I110033.Pcccccc.eL.pR.n001.d_dstm_10586_0.slcio
-    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/flavortag/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I110035.Pssssss.eL.pR.n001.d_dstm_10586_0.slcio
-    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/flavortag/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I110036.Puuuuuu.eL.pR.n001.d_dstm_10586_0.slcio
-    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/flavortag/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I110034.Pdddddd.eL.pR.n001.d_dstm_10586_0.slcio
-  </parameter>
-  
-  <parameter name="MaxRecordNumber" value="0" />
+  <parameter name="MaxRecordNumber" value="10" />
   <parameter name="SkipNEvents" value="0" />
   <parameter name="SupressCheck" value="false" />
   <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> DEBUG </parameter>
@@ -74,43 +44,18 @@
 
 <constants>
   <constant name="ILDConfigDir" value="" />
-  <constant name="OutputDir" value="/nfs/dust/ilc/user/bliewert/CPID_Training" />
-  <constant name="OutputSuffix" value="CPID" />
   <constant name="ZHH_REPO_ROOT" value="" />
+  <constant name="OutputDir" value="." />
+  <constant name="OutputSuffix" value="" />
   
-  <constant name="MCParticleCollectionName" value="MCParticle" />
+  <constant name="MCParticleCollectionName" value="MCParticlesSkimmed" />
   <constant name="ProductionDir" value="${ILDConfigDir}/StandardConfig/production" />
   <constant name="RundEdxCorrections" value="true" />
-  <constant name="RunInference" value="false" />
-  <constant name="lcgeo_DIR" value=$lcgeo_DIR/>
-</constants>
 
-<processor name="MydEdxAnalyser" type="dEdxAnalyser">
-  <parameter name="TrackCollection" type="string"> MarlinTrkTracks </parameter>
-  <parameter name="TrackMCTruthLink" type="string"> MarlinTrkTracksMCTruthLink </parameter>
-  <parameter name="MCParticleCollection" type="string"> ${MCParticleCollectionName} </parameter>
-  <parameter name="PFOCollection" type="string"> PandoraPFOs </parameter>
-  
-  <parameter name="nBinsX" type="int"> 100 </parameter>
-  <parameter name="nBinsY" type="int"> 300 </parameter>
-  <parameter name="minBinX" type="int"> -1 </parameter>
-  <parameter name="maxBinX" type="int">  2 </parameter>
-  <parameter name="minBinY" type="int">  0 </parameter>
-  <parameter name="maxBinY" type="int"> 1e-6 </parameter>
-  
-  <parameter name="usePFOTracks" type="bool"> true </parameter>
-  <parameter name="useOneTrack" type="bool"> false </parameter>
-  <parameter name="cutdEdx" type="bool"> false </parameter>
-  <parameter name="cutTrackPurity" type="bool"> false </parameter>
-  <parameter name="cutTrackPurityMom" type="bool"> false </parameter>
-  <parameter name="cutD0" type="double"> 0 </parameter>
-  <parameter name="cutZ0" type="double"> 0 </parameter>
-  <parameter name="cutMomMin" type="double"> 0 </parameter>
-  <parameter name="cutMomMax" type="double"> 0 </parameter>
-  
-  <parameter name="plotStuff" type="bool"> true </parameter>
-  <parameter name="fileFormat" type="string"> .png </parameter>
-</processor>
+  <constant name="WriteIsOverlay" value="true" />
+  <constant name="WriteJetFlavor" value="true" />
+  <constant name="FilterTempPID" value="true" /> <!-- set to "false" for debugging -->
+</constants>
 
 <processor name="AIDA" type="AIDAProcessor">
   <parameter name="Compress" type="int"> 1 </parameter>
@@ -131,6 +76,24 @@
     <!-- <parameter name="Verbosity" type="string">MESSAGE </parameter> -->
 </processor>
 
+<processor name="MyTrueJet" type="TrueJet">
+  <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
+  <parameter name="TrueJets" type="string" lcioOutType="ReconstructedParticle">TrueJets</parameter>
+
+  <!-- These are the defaults, probably exactly what you need.
+  <parameter name="RecoParticleCollection" type="string" lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
+  <parameter name="RecoMCTruthLinkName" type="string" lcioInType="LCRelation">RecoMCTruthLink</parameter>
+  
+  <parameter name="TrueJetPFOLink" type="string" lcioOutType="LCRelation"> TrueJetPFOLink </parameter>
+  <parameter name="TrueJetMCParticleLink" type="string" lcioOutType="LCRelation">TrueJetMCParticleLink</parameter>
+  <parameter name="FinalColourNeutrals" type="string" lcioOutType="ReconstructedParticle">FinalColourNeutrals</parameter>
+  <parameter name="InitialColourNeutrals" type="string" lcioOutType="ReconstructedParticle">InitialColourNeutrals</parameter>
+  <parameter name="InitialElementonLink" type="string" lcioOutType="LCRelation">InitialElementonLink</parameter>
+  <parameter name="FinalElementonLink" type="string" lcioOutType="LCRelation">FinalElementonLink</parameter>
+  <parameter name="InitialColourNeutralLink" type="string" lcioOutType="LCRelation">InitialColourNeutralLink</parameter>
+  <parameter name="FinalColourNeutralLink" type="string" lcioOutType="LCRelation">FinalColourNeutralLink</parameter>
+  -->
+</processor>
 
 <processor name="FastJetOverlay" type="FastJetProcessor">
   <parameter name="recParticleIn" type="string" lcioInType="ReconstructedParticle"> PandoraPFOs </parameter>
@@ -146,8 +109,8 @@
 </processor>
 
 <processor name="MyCheatedMCOverlayRemoval" type="CheatedMCOverlayRemoval">
-    <parameter name="RecoParticleCollection" type="string"  lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
-    <parameter name="MCParticleCollection" type="string"  lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
+    <parameter name="RecoParticleCollection" type="string" lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
+    <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
     <parameter name="RecoMCTruthLink" type="string" lcioInType="LCRelation">RecoMCTruthLink</parameter>
     <parameter name="MCTruthRecoLink" type="string" lcioInType="LCRelation">MCTruthRecoLink</parameter>
     <parameter name="OutputPfoCollection" type="string" lcioOutType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
@@ -212,7 +175,7 @@
   <parameter name="Verbosity" type="string">SILENT</parameter>
 
   <!-- general parameters -->
-  <parameter name="PFOCollection" type="string" value="PandoraPFOsWithoutIsoLep" /> <!-- input PFO collection -->
+  <parameter name="PFOCollection" type="string" value="PandoraPFOs" /> <!-- input PFO collection -->
   <parameter name="UseMCP" type="int" value="0" /> <!-- MC info not used -->
   <parameter name="MCPCollection" type="string" value="" /> <!-- not used -->
   <parameter name="MCPFORelation" type="string" value="" /> <!-- not used -->
@@ -380,12 +343,12 @@
 <processor name="LeptonID" type="LeptonIDProcessor">
   <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
   <parameter name="Verbosity" type="string"> MESSAGE </parameter>
-  <parameter name="dEdxname" type="string">dEdxPIDv2</parameter>
   <parameter name="BuildTree" type="bool">false</parameter>
   <parameter name="EvalMVA" type="bool">true</parameter>
   <parameter name="weightfile">${ProductionDir}/HighLevelReco/PIDFiles/CPID/LeptonID_multi_jet_dEdx_800t_3d_cm50r50_BDTG.weights.xml</parameter>
 </processor>
 
+<!--
 <processor name="ComprehensivePID" type="ComprehensivePIDProcessor">
   <parameter name="Verbosity" type="string"> DEBUG </parameter>
   <parameter name="PFOCollection" type="string" value="PandoraPFOs"/>
@@ -395,7 +358,7 @@
   <parameter name="modeTrain"   type="bool" value="false"/>
   <parameter name="modeInfer"   type="bool" value="true"/>
 
-  <parameter name="TTreeFileName" type="string" value="${OutputDir}/TTreeFile_${OutputSuffix}.root"/>
+  <parameter name="TTreeFileName" type="string" value="${OutputDir}/CPID_TTreeFile.root"/>
   <parameter name="reffile" type="string" value="/afs/desy.de/group/flc/pool/bliewert/MarlinWorkdirs/ZHH/scripts/Ref.txt" />
   <parameter name="signalPDGs" type="FloatVec" value="11 13 211 321 2212"/>
   <parameter name="backgroundPDGs" type="FloatVec" value=""/>
@@ -442,12 +405,15 @@
     dEdx_RCD_piDis>-900&&dEdx_RCD_kaDis>-900
   </parameter>
 </processor>
+-->
 
+<!--
 <processor name="ParticleIDFilter" type="ReconstructedParticleParticleIDFilterProcessor">
-    <parameter name="RecoParticleCollection" type="string" value="PandoraPFOs"/>
+    <parameter name="RecoParticleCollection" type="string" value="PFOsWithoutOverlay"/>
     <parameter name="FilterPIDAlgos" type="StringVev" value="BasicVariablePID LikelihoodPID LowMomMuID ShowerShapesPID dEdxPID"/>
     <parameter name="Verbosity" type="string" value="DEBUG"/>
 </processor>
+-->
 
 <processor name="StoreVariablesForDeepMLFlavorTagger_6J" type="StoreVariablesForDeepMLFlavorTagger">
   <parameter name="CollectionPrimaryVertex" type="string" value="PrimaryVertex" />
@@ -456,79 +422,24 @@
   <parameter name="CollectionPFOs" type="string" value="PandoraPFOs" /> 
   <parameter name="D0ProbFileName" type="string" value="${ILDConfigDir}/LCFIPlusConfig/vtxprob/d0probv2_ildl5_6q500.root"/> <!-- vtxprob/d0probv2_ildl5_6q500.root -->
   <parameter name="Z0ProbFileName" type="string" value="${ILDConfigDir}/LCFIPlusConfig/vtxprob/z0probv2_ildl5_6q500.root"/>
-  <parameter name="dEdxPID" type="string" value="dEdxPIDv2"/>
+  <parameter name="dEdxPID" type="string" value="None"/>
   <parameter name="CPIDName" type="string" value="None" />
+
+  <parameter name="WriteIsOverlay" type="bool" value="${WriteIsOverlay}" />
+  <parameter name="WriteJetFlavor" type="bool" value="${WriteJetFlavor}" />
   <parameter name="WriteDeepjetFeatures" type="bool" value="false"/>
   <parameter name="ParticleNetFeatures_PFPoints" type="StringVec"> RapidityRelJet PhiRelJet </parameter>
   <parameter name="ParticleNetFeatures_PFFeatures" type="StringVec"> TransverseMomentumLOG EnergyLOG 
   TransverseMomentumFracLOG EnergyFracLOG DeltaRJet Charge IsElectron IsMuon IsChargedHadron IsNeutralHadron IsPhoton 
   RapidityRelJet PhiRelJet Rapidity D0 D0Sig Z0 Z0Sig 3DImpactPar 3DImpactParSig D0bprob D0cprob D0qprob Z0bprob Z0cprob Z0qprob
-  UsedinPrimVertex LeptonMomRelJet Kaoness Chi2NDF LeptonMomFraction WeightedKaonnessMomFrac JetDotProductNorm HCalFrac </parameter>
+  UsedinPrimVertex LeptonMomRelJet Kaoness Chi2NDF LeptonMomFraction WeightedKaonnessMomFrac CPID11ness CPID13ness CPID211ness CPID321ness CPID2212ness
+  MomentumX MomentumY MomentumZ Energy
+  JetDotProductNorm HCalFrac </parameter>
   <parameter name="ParticleNetFeatures_SVPoints" type="StringVec"> SecondaryVertexRapidityJetAxis SecondaryVertexPhiJetAxis </parameter>
   <parameter name="ParticleNetFeatures_SVFeatures" type="StringVec"> SecondaryVertexPtLOG SecondaryVertexMass SecondaryVertexNTracks 
   SecondaryVertexChi2NDF SecondaryVertexD0 SecondaryVertexD0Sig SecondaryVertexImpactPar3d SecondaryVertexImpactPar3dSig 
   SecondaryVertexRapidityJetAxis SecondaryVertexPhiJetAxis SecondaryVertexCosMomPos SecondaryVertexEnergyJetEnergy
-  SecondaryVertexEnergy SecondaryVertexRapidity JetRapidity </parameter> 
-</processor>
- 
- <processor name="ParticleNetTagger_6J" type="ParticleNetNTaggerProcessor">
-  <!--ParticleNetTaggerProcessor offers Jet tagging using a Deep-Learning model-->
-  <!--Torch script file describing the model-->
-  <parameter name="ModelScriptFile" type="string"> models/particlenet_4tags.pt </parameter>
-
-  <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-  <parameter name="Verbosity" type="string">DEBUG </parameter>
-  <parameter name="CollectionRefinedJets" type="string" value="Refined6Jets"> </parameter>
-  <parameter name="CollectionRefinedVertices" type="string" value="RefinedVertex6Jets" />
-  <parameter name="CollectionPFOs" type="string" value="PandoraPFOs" /> 
-  <parameter name="TagNames" type="StringVec"> b c s ud </parameter>
-  <parameter name="ParticleNetFeatures_PFPoints" type="StringVec"> RapidityRelJet PhiRelJet</parameter>
-  <parameter name="ParticleNetFeatures_PFFeatures" type="StringVec">
-      RapidityRelJet Rapidity PhiRelJet TransverseMomentumLOG
-      EnergyLOG TransverseMomentumFracLOG EnergyFracLOG DeltaRJet
-      D0 D0Sig Z0 Z0Sig
-      3DImpactPar 3DImpactParSig Charge IsElectron
-      IsMuon IsChargedHadron IsNeutralHadron IsPhoton
-      D0bprob D0cprob D0qprob Z0bprob 
-      Z0cprob Z0qprob UsedinPrimVertex LeptonMomRelJet
-      Kaoness Chi2NDF LeptonMomFraction WeightedKaonnessMomFrac
-      CPID11ness CPID13ness CPID211ness CPID321ness CPID2212ness
-      JetDotProductNorm HCalFrac </parameter>
-  <parameter name="ParticleNetFeatures_SVPoints" type="StringVec"> SecondaryVertexRapidityJetAxis SecondaryVertexPhiJetAxis</parameter>
-  <parameter name="ParticleNetFeatures_SVFeatures" type="StringVec"> SecondaryVertexRapidityJetAxis SecondaryVertexRapidity SecondaryVertexPhiJetAxis SecondaryVertexPtLOG SecondaryVertexMass SecondaryVertexNTracks SecondaryVertexChi2NDF SecondaryVertexD0 SecondaryVertexD0Sig SecondaryVertexImpactPar3d SecondaryVertexImpactPar3dSig SecondaryVertexCosMomPos
-  SecondaryVertexEnergyJetEnergy SecondaryVertexEnergy </parameter>
-  <parameter name="MeanPFFeatures" type="FloatVec">
-        1.85743122e-04  2.40487332e-03  1.81789046e-03 -1.27853482e-01
-        5.33305498e-02 -1.69318656e+00 -1.72301753e+00  4.97598549e-01
-       -5.28327587e+00 -4.24195355e+00 -5.24586681e+00 -5.15909166e+00
-       -1.57654329e+00  3.11700418e+01  2.65937586e-03  3.63942916e-02
-        4.61831737e-03  4.34209214e-01  1.03472656e-01  4.21305521e-01
-       -5.20339278e+00 -5.22533587e+00 -5.21741391e+00 -5.09274600e+00
-       -5.17688543e+00 -5.18726326e+00 -4.90826457e+00 -7.34807843e+00
-       -5.05768300e+00 -4.69456532e+00 -7.94565978e+00 -5.23867466e+00
-       5.24675695e+00 -5.23477763e+00 -4.91842049e+00 -5.21791657e+00 -5.24074720e+00
-       -3.85513216e+00 -4.73270146e+00</parameter>
-   <parameter name="MeanSVFeatures" type="FloatVec">
-       8.25094525e-04 5.13830793e-03 6.92837612e-04 9.40945104e-01
-       1.12108027e+00 2.83253258e+00 7.26346660e+00 4.09344177e+00
-       2.22437604e+10 5.24616933e+00 3.21666845e+10 9.77182427e-01
-       2.60855682e-01 1.55794235e+01 </parameter>
-    <parameter name="StdPFFeatures" type="FloatVec">
-       5.22546578e-01 1.04354138e+00 5.94739508e-01 5.69255292e-01
-       5.28232650e-01 5.74327009e-01 5.43753526e-01 4.79173884e-01
-       1.99831495e+01 6.70050379e+02 2.18397521e+01 7.83554712e+02
-       2.96102998e+01 8.14136356e+02 6.89358216e-01 1.87269184e-01
-       6.78010952e-02 4.95652673e-01 3.04575222e-01 4.93768345e-01
-       5.04250674e+00 5.01794188e+00 5.02699293e+00 5.16041905e+00
-       5.06920965e+00 5.05853967e+00 5.35968971e+00 5.62795562e+00
-       5.19791700e+00 5.65526699e+00 4.05476418e+00 5.00348680e+00
-       5.01527334e+00 5.02748641e+00 5.36566899e+00 5.04629258e+00 5.02116024e+00
-       7.25313695e+00 5.02730574e+00 </parameter>
-    <parameter name="StdSVFeatures" type="FloatVec">
-       1.93090237e-01 7.86925921e-01 2.29787151e-01 3.73752464e-01
-       8.11406920e-01 1.39863038e+00 3.08915394e+02 1.42217724e+01
-       7.06567496e+12 1.91142796e+01 9.46842425e+12 1.01111643e-01
-       1.69965923e-01 1.19961315e+01 </parameter>
+  SecondaryVertexEnergy SecondaryVertexMomentumX SecondaryVertexMomentumY SecondaryVertexMomentumZ SecondaryVertexRapidity JetRapidity </parameter> 
 </processor>
 
 <processor name="ParticleIDFilter_6J" type="ReconstructedParticleParticleIDFilterProcessor">
@@ -540,7 +451,7 @@
 <processor name="LCIOOutputProcessor" type="LCIOOutputProcessor">
   <!-- DST output: drop all hits, skim MCParticles and keep final Tracks, Clusters, Vertices and  ReconstructedParticles -->
   <parameter name="LCIOOutputFile" type="string" >
-   ${OutputDir}/${OutputSuffix}.slcio
+   ${OutputDir}/FT_${OutputSuffix}.slcio
   </parameter>
   <parameter name="DropCollectionTypes" type="StringVec">
     Track

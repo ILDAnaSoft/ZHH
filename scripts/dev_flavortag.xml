@@ -74,6 +74,24 @@
     <!-- <parameter name="Verbosity" type="string">MESSAGE </parameter> -->
 </processor>
 
+<processor name="MyTrueJet" type="TrueJet">
+  <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
+  <parameter name="TrueJets" type="string" lcioOutType="ReconstructedParticle">TrueJets</parameter>
+
+  <!-- These are the defaults, probably exactly what you need.
+  <parameter name="RecoParticleCollection" type="string" lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
+  <parameter name="RecoMCTruthLinkName" type="string" lcioInType="LCRelation">RecoMCTruthLink</parameter>
+  
+  <parameter name="TrueJetPFOLink" type="string" lcioOutType="LCRelation"> TrueJetPFOLink </parameter>
+  <parameter name="TrueJetMCParticleLink" type="string" lcioOutType="LCRelation">TrueJetMCParticleLink</parameter>
+  <parameter name="FinalColourNeutrals" type="string" lcioOutType="ReconstructedParticle">FinalColourNeutrals</parameter>
+  <parameter name="InitialColourNeutrals" type="string" lcioOutType="ReconstructedParticle">InitialColourNeutrals</parameter>
+  <parameter name="InitialElementonLink" type="string" lcioOutType="LCRelation">InitialElementonLink</parameter>
+  <parameter name="FinalElementonLink" type="string" lcioOutType="LCRelation">FinalElementonLink</parameter>
+  <parameter name="InitialColourNeutralLink" type="string" lcioOutType="LCRelation">InitialColourNeutralLink</parameter>
+  <parameter name="FinalColourNeutralLink" type="string" lcioOutType="LCRelation">FinalColourNeutralLink</parameter>
+  -->
+</processor>
 
 <processor name="FastJetOverlay" type="FastJetProcessor">
   <parameter name="recParticleIn" type="string" lcioInType="ReconstructedParticle"> PandoraPFOs </parameter>

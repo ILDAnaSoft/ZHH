@@ -1,25 +1,25 @@
-from .tasks_abstract import FastSimSGVExternalReadJob
 from analysis.framework import zhh_configs
-from glob import glob
+from typing import Callable
 import os.path as osp
+from .tasks_abstract import FastSimSGVExternalReadJob
+from .utils.types import SGVOptions
 
-class FastSimSGV(FastSimSGVExternalReadJob):    
-    @property
-    def sgv_input_files(self)->list[str]:
-        if not '__sgv_input_files' in self:
-            raise ValueError('No SGV input files attached')
-        
-        return self.__sgv_input_files
-
-    @sgv_input_files.setter
-    def sgv_input_files(self, input_files:list[str]):
-        self.__sgv_input_files = input_files
-        
+class FastSimSGV(FastSimSGVExternalReadJob):
+    branch_data: tuple[str, SGVOptions]
+          
     def create_branch_map(self):
-        files = self.sgv_input_files
-        files.sort()
-
-        return { k: v for k, v in zip(list(range(len(files))), files) }
+        config = zhh_configs.get(str(self.tag))
+        assert(isinstance(config.sgv_inputs, Callable))
+        
+        input_files, input_options = config.sgv_inputs()
+        assert(len(input_files) == len(input_options))
+        
+        return { k: [file, options] for (k, file, options) in zip(
+            list(range(len(input_files))),
+            input_files,
+            input_options
+        )}
         
     def output(self):
-        return self.local_target(osp.basename(str(self.branch_map[self.branch])))
+        # output filename = input filename but extention changed to 'slcio'
+        return self.local_target(f'{osp.splitext(osp.basename(self.branch_data[0]))[0]}.slcio')

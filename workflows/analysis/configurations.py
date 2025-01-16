@@ -2,6 +2,8 @@ from analysis.framework import AnalysisConfiguration, AnalysisConfigurationRegis
 from zhh import get_raw_files
 from glob import glob
 from typing import TYPE_CHECKING
+from .utils.types import SGVOptions
+
 if TYPE_CHECKING:
     from analysis.tasks import RawIndex
 
@@ -25,20 +27,12 @@ class Config_500_all_full(AnalysisConfiguration):
 class Config_550_hh_fast(AnalysisConfiguration):
     tag = '550-hh-fast'
     
-    # Attach SGV as a requirement for the RawIndex task and define the input files
-    def index_requires(self, raw_index_task: 'RawIndex')->list:
-        from analysis.tasks_reco import FastSimSGV
+    def sgv_inputs(self):
+        input_files = glob('/pnfs/desy.de/ilc/prod/ilc/mc-2020/generated/550-Test/hh/*.slcio')
+        input_files.sort()
+        input_options = [None] * len(input_files)
         
-        fast_sim_task = FastSimSGV.req(raw_index_task)
-        fast_sim_task.sgv_input_files = glob('/pnfs/desy.de/ilc/prod/ilc/mc-2020/generated/550-Test/hh/*.slcio')
-        
-        return [fast_sim_task]
-    
-    # Retrieve the paths to the output files of the SGV runs
-    def slcio_files(self, raw_index_task: 'RawIndex'):        
-        input_targets = raw_index_task.input()[0]['collection'].targets.values()
-
-        return [f.path for f in input_targets]
+        return input_files, input_options
     
     statistics = 1.
     marlin_globals = {  }
@@ -47,7 +41,7 @@ class Config_550_hh_fast(AnalysisConfiguration):
 class Config_550_hh_full(AnalysisConfiguration):
     tag = '550-hh-full'
     
-    def slcio_files(self, raw_index_task: 'RawIndex'):        
+    def slcio_files(self, raw_index_task: 'RawIndex'):
         return glob(f'/pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/550-Test/hh/ILD_l5_o1_v02/v02-02-03/**/*.slcio', recursive=True)  
     
     # Use only e2e2hh (because the generator samples are only available for e2e2hh)
@@ -58,8 +52,57 @@ class Config_550_hh_full(AnalysisConfiguration):
     
     marlin_globals = {  }
     marlin_constants = { 'CMSEnergy': 550 }
+    
+class Config_5x0_ft_fast(AnalysisConfiguration):
+    """Fast simulation on
+    - 500 GeV ZHH+ZZH
+    - 550 GeV ZHH+ZZH
+    - 500 GeV flavor tag
+    samples to compare ML FT performance
+
+    Args:
+        AnalysisConfiguration (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    tag = '5x0-ft-fast'
+    
+    def sgv_inputs(self):
+        input_files:list[str] = []
+        input_options:list[dict] = []
+        
+        for cms_energy, sgv_input_format, source_dir, file_ending in [
+            (500, 'LCIO', '/pnfs/desy.de/ilc/prod/ilc/mc-2020/generated/500-TDR_ws/hh', 'slcio'),
+            (550, 'LCIO', '/pnfs/desy.de/ilc/prod/ilc/mc-2020/generated/550-Test/hh', 'slcio'),
+            (500, 'STDH', '/pnfs/desy.de/ilc/prod/ilc/mc-dbd/generated/500-TDR_ws/flavortag', 'stdhep')
+        ]:
+            sgv_options:SGVOptions = {
+                'global_generation_steering.CMS_ENE': cms_energy,
+                'external_read_generation_steering.GENERATOR_INPUT_TYPE': sgv_input_format,
+                'external_read_generation_steering.INPUT_FILENAMES': f'input.{file_ending}'
+            }
+            files = glob(f'{source_dir}/*.{file_ending}')
+            files.sort()
+            
+            for file in files:
+                input_files.append(file)
+                input_options.append(sgv_options)
+        
+        return input_files, input_options
+    
+    # Retrieve the paths to the output files of the SGV runs
+    def slcio_files(self, raw_index_task: 'RawIndex'):
+        input_targets = raw_index_task.input()[0]['collection'].targets.values()
+
+        return [f.path for f in input_targets]
+    
+    statistics = 1.
+    marlin_globals = {  }
+    marlin_constants = { 'CMSEnergy': 550 }
 
 # Add them to the registry
 zhh_configs.add(Config_500_all_full())
 zhh_configs.add(Config_550_hh_fast())
 zhh_configs.add(Config_550_hh_full())
+zhh_configs.add(Config_5x0_ft_fast())

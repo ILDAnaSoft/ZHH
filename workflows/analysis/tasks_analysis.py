@@ -1,5 +1,5 @@
 from analysis.tasks_abstract import MarlinJob
-from typing import Union, Optional
+from typing import Union, Optional, cast
 from law.util import flatten
 from analysis.framework import zhh_configs
 import numpy as np
@@ -32,7 +32,7 @@ class AnalysisAbstract(MarlinJob):
     ]
     
     # Attach MCParticleCollectionName and constants/globals for Marlin
-    def pre_run_command(self):
+    def pre_run_command(self, **kwargs):
         config = zhh_configs.get(str(self.tag))
  
         mcp_col_name:str = self.get_steering_parameters()['mcp_col_name']
@@ -63,7 +63,7 @@ class AnalysisAbstract(MarlinJob):
         # the decorator will trigger a run of workflow_requires beforehand
         # because of the decorator, self.input() will refer to the outputs of tasks defined in workflow_requires()
         
-        return all(elem.exists() for elem in flatten(self.input()))
+        return all(cast(law.FileSystemTarget, elem).exists() for elem in flatten(self.input()))
     
     # The decorator @workflow_condition.create_branch_map is required
     # for all workflows which require a branch map conditioned on the
