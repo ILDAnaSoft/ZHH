@@ -109,12 +109,17 @@
 </processor>
 
 <processor name="MyCheatedMCOverlayRemoval" type="CheatedMCOverlayRemoval">
-    <parameter name="RecoParticleCollection" type="string" lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
-    <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
-    <parameter name="RecoMCTruthLink" type="string" lcioInType="LCRelation">RecoMCTruthLink</parameter>
-    <parameter name="MCTruthRecoLink" type="string" lcioInType="LCRelation">MCTruthRecoLink</parameter>
-    <parameter name="OutputPfoCollection" type="string" lcioOutType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
-    <parameter name="Verbosity" type="string">SILENT</parameter>
+  <parameter name="RecoParticleCollection" type="string" lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
+  <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
+  <parameter name="RecoMCTruthLink" type="string" lcioInType="LCRelation">RecoMCTruthLink</parameter>
+  <parameter name="MCTruthRecoLink" type="string" lcioInType="LCRelation">MCTruthRecoLink</parameter>
+  <parameter name="OutputPfoCollection" type="string" lcioOutType="ReconstructedParticle">PFOsWithoutOverlayCheated</parameter>
+
+  <!-- PIDAlgoSync = true -> sync PID parameters. PIDAlgosToKeep is empty -> all -->
+  <parameter name="PIDAlgoSync" type="bool">true</parameter>
+  <parameter name="PIDAlgosToKeep" type="StringVec"></parameter>
+
+  <parameter name="Verbosity" type="string">MESSAGE</parameter>
 </processor>
 
 <processor name="MyIsolatedLeptonTaggingProcessor" type="IsolatedLeptonTaggingProcessor">

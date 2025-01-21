@@ -76,6 +76,7 @@ class FinalStateRecorder : public Processor
 		std::string m_mcParticleCollection{};
 		std::string m_outputJsonFile{};
 		std::string m_outputRootFile{};
+		bool m_setReturnValues{};
 
 		int m_n_run;
 		int m_n_evt = 0;

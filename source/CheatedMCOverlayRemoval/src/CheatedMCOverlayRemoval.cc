@@ -10,6 +10,51 @@ using namespace lcio ;
 using namespace marlin ;
 using namespace std ;
 
+void sync_pids(
+	const EVENT::LCCollection* PFOs,
+	IMPL::LCCollectionVec* OutputPfoCollection,
+	EVENT::LCObject* pfo_in,
+	ReconstructedParticle* pfo_out,
+	std::map<int, int> *pid_algo_mapping,
+	std::vector<std::string> pid_algo_names_to_keep)
+{
+	PIDHandler PIDs(PFOs);
+	PIDHandler PIDt(OutputPfoCollection);
+
+	EVENT::IntVec algorithmIDs = PIDs.getAlgorithmIDs();
+	std::map<int, int> source_to_target_algo_ids;
+	bool sync_all = pid_algo_names_to_keep.size() == 0;
+
+	for (size_t i = 0; i < algorithmIDs.size(); i++) {
+		int sourceAlgoID = algorithmIDs[i];
+		EVENT::ParticleIDVec source_pids = PIDs.getParticleIDs(pfo_in, sourceAlgoID);
+
+		if (source_pids.size()) {
+			int targetAlgoID;
+
+			EVENT::ParticleID* source_pid = source_pids.at(0);
+
+			if (!pid_algo_mapping->contains(sourceAlgoID)) {
+				std::string algo_name = PIDs.getAlgorithmName(sourceAlgoID);
+				
+				// skip this algo if neither sync_all = True nor the algo is not in the list of algos to be synced
+				if (!sync_all && std::find(pid_algo_names_to_keep.begin(), pid_algo_names_to_keep.end(), algo_name) == pid_algo_names_to_keep.end())
+					continue;
+
+				targetAlgoID = PIDt.addAlgorithm(algo_name, PIDs.getParameterNames(sourceAlgoID));
+				pid_algo_mapping->insert({sourceAlgoID, targetAlgoID});
+			} else {
+				targetAlgoID = (*pid_algo_mapping)[sourceAlgoID];
+			}
+
+			if (source_pid->getParameters().size() == PIDt.getParameterNames(targetAlgoID).size()) {
+				PIDt.setParticleID(pfo_out, source_pid->getType(), source_pid->getPDG(), source_pid->getLikelihood(), targetAlgoID, source_pid->getParameters());
+			}
+		}
+
+	}	
+}
+
 CheatedMCOverlayRemoval aCheatedMCOverlayRemoval ;
 
 CheatedMCOverlayRemoval::CheatedMCOverlayRemoval() :
@@ -58,13 +103,16 @@ CheatedMCOverlayRemoval::CheatedMCOverlayRemoval() :
 				 _OutputPfoCollection,
 				 std::string("PFOsWithoutOverlay")
 				 );	
+
 	registerOutputCollection(LCIO::RECONSTRUCTEDPARTICLE,
 				 "OutputOverlayCollection",
 				 "Name of output Overlay collection",
 				 _OutputOverlayCollection,
 				 std::string("PFOsFromOverlay")
 				 );	
-	registerProcessorParameter("Whether or not to keep PIDs", "Features for ParticleNet : SV features", m_keepPID, true);
+
+	registerProcessorParameter("PIDAlgoSync", "Whether or not to sync PIDs. if false, the PID parameters will not be synced", m_PIDAlgoSync, false);
+  	registerProcessorParameter("PIDAlgosToKeep", "list of PID Algo names whose parameters to sync. will sync all if empty. ", m_PIDAlgorithmsToKeep, std::vector<std::string>{});
 }
 
 void CheatedMCOverlayRemoval::init()
@@ -86,37 +134,6 @@ void CheatedMCOverlayRemoval::processRunHeader()
   streamlog_out(DEBUG0) << "   processRunHeader called" << std::endl ;
   m_nRun++ ;  
   streamlog_out(DEBUG0) << "   processRunHeader finished successfully" << std::endl ;
-}
-
-void sync_pids(const EVENT::LCCollection* PFOs, IMPL::LCCollectionVec* OutputPfoCollection, EVENT::LCObject* pfo_in, ReconstructedParticle* pfo_out, std::map<int, int> *pid_algo_mapping) {
-	PIDHandler PIDs(PFOs);
-	PIDHandler PIDt(OutputPfoCollection);
-
-	EVENT::IntVec algorithmIDs = PIDs.getAlgorithmIDs();
-	std::map<int, int> source_to_target_algo_ids;
-
-	for (size_t i = 0; i < algorithmIDs.size(); i++) {
-		int sourceAlgoID = algorithmIDs[i];
-		EVENT::ParticleIDVec source_pids = PIDs.getParticleIDs(pfo_in, sourceAlgoID);
-
-		if (source_pids.size()) {
-			int targetAlgoID;
-
-			EVENT::ParticleID* source_pid = source_pids.at(0);
-
-			if (!pid_algo_mapping->contains(sourceAlgoID)) {
-				targetAlgoID = PIDt.addAlgorithm(PIDs.getAlgorithmName(sourceAlgoID), PIDs.getParameterNames(sourceAlgoID));
-				pid_algo_mapping->insert({sourceAlgoID, targetAlgoID});
-			} else {
-				targetAlgoID = (*pid_algo_mapping)[sourceAlgoID];
-			}
-
-			if (source_pid->getParameters().size() == PIDt.getParameterNames(targetAlgoID).size()) {
-				PIDt.setParticleID(pfo_out, source_pid->getType(), source_pid->getPDG(), source_pid->getLikelihood(), targetAlgoID, source_pid->getParameters());
-			}
-		}
-
-	}	
 }
 
 void CheatedMCOverlayRemoval::processEvent( LCEvent *pLCEvent )
@@ -167,7 +184,7 @@ void CheatedMCOverlayRemoval::processEvent( LCEvent *pLCEvent )
 	  std::map<int, int> pid_algo_mapping;
       for (int i=0; i<m_nAllPFOs; i++) {
 		EVENT::LCObject* pfo_in = PFOs->getElementAt(i);
-		ReconstructedParticle* pfo = (ReconstructedParticle*) pfo_in;
+		ReconstructedParticle* pfo = dynamic_cast<ReconstructedParticle*> (pfo_in);
 	float weightPFOtoMCP = 0.0;
 	float weightMCPtoPFO = 0.0;
 	MCParticle* linkedMCP = getLinkedMCP( pfo, RecoMCParticleNav , MCParticleRecoNav , false , false , weightPFOtoMCP , weightMCPtoPFO );
@@ -180,7 +197,10 @@ void CheatedMCOverlayRemoval::processEvent( LCEvent *pLCEvent )
 	}
 	OutputPfoCollection->addElement(pfo);
 
-	sync_pids(PFOs, OutputPfoCollection, pfo_in, pfo, &pid_algo_mapping);
+	if (m_PIDAlgoSync) {
+		sync_pids(PFOs, OutputPfoCollection, pfo_in, pfo, &pid_algo_mapping, m_PIDAlgorithmsToKeep);
+	}
+
 	nKeptPFOs++;
       }
 

@@ -18,13 +18,15 @@
                 "${workspaceFolder}/source/FinalStateRecorder/include/**",
                 "${workspaceFolder}/source/JetTaggingComparison/include/**",
                 "${workspaceFolder}/source/TruthRecoComparison/include/**",
+                "${workspaceFolder}/source/ExpandJetProcessor/include/**",
+                "${workspaceFolder}/source/MergePIDProcessor/include/**",
                 "${workspaceFolder}/dependencies/MarlinMLFlavorTagging/VariablesForDeepMLFlavorTagger/include/**",
                 "${workspaceFolder}/dependencies/MarlinMLFlavorTagging/JetTaggers/include/**"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/g++",
-            "cStandard": "gnu17",
-            "cppStandard": "gnu++17",
+            "cStandard": "c17",
+            "cppStandard": "c++20",
             "intelliSenseMode": "linux-gcc-x64",
             "configurationProvider": "ms-vscode.cmake-tools",
             "browse": {

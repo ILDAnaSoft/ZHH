@@ -68,6 +68,8 @@ function zhh_attach_marlin_dlls() {
         "$REPO_ROOT/source/FinalStateRecorder/lib/libFinalStateRecorder.so"
         "$REPO_ROOT/source/ZHHKinfitProcessors/lib/libZHHKinfitProcessors.so"
         "$REPO_ROOT/source/TruthRecoComparison/lib/libTruthRecoComparison.so"
+        "$REPO_ROOT/source/ExpandJetProcessor/lib/libExpandJetProcessor.so"
+        "$REPO_ROOT/source/MergePIDProcessor/lib/libMergePIDProcessor.so"
         "$MarlinMLFlavorTagging/lib/libMarlinMLFlavorTagging.so"
     )
 

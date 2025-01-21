@@ -4,10 +4,20 @@
   <processor name="AIDA"/>
   <processor name="InitDD4hep"/>
   <processor name="Statusmonitor"/>
-  <!--processor name="FastJetOverlay"/> -->
 
+  <!-- old OV removal -->
+  <processor name="MyFastJetOverlayRemoval"/>
+  <processor name="ExpandJet"/>
+
+  <!-- cheated OV removal -->
   <processor name="MyCheatedMCOverlayRemoval" />
+
+  <!-- NEW OV removal -->
+  <!-- <processor name="MyMLOverlayRemoval" /> -->
+
   <!-- <processor name="MyIsolatedLeptonTaggingProcessor"/> -->
+
+  <processor name="MyMergePIDProcessor"/>
 
   <!--
   <processor name="JC6FT"/>
@@ -35,7 +45,7 @@
   <parameter name="LCIOInputFiles">
     /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/flavortag/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I110032.Pbbbbbb.eL.pR.n009.d_dstm_10586_20.slcio
   </parameter>
-  <parameter name="MaxRecordNumber" value="50" />
+  <parameter name="MaxRecordNumber" value="2" />
   <parameter name="SkipNEvents" value="0" />
   <parameter name="SupressCheck" value="false" />
   <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> DEBUG </parameter>
@@ -50,6 +60,14 @@
   <constant name="MCParticleCollectionName" value="MCParticle" />
   <constant name="ProductionDir" value="${ILDConfigDir}/StandardConfig/production" />
   <constant name="RundEdxCorrections" value="true" />
+
+  <!--
+  PandoraPFOs: no overlay removal
+  PFOsWithoutOverlayCheated: cheated
+  PFOsWithoutOverlayFastjet: fastjet generic ee kt algorithm, exclusive to 2 jets
+  PFOsWithoutOverlayML: using ML model for overlay removal
+   -->
+  <constant name="PFOsWithoutOverlayCollection" value="PFOsWithoutOverlayCheated" />
 
   <constant name="WriteIsOverlay" value="true" />
   <constant name="WriteJetFlavor" value="true" />
@@ -95,26 +113,35 @@
   -->
 </processor>
 
-<processor name="FastJetOverlay" type="FastJetProcessor">
+<processor name="MyFastJetOverlayRemoval" type="FastJetProcessor">
   <parameter name="recParticleIn" type="string" lcioInType="ReconstructedParticle"> PandoraPFOs </parameter>
-  <parameter name="jetOut" type="string" lcioOutType="ReconstructedParticle"> PFOsminusoverlayJets </parameter>
+  <parameter name="jetOut" type="string" lcioOutType="ReconstructedParticle">FastJetsExclusiveJets</parameter>
   <parameter name="algorithm" type="StringVec"> ee_genkt_algorithm 3.0 1.0 </parameter>
   <parameter name="clusteringMode" type="StringVec"> ExclusiveNJets 2 </parameter>
   <parameter name="recombinationScheme" type="string">E_scheme </parameter>
 </processor>
 
 <processor name="ExpandJet" type="ExpandJetProcessor">
-  <parameter name="InputCollection" type="string"> PFOsminusoverlayJets </parameter>
-  <parameter name="OutputCollection" type="string"> PFOsminusoverlay </parameter>
+  <parameter name="InputCollection" type="string">FastJetsExclusiveJets</parameter>
+  <parameter name="OutputCollection" type="string">PFOsWithoutOverlayFastjet</parameter>
+
+  <!-- PIDAlgoSync = true -> sync PID parameters. PIDAlgosToKeep is empty -> all -->
+  <parameter name="PIDAlgoSync" type="bool">false</parameter>
+  <parameter name="PIDAlgosToKeep" type="StringVec"></parameter>
 </processor>
 
 <processor name="MyCheatedMCOverlayRemoval" type="CheatedMCOverlayRemoval">
-    <parameter name="RecoParticleCollection" type="string" lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
-    <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
-    <parameter name="RecoMCTruthLink" type="string" lcioInType="LCRelation">RecoMCTruthLink</parameter>
-    <parameter name="MCTruthRecoLink" type="string" lcioInType="LCRelation">MCTruthRecoLink</parameter>
-    <parameter name="OutputPfoCollection" type="string" lcioOutType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
-    <parameter name="Verbosity" type="string">MESSAGE</parameter>
+  <parameter name="RecoParticleCollection" type="string" lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
+  <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
+  <parameter name="RecoMCTruthLink" type="string" lcioInType="LCRelation">RecoMCTruthLink</parameter>
+  <parameter name="MCTruthRecoLink" type="string" lcioInType="LCRelation">MCTruthRecoLink</parameter>
+  <parameter name="OutputPfoCollection" type="string" lcioOutType="ReconstructedParticle">PFOsWithoutOverlayCheated</parameter>
+
+  <!-- PIDAlgoSync = true -> sync PID parameters. PIDAlgosToKeep is empty -> all -->
+  <parameter name="PIDAlgoSync" type="bool">false</parameter>
+  <parameter name="PIDAlgosToKeep" type="StringVec"></parameter>
+
+  <parameter name="Verbosity" type="string">MESSAGE</parameter>
 </processor>
 
 <processor name="MyIsolatedLeptonTaggingProcessor" type="IsolatedLeptonTaggingProcessor">
@@ -132,7 +159,7 @@
   <!--Directory of Weights for the Isolated Muon MVA Classification-->
   <parameter name="DirOfISOMuonWeights" type="string">/cvmfs/ilc.desy.de/sw/x86_64_gcc82_centos7/v02-02-02/MarlinReco/v01-31/Analysis/IsolatedLeptonTagging/example/isolated_muon_weights_woYoke</parameter>
   <!--Name of the PandoraPFOs collection-->
-  <parameter name="InputPandoraPFOsCollection" type="string" lcioInType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
+  <parameter name="InputPandoraPFOsCollection" type="string" lcioInType="ReconstructedParticle">${PFOsWithoutOverlayCollection}</parameter>
   <!--Name of the Primary Vertex collection-->
   <parameter name="InputPrimaryVertexCollection" type="string" lcioInType="Vertex">PrimaryVertex</parameter>
   <!--flag to select one most like isolated lepton-->
@@ -162,11 +189,20 @@
   <!--Name of collection with the selected isolated lepton-->
   <parameter name="OutputIsoLeptonsCollection" type="string" lcioOutType="ReconstructedParticle">ISOLeptons</parameter>
   <!--Name of the new PFOs collection without isolated lepton-->
-  <parameter name="OutputPFOsWithoutIsoLepCollection" type="string" lcioOutType="ReconstructedParticle">PandoraPFOsWithoutIsoLep</parameter>
+  <parameter name="OutputPFOsWithoutIsoLepCollection" type="string" lcioOutType="ReconstructedParticle">PandoraPFOsWithoutIsoLepRaw</parameter>
   <!--use yoke for muon ID-->
   <parameter name="UseYokeForMuonID" type="bool">false</parameter>
   <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
   <parameter name="Verbosity" type="string">SILENT</parameter>
+</processor>
+
+<processor name="MyMergePIDProcessor" type="MergePIDProcessor">
+  <parameter name="SourceCollection" type="string" lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
+  <parameter name="TargetCollection" type="string" lcioInType="ReconstructedParticle">PFOsWithoutOverlayCheated</parameter>
+  <parameter name="OutputCollection" type="string" lcioOutType="ReconstructedParticle">PandoraPFOsWithoutIsoLep</parameter>
+  <parameter name="Verbosity" type="string">MESSAGE</parameter>
+
+  <parameter name="PIDAlgosToKeep" type="StringVec"></parameter>
 </processor>
 
 <processor name="JC6FT" type="LcfiplusProcessor">
@@ -175,7 +211,7 @@
   <parameter name="Verbosity" type="string">SILENT</parameter>
 
   <!-- general parameters -->
-  <parameter name="PFOCollection" type="string" value="PandoraPFOs" /> <!-- input PFO collection -->
+  <parameter name="PFOCollection" type="string" value="PandoraPFOsWithoutIsoLep" /> <!-- input PFO collection -->
   <parameter name="UseMCP" type="int" value="0" /> <!-- MC info not used -->
   <parameter name="MCPCollection" type="string" value="" /> <!-- not used -->
   <parameter name="MCPFORelation" type="string" value="" /> <!-- not used -->

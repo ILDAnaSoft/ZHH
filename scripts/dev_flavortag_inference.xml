@@ -26,7 +26,7 @@
     <!--
     <processor name="ParticleIDFilter"/>
     -->
-  
+    <processor name="MyTrueJet"/>
     <processor name="StoreVariablesForDeepMLFlavorTagger_6J"/>
     <processor name="ParticleNetTagger_6J"/>
 
@@ -48,7 +48,7 @@
     /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02/v02-02-03/00015739/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n000.d_dstm_15739_0.slcio
     -->
   </parameter>
-  <parameter name="MaxRecordNumber" value="0" /> <!-- 1000 -->
+  <parameter name="MaxRecordNumber" value="50" /> <!-- 1000 -->
   <parameter name="SkipNEvents" value="0" /> <!-- 4300 -->
   <parameter name="SupressCheck" value="false" />
   <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> DEBUG </parameter>
@@ -91,6 +91,10 @@
     <!-- <parameter name="Verbosity" type="string">MESSAGE </parameter> -->
 </processor>
 
+<processor name="MyTrueJet" type="TrueJet">
+  <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
+  <parameter name="TrueJets" type="string" lcioOutType="ReconstructedParticle">TrueJets</parameter>
+</processor>
 
 <processor name="FastJetOverlay" type="FastJetProcessor">
   <parameter name="recParticleIn" type="string" lcioInType="ReconstructedParticle"> PandoraPFOs </parameter>
@@ -106,12 +110,17 @@
 </processor>
 
 <processor name="MyCheatedMCOverlayRemoval" type="CheatedMCOverlayRemoval">
-    <parameter name="RecoParticleCollection" type="string" lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
-    <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
-    <parameter name="RecoMCTruthLink" type="string" lcioInType="LCRelation">RecoMCTruthLink</parameter>
-    <parameter name="MCTruthRecoLink" type="string" lcioInType="LCRelation">MCTruthRecoLink</parameter>
-    <parameter name="OutputPfoCollection" type="string" lcioOutType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
-    <parameter name="Verbosity" type="string">SILENT</parameter>
+  <parameter name="RecoParticleCollection" type="string" lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
+  <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
+  <parameter name="RecoMCTruthLink" type="string" lcioInType="LCRelation">RecoMCTruthLink</parameter>
+  <parameter name="MCTruthRecoLink" type="string" lcioInType="LCRelation">MCTruthRecoLink</parameter>
+  <parameter name="OutputPfoCollection" type="string" lcioOutType="ReconstructedParticle">PFOsWithoutOverlayCheated</parameter>
+
+  <!-- PIDAlgoSync = true -> sync PID parameters. PIDAlgosToKeep is empty -> all -->
+  <parameter name="PIDAlgoSync" type="bool">true</parameter>
+  <parameter name="PIDAlgosToKeep" type="StringVec"></parameter>
+
+  <parameter name="Verbosity" type="string">MESSAGE</parameter>
 </processor>
 
 <processor name="MyIsolatedLeptonTaggingProcessor" type="IsolatedLeptonTaggingProcessor">
@@ -431,7 +440,12 @@
   <parameter name="Z0ProbFileName" type="string" value="${ILDConfigDir}/LCFIPlusConfig/vtxprob/z0probv2_ildl5_6q500.root"/>
   <parameter name="dEdxPID" type="string" value="dEdxPIDv2"/>
   <parameter name="CPIDName" type="string" value="None" />
-  <parameter name="WriteDeepjetFeatures" type="bool" value="false"/>
+
+  <parameter name="WriteDeepjetFeatures" type="bool">false</parameter>
+  <parameter name="WriteConstitutentTree" type="bool">false</parameter>
+  <parameter name="WriteIsOverlay" type="bool">true</parameter>
+  <parameter name="WriteJetTree" type="bool">true</parameter>
+  <parameter name="WriteJetFlavor" type="bool">true</parameter>  
 
   <!--
   <parameter name="ValueForInexistentFeatures" type="float">0</parameter>

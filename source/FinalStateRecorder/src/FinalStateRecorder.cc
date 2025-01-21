@@ -58,6 +58,12 @@ FinalStateRecorder::FinalStateRecorder() :
 				m_outputJsonFile,
 				std::string("FinalStates.json")
 				);
+	
+	registerProcessorParameter("setReturnValues",
+				"whether or not to set return values",
+				m_setReturnValues,
+				false
+				);
 }
 
 void FinalStateRecorder::init()
@@ -354,8 +360,12 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 				}
 
 				m_event_category = resolver->get_event_category(m_final_state_counts);
-
 				m_error_code = ERROR_CODES::OK;
+
+				if (m_setReturnValues) {
+					setReturnValue("n_b_from_higgs", m_n_b_from_higgs);
+					setReturnValue("n_c_from_higgs", m_n_c_from_higgs);
+				}
 			} catch (int err) {
 				std::cerr << "Encountered exception (error " << err << ") in run " << m_n_run << " (process " << m_process << ") at event " << m_n_evt << std::endl ;
 				throw err;
