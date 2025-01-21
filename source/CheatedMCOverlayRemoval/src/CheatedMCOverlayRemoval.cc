@@ -4,6 +4,7 @@
 #include <string>
 #include <EVENT/LCCollection.h>
 #include <EVENT/MCParticle.h>
+#include <UTIL/PIDHandler.h>
 
 using namespace lcio ;
 using namespace marlin ;
@@ -87,16 +88,35 @@ void CheatedMCOverlayRemoval::processRunHeader()
   streamlog_out(DEBUG0) << "   processRunHeader finished successfully" << std::endl ;
 }
 
-void copy_pids(ReconstructedParticle* pfo, ReconstructedParticle* new_pfo) {
-  ParticleIDImpl* pid = new ParticleIDImpl();
-  for (int i = 0; i < pfo->getParticleIDs().size(); i++) {
-	pid->setType(pfo->getParticleIDs()[i]->getType());
-	pid->setPDG(pfo->getParticleIDs()[i]->getPDG());
-	pid->setLikelihood(pfo->getParticleIDs()[i]->getLikelihood());
-	pid->setAlgorithmType(pfo->getParticleIDs()[i]->getAlgorithmType());
-	pid->setParameters(pfo->getParticleIDs()[i]->getParameters());
-	new_pfo->addParticleID(pid);
-  }
+void sync_pids(const EVENT::LCCollection* PFOs, IMPL::LCCollectionVec* OutputPfoCollection, EVENT::LCObject* pfo_in, ReconstructedParticle* pfo_out, std::map<int, int> *pid_algo_mapping) {
+	PIDHandler PIDs(PFOs);
+	PIDHandler PIDt(OutputPfoCollection);
+
+	EVENT::IntVec algorithmIDs = PIDs.getAlgorithmIDs();
+	std::map<int, int> source_to_target_algo_ids;
+
+	for (size_t i = 0; i < algorithmIDs.size(); i++) {
+		int sourceAlgoID = algorithmIDs[i];
+		EVENT::ParticleIDVec source_pids = PIDs.getParticleIDs(pfo_in, sourceAlgoID);
+
+		if (source_pids.size()) {
+			int targetAlgoID;
+
+			EVENT::ParticleID* source_pid = source_pids.at(0);
+
+			if (!pid_algo_mapping->contains(sourceAlgoID)) {
+				targetAlgoID = PIDt.addAlgorithm(PIDs.getAlgorithmName(sourceAlgoID), PIDs.getParameterNames(sourceAlgoID));
+				pid_algo_mapping->insert({sourceAlgoID, targetAlgoID});
+			} else {
+				targetAlgoID = (*pid_algo_mapping)[sourceAlgoID];
+			}
+
+			if (source_pid->getParameters().size() == PIDt.getParameterNames(targetAlgoID).size()) {
+				PIDt.setParticleID(pfo_out, source_pid->getType(), source_pid->getPDG(), source_pid->getLikelihood(), targetAlgoID, source_pid->getParameters());
+			}
+		}
+
+	}	
 }
 
 void CheatedMCOverlayRemoval::processEvent( LCEvent *pLCEvent )
@@ -144,8 +164,10 @@ void CheatedMCOverlayRemoval::processEvent( LCEvent *pLCEvent )
 	}
       }
 
+	  std::map<int, int> pid_algo_mapping;
       for (int i=0; i<m_nAllPFOs; i++) {
-	ReconstructedParticle* pfo = (ReconstructedParticle*) PFOs->getElementAt(i);
+		EVENT::LCObject* pfo_in = PFOs->getElementAt(i);
+		ReconstructedParticle* pfo = (ReconstructedParticle*) pfo_in;
 	float weightPFOtoMCP = 0.0;
 	float weightMCPtoPFO = 0.0;
 	MCParticle* linkedMCP = getLinkedMCP( pfo, RecoMCParticleNav , MCParticleRecoNav , false , false , weightPFOtoMCP , weightMCPtoPFO );
@@ -157,6 +179,8 @@ void CheatedMCOverlayRemoval::processEvent( LCEvent *pLCEvent )
 	  if (linkedMCP->isOverlay()) continue;
 	}
 	OutputPfoCollection->addElement(pfo);
+
+	sync_pids(PFOs, OutputPfoCollection, pfo_in, pfo, &pid_algo_mapping);
 	nKeptPFOs++;
       }
 
@@ -177,11 +201,11 @@ void CheatedMCOverlayRemoval::processEvent( LCEvent *pLCEvent )
     }*/
 
       m_nEvt++ ;
-    }
-  catch(...)
-    {
+    } catch(lcio::DataNotAvailableException &e) {
       streamlog_out(WARNING) << "Check : Input collections not found in event " << m_nEvt << std::endl;
-    }
+    } catch (Exception &e) {
+	  streamlog_out(WARNING) << "Unexpected exception occured in " << m_nEvt << std::endl;
+	}
   streamlog_out(DEBUG) << "nevt = " << m_nEvt << std::endl;
 }
 

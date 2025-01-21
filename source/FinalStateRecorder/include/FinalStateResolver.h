@@ -33,6 +33,7 @@ class FinalStateResolver {
         std::vector<int> m_isr_indices;
 
         int m_n_b_from_higgs = 0;
+        int m_n_c_from_higgs = 0;
 
         void assert_true(bool check) {
             if (!check) {
@@ -62,6 +63,7 @@ class FinalStateResolver {
         int get_n_fermions() { return m_n_fermions; };
         int get_n_higgs() { return m_n_higgs; };
         int get_n_b_from_higgs() { return m_n_b_from_higgs; };
+        int get_n_c_from_higgs() { return m_n_c_from_higgs; };
 
         std::vector<EVENT::MCParticle*> resolve_isr_particles(LCCollection *mcp_collection) {
             std::vector<EVENT::MCParticle*> isr_particles;
@@ -78,7 +80,10 @@ class FinalStateResolver {
         };
         
         // To be overwritten by deriving class definitions, the lower three MUST be defined
-        virtual int get_event_category(std::map<int, int> m_final_state_counts) { return m_event_category; };
+        virtual int get_event_category(std::map<int, int> m_final_state_counts) {
+            (void)m_final_state_counts;
+            return m_event_category; };
+
         virtual std::vector<EVENT::MCParticle*> resolve_fs_particles(LCCollection *mcp_collection, bool resolve_higgs = false) = 0;
         virtual std::vector<int> resolve(LCCollection *mcp_collection) = 0;
 };

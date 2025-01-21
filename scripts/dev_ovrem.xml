@@ -6,9 +6,10 @@
   <processor name="Statusmonitor"/>
   <!--processor name="FastJetOverlay"/> -->
 
-  <!-- <processor name="MyCheatedMCOverlayRemoval" />
-  <processor name="MyIsolatedLeptonTaggingProcessor"/> -->
+  <processor name="MyCheatedMCOverlayRemoval" />
+  <!-- <processor name="MyIsolatedLeptonTaggingProcessor"/> -->
 
+  <!--
   <processor name="JC6FT"/>
   <processor name="EF6"/>
 
@@ -19,14 +20,13 @@
     <processor name="ComprehensivePID"/>
   </if>
 
-<!--
-  <processor name="ParticleIDFilter"/>-->
   <processor name="MyTrueJet"/>
   <processor name="StoreVariablesForDeepMLFlavorTagger_6J"/>
 
   <if condition="${FilterTempPID}">
     <processor name="ParticleIDFilter_6J"/>
   </if>
+  -->
   
   <processor name="LCIOOutputProcessor"/>
 </execute>
@@ -114,7 +114,7 @@
     <parameter name="RecoMCTruthLink" type="string" lcioInType="LCRelation">RecoMCTruthLink</parameter>
     <parameter name="MCTruthRecoLink" type="string" lcioInType="LCRelation">MCTruthRecoLink</parameter>
     <parameter name="OutputPfoCollection" type="string" lcioOutType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
-    <parameter name="Verbosity" type="string">SILENT</parameter>
+    <parameter name="Verbosity" type="string">MESSAGE</parameter>
 </processor>
 
 <processor name="MyIsolatedLeptonTaggingProcessor" type="IsolatedLeptonTaggingProcessor">
@@ -450,7 +450,7 @@
 <processor name="LCIOOutputProcessor" type="LCIOOutputProcessor">
   <!-- DST output: drop all hits, skim MCParticles and keep final Tracks, Clusters, Vertices and  ReconstructedParticles -->
   <parameter name="LCIOOutputFile" type="string" >
-   ${OutputDir}/FT_${OutputSuffix}.slcio
+   ${OutputDir}/OVrem_${OutputSuffix}.slcio
   </parameter>
   <parameter name="DropCollectionTypes" type="StringVec">
     Track

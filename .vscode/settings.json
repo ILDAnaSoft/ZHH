@@ -100,7 +100,8 @@
         "${workspaceFolder}/source/JetTaggingComparison",
         "${workspaceFolder}/source/FinalStateRecorder",
         "${workspaceFolder}/source/TruthKinematicsRecorder",
-        "${workspaceFolder}/source/ExtractMCParticleFromDST",
+        "${workspaceFolder}/source/CheatedMCOverlayRemoval",
+        "${workspaceFolder}/dependencies/MarlinMLFlavorTagging",
     ],
     "terminal.integrated.profiles.linux": {
         "bash": {

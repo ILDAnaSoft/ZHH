@@ -37,6 +37,15 @@ struct PROCESS_ID {
 		n23n23qqh = 2342,
 		qqqqh = 2520,
 
+		// ffh
+		e1e1h = 1011,
+		e2e2h = 1012,
+		e3e3h = 1013,
+		
+		n1n1h = 1014,
+		n23n23h = 1015,
+		qqh = 1016,
+
 		// ff
 		f2_z_l = 3170,
 		f2_z_h = 3570,
@@ -198,7 +207,12 @@ int PROCESS_INVALID = -999;
 struct EVENT_CATEGORY_TRUE {
 	enum Values: int {
 		OTHER = 0,
-		
+
+		// single Higgs
+		llH = 1,
+		vvH = 2,
+		qqH = 3,
+
 		// LEPTONIC
 		OTHER_LL = 10,
 		llHH = 11, // llbbbb (ZHH signal)
@@ -274,6 +288,7 @@ struct EVENT_CATEGORY_TRUE {
 		f6_yyyyZ = 95,
 		f6_xxWW = 96,
 		f6_xxxxZ = 97,
+
 	};
 };
 

@@ -11,14 +11,13 @@ FinalStateResolver::FinalStateResolver(
     int n_fermions,
     int n_higgs,
     std::vector<int> isr_indices
-){
-    m_process_name = process_name;
-    m_process_id = process_id;
-    m_event_category = event_category;
-    m_n_fermions = n_fermions;
-    m_n_higgs = n_higgs;
-    m_isr_indices = isr_indices;
-};
+):
+    m_process_name(process_name),
+    m_process_id(process_id),
+    m_event_category(event_category),
+    m_n_fermions(n_fermions),
+    m_n_higgs(n_higgs),
+    m_isr_indices(isr_indices) {};
 FinalStateResolver::~FinalStateResolver() {};
 
 int FinalStateResolver::pdg_of_particle(EVENT::LCObject* particle) {
@@ -33,7 +32,7 @@ std::vector<int> FinalStateResolver::pdgs_of_daughter_particles(EVENT::MCParticl
     std::vector<int> res;
     auto daughters = particle->getDaughters();
 
-    for (int i = 0; i < daughters.size(); i++)
+    for (size_t i = 0; i < daughters.size(); i++)
         res.push_back(abs(daughters[i]->getPDG()));
 
     return res;

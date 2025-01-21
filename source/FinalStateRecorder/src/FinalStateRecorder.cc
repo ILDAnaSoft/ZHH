@@ -38,7 +38,7 @@ FinalStateRecorder::FinalStateRecorder() :
   m_n_higgs(0)
 {
 
-	_description = "FinalStateRecorder writes relevant observables to root-file " ;
+	_description = "FinalStateRecorder writes meta information about the hard interaction, e.g. number of produced quarks per flavor, b/c from Higgs etc. should support all major SM, di-Higgs and single Higgs productions " ;
 
 	registerInputCollection(LCIO::MCPARTICLE,
 				"MCParticleCollection" ,
@@ -65,23 +65,27 @@ void FinalStateRecorder::init()
 	streamlog_out(DEBUG) << "   init called  " << std::endl;
 	this->clear();
 
-	m_pTFile = new TFile(m_outputRootFile.c_str(),"recreate");
-	m_pTTree = new TTree("eventTree", "eventTree");
-	m_pTTree->SetDirectory(m_pTFile);
+	m_write_ttree = m_outputRootFile != "";
+	if (m_write_ttree) {
+		m_pTFile = new TFile(m_outputRootFile.c_str(),"recreate");
+		m_pTTree = new TTree("eventTree", "eventTree");
+		m_pTTree->SetDirectory(m_pTFile);
 
-	m_pTTree->Branch("run", &m_n_run, "run/I");
-	m_pTTree->Branch("event", &m_n_evt, "event/I");
+		m_pTTree->Branch("run", &m_n_run, "run/I");
+		m_pTTree->Branch("event", &m_n_evt, "event/I");
 
-	m_pTTree->Branch("error_code", &m_error_code);
-	m_pTTree->Branch("final_states", &m_final_states);
-	m_pTTree->Branch("final_state_counts", &m_final_state_counts);
+		m_pTTree->Branch("error_code", &m_error_code);
+		m_pTTree->Branch("final_states", &m_final_states);
+		m_pTTree->Branch("final_state_counts", &m_final_state_counts);
 
-	m_pTTree->Branch("process", &m_process);
-	m_pTTree->Branch("event_category", &m_event_category);
-	m_pTTree->Branch("event_category_zhh", &m_event_category_zhh);
-	m_pTTree->Branch("n_fermion", &m_n_fermion);
-	m_pTTree->Branch("n_higgs", &m_n_higgs);
-	m_pTTree->Branch("n_b_from_higgs", &m_n_b_from_higgs);
+		m_pTTree->Branch("process", &m_process);
+		m_pTTree->Branch("event_category", &m_event_category);
+		m_pTTree->Branch("event_category_zhh", &m_event_category_zhh);
+		m_pTTree->Branch("n_fermion", &m_n_fermion);
+		m_pTTree->Branch("n_higgs", &m_n_higgs);
+		m_pTTree->Branch("n_b_from_higgs", &m_n_b_from_higgs);
+		m_pTTree->Branch("n_c_from_higgs", &m_n_c_from_higgs);
+	}
 
 	m_t_start = std::time(nullptr);
 
@@ -270,6 +274,7 @@ void FinalStateRecorder::clear()
 	m_n_fermion = 0;
 	m_n_higgs = 0;
 	m_n_b_from_higgs = 0;
+	m_n_c_from_higgs = 0;
 
 	m_event_category = EVENT_CATEGORY_TRUE::OTHER;
 	m_event_category_zhh = EVENT_CATEGORY_ZHH::OTHER;
@@ -325,6 +330,7 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 			try {
 				m_final_states = resolver->resolve(inputMCParticleCollection);
 				m_n_b_from_higgs = resolver->get_n_b_from_higgs();
+				m_n_c_from_higgs = resolver->get_n_c_from_higgs();
 
 				for (size_t i = 0; i < m_final_states.size(); i++) {
 					int particle_pdg = abs(m_final_states[i]);
@@ -364,7 +370,9 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 		streamlog_out(MESSAGE) << "processEvent : Input collections not found in event " << m_n_evt << std::endl;
 	}
 
-	m_pTTree->Fill();
+	if (m_write_ttree) {
+		m_pTTree->Fill();
+	}
 }
 
 void FinalStateRecorder::check()
@@ -376,11 +384,13 @@ void FinalStateRecorder::check()
 void FinalStateRecorder::end()
 {
 	// Write ROOT file
-	m_pTFile->cd();
-	m_pTTree->Write();
-	m_pTFile->Close();
+	if (m_write_ttree) {
+		m_pTFile->cd();
+		m_pTTree->Write();
+		m_pTFile->Close();
 
-	delete m_pTFile;
+		delete m_pTFile;
+	}
 
 	// Write JSON metadata file
 	m_jsonFile["run"] = m_n_run;

@@ -11,8 +11,11 @@ using namespace std;
 class p6: public FinalStateResolver {
     public:
         // Set process ID and event category
-        p6( string process_name, int process_id, int event_category ): FinalStateResolver( process_name, process_id, event_category, 6, 0, vector<int> {4,5} ) {};
-        p6( string process_name, int process_id, int event_category, int n_fermions, int n_higgs, vector<int> isr_particles ): FinalStateResolver( process_name, process_id, event_category, n_fermions, n_higgs, isr_particles ) {};
+        p6( string process_name, int process_id, int event_category ):
+            FinalStateResolver( process_name, process_id, event_category, 6, 0, vector<int> {4,5} ) {};
+            
+        p6( string process_name, int process_id, int event_category, int n_fermions, int n_higgs, vector<int> isr_particles ):
+            FinalStateResolver( process_name, process_id, event_category, n_fermions, n_higgs, isr_particles ) {};
 
         vector<MCParticle*> resolve_fs_particles(LCCollection *mcp_collection, bool resolve_higgs = false) {
             (void) resolve_higgs;

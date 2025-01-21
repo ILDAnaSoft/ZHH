@@ -432,9 +432,9 @@
   <parameter name="ParticleNetFeatures_PFFeatures" type="StringVec"> TransverseMomentumLOG EnergyLOG 
   TransverseMomentumFracLOG EnergyFracLOG DeltaRJet Charge IsElectron IsMuon IsChargedHadron IsNeutralHadron IsPhoton 
   RapidityRelJet PhiRelJet Rapidity D0 D0Sig Z0 Z0Sig 3DImpactPar 3DImpactParSig D0bprob D0cprob D0qprob Z0bprob Z0cprob Z0qprob
-  UsedinPrimVertex LeptonMomRelJet Kaoness Chi2NDF LeptonMomFraction WeightedKaonnessMomFrac CPID11ness CPID13ness CPID211ness CPID321ness CPID2212ness
+  TrackUsedinPrimVertex LeptonMomRelJet Kaoness Chi2NDF LeptonMomFraction WeightedKaonnessMomFrac CPID11ness CPID13ness CPID211ness CPID321ness CPID2212ness
   MomentumX MomentumY MomentumZ Energy
-  JetDotProductNorm HCalFrac </parameter>
+  TrackJetDotProductNorm HCalFrac </parameter>
   <parameter name="ParticleNetFeatures_SVPoints" type="StringVec"> SecondaryVertexRapidityJetAxis SecondaryVertexPhiJetAxis </parameter>
   <parameter name="ParticleNetFeatures_SVFeatures" type="StringVec"> SecondaryVertexPtLOG SecondaryVertexMass SecondaryVertexNTracks 
   SecondaryVertexChi2NDF SecondaryVertexD0 SecondaryVertexD0Sig SecondaryVertexImpactPar3d SecondaryVertexImpactPar3dSig 

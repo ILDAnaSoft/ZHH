@@ -4,11 +4,13 @@
   <processor name="AIDA"/>
   <processor name="InitDD4hep"/>
   <processor name="Statusmonitor"/>
+  <processor name="MyHdecayMode" />
+
   <!--processor name="FastJetOverlay"/> -->
 
   <!-- <processor name="MyCheatedMCOverlayRemoval" />
   <processor name="MyIsolatedLeptonTaggingProcessor"/> -->
-
+  
   <processor name="JC6FT"/>
   <processor name="EF6"/>
 
@@ -19,17 +21,21 @@
     <processor name="ComprehensivePID"/>
   </if>
 
-<!--
-  <processor name="ParticleIDFilter"/>-->
+  <if condition="MyHdecayMode.bbbb || MyHdecayMode.cccc || ${CheckAllJets}">
+
+    <!--
+    <processor name="ParticleIDFilter"/>
+    -->
   
-  <processor name="StoreVariablesForDeepMLFlavorTagger_6J"/>
-  <processor name="ParticleNetTagger_6J"/>
+    <processor name="StoreVariablesForDeepMLFlavorTagger_6J"/>
+    <processor name="ParticleNetTagger_6J"/>
 
-  <if condition="${FilterTempPID}">
-    <processor name="ParticleIDFilter_6J"/>
+    <if condition="${FilterTempPID}">
+      <processor name="ParticleIDFilter_6J"/>
+    </if>
+
+    <processor name="MyJetTaggingComparison" />
   </if>
-
-  <processor name="MyJetTaggingComparison" />
   
   <processor name="LCIOOutputProcessor"/>
 </execute>
@@ -37,9 +43,13 @@
 <global>
   <parameter name="LCIOInputFiles">
     /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/flavortag/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I110032.Pbbbbbb.eL.pR.n001.d_dstm_10586_0.slcio
+    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/flavortag/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I110033.Pcccccc.eL.pR.n001.d_dstm_10586_0.slcio
+    <!--
+    /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02/v02-02-03/00015739/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n000.d_dstm_15739_0.slcio
+    -->
   </parameter>
-  <parameter name="MaxRecordNumber" value="1000" />
-  <parameter name="SkipNEvents" value="0" />
+  <parameter name="MaxRecordNumber" value="0" /> <!-- 1000 -->
+  <parameter name="SkipNEvents" value="0" /> <!-- 4300 -->
   <parameter name="SupressCheck" value="false" />
   <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> DEBUG </parameter>
 </global>
@@ -50,11 +60,14 @@
   <constant name="OutputDir" value="." />
   <constant name="OutputSuffix" value="" />
   
+  <constant name="CheckAllJets" value="true" />
+  <constant name="NumberOfHiggs" value="2" />
   <constant name="FilterTempPID" value="true" /> <!-- set to "false" for debugging -->
-  <constant name="DebugDumpEvent" value="-1" />
-  <constant name="DebugDumpJet" value="-1" />
+  <constant name="DebugDumpEvent" value="0" />
+  <constant name="DebugDumpJet" value="0" />
 
-  <constant name="MCParticleCollectionName" value="MCParticle" />
+  <constant name="MCParticleCollectionName" value="MCParticle" /> <!-- MCParticle MCParticlesSkimmed -->
+
   <constant name="ProductionDir" value="${ILDConfigDir}/StandardConfig/production" />
   <constant name="RundEdxCorrections" value="true" />
 </constants>
@@ -397,6 +410,18 @@
 </processor>
 -->
 
+<processor name="MyHdecayMode" type="HdecayMode">
+    <!--HdecayMode identifies Higgs decay mode and cheats ISR energy-->
+    <!--Name of the Input MCParticle Collection-->
+    <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
+    <!--Number of Higgs decays (default: 2) -->
+    <parameter name="nHiggs" type="int"> ${NumberOfHiggs} </parameter>
+    <!--Names of the Output Higgs decay mode collection-->
+    <parameter name="HdecayModeCollection" type="string" lcioOutType="MCParticle">HdecayMode</parameter>
+    <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
+    <parameter name="Verbosity" type="string">MESSAGE</parameter>
+</processor>
+
 <processor name="StoreVariablesForDeepMLFlavorTagger_6J" type="StoreVariablesForDeepMLFlavorTagger">
   <parameter name="CollectionPrimaryVertex" type="string" value="PrimaryVertex" />
   <parameter name="CollectionRefinedJets" type="string" value="Refined6Jets"> </parameter>
@@ -408,12 +433,20 @@
   <parameter name="CPIDName" type="string" value="None" />
   <parameter name="WriteDeepjetFeatures" type="bool" value="false"/>
 
+  <!--
+  <parameter name="ValueForInexistentFeatures" type="float">0</parameter>
+  <parameter name="ValueForInfChi2Ndf" type="float">0</parameter>
+  <parameter name="ValueForNanD0Sig" type="float">0</parameter>
+  <parameter name="ValueForNanZ0Sig" type="float">0</parameter>
+  <parameter name="ValueForNan3DImpactParSig" type="float">0</parameter>
+  -->
+
   <parameter name="ParticleNetFeatures_PFPoints" type="StringVec"> RapidityRelJet PhiRelJet </parameter>
   <parameter name="ParticleNetFeatures_PFFeatures" type="StringVec"> TransverseMomentumLOG EnergyLOG 
   TransverseMomentumFracLOG EnergyFracLOG DeltaRJet Charge IsElectron IsMuon IsChargedHadron IsNeutralHadron IsPhoton 
   RapidityRelJet PhiRelJet Rapidity D0 D0Sig Z0 Z0Sig 3DImpactPar 3DImpactParSig D0bprob D0cprob D0qprob Z0bprob Z0cprob Z0qprob
-  UsedinPrimVertex LeptonMomRelJet Kaoness Chi2NDF LeptonMomFraction WeightedKaonnessMomFrac
-  JetDotProductNorm HCalFrac </parameter>
+  TrackUsedinPrimVertex LeptonMomRelJet Kaoness Chi2NDF LeptonMomFraction WeightedKaonnessMomFrac
+  TrackJetDotProductNorm HCalFrac </parameter>
   <parameter name="ParticleNetFeatures_SVPoints" type="StringVec"> SecondaryVertexRapidityJetAxis SecondaryVertexPhiJetAxis </parameter>
   <parameter name="ParticleNetFeatures_SVFeatures" type="StringVec"> SecondaryVertexPtLOG SecondaryVertexMass SecondaryVertexNTracks 
   SecondaryVertexChi2NDF SecondaryVertexD0 SecondaryVertexD0Sig SecondaryVertexImpactPar3d SecondaryVertexImpactPar3dSig 
@@ -421,6 +454,76 @@
   SecondaryVertexEnergy SecondaryVertexRapidity JetRapidity </parameter> 
 </processor>
  
+<processor name="ParticleNetTagger_6J" type="ParticleNetNTaggerProcessor">
+  <parameter name="ModelScriptFile" type="string"> /nfs/dust/ilc/user/bliewert/FTag2/ParticleNet_4tags/Training/ParticleNet_4tags_ranger_nan_transform_after_std/model_cp_35.pth </parameter>
+  
+  <!--
+  <parameter name="DebugDumpEvent" type="int"> ${DebugDumpEvent} </parameter>
+  <parameter name="DebugDumpJet" type="int"> ${DebugDumpJet} </parameter>
+  -->
+  <parameter name="Verbosity" type="string">DEBUG</parameter>
+
+  <parameter name="CollectionRefinedJets" type="string">Refined6Jets</parameter>
+  <parameter name="CollectionRefinedVertices" type="string">RefinedVertex6Jets</parameter>
+  <parameter name="CollectionPFOs" type="string" value="PandoraPFOs" /> 
+  <parameter name="TagNames" type="StringVec"> b c s ud </parameter>
+
+  <parameter name="ParticleNetFeatures_PFPoints" type="StringVec"> RapidityRelJet PhiRelJet </parameter>
+  <parameter name="ParticleNetFeatures_SVPoints" type="StringVec"> SecondaryVertexRapidityJetAxis SecondaryVertexPhiJetAxis </parameter>
+
+  <parameter name="ParticleNetFeatures_PFFeatures" type="StringVec"> 
+  RapidityRelJet Rapidity PhiRelJet TransverseMomentumLOG
+  EnergyLOG TransverseMomentumFracLOG EnergyFracLOG DeltaRJet
+  D0 D0Sig Z0 Z0Sig
+  3DImpactPar 3DImpactParSig Charge IsElectron
+  IsMuon IsChargedHadron IsNeutralHadron IsPhoton
+  D0bprob D0cprob D0qprob Z0bprob
+  Z0cprob Z0qprob TrackUsedinPrimVertex LeptonMomRelJet
+  Kaoness Chi2NDF LeptonMomFraction WeightedKaonnessMomFrac
+  TrackJetDotProductNorm HCalFrac </parameter>
+
+  <parameter name="ParticleNetFeatures_SVFeatures" type="StringVec"> 
+  SecondaryVertexRapidityJetAxis SecondaryVertexRapidity SecondaryVertexPhiJetAxis SecondaryVertexPtLOG
+  SecondaryVertexMass SecondaryVertexNTracks SecondaryVertexChi2NDF SecondaryVertexD0
+  SecondaryVertexD0Sig SecondaryVertexImpactPar3d SecondaryVertexImpactPar3dSig SecondaryVertexCosMomPos
+  SecondaryVertexEnergyJetEnergy SecondaryVertexEnergy </parameter>
+
+  <parameter name="MeanPFFeatures" type="FloatVec">
+  3.77069518E-05 -1.93826600E-05 2.22567725E-03 -4.35735434E-02
+  1.61758825E-01 -1.02395689E+00 -1.02368236E+00 2.99799323E-01
+  -5.25997914E-02 1.11069441E+00 6.58461172E-03 7.63567016E-02
+  4.21780348E+00 3.49849968E+01 3.57985217E-03 3.48731652E-02
+  4.37371898E-03 2.55920589E-01 1.26139075E-01 2.55920589E-01
+  9.30456221E-02 4.82129790E-02 7.60176405E-02 2.91458338E-01
+  1.55379757E-01 1.34462833E-01 5.80100536E-01 1.48789215E+00
+  3.29402506E-01 1.16439509E+00 2.03893520E-02 1.98143907E-02
+  4.13095379E+00 9.72172394E-02 </parameter>
+
+  <parameter name="StdPFFeatures" type="FloatVec">
+  4.35719252E-01 1.04133523E+00 4.80902225E-01 5.42483330E-01
+  5.13415217E-01 8.10793757E-01 8.13401878E-01 3.99942547E-01
+  2.05213509E+01 6.25780701E+02 2.29538727E+01 6.58322144E+02
+  3.02394695E+01 7.18147644E+02 6.63067222E-01 1.77717328E-01
+  6.57724440E-02 5.05885959E-01 3.26957792E-01 5.05885959E-01
+  1.79131970E-01 9.28312987E-02 1.63675651E-01 2.69639671E-01
+  1.35902420E-01 1.53835997E-01 4.29582804E-01 4.49743700E+00
+  2.50052184E-01 1.24742234E+00 5.38090691E-02 3.94492596E-02
+  7.36868906E+00 2.58683175E-01 </parameter>
+
+  <parameter name="MeanSVFeatures" type="FloatVec">
+  1.02411828E-03 6.24199864E-03 2.07644276E-04 1.00223756E+00
+  1.14136422E+00 2.80132961E+00 1.54570255E+01 6.20377874E+00
+  1.00082063E+10 8.65130329E+00 1.22857892E+10 9.79831338E-01
+  2.59516895E-01 2.05106869E+01 </parameter>
+
+  <parameter name="StdSVFeatures" type="FloatVec">
+  1.82564244E-01 8.82505357E-01 2.07736269E-01 4.08334732E-01
+  1.35368419E+00 1.39549267E+00 2.41239917E+03 2.34312840E+01
+  8.14901205E+12 3.70758553E+01 8.73113426E+12 1.10671341E-01
+  1.75420225E-01 1.84003220E+01 </parameter>
+</processor>
+
+ <!--
  <processor name="ParticleNetTagger_6J" type="ParticleNetNTaggerProcessor">
   <parameter name="ModelScriptFile" type="string"> /afs/desy.de/group/flc/pool/bliewert/MarlinWorkdirs/ZHH/scripts/ParticleNet_4tags_wo_cpid.pth </parameter>
 
@@ -445,7 +548,7 @@
     D0bprob D0cprob D0qprob Z0bprob 
     Z0cprob Z0qprob UsedinPrimVertex LeptonMomRelJet 
     Kaoness Chi2NDF LeptonMomFraction WeightedKaonnessMomFrac 
-    JetDotProductNorm HCalFrac </parameter>
+    TrackJetDotProductNorm HCalFrac </parameter>
 
   <parameter name="ParticleNetFeatures_SVFeatures" type="StringVec"> 
     SecondaryVertexRapidityJetAxis SecondaryVertexRapidity SecondaryVertexPhiJetAxis SecondaryVertexPtLOG 
@@ -487,6 +590,7 @@
     2.05875802E+13 1.52452984E+01 5.22137926E+13 2.27491258E-01 
     7.58027006E-02 6.91535264E+00 </parameter>
 </processor>
+-->
 
 <processor name="ParticleIDFilter_6J" type="ReconstructedParticleParticleIDFilterProcessor">
     <parameter name="RecoParticleCollection" type="string" value="PandoraPFOs"/>

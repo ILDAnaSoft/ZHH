@@ -7,7 +7,7 @@ transfer_executable = True
 max_retries = 3
 Requirements = (Machine =!= LastRemoteHost)
 request_cpus = 1
-request_memory = 2000 Mb
+request_memory = 4000 Mb
 
 log = $LOG_ROOT/$(JobId).log
 output = $LOG_ROOT/$(JobId).out

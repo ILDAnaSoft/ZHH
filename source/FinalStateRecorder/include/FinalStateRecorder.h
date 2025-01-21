@@ -109,8 +109,10 @@ class FinalStateRecorder : public Processor
 		int m_n_fermion{};
 		int m_n_higgs{};
 		int m_n_b_from_higgs{};
+		int m_n_c_from_higgs{};
 
 		// Output ROOT file
+		bool m_write_ttree{};
 		TFile *m_pTFile{};
 		TTree *m_pTTree{};
 
