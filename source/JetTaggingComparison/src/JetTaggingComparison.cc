@@ -49,17 +49,18 @@ JetTaggingComparison::JetTaggingComparison():
 			  std::vector<std::string>{"BTag"}
 			  );
 
-  registerProcessorParameter("RootFile", "Name of the output root file", m_rootFile, string("JetTaggingComparison.root"));
+  registerProcessorParameter("RootFile", "Name of the output root file. if False, will output to AIDA", m_rootFile, string(""));
 }
 
 void JetTaggingComparison::init() {
   streamlog_out(DEBUG0) << "   init called  " << endl ;
   printParameters();
 
-  m_pTFile = new TFile(m_rootFile.c_str(), "recreate");
-  m_pTTree = new TTree("JetTaggingComparison", "JetTaggingComparison");
+  if (m_rootFile.size()) {
+    m_pTFile = new TFile(m_rootFile.c_str(), "recreate");
+    m_pTTree->SetDirectory(m_pTFile);
+  }
 
-  m_pTTree->SetDirectory(m_pTFile);
   m_pTTree->Branch("event", &m_n_evt);
   m_pTTree->Branch("run", &m_n_run);
   m_pTTree->Branch("njet", &m_n_jet);
@@ -155,8 +156,14 @@ void JetTaggingComparison::check(EVENT::LCEvent *pLCEvent) {
 
 
 void JetTaggingComparison::end() {
-  m_pTFile->cd();
+  if (m_rootFile.size()) {
+    m_pTFile->cd();
+  }
+  
   m_pTTree->Write();
-  m_pTFile->Close();
-  delete m_pTFile;
+  
+  if (m_rootFile.size()) {
+    m_pTFile->Close();
+    delete m_pTFile;
+  }
 }

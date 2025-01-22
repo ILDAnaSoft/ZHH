@@ -53,8 +53,6 @@ class JetTaggingComparison : public Processor
   std::vector<float> m_tags2 = {};
 
   TFile *m_pTFile{};
-  TTree *m_pTTree{};
-  
-
+  TTree *m_pTTree = new TTree("JetTaggingComparison", "JetTaggingComparison");
 };
 #endif
