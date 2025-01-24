@@ -101,7 +101,7 @@ LeptonPairing::LeptonPairing():
   registerProcessorParameter("RootFile",
 			     "Name of the output root file",
 			     m_rootFile,
-			     string("Output.root")
+			     string("")
 			     );
 }
 
@@ -110,9 +110,12 @@ void LeptonPairing::init() {
   printParameters();
   if ( m_fillRootTree ) {
     streamlog_out(DEBUG0) << "      Creating root file/tree/histograms" << endl ;
-    m_pTFile = new TFile(m_rootFile.c_str(), "recreate");
-    m_pTTree = new TTree("LeptonPairing", "LeptonPairing");
-    m_pTTree->SetDirectory(m_pTFile);
+
+    if (m_rootFile.size()) {
+      m_pTFile = new TFile(m_rootFile.c_str(), "recreate");
+      m_pTTree->SetDirectory(m_pTFile);
+    }
+
     m_pTTree->Branch("event", &m_nEvt, "event/I");
     m_pTTree->Branch("IsoLepsInvMass", &m_IsoLepsInvMass);
     m_pTTree->Branch("RecoLepsInvMass", &m_RecoLepsInvMass);
@@ -255,10 +258,15 @@ void LeptonPairing::check(EVENT::LCEvent *pLCEvent) {
 
 void LeptonPairing::end() {
   if ( m_fillRootTree ) {
-    m_pTFile->cd();
+    if (m_rootFile.size()) {
+      m_pTFile->cd();
+    }
     m_pTTree->Write();
-    m_pTFile->Close();
-    delete m_pTFile;
+
+    if (m_rootFile.size()) {
+      m_pTFile->Close();
+      delete m_pTFile;
+    }
   }
 
 }

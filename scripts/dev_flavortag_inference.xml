@@ -37,7 +37,7 @@
     <processor name="MyJetTaggingComparison" />
   </if>
   
-  <processor name="LCIOOutputProcessor"/>
+  <!-- <processor name="LCIOOutputProcessor"/> -->
 </execute>
 
 <global>
@@ -445,7 +445,8 @@
   <parameter name="WriteConstitutentTree" type="bool">false</parameter>
   <parameter name="WriteIsOverlay" type="bool">true</parameter>
   <parameter name="WriteJetTree" type="bool">true</parameter>
-  <parameter name="WriteJetFlavor" type="bool">true</parameter>  
+  <parameter name="WriteJetFlavor" type="bool">true</parameter>
+  <parameter name="Verbosity" type="string">SILENT</parameter> 
 
   <!--
   <parameter name="ValueForInexistentFeatures" type="float">0</parameter>
@@ -618,7 +619,7 @@
   <parameter name="PIDAlgorithm2" type="string"> lcfiplus </parameter>
   <parameter name="PIDParameters1" type="StringVev"> b c s ud </parameter>
   <parameter name="PIDParameters2" type="StringVev"> BTag CTag OTag </parameter>
-  <parameter name="RootFile" type="string">JT_Comparison_${OutputSuffix}.root</parameter>
+  <parameter name="RootFile" type="string"></parameter>
   <parameter name="Verbosity" type="string"> DEBUG </parameter>
 </processor>
 

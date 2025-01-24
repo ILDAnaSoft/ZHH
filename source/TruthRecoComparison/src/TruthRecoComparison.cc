@@ -109,7 +109,7 @@ void TruthRecoComparison::init()
 	this->clear();
 
 	m_pTFile = new TFile(m_outputRootFile.c_str(),"recreate");
-	m_pTTree = new TTree("eventTree", "eventTree");
+	m_pTTree = new TTree("TruthRecoComparison", "TruthRecoComparison");
 	m_pTTree->SetDirectory(m_pTFile);
 
 	m_pTTree->Branch("run", &m_n_run, "run/I");

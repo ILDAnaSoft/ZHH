@@ -49,7 +49,7 @@ JetTaggingComparison::JetTaggingComparison():
 			  std::vector<std::string>{"BTag"}
 			  );
 
-  registerProcessorParameter("RootFile", "Name of the output root file. if False, will output to AIDA", m_rootFile, string(""));
+  registerProcessorParameter("RootFile", "Name of the output root file. set to empty, this will output to AIDA", m_rootFile, string(""));
 }
 
 void JetTaggingComparison::init() {
@@ -64,6 +64,7 @@ void JetTaggingComparison::init() {
   m_pTTree->Branch("event", &m_n_evt);
   m_pTTree->Branch("run", &m_n_run);
   m_pTTree->Branch("njet", &m_n_jet);
+  m_pTTree->Branch("energy", &m_jet_energy);
 
   m_pTTree->Branch("tags1", &m_tags1);
   m_pTTree->Branch("tags2", &m_tags2);
@@ -125,21 +126,23 @@ void JetTaggingComparison::processEvent( EVENT::LCEvent *pLCEvent ) {
     }
 
     for (size_t j = 0; j < inputCollection->getNumberOfElements(); j++) {
-      ReconstructedParticle* object = (ReconstructedParticle*) inputCollection->getElementAt(j);
+      ReconstructedParticle* jet = (ReconstructedParticle*) inputCollection->getElementAt(j);
       
-      const ParticleIDImpl& pid1 = dynamic_cast<const ParticleIDImpl&>(PIDh.getParticleID(object, algorithm1IDx));
+      const ParticleIDImpl& pid1 = dynamic_cast<const ParticleIDImpl&>(PIDh.getParticleID(jet, algorithm1IDx));
       const FloatVec& pid1Params = pid1.getParameters();
       for (size_t i = 0; i < parameter1IDxs.size(); i++) {
         m_tags1.push_back(pid1Params[parameter1IDxs[i]]);
       }
 
-      const ParticleIDImpl& pid2 = dynamic_cast<const ParticleIDImpl&>(PIDh.getParticleID(object, algorithm2IDx));
+      const ParticleIDImpl& pid2 = dynamic_cast<const ParticleIDImpl&>(PIDh.getParticleID(jet, algorithm2IDx));
       const FloatVec& pid2Params = pid2.getParameters();
       for (size_t i = 0; i < parameter2IDxs.size(); i++) {
         m_tags2.push_back(pid2Params[parameter2IDxs[i]]);
       }
-
+      
+      m_jet_energy = jet->getEnergy();
       m_pTTree->Fill();
+
       m_n_jet++;
 
       m_tags1.clear();

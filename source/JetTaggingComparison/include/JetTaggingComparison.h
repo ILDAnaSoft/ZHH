@@ -48,6 +48,7 @@ class JetTaggingComparison : public Processor
 	int m_n_evt = 0;
 
   int m_n_jet = 0;
+  float m_jet_energy = 0.;
 
   std::vector<float> m_tags1 = {};
   std::vector<float> m_tags2 = {};

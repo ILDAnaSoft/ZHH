@@ -1,5 +1,6 @@
 #include "FinalStateRecorder.h"
 #include "FinalStates.h"
+#include "marlin/VerbosityLevels.h"
 #include <iostream>
 #include <vector>
 #include <numeric>
@@ -48,34 +49,129 @@ FinalStateRecorder::FinalStateRecorder() :
 				);
 
   	registerProcessorParameter("outputRootFilename",
-				"name of output root file",
+				"name of output root file. will use AIDA if 'None'",
 				m_outputRootFile,
 				std::string("FinalStates.root")
 				);
 
+	registerProcessorParameter("writeTTree",
+				"whether or not to write event meta information",
+				m_write_ttree,
+				true
+				);
+
 	registerProcessorParameter("outputJsonFilename",
-				"name of output json file",
+				"name of output json file containing meta information about the process. if 'None', no JSON will be written",
 				m_outputJsonFile,
 				std::string("FinalStates.json")
 				);
 	
-	registerProcessorParameter("setReturnValues",
-				"whether or not to set return values",
-				m_setReturnValues,
-				false
+	registerProcessorParameter("EventFilter",
+				"if given, adds a GoodEvent processor return value which is true only if all conditions are fulfilled. expects a string vector of the form prop=(int)value; supports nu,nd,nc,ns,nb,nt,ne1,ne2,ne3,nv1,nv2,nv3,ngluon,ngamma,nW,nZ,nb_from_higgs,nc_from_higgs ",
+				m_eventFilter,
+				std::vector<std::string>{}
 				);
+}
+
+std::vector<std::pair<int, int*>> FinalStateRecorder::construct_filter_lookup(std::vector<std::string> filter) {
+	std::vector<std::pair<int, int*>> result;
+
+	for (std::string &piece : filter) {
+		size_t split_pos = piece.find("=");
+		if (split_pos == std::string::npos) {
+			streamlog_out(ERROR) << "Delimiter = not found in filter part: " << piece << std::endl;
+			throw EVENT::Exception("Cannot parse filter");
+		}
+
+		std::string property_name = piece.substr(0, split_pos);
+		std::string property_value = piece.substr(split_pos+1, piece.size() - split_pos - 1);
+		int property_should;
+		try {
+			property_should = std::stoi(property_value);
+		} catch (...) {
+			streamlog_out(ERROR) << "Attempting to parse: " << property_value << std::endl;
+			throw EVENT::Exception("Cannot parse filter");
+		}
+
+		int* property_is;
+		if (property_name == "nd") {
+			property_is = &m_final_state_counts[1];
+		} else if (property_name == "nu") {
+			property_is = &m_final_state_counts[2];
+		} else if (property_name == "ns") {
+			property_is = &m_final_state_counts[3];
+		} else if (property_name == "nc") {
+			property_is = &m_final_state_counts[4];
+		} else if (property_name == "nb") {
+			property_is = &m_final_state_counts[5];
+		} else if (property_name == "nt") {
+			property_is = &m_final_state_counts[6];
+		} else if (property_name == "ne1") {
+			property_is = &m_final_state_counts[11];
+		} else if (property_name == "ne2") {
+			property_is = &m_final_state_counts[13];
+		} else if (property_name == "ne3") {
+			property_is = &m_final_state_counts[15];
+		} else if (property_name == "nv1") {
+			property_is = &m_final_state_counts[12];
+		} else if (property_name == "nv2") {
+			property_is = &m_final_state_counts[14];
+		} else if (property_name == "nv3") {
+			property_is = &m_final_state_counts[16];
+		} else if (property_name == "ngluon") {
+			property_is = &m_final_state_counts[21];
+		} else if (property_name == "ngamma") {
+			property_is = &m_final_state_counts[22];
+		} else if (property_name == "nW") {
+			property_is = &m_final_state_counts[24];
+		} else if (property_name == "nZ") {
+			property_is = &m_final_state_counts[23];
+		} else if (property_name == "nb_from_higgs") {
+			property_is = &m_n_b_from_higgs;
+		} else if (property_name == "nc_from_higgs") {
+			property_is = &m_n_c_from_higgs;
+		} else {
+			streamlog_out(ERROR) << "Cannot parse property '" << property_name << "' = " << piece << std::endl;
+			throw EVENT::Exception("Unkown property");
+		}
+		streamlog_out(MESSAGE) << "Added check for " << property_name << " = " << property_should << std::endl ;
+
+		m_filter_quantities.push_back(property_name);
+
+		result.push_back(std::make_pair(
+			property_should,
+			property_is
+		));		
+	}
+
+	return result;
+};
+
+bool FinalStateRecorder::process_filter(){
+	for (size_t i = 0; i < m_filter_lookup.size(); i++) {
+		auto& is_should_pair = m_filter_lookup[i];
+		if (is_should_pair.first != *is_should_pair.second) {
+			streamlog_out(MESSAGE) << "Event did not pass filter for quantity " << m_filter_quantities[i] << ": " << *is_should_pair.second << " != " << is_should_pair.first << std::endl ;
+			return false;
+		}
+	}
+
+	return true;
 }
 
 void FinalStateRecorder::init()
 {
-	streamlog_out(DEBUG) << "   init called  " << std::endl;
+	printParameters();
+	
 	this->clear();
 
-	m_write_ttree = m_outputRootFile != "";
+	m_setReturnValues = m_eventFilter.size() > 0;
+
 	if (m_write_ttree) {
-		m_pTFile = new TFile(m_outputRootFile.c_str(),"recreate");
-		m_pTTree = new TTree("eventTree", "eventTree");
-		m_pTTree->SetDirectory(m_pTFile);
+		if (m_outputRootFile != "None") {
+			m_pTFile = new TFile(m_outputRootFile.c_str(),"recreate");
+			m_pTTree->SetDirectory(m_pTFile);
+		}
 
 		m_pTTree->Branch("run", &m_n_run, "run/I");
 		m_pTTree->Branch("event", &m_n_evt, "event/I");
@@ -91,9 +187,18 @@ void FinalStateRecorder::init()
 		m_pTTree->Branch("n_higgs", &m_n_higgs);
 		m_pTTree->Branch("n_b_from_higgs", &m_n_b_from_higgs);
 		m_pTTree->Branch("n_c_from_higgs", &m_n_c_from_higgs);
+
+		if (m_setReturnValues) {
+			m_pTTree->Branch("passed", &m_passed_filter);
+		}
 	}
 
 	m_t_start = std::time(nullptr);
+	
+	if (m_setReturnValues) {
+		streamlog_out(MESSAGE) << "Constructing filter...";
+		m_filter_lookup = construct_filter_lookup(m_eventFilter);
+	}
 
 	// Register physics processes / final state resolvers
 	// hh2f
@@ -104,13 +209,21 @@ void FinalStateRecorder::init()
 	this->register_process(new n1n1hh());
 	this->register_process(new n23n23hh());
 
-	// h2f
+	// h4f
 	this->register_process(new e1e1qqh());
 	this->register_process(new e2e2qqh());
 	this->register_process(new e3e3qqh());
 	this->register_process(new qqqqh());
 	this->register_process(new n1n1qqh());
 	this->register_process(new n23n23qqh());
+
+	// h2f
+	this->register_process(new e1e1h());
+	this->register_process(new e2e2h());
+	this->register_process(new e3e3h());
+	this->register_process(new qqh());
+	this->register_process(new n1n1h());
+	this->register_process(new n23n23h());
 
 	// 2f
 	this->register_process(new ll());
@@ -263,15 +376,13 @@ void FinalStateRecorder::init()
 	this->register_process(new p6_llWW_llxyyx());
 	this->register_process(new p6_llWW_llvllv());
 
-	streamlog_out(DEBUG) << "   init finished  " << std::endl;
+	streamlog_out(MESSAGE) << "   init finished  " << std::endl;
 }
 
 void FinalStateRecorder::clear() 
 {
-	streamlog_out(DEBUG) << "   clear called  " << std::endl;
-
 	m_error_code = ERROR_CODES::UNKNOWN_ERROR;
-	m_final_states.clear();
+	//m_final_states.clear();
 
 	for (auto const& [key, value] : m_final_state_counts)
 		m_final_state_counts[key] = 0;
@@ -310,7 +421,7 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 
 	this->clear();
 	
-	streamlog_out(DEBUG)  << "processing event: " << pLCEvent->getEventNumber() << "  in run: " << pLCEvent->getRunNumber() << std::endl;
+	streamlog_out(MESSAGE)  << "processing event: " << pLCEvent->getEventNumber() << "  in run: " << pLCEvent->getRunNumber() << std::endl;
 	
 	m_n_run = pLCEvent->getRunNumber();
 	m_n_evt = pLCEvent->getEventNumber();
@@ -322,7 +433,6 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 	try {
 		LCCollection *inputMCParticleCollection;
 
-		streamlog_out(DEBUG0) << "        getting jet collection: " << m_mcParticleCollection << std::endl ;
 		inputMCParticleCollection = pLCEvent->getCollection( m_mcParticleCollection );
 
 		if (resolvers.find(process) != resolvers.end()) {
@@ -363,8 +473,10 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 				m_error_code = ERROR_CODES::OK;
 
 				if (m_setReturnValues) {
-					setReturnValue("n_b_from_higgs", m_n_b_from_higgs);
-					setReturnValue("n_c_from_higgs", m_n_c_from_higgs);
+					m_passed_filter = process_filter();
+					streamlog_out(MESSAGE) << "Passed event " << m_n_evt << ": " << (m_passed_filter ? "YES" : "NO") << std::endl;
+
+					setReturnValue("GoodEvent", m_passed_filter);
 				}
 			} catch (int err) {
 				std::cerr << "Encountered exception (error " << err << ") in run " << m_n_run << " (process " << m_process << ") at event " << m_n_evt << std::endl ;
@@ -395,26 +507,33 @@ void FinalStateRecorder::end()
 {
 	// Write ROOT file
 	if (m_write_ttree) {
-		m_pTFile->cd();
-		m_pTTree->Write();
-		m_pTFile->Close();
+		if (m_outputRootFile != "None") {
+			m_pTFile->cd();
+		}
 
-		delete m_pTFile;
+		m_pTTree->Write();
+
+		if (m_outputRootFile != "None") {
+			m_pTFile->Close();
+			delete m_pTFile;
+		}
 	}
 
 	// Write JSON metadata file
-	m_jsonFile["run"] = m_n_run;
-	m_jsonFile["nEvtSum"] = m_n_evt_sum;
-	m_jsonFile["polElectron"] = m_beam_pol1;
-	m_jsonFile["polPositron"] = m_beam_pol2;
-	m_jsonFile["crossSection"] = m_cross_section;
-	m_jsonFile["crossSectionError"] = m_cross_section_err;
-	m_jsonFile["eventWeight"] = m_event_weight;
-	m_jsonFile["processId"] = m_process_id;
-	m_jsonFile["processName"] = m_process_name;
-	m_jsonFile["tStart"] = m_t_start;
-	m_jsonFile["tEnd"] = std::time(nullptr);
-
-	std::ofstream file(m_outputJsonFile);
-	file << m_jsonFile;
+	if (m_outputJsonFile != "None") {
+		m_jsonFile["run"] = m_n_run;
+		m_jsonFile["nEvtSum"] = m_n_evt_sum;
+		m_jsonFile["polElectron"] = m_beam_pol1;
+		m_jsonFile["polPositron"] = m_beam_pol2;
+		m_jsonFile["crossSection"] = m_cross_section;
+		m_jsonFile["crossSectionError"] = m_cross_section_err;
+		m_jsonFile["eventWeight"] = m_event_weight;
+		m_jsonFile["processId"] = m_process_id;
+		m_jsonFile["processName"] = m_process_name;
+		m_jsonFile["tStart"] = m_t_start;
+		m_jsonFile["tEnd"] = std::time(nullptr);
+	
+		std::ofstream file(m_outputJsonFile);
+		file << m_jsonFile;
+	}
 }

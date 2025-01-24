@@ -2,9 +2,9 @@
 #define FinalStateRecorder_h 1
 
 #include "marlin/Processor.h"
-#include "IMPL/LCCollectionVec.h"
 #include "lcio.h"
 #include <string>
+#include "IMPL/LCCollectionVec.h"
 #include <fstream>
 #include <TFile.h>
 #include <TTree.h>
@@ -12,6 +12,7 @@
 #include "nlohmann/json.hpp"
 #include "FinalStateResolver.h"
 #include "TLorentzVector.h"
+#include <sstream>
 
 class TFile;
 class TTree;
@@ -47,6 +48,13 @@ class FinalStateRecorder : public Processor
 		std::time_t m_t_start{};
 		std::string m_process_name{};
 
+		// filter mechanism
+		std::vector<std::pair<int, int*>> construct_filter_lookup(std::vector<std::string> filter);
+		std::vector<std::pair<int, int*>> m_filter_lookup{};
+		std::vector<std::string> m_filter_quantities{};
+		bool process_filter();
+		bool m_passed_filter{};
+
 	public:
 
 		virtual Processor*  newProcessor()
@@ -76,6 +84,7 @@ class FinalStateRecorder : public Processor
 		std::string m_mcParticleCollection{};
 		std::string m_outputJsonFile{};
 		std::string m_outputRootFile{};
+		std::vector<std::string> m_eventFilter{};
 		bool m_setReturnValues{};
 
 		int m_n_run;
@@ -115,7 +124,7 @@ class FinalStateRecorder : public Processor
 		// Output ROOT file
 		bool m_write_ttree{};
 		TFile *m_pTFile{};
-		TTree *m_pTTree{};
+		TTree *m_pTTree = new TTree("FinalStates", "FinalStates");
 
 		// Output JSON file
 		jsonf m_jsonFile{};

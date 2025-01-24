@@ -42,3 +42,4 @@ zhhvenv
 scripts/**/TMVA*
 *.pth
 *.pt
+*.npz

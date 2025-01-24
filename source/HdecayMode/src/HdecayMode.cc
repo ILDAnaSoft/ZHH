@@ -75,10 +75,11 @@ void HdecayMode::init()
 
 	m_nRun = 0;
 	m_nEvt = 0;
-
-	m_pTFile = new TFile(m_outputFile.c_str(),"recreate");
-	m_pTTree = new TTree("eventTree","eventTree");
-	m_pTTree->SetDirectory(m_pTFile);
+	
+	if (m_outputFile.size()) {
+		m_pTFile = new TFile(m_outputFile.c_str(),"recreate");
+		m_pTTree->SetDirectory(m_pTFile);
+	}
 
 	m_pTTree->Branch("run", &m_nRun, "run/I");
 	m_pTTree->Branch("event", &m_nEvt, "event/I");

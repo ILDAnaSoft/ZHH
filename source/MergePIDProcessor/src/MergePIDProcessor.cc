@@ -63,7 +63,7 @@ void MergePIDProcessor::processEvent( LCEvent* evt ){
 
             outputPfoCollection->addElement(pfo);
 
-            // std::cerr << "PFO #" << i << std::endl;            
+            //std::cerr << "PFO #" << i << std::endl;            
 
             std::map<std::string, int> pid_algo_mapping;
             EVENT::IntVec target_algo_ids = PIDt.getAlgorithmIDs();
@@ -76,14 +76,14 @@ void MergePIDProcessor::processEvent( LCEvent* evt ){
             bool sync_all = m_PIDAlgorithmsToKeep.size() == 0;
 
             for (size_t j = 0; j < source_algo_ids.size(); j++) {
-                ////std::cerr << "LOOP_START" << std::endl;
+                //std::cerr << "LOOP_START" << std::endl;
                 int sourceAlgoID = source_algo_ids[j];
-                ////std::cerr << "sync_all: " << sync_all << " sourceAlgoID: " << sourceAlgoID << std::endl;
+                //std::cerr << "sync_all: " << sync_all << " sourceAlgoID: " << sourceAlgoID << std::endl;
                 EVENT::ParticleIDVec source_pids = PIDs.getParticleIDs(pfo, sourceAlgoID);
 
                 if (source_pids.size()) {
                     int targetAlgoID;
-                    ////std::cerr << "A" << std::endl;
+                    //std::cerr << "A" << std::endl;
 
                     EVENT::ParticleID* source_pid = source_pids.at(0);
                     std::string source_algo_name = PIDs.getAlgorithmName(sourceAlgoID);
@@ -97,14 +97,14 @@ void MergePIDProcessor::processEvent( LCEvent* evt ){
 
                         targetAlgoID = PIDt.addAlgorithm(source_algo_name, PIDs.getParameterNames(sourceAlgoID));
 
-                        // std::cerr << "Registered algo " << source_algo_name << " (algoIDs: " << sourceAlgoID << ":" << targetAlgoID << ") with " << PIDs.getParameterNames(sourceAlgoID).size() << " parameters" << std::endl;
+                        streamlog_out(MESSAGE) << "Registered algo " << source_algo_name << " (source->target algoIDs: " << sourceAlgoID << "->" << targetAlgoID << ") with " << PIDs.getParameterNames(sourceAlgoID).size() << " parameters" << std::endl;
 
                         pid_algo_mapping.insert({source_algo_name, targetAlgoID});
                     } else {
                         targetAlgoID = pid_algo_mapping[source_algo_name];
                     }
 
-                    // std::cerr << "targetAlgo " << source_algo_name << " (" << sourceAlgoID << "->" << targetAlgoID << "): " << source_pid->getParameters().size() << std::endl;
+                    //std::cerr << "targetAlgo " << source_algo_name << " (" << sourceAlgoID << "->" << targetAlgoID << "): " << source_pid->getParameters().size() << std::endl;
                     
                     size_t n_params = source_pid->getParameters().size();
                     if (n_params && n_params == PIDt.getParameterNames(targetAlgoID).size()) {
@@ -112,11 +112,10 @@ void MergePIDProcessor::processEvent( LCEvent* evt ){
                         PIDt.setParticleID(pfo, source_pid->getType(), source_pid->getPDG(), source_pid->getLikelihood(), targetAlgoID, source_pid->getParameters());
                     }
                 }
-
-                ////std::cerr << "LOOP_END" << std::endl;
-
             }
         }
+
+        //std::cerr << "EVENT DONE" << std::endl;
 
         evt->addCollection(outputPfoCollection, m_outputCollection.c_str());
     } catch(DataNotAvailableException &e){

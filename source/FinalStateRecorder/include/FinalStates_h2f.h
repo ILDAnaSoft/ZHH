@@ -9,9 +9,6 @@
 using namespace std;
 
 class ffh: public p4 {
-    protected:
-        vector<int> m_z_decay_filter;
-
     public:
         // Set process ID and event category
         ffh( string process_name, int process_id, int event_category, vector<int> z_decay_filter ):
@@ -44,8 +41,8 @@ class ffh: public p4 {
             assert_true(fs_particles.size() == 3, RESOLVER_ERRORS::UNEXPECTED_SIZE);
 
             assert_true(
-                vec_contains(m_z_decay_filter, abs(fs_particles[0]->getPDG())) &&
-                vec_contains(m_z_decay_filter, abs(fs_particles[1]->getPDG())), RESOLVER_ERRORS::UNALLOWED_VALUES);
+                vec_contains(m_final_state_filter, abs(fs_particles[0]->getPDG())) &&
+                vec_contains(m_final_state_filter, abs(fs_particles[1]->getPDG())), RESOLVER_ERRORS::UNALLOWED_VALUES);
 
             // Get H-decayed fermions
             assert_true(fs_particles[4]->getPDG() == 25, RESOLVER_ERRORS::HIGGS_NOT_FOUND);

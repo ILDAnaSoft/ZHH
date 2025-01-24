@@ -120,7 +120,7 @@ class PreSelection : public Processor
 		std::vector<float> m_blikelihoodness{};
 
 		TFile *m_pTFile{};        
-		TTree *m_pTTree{};
+		TTree *m_pTTree = new TTree("PreSelection", "PreSelection");
 
 };
 

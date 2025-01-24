@@ -5,6 +5,13 @@
   <processor name="InitDD4hep"/>
   <processor name="Statusmonitor"/>
 
+  <if condition="${RundEdxCorrections}">
+    <processor name="ComputeCorrectAngulardEdX"/>
+    <processor name="LikelihoodPID"/>
+    <processor name="LeptonID"/>
+    <processor name="ComprehensivePID"/>
+  </if>
+
   <!-- old OV removal -->
   <processor name="MyFastJetOverlayRemoval"/>
   <processor name="ExpandJet"/>
@@ -15,37 +22,31 @@
   <!-- NEW OV removal -->
   <!-- <processor name="MyMLOverlayRemoval" /> -->
 
-  <!-- <processor name="MyIsolatedLeptonTaggingProcessor"/> -->
-
-  <processor name="MyMergePIDProcessor"/>
-
-  <!--
-  <processor name="JC6FT"/>
-  <processor name="EF6"/>
-
-  <if condition="${RundEdxCorrections}">
-    <processor name="ComputeCorrectAngulardEdX"/>
-    <processor name="LikelihoodPID"/>
-    <processor name="LeptonID"/>
-    <processor name="ComprehensivePID"/>
-  </if>
+  <processor name="MyIsolatedLeptonTaggingProcessor"/>
+  <processor name="MyLeptonPairing"/>
 
   <processor name="MyTrueJet"/>
-  <processor name="StoreVariablesForDeepMLFlavorTagger_6J"/>
+  <processor name="MyMergePIDProcessor"/>
 
+  <processor name="JC4FT"/>
+  <processor name="EF6"/>
+
+  <processor name="StoreVariablesForDeepMLFlavorTagger_4J"/>
+
+  <!--
   <if condition="${FilterTempPID}">
-    <processor name="ParticleIDFilter_6J"/>
-  </if>
-  -->
-  
-  <processor name="LCIOOutputProcessor"/>
+    <processor name="ParticleIDFilter_4J"/>
+  </if>-->
+
+  <!-- <processor name="MyPreSelection_ll"/> -->
+  <!-- <processor name="LCIOOutputProcessor"/> -->
 </execute>
 
 <global>
   <parameter name="LCIOInputFiles">
-    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/flavortag/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I110032.Pbbbbbb.eL.pR.n009.d_dstm_10586_20.slcio
+    /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02/v02-02-03/00015739/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n000.d_dstm_15739_0.slcio
   </parameter>
-  <parameter name="MaxRecordNumber" value="2" />
+  <parameter name="MaxRecordNumber" value="10" />
   <parameter name="SkipNEvents" value="0" />
   <parameter name="SupressCheck" value="false" />
   <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> DEBUG </parameter>
@@ -57,7 +58,7 @@
   <constant name="OutputDir" value="." />
   <constant name="OutputSuffix" value="" />
   
-  <constant name="MCParticleCollectionName" value="MCParticle" />
+  <constant name="MCParticleCollectionName" value="MCParticlesSkimmed" />
   <constant name="ProductionDir" value="${ILDConfigDir}/StandardConfig/production" />
   <constant name="RundEdxCorrections" value="true" />
 
@@ -69,8 +70,8 @@
    -->
   <constant name="PFOsWithoutOverlayCollection" value="PFOsWithoutOverlayCheated" />
 
-  <constant name="WriteIsOverlay" value="true" />
-  <constant name="WriteJetFlavor" value="true" />
+  <constant name="WriteIsOverlay" value="false" />
+  <constant name="WriteJetFlavor" value="false" />
   
   <constant name="FilterTempPID" value="true" /> <!-- set to "false" for debugging -->
 </constants>
@@ -84,6 +85,28 @@
 <processor name="InitDD4hep" type="InitializeDD4hep">
   <parameter name="DD4hepXMLFile" type="string"> /cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-almalinux9-gcc11.3.1-opt/k4geo/0.20-hapqru/share/k4geo/ILD/compact/ILD_l5_v02/ILD_l5_v02.xml </parameter>
   <parameter name="Verbosity"> SILENT </parameter>
+</processor>
+
+<processor name="MyPreSelection_ll" type="PreSelection">
+  <!--MyPreSelection identified events that have passed the preselection-->
+  <!--Name of the input collections-->
+  <parameter name="isolatedleptonCollection" type="string" lcioInType="ReconstructedParticle">ISOLeptons</parameter>
+  <parameter name="LepPairCollection" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
+  <parameter name="HiggsCollection" type="string" lcioOutType="ReconstructedParticle">HiggsPair</parameter>
+  <parameter name="PreSelectionCollection" type="string" lcioOutType="ReconstructedParticle">PreSelectionHHll</parameter>
+  <parameter name="isPassed" type="string" lcioOutType="ReconstructedParticle">isPassedHHll</parameter>
+  <parameter name="JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets_ll</parameter>
+  <parameter name="inputPfoCollection" type="string" lcioInType="ReconstructedParticle">${PFOsWithoutOverlayCollection}</parameter>
+  <parameter name="PIDAlgorithmBTag" type="string">lcfiplus</parameter>
+  <parameter name="cutDefinitionsJSONFile" type="string">${ZHH_REPO_ROOT}/config/preselection_cuts_cd.json</parameter>
+
+  <!--Parameters for preselection -->
+  <!--predefined preselection available for llbbbb, vvbbbb, and qqbbbb-->
+  <parameter name="whichPreselection"> llbbbb </parameter>
+  <parameter name="ECM" type="float"> 500 </parameter>
+
+  <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
+  <parameter name="Verbosity" type="string">MESSAGE</parameter>
 </processor>
 
 <processor name="Statusmonitor" type="Statusmonitor">
@@ -189,29 +212,38 @@
   <!--Name of collection with the selected isolated lepton-->
   <parameter name="OutputIsoLeptonsCollection" type="string" lcioOutType="ReconstructedParticle">ISOLeptons</parameter>
   <!--Name of the new PFOs collection without isolated lepton-->
-  <parameter name="OutputPFOsWithoutIsoLepCollection" type="string" lcioOutType="ReconstructedParticle">PandoraPFOsWithoutIsoLepRaw</parameter>
+  <parameter name="OutputPFOsWithoutIsoLepCollection" type="string" lcioOutType="ReconstructedParticle">PandoraPFOsWithoutIsoLep</parameter>
   <!--use yoke for muon ID-->
   <parameter name="UseYokeForMuonID" type="bool">false</parameter>
   <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
   <parameter name="Verbosity" type="string">SILENT</parameter>
 </processor>
 
+<processor name="MyLeptonPairing" type="LeptonPairing">
+    <parameter name="ISOLeptons" type="string" lcioInType="ReconstructedParticle">ISOLeptons</parameter>
+    <parameter name="PandoraPFOsWithoutIsoLep" type="string" lcioInType="ReconstructedParticle">PandoraPFOsWithoutIsoLep</parameter>
+    <parameter name="LeptonPair" type="string" lcioOutType="ReconstructedParticle">LeptonPair</parameter>
+    <parameter name="PFOsWOLepPairCollection" type="string" lcioOutType="ReconstructedParticle">PandoraPFOsWithoutLepPairRaw</parameter>
+    <parameter name="fillRootTree" type="bool">true</parameter>
+    <parameter name="Verbosity" type="string">SILENT</parameter>
+</processor>
+
 <processor name="MyMergePIDProcessor" type="MergePIDProcessor">
   <parameter name="SourceCollection" type="string" lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
-  <parameter name="TargetCollection" type="string" lcioInType="ReconstructedParticle">PFOsWithoutOverlayCheated</parameter>
-  <parameter name="OutputCollection" type="string" lcioOutType="ReconstructedParticle">PandoraPFOsWithoutIsoLep</parameter>
+  <parameter name="TargetCollection" type="string" lcioInType="ReconstructedParticle">PandoraPFOsWithoutLepPairRaw</parameter>
+  <parameter name="OutputCollection" type="string" lcioOutType="ReconstructedParticle">PandoraPFOsWithoutLepPair</parameter>
   <parameter name="Verbosity" type="string">MESSAGE</parameter>
 
   <parameter name="PIDAlgosToKeep" type="StringVec"></parameter>
 </processor>
 
-<processor name="JC6FT" type="LcfiplusProcessor">
+<processor name="JC4FT" type="LcfiplusProcessor">
   <!-- run primary and secondary vertex finders -->
   <parameter name="Algorithms" type="stringVec"> JetClustering JetVertexRefiner FlavorTag ReadMVA </parameter>
   <parameter name="Verbosity" type="string">SILENT</parameter>
 
   <!-- general parameters -->
-  <parameter name="PFOCollection" type="string" value="PandoraPFOsWithoutIsoLep" /> <!-- input PFO collection -->
+  <parameter name="PFOCollection" type="string" value="PandoraPFOsWithoutLepPair" /> <!-- input PFO collection -->
   <parameter name="UseMCP" type="int" value="0" /> <!-- MC info not used -->
   <parameter name="MCPCollection" type="string" value="" /> <!-- not used -->
   <parameter name="MCPFORelation" type="string" value="" /> <!-- not used -->
@@ -223,8 +255,8 @@
   <!-- jet clustering parameters -->
   <parameter name="JetClustering.PrimaryVertexCollectionName" type="string" value="PrimaryVertex" />
   <parameter name="JetClustering.InputVertexCollectionName" type="string" value="BuildUpVertex" /> <!-- vertex collections to be used in JC -->
-  <parameter name="JetClustering.OutputJetCollectionName" type="stringVec" value="Vertex6Jets" /> <!-- output collection name, may be multiple -->
-  <parameter name="JetClustering.NJetsRequested" type="intVec">6</parameter> <!-- Multiple NJets can be specified -->
+  <parameter name="JetClustering.OutputJetCollectionName" type="stringVec" value="Vertex4Jets" /> <!-- output collection name, may be multiple -->
+  <parameter name="JetClustering.NJetsRequested" type="intVec">4</parameter> <!-- Multiple NJets can be specified -->
   <parameter name="JetClustering.YCut" type="doubleVec" value="0." /> <!-- specify 0 if not used -->
 
   <parameter name="JetClustering.JetAlgorithm" type="string" value="DurhamVertex" /> <!-- jet algorithm -->
@@ -248,12 +280,12 @@
   <parameter name="JetClustering.YAddedForJetLeptonVertex" type="double" value="100"/> <!-- add penalty for combining lepton and vertex -->
   <parameter name="JetClustering.YAddedForJetLeptonLepton" type="double" value="100"/> <!-- add penalty for combining leptons -->
 
-  <parameter name="JetVertexRefiner.InputJetCollectionName" type="string" value="Vertex6Jets" />
-  <parameter name="JetVertexRefiner.OutputJetCollectionName" type="string" value="Refined6Jets" />
+  <parameter name="JetVertexRefiner.InputJetCollectionName" type="string" value="Vertex4Jets" />
+  <parameter name="JetVertexRefiner.OutputJetCollectionName" type="string" value="Refined4Jets" />
   <parameter name="JetVertexRefiner.PrimaryVertexCollectionName" type="string" value="PrimaryVertex" />
   <parameter name="JetVertexRefiner.InputVertexCollectionName" type="string" value="BuildUpVertex" />
   <parameter name="JetVertexRefiner.V0VertexCollectionName" type="string" value="BuildUpVertex_V0" />
-  <parameter name="JetVertexRefiner.OutputVertexCollectionName" type="string" value="RefinedVertex6Jets" />
+  <parameter name="JetVertexRefiner.OutputVertexCollectionName" type="string" value="RefinedVertex4Jets" />
 
   <parameter name="JetVertexRefiner.MinPosSingle" type="double" value="0.3" />
   <parameter name="JetVertexRefiner.MaxPosSingle" type="double" value="30." />
@@ -267,7 +299,7 @@
 
   <!-- FlavorTag parameters -->
   <parameter name="PrimaryVertexCollectionName" type="string" value="PrimaryVertex" />
-  <parameter name="FlavorTag.JetCollectionName" type="string" value="Refined6Jets" />
+  <parameter name="FlavorTag.JetCollectionName" type="string" value="Refined4Jets" />
   <parameter name="MakeNtuple.AuxiliaryInfo" type="int" value="-1" />
 
   <parameter name="FlavorTag.WeightsDirectory" type="string" value="${ILDConfigDir}/LCFIPlusConfig/lcfiweights"/>
@@ -326,8 +358,8 @@
 </processor>
 
 <processor name="EF6" type="ErrorFlow">
-  <parameter name="InputPFOCollection" type="string" lcioInType="ReconstructedParticle"> Refined6Jets </parameter>
-  <parameter name="OutputPFOCollection" type="string" lcioInType="ReconstructedParticle"> Refined6JetsEF </parameter>
+  <parameter name="InputPFOCollection" type="string" lcioInType="ReconstructedParticle"> Refined4Jets </parameter>
+  <parameter name="OutputPFOCollection" type="string" lcioInType="ReconstructedParticle"> Refined4JetsEF </parameter>
   <parameter name="InputMCTruthLinkCollection" type="string" lcioInType="LCRelation"> RecoMCTruthLink </parameter>
 </processor>
 
@@ -449,11 +481,11 @@
 </processor>
 -->
 
-<processor name="StoreVariablesForDeepMLFlavorTagger_6J" type="StoreVariablesForDeepMLFlavorTagger">
+<processor name="StoreVariablesForDeepMLFlavorTagger_4J" type="StoreVariablesForDeepMLFlavorTagger">
   <parameter name="CollectionPrimaryVertex" type="string" value="PrimaryVertex" />
-  <parameter name="CollectionRefinedJets" type="string" value="Refined6Jets"> </parameter>
-  <parameter name="CollectionRefinedVertices" type="string" value="RefinedVertex6Jets" />
-  <parameter name="CollectionPFOs" type="string" value="PandoraPFOs" /> 
+  <parameter name="CollectionRefinedJets" type="string" value="Refined4Jets" />
+  <parameter name="CollectionRefinedVertices" type="string" value="RefinedVertex4Jets" />
+  <parameter name="CollectionPFOs" type="string" value="PandoraPFOsWithoutLepPair" /> 
   <parameter name="D0ProbFileName" type="string" value="${ILDConfigDir}/LCFIPlusConfig/vtxprob/d0probv2_ildl5_6q500.root"/> <!-- vtxprob/d0probv2_ildl5_6q500.root -->
   <parameter name="Z0ProbFileName" type="string" value="${ILDConfigDir}/LCFIPlusConfig/vtxprob/z0probv2_ildl5_6q500.root"/>
   <parameter name="dEdxPID" type="string" value="dEdxPIDv2"/>
@@ -461,25 +493,22 @@
 
   <parameter name="WriteIsOverlay" type="bool" value="${WriteIsOverlay}" />
   <parameter name="WriteJetFlavor" type="bool" value="${WriteJetFlavor}" />
-
   <parameter name="WriteDeepjetFeatures" type="bool" value="false"/>
-  <parameter name="ParticleNetFeatures_PFPoints" type="StringVec"> RapidityRelJet PhiRelJet </parameter>
-  <parameter name="ParticleNetFeatures_PFFeatures" type="StringVec"> TransverseMomentumLOG EnergyLOG 
-  TransverseMomentumFracLOG EnergyFracLOG DeltaRJet Charge IsElectron IsMuon IsChargedHadron IsNeutralHadron IsPhoton 
-  RapidityRelJet PhiRelJet Rapidity D0 D0Sig Z0 Z0Sig 3DImpactPar 3DImpactParSig D0bprob D0cprob D0qprob Z0bprob Z0cprob Z0qprob
-  TrackUsedinPrimVertex LeptonMomRelJet Kaoness Chi2NDF LeptonMomFraction WeightedKaonnessMomFrac CPID11ness CPID13ness CPID211ness CPID321ness CPID2212ness
-  MomentumX MomentumY MomentumZ Energy
-  TrackJetDotProductNorm HCalFrac </parameter>
-  <parameter name="ParticleNetFeatures_SVPoints" type="StringVec"> SecondaryVertexRapidityJetAxis SecondaryVertexPhiJetAxis </parameter>
-  <parameter name="ParticleNetFeatures_SVFeatures" type="StringVec"> SecondaryVertexPtLOG SecondaryVertexMass SecondaryVertexNTracks 
-  SecondaryVertexChi2NDF SecondaryVertexD0 SecondaryVertexD0Sig SecondaryVertexImpactPar3d SecondaryVertexImpactPar3dSig 
-  SecondaryVertexRapidityJetAxis SecondaryVertexPhiJetAxis SecondaryVertexCosMomPos SecondaryVertexEnergyJetEnergy
-  SecondaryVertexEnergy SecondaryVertexMomentumX SecondaryVertexMomentumY SecondaryVertexMomentumZ SecondaryVertexRapidity JetRapidity </parameter> 
+  <parameter name="Verbosity" type="string" value="DEBUG"/>
+
+  <parameter name="ParticleNetFeatures_PFFeatures" type="StringVec"> Rapidity TransverseMomentumLOG EnergyLOG D0 D0Sig Z0
+  Z0Sig Charge IsElectron IsMuon IsChargedHadron IsNeutralHadron
+  IsPhoton D0bprob D0cprob D0qprob Z0bprob Z0cprob Z0qprob Kaoness
+  3DImpactPar 3DImpactParSig TransverseMomentumFracLOG EnergyFracLOG
+  TrackThetaRelJet TrackPtRelJet TrackJetDotProduct
+  TrackJetDotProductNorm DeltaRJet DeltaRJetRapidity
+  DeltaRTrackSecVertex PhiRelJet RapidityRelJet TrackUsedinPrimVertex
+  LeptonMomRelJet LeptonPtRelJet LeptonMomFraction WeightedKaonnessMomFrac </parameter>
 </processor>
 
-<processor name="ParticleIDFilter_6J" type="ReconstructedParticleParticleIDFilterProcessor">
-    <parameter name="RecoParticleCollection" type="string" value="PandoraPFOs"/>
-    <parameter name="FilterPIDAlgos" type="StringVev" value="mlflavortagging_pf_features mlflavortagging_pf_points mlflavortagging_sv_features mlflavortagging_sv_points"/>
+<processor name="ParticleIDFilter_4J" type="ReconstructedParticleParticleIDFilterProcessor">
+    <parameter name="RecoParticleCollection" type="string" value="PandoraPFOsWithoutLepPair"/>
+    <parameter name="FilterPIDAlgos" type="StringVev" value="mlflavortagging_pf_features"/>
     <parameter name="Verbosity" type="string" value="DEBUG"/>
 </processor>
 
@@ -514,24 +543,24 @@
     BuildUpVertex
     BuildUpVertex_V0_RP
     BuildUpVertex_V0
-    Vertex6Jets
-    Refined6Jets_vtx
-    Refined6Jets_vtx_RP
+    Vertex4Jets
+    Refined4Jets_vtx
+    Refined4Jets_vtx_RP
     RefinedVertex2Jets
     RefinedVertex3Jets
     RefinedVertex4Jets
     RefinedVertex5Jets
-    RefinedVertex6Jets
+    RefinedVertex4Jets
     RefinedVertex2Jets_RP
     RefinedVertex3Jets_RP
     RefinedVertex4Jets_RP
     RefinedVertex5Jets_RP
-    RefinedVertex6Jets_RP
+    RefinedVertex4Jets_RP
     Refined2JetsEF
     Refined3JetsEF
     Refined4JetsEF
     Refined5JetsEF
-    Refined6JetsEF
+    Refined4JetsEF
     BCALMCTruthLink
     MCTruthBcalLink
     MCTruthTrackLink

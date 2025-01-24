@@ -247,7 +247,7 @@ def get_preselection_passes(
                 
             for presel in ['llHH', 'vvHH', 'qqHH']:
                 with ur.open(f'{DATA_ROOT}/{branch}/zhh_PreSelection_{presel}.root') as rf:
-                    passed = rf['eventTree']['preselPassed'].array()
+                    passed = rf['PreSelection']['preselPassed'].array()
                     
                     n_items = len(passed)
                     if n_items != n_gen:
@@ -362,7 +362,7 @@ def analysis_stack(DATA_ROOT:str,
         chunk['pid'] = processes[processes['proc_pol'] == proc_pol]['pid'][0]
         chunk['branch'] = branch
         
-        with ur.open(f'{DATA_ROOT}/{branch}/zhh_FinalStates.root:eventTree') as rf:
+        with ur.open(f'{DATA_ROOT}/{branch}/zhh_FinalStates.root:FinalStates') as rf:
             chunk['event'] = rf['event'].array()
             chunk['event_category'] = rf['event_category'].array()
             
@@ -374,7 +374,7 @@ def analysis_stack(DATA_ROOT:str,
                     chunk[fs_columns[i]] = fs_counts[:, i]
         
         for i, presel in enumerate(['qq', 'll', 'vv']):
-            with ur.open(f'{DATA_ROOT}/{branch}/zhh_PreSelection_{presel}HH.root:eventTree') as rf:
+            with ur.open(f'{DATA_ROOT}/{branch}/zhh_PreSelection_{presel}HH.root:PreSelection') as rf:
                 chunk[f'{presel}_pass'] = rf['preselPassed'].array()
                 
                 if i == 0:
@@ -431,7 +431,7 @@ def get_final_state_counts(DATA_ROOT:str,
     pointer = 0
     
     for branch in tqdm(branches):
-        with ur.open(f'{DATA_ROOT}/{branch}/zhh_FinalStates.root:eventTree') as a:
+        with ur.open(f'{DATA_ROOT}/{branch}/zhh_FinalStates.root:FinalStates') as a:
             chunk_size = len(a['event'].array())
 
             chunk = np.zeros(chunk_size, dtype=dtype)

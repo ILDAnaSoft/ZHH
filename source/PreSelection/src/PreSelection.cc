@@ -196,9 +196,10 @@ void PreSelection::init()
 	m_nRun = 0;
 	m_nEvt = 0;
 
-	m_pTFile = new TFile(m_outputFile.c_str(),"recreate");
-	m_pTTree = new TTree("eventTree", "eventTree");
-	m_pTTree->SetDirectory(m_pTFile);
+	if (m_outputFile.size()) {
+		m_pTFile = new TFile(m_outputFile.c_str(),"recreate");
+		m_pTTree->SetDirectory(m_pTFile);
+	}	
 
 	m_pTTree->Branch("run", &m_nRun, "run/I");
 	m_pTTree->Branch("event", &m_nEvt, "event/I");
@@ -398,7 +399,7 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
 		}
 
 		// ---------- SAVE TYPES OF ALL ISOLATED LEPTONS ----------
-		for (size_t j = 0; j < inputLeptonCollection->getNumberOfElements(); j++) {
+		for (int j = 0; j < inputLeptonCollection->getNumberOfElements(); j++) {
 			ReconstructedParticle* iso_lepton = dynamic_cast<ReconstructedParticle*>( inputLeptonCollection->getElementAt( j ) );
 			m_lepTypes.push_back( iso_lepton->getType() );
 		}
@@ -531,7 +532,7 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
 		m_preselsPassedVec.push_back(m_dileptonMassDiff <= m_maxdileptonmassdiff );
 
 		if (ndijets == 2) {
-			for (unsigned int i=0; i < ndijets; i++) {
+			for (int i=0; i < ndijets; i++) {
 				m_preselsPassedVec.push_back(m_dijetMassDiff[i] <= m_maxdijetmassdiff) ;
 				m_preselsPassedVec.push_back(m_dijetMass[i] <= m_maxdijetmass && m_dijetMass[i] >= m_mindijetmass);
 			}
@@ -593,9 +594,13 @@ void PreSelection::check()
 
 void PreSelection::end()
 {
-	m_pTFile->cd();
+	if (m_outputFile.size()) {
+		m_pTFile->cd();
+	}
 	m_pTTree->Write();
-	m_pTFile->Close();
-	
-	delete m_pTFile;
+
+	if (m_outputFile.size()) {
+		m_pTFile->Close();
+		delete m_pTFile;
+	}
 }

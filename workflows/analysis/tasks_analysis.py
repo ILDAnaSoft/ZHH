@@ -20,11 +20,11 @@ class AnalysisAbstract(MarlinJob):
     ]
     
     check_output_root_ttrees = [
-        ('zhh_PreSelection_llHH.root', 'eventTree'),
-        ('zhh_PreSelection_vvHH.root', 'eventTree'),
-        ('zhh_PreSelection_qqHH.root', 'eventTree'),
-        #('zhh_TruthRecoComparison.root', 'eventTree'),
-        ('zhh_FinalStates.root', 'eventTree')
+        ('zhh_PreSelection_llHH.root', 'PreSelection'),
+        ('zhh_PreSelection_vvHH.root', 'PreSelection'),
+        ('zhh_PreSelection_qqHH.root', 'PreSelection'),
+        #('zhh_TruthRecoComparison.root', 'TruthRecoComparison'),
+        ('zhh_FinalStates.root', 'FinalStates')
     ]
     
     check_output_files_exist = [

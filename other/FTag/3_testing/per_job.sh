@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Meta information for preparing output structure and expected output files
+TASK_NAME="MarlinTesting"
+outputs=(AIDAFile_$suffix.root.root)
+
 # Receive parameters
 raw_file=${1}
 suffix=${2}
@@ -8,9 +12,6 @@ job_id=${4}
 
 # Prepare ZHH working environment
 export $(grep -v '^#' "${env_file}" | xargs)
-
-# Meta information for preparing output structure
-TASK_NAME="MarlinTesting"
 
 # Print status
 echo "Running task $TASK_NAME with parameters"
@@ -25,21 +26,9 @@ if [[ ! -d $REPO_ROOT ]]; then
     exit "Critical error: REPO_ROOT is not set or does not point to a valid directory"
 fi
 
-if [[ -z "$ENV_SETUP_SCRIPT" ]]; then
-    export ENV_SETUP_SCRIPT="$REPO_ROOT/setup.sh"
-fi
-
-load_env() {
-    source "$ENV_SETUP_SCRIPT"
-}
-load_env
-
 # Create output directories
 mkdir -p "$TASK_ROOT/$TASK_NAME/logs"
 mkdir -p "$TASK_ROOT/$TASK_NAME/output"
-
-# Expected output files
-outputs=(JT_Comparison_$suffix.root FT_$suffix.slcio)
 
 # Only execute Marlin if the job has not been run before
 outputs_exist_all="True"
@@ -47,14 +36,25 @@ outputs_exist_any="False"
 
 for output_file in ${outputs[*]}
 do
-    if [[ -f "$TASK_ROOT/$TASK_NAME/$output_file" ]]; then
+    if [[ -f "$TASK_ROOT/$TASK_NAME/output/$output_file" ]]; then
         outputs_exist_any="True"
     else
+        echo "Output $output_file does not exist. Marlin will be run..."
         outputs_exist_all="False"
+        break
     fi
 done
 
 if [[ $outputs_exist_all = "False" ]]; then
+    # Source environment
+    if [[ -z "$ENV_SETUP_SCRIPT" ]]; then
+        export ENV_SETUP_SCRIPT="$REPO_ROOT/setup.sh"
+    fi
+
+    load_env() {
+        source "$ENV_SETUP_SCRIPT"
+    }
+    load_env
 
     # Run Marlin and transfer outputs
     echo "Running Marlin"
@@ -79,6 +79,8 @@ if [[ $outputs_exist_all = "False" ]]; then
             exit 1
         fi
     done
+else
+    echo "Job execution finished; outputs already exist"
 fi
 
 exit 0
