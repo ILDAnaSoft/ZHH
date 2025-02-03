@@ -22,7 +22,7 @@
 <!--
   <processor name="ParticleIDFilter"/>-->
   <processor name="MyTrueJet"/>
-  <processor name="StoreVariablesForDeepMLFlavorTagger_6J"/>
+  <processor name="StoreVariablesForMLTagging_6J"/>
 
   <if condition="${FilterTempPID}">
     <processor name="ParticleIDFilter_6J"/>
@@ -418,7 +418,7 @@
 </processor>
 -->
 
-<processor name="StoreVariablesForDeepMLFlavorTagger_6J" type="StoreVariablesForDeepMLFlavorTagger">
+<processor name="StoreVariablesForMLTagging_6J" type="StoreVariablesForMLTagging">
   <parameter name="CollectionPrimaryVertex" type="string" value="PrimaryVertex" />
   <parameter name="CollectionRefinedJets" type="string" value="Refined6Jets"> </parameter>
   <parameter name="CollectionRefinedVertices" type="string" value="RefinedVertex6Jets" />

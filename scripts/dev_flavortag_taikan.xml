@@ -4,13 +4,11 @@
   <processor name="AIDA"/>
   <processor name="InitDD4hep"/>
   <processor name="Statusmonitor"/>
-  <processor name="MyHdecayMode" />
-
   <!--processor name="FastJetOverlay"/> -->
 
   <!-- <processor name="MyCheatedMCOverlayRemoval" />
   <processor name="MyIsolatedLeptonTaggingProcessor"/> -->
-  
+
   <processor name="JC6FT"/>
   <processor name="EF6"/>
 
@@ -18,38 +16,27 @@
     <processor name="ComputeCorrectAngulardEdX"/>
     <processor name="LikelihoodPID"/>
     <processor name="LeptonID"/>
-    <processor name="ComprehensivePID"/>
+    <!-- <processor name="ComprehensivePID"/> -->
   </if>
 
-  <if condition="MyHdecayMode.bbbb || MyHdecayMode.cccc || ${CheckAllJets}">
+<!--
+  <processor name="ParticleIDFilter"/>-->
+  <processor name="MyTrueJet"/>
+  <!-- <processor name="StoreVariablesForMLTagging_6J"/> -->
 
-    <!--
-    <processor name="ParticleIDFilter"/>
-    -->
-    <processor name="MyTrueJet"/>
-    <processor name="StoreVariablesForMLTagging_6J"/>
-    <processor name="ParticleNetTagger_6J"/>
-
-    <if condition="${FilterTempPID}">
-      <processor name="ParticleIDFilter_6J"/>
-    </if>
-
-    <processor name="MyJetTaggingComparison" />
+  <if condition="${FilterTempPID}">
+    <processor name="ParticleIDFilter_6J"/>
   </if>
   
-  <!-- <processor name="LCIOOutputProcessor"/> -->
+  <processor name="LCIOOutputProcessor"/>
 </execute>
 
 <global>
   <parameter name="LCIOInputFiles">
-    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/flavortag/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I110032.Pbbbbbb.eL.pR.n001.d_dstm_10586_0.slcio
-    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/flavortag/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I110033.Pcccccc.eL.pR.n001.d_dstm_10586_0.slcio
-    <!--
-    /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02/v02-02-03/00015739/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n000.d_dstm_15739_0.slcio
-    -->
+    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/flavortag/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I110032.Pbbbbbb.eL.pR.n009.d_dstm_10586_20.slcio
   </parameter>
-  <parameter name="MaxRecordNumber" value="50" /> <!-- 1000 -->
-  <parameter name="SkipNEvents" value="0" /> <!-- 4300 -->
+  <parameter name="MaxRecordNumber" value="50" />
+  <parameter name="SkipNEvents" value="0" />
   <parameter name="SupressCheck" value="false" />
   <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> DEBUG </parameter>
 </global>
@@ -60,16 +47,14 @@
   <constant name="OutputDir" value="." />
   <constant name="OutputSuffix" value="" />
   
-  <constant name="CheckAllJets" value="true" />
-  <constant name="NumberOfHiggs" value="2" />
-  <constant name="FilterTempPID" value="true" /> <!-- set to "false" for debugging -->
-  <constant name="DebugDumpEvent" value="0" />
-  <constant name="DebugDumpJet" value="0" />
-
-  <constant name="MCParticleCollectionName" value="MCParticle" /> <!-- MCParticle MCParticlesSkimmed -->
-
+  <constant name="MCParticleCollectionName" value="MCParticle" />
   <constant name="ProductionDir" value="${ILDConfigDir}/StandardConfig/production" />
   <constant name="RundEdxCorrections" value="true" />
+
+  <constant name="WriteIsOverlay" value="true" />
+  <constant name="WriteJetFlavor" value="true" />
+  
+  <constant name="FilterTempPID" value="false" /> <!-- set to "false" for debugging -->
 </constants>
 
 <processor name="AIDA" type="AIDAProcessor">
@@ -94,6 +79,20 @@
 <processor name="MyTrueJet" type="TrueJet">
   <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
   <parameter name="TrueJets" type="string" lcioOutType="ReconstructedParticle">TrueJets</parameter>
+
+  <!-- These are the defaults, probably exactly what you need.
+  <parameter name="RecoParticleCollection" type="string" lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
+  <parameter name="RecoMCTruthLinkName" type="string" lcioInType="LCRelation">RecoMCTruthLink</parameter>
+  
+  <parameter name="TrueJetPFOLink" type="string" lcioOutType="LCRelation"> TrueJetPFOLink </parameter>
+  <parameter name="TrueJetMCParticleLink" type="string" lcioOutType="LCRelation">TrueJetMCParticleLink</parameter>
+  <parameter name="FinalColourNeutrals" type="string" lcioOutType="ReconstructedParticle">FinalColourNeutrals</parameter>
+  <parameter name="InitialColourNeutrals" type="string" lcioOutType="ReconstructedParticle">InitialColourNeutrals</parameter>
+  <parameter name="InitialElementonLink" type="string" lcioOutType="LCRelation">InitialElementonLink</parameter>
+  <parameter name="FinalElementonLink" type="string" lcioOutType="LCRelation">FinalElementonLink</parameter>
+  <parameter name="InitialColourNeutralLink" type="string" lcioOutType="LCRelation">InitialColourNeutralLink</parameter>
+  <parameter name="FinalColourNeutralLink" type="string" lcioOutType="LCRelation">FinalColourNeutralLink</parameter>
+  -->
 </processor>
 
 <processor name="FastJetOverlay" type="FastJetProcessor">
@@ -177,7 +176,7 @@
 
 <processor name="JC6FT" type="LcfiplusProcessor">
   <!-- run primary and secondary vertex finders -->
-  <parameter name="Algorithms" type="stringVec"> JetClustering JetVertexRefiner FlavorTag ReadMVA </parameter>
+  <parameter name="Algorithms" type="stringVec"> JetClustering JetVertexRefiner FlavorTag ReadMVA MLInferenceWeaver </parameter>
   <parameter name="Verbosity" type="string">SILENT</parameter>
 
   <!-- general parameters -->
@@ -198,9 +197,11 @@
   <parameter name="JetClustering.YCut" type="doubleVec" value="0." /> <!-- specify 0 if not used -->
 
   <parameter name="JetClustering.JetAlgorithm" type="string" value="DurhamVertex" /> <!-- jet algorithm -->
-  <parameter name="JetClustering.UseBeamJets" type="int" value="0" /> <!-- beam jet rejection -->
+
+  <!-- overlay removal -->
+  <parameter name="JetClustering.UseBeamJets" type="int" value="1" /> <!-- beam jet rejection -->
+  <parameter name="JetClustering.AlphaParameter" type="float" value="1.3" /> <!-- Durham beam rejection -->
   <!--parameter name="JetClustering.RParameter" type="float" value="1.0" /--> <!-- kt, Valencia -->
-  <!--parameter name="JetClustering.AlphaParameter" type="float" value="1.3" /--> <!-- Durham beam rejection -->
   <!--parameter name="JetClustering.BetaParameter" type="float" value="1.0" /--> <!-- Valencia -->
   <!--parameter name="JetClustering.GammaParameter" type="float" value="1.0" /--> <!-- Valencia -->
 
@@ -293,6 +294,12 @@
   <parameter name="FlavorTag.CategorySpectators4" type="stringVec">
   aux nvtx
   </parameter>
+
+  <parameter name="MLInferenceWeaver.JetCollectionName" type="string" value="Refined6Jets" />
+  <parameter name="MLInferenceWeaver.OutputParameterName" type="string" value="weaver" />
+
+  <parameter name="MLInferenceWeaver.JsonFileName" type="string" value="${ZHH_REPO_ROOT}/dependencies/LCFIPlusConfig/onnx/ilc_nnqq_neutrals/preprocess.json" />
+  <parameter name="MLInferenceWeaver.OnnxFileName" type="string" value="${ZHH_REPO_ROOT}/dependencies/LCFIPlusConfig/onnx/ilc_nnqq_neutrals/ilc_nnqq_neutrals.onnx" />
 </processor>
 
 <processor name="EF6" type="ErrorFlow">
@@ -354,6 +361,7 @@
   <parameter name="weightfile">${ProductionDir}/HighLevelReco/PIDFiles/CPID/LeptonID_multi_jet_dEdx_800t_3d_cm50r50_BDTG.weights.xml</parameter>
 </processor>
 
+<!--
 <processor name="ComprehensivePID" type="ComprehensivePIDProcessor">
   <parameter name="Verbosity" type="string"> DEBUG </parameter>
   <parameter name="PFOCollection" type="string" value="PandoraPFOs"/>
@@ -410,6 +418,7 @@
     dEdx_RCD_piDis>-900&&dEdx_RCD_kaDis>-900
   </parameter>
 </processor>
+-->
 
 <!--
 <processor name="ParticleIDFilter" type="ReconstructedParticleParticleIDFilterProcessor">
@@ -419,18 +428,6 @@
 </processor>
 -->
 
-<processor name="MyHdecayMode" type="HdecayMode">
-    <!--HdecayMode identifies Higgs decay mode and cheats ISR energy-->
-    <!--Name of the Input MCParticle Collection-->
-    <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
-    <!--Number of Higgs decays (default: 2) -->
-    <parameter name="nHiggs" type="int"> ${NumberOfHiggs} </parameter>
-    <!--Names of the Output Higgs decay mode collection-->
-    <parameter name="HdecayModeCollection" type="string" lcioOutType="MCParticle">HdecayMode</parameter>
-    <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-    <parameter name="Verbosity" type="string">MESSAGE</parameter>
-</processor>
-
 <processor name="StoreVariablesForMLTagging_6J" type="StoreVariablesForMLTagging">
   <parameter name="CollectionPrimaryVertex" type="string" value="PrimaryVertex" />
   <parameter name="CollectionRefinedJets" type="string" value="Refined6Jets"> </parameter>
@@ -439,188 +436,30 @@
   <parameter name="D0ProbFileName" type="string" value="${ILDConfigDir}/LCFIPlusConfig/vtxprob/d0probv2_ildl5_6q500.root"/> <!-- vtxprob/d0probv2_ildl5_6q500.root -->
   <parameter name="Z0ProbFileName" type="string" value="${ILDConfigDir}/LCFIPlusConfig/vtxprob/z0probv2_ildl5_6q500.root"/>
   <parameter name="dEdxPID" type="string" value="dEdxPIDv2"/>
-  <parameter name="CPIDName" type="string" value="None" />
+  <parameter name="CPIDName" type="string" value="TMVA_BDT_MC_12bins_WWsem" />
 
-  <parameter name="WriteDeepjetFeatures" type="bool">false</parameter>
-  <parameter name="WriteConstitutentTree" type="bool">false</parameter>
-  <parameter name="WriteIsOverlay" type="bool">true</parameter>
-  <parameter name="WriteJetTree" type="bool">true</parameter>
-  <parameter name="WriteJetFlavor" type="bool">true</parameter>
-  <parameter name="Verbosity" type="string">SILENT</parameter> 
+  <parameter name="WriteIsOverlay" type="bool" value="${WriteIsOverlay}" />
+  <parameter name="WriteJetFlavor" type="bool" value="${WriteJetFlavor}" />
 
-  <!--
-  <parameter name="ValueForInexistentFeatures" type="float">0</parameter>
-  <parameter name="ValueForInfChi2Ndf" type="float">0</parameter>
-  <parameter name="ValueForNanD0Sig" type="float">0</parameter>
-  <parameter name="ValueForNanZ0Sig" type="float">0</parameter>
-  <parameter name="ValueForNan3DImpactParSig" type="float">0</parameter>
-  -->
-
+  <parameter name="WriteDeepjetFeatures" type="bool" value="false"/>
   <parameter name="ParticleNetFeatures_PFPoints" type="StringVec"> RapidityRelJet PhiRelJet </parameter>
   <parameter name="ParticleNetFeatures_PFFeatures" type="StringVec"> TransverseMomentumLOG EnergyLOG 
   TransverseMomentumFracLOG EnergyFracLOG DeltaRJet Charge IsElectron IsMuon IsChargedHadron IsNeutralHadron IsPhoton 
   RapidityRelJet PhiRelJet Rapidity D0 D0Sig Z0 Z0Sig 3DImpactPar 3DImpactParSig D0bprob D0cprob D0qprob Z0bprob Z0cprob Z0qprob
-  TrackUsedinPrimVertex LeptonMomRelJet Kaoness Chi2NDF LeptonMomFraction WeightedKaonnessMomFrac
+  TrackUsedinPrimVertex LeptonMomRelJet Kaoness Chi2NDF LeptonMomFraction WeightedKaonnessMomFrac CPID11ness CPID13ness CPID211ness CPID321ness CPID2212ness
+  MomentumX MomentumY MomentumZ Energy
   TrackJetDotProductNorm HCalFrac </parameter>
   <parameter name="ParticleNetFeatures_SVPoints" type="StringVec"> SecondaryVertexRapidityJetAxis SecondaryVertexPhiJetAxis </parameter>
   <parameter name="ParticleNetFeatures_SVFeatures" type="StringVec"> SecondaryVertexPtLOG SecondaryVertexMass SecondaryVertexNTracks 
   SecondaryVertexChi2NDF SecondaryVertexD0 SecondaryVertexD0Sig SecondaryVertexImpactPar3d SecondaryVertexImpactPar3dSig 
   SecondaryVertexRapidityJetAxis SecondaryVertexPhiJetAxis SecondaryVertexCosMomPos SecondaryVertexEnergyJetEnergy
-  SecondaryVertexEnergy SecondaryVertexRapidity JetRapidity </parameter> 
+  SecondaryVertexEnergy SecondaryVertexMomentumX SecondaryVertexMomentumY SecondaryVertexMomentumZ SecondaryVertexRapidity JetRapidity </parameter> 
 </processor>
- 
-<processor name="ParticleNetTagger_6J" type="ParticleNetNTaggerProcessor">
-  <parameter name="ModelScriptFile" type="string"> /nfs/dust/ilc/user/bliewert/FTag2/ParticleNet_4tags/Training/ParticleNet_4tags_ranger_nan_transform_after_std/model_cp_35.pth </parameter>
-  
-  <!--
-  <parameter name="DebugDumpEvent" type="int"> ${DebugDumpEvent} </parameter>
-  <parameter name="DebugDumpJet" type="int"> ${DebugDumpJet} </parameter>
-  -->
-  <parameter name="Verbosity" type="string">DEBUG</parameter>
-
-  <parameter name="CollectionRefinedJets" type="string">Refined6Jets</parameter>
-  <parameter name="CollectionRefinedVertices" type="string">RefinedVertex6Jets</parameter>
-  <parameter name="CollectionPFOs" type="string" value="PandoraPFOs" /> 
-  <parameter name="TagNames" type="StringVec"> b c s ud </parameter>
-
-  <parameter name="ParticleNetFeatures_PFPoints" type="StringVec"> RapidityRelJet PhiRelJet </parameter>
-  <parameter name="ParticleNetFeatures_SVPoints" type="StringVec"> SecondaryVertexRapidityJetAxis SecondaryVertexPhiJetAxis </parameter>
-
-  <parameter name="ParticleNetFeatures_PFFeatures" type="StringVec"> 
-  RapidityRelJet Rapidity PhiRelJet TransverseMomentumLOG
-  EnergyLOG TransverseMomentumFracLOG EnergyFracLOG DeltaRJet
-  D0 D0Sig Z0 Z0Sig
-  3DImpactPar 3DImpactParSig Charge IsElectron
-  IsMuon IsChargedHadron IsNeutralHadron IsPhoton
-  D0bprob D0cprob D0qprob Z0bprob
-  Z0cprob Z0qprob TrackUsedinPrimVertex LeptonMomRelJet
-  Kaoness Chi2NDF LeptonMomFraction WeightedKaonnessMomFrac
-  TrackJetDotProductNorm HCalFrac </parameter>
-
-  <parameter name="ParticleNetFeatures_SVFeatures" type="StringVec"> 
-  SecondaryVertexRapidityJetAxis SecondaryVertexRapidity SecondaryVertexPhiJetAxis SecondaryVertexPtLOG
-  SecondaryVertexMass SecondaryVertexNTracks SecondaryVertexChi2NDF SecondaryVertexD0
-  SecondaryVertexD0Sig SecondaryVertexImpactPar3d SecondaryVertexImpactPar3dSig SecondaryVertexCosMomPos
-  SecondaryVertexEnergyJetEnergy SecondaryVertexEnergy </parameter>
-
-  <parameter name="MeanPFFeatures" type="FloatVec">
-  3.77069518E-05 -1.93826600E-05 2.22567725E-03 -4.35735434E-02
-  1.61758825E-01 -1.02395689E+00 -1.02368236E+00 2.99799323E-01
-  -5.25997914E-02 1.11069441E+00 6.58461172E-03 7.63567016E-02
-  4.21780348E+00 3.49849968E+01 3.57985217E-03 3.48731652E-02
-  4.37371898E-03 2.55920589E-01 1.26139075E-01 2.55920589E-01
-  9.30456221E-02 4.82129790E-02 7.60176405E-02 2.91458338E-01
-  1.55379757E-01 1.34462833E-01 5.80100536E-01 1.48789215E+00
-  3.29402506E-01 1.16439509E+00 2.03893520E-02 1.98143907E-02
-  4.13095379E+00 9.72172394E-02 </parameter>
-
-  <parameter name="StdPFFeatures" type="FloatVec">
-  4.35719252E-01 1.04133523E+00 4.80902225E-01 5.42483330E-01
-  5.13415217E-01 8.10793757E-01 8.13401878E-01 3.99942547E-01
-  2.05213509E+01 6.25780701E+02 2.29538727E+01 6.58322144E+02
-  3.02394695E+01 7.18147644E+02 6.63067222E-01 1.77717328E-01
-  6.57724440E-02 5.05885959E-01 3.26957792E-01 5.05885959E-01
-  1.79131970E-01 9.28312987E-02 1.63675651E-01 2.69639671E-01
-  1.35902420E-01 1.53835997E-01 4.29582804E-01 4.49743700E+00
-  2.50052184E-01 1.24742234E+00 5.38090691E-02 3.94492596E-02
-  7.36868906E+00 2.58683175E-01 </parameter>
-
-  <parameter name="MeanSVFeatures" type="FloatVec">
-  1.02411828E-03 6.24199864E-03 2.07644276E-04 1.00223756E+00
-  1.14136422E+00 2.80132961E+00 1.54570255E+01 6.20377874E+00
-  1.00082063E+10 8.65130329E+00 1.22857892E+10 9.79831338E-01
-  2.59516895E-01 2.05106869E+01 </parameter>
-
-  <parameter name="StdSVFeatures" type="FloatVec">
-  1.82564244E-01 8.82505357E-01 2.07736269E-01 4.08334732E-01
-  1.35368419E+00 1.39549267E+00 2.41239917E+03 2.34312840E+01
-  8.14901205E+12 3.70758553E+01 8.73113426E+12 1.10671341E-01
-  1.75420225E-01 1.84003220E+01 </parameter>
-</processor>
-
- <!--
- <processor name="ParticleNetTagger_6J" type="ParticleNetNTaggerProcessor">
-  <parameter name="ModelScriptFile" type="string"> /afs/desy.de/group/flc/pool/bliewert/MarlinWorkdirs/ZHH/scripts/ParticleNet_4tags_wo_cpid.pth </parameter>
-
-  <parameter name="Verbosity" type="string">DEBUG </parameter>
-  <parameter name="CollectionRefinedJets" type="string" value="Refined6Jets"> </parameter>
-  <parameter name="CollectionRefinedVertices" type="string" value="RefinedVertex6Jets" />
-  <parameter name="CollectionPFOs" type="string" value="PandoraPFOs" /> 
-  <parameter name="TagNames" type="StringVec"> b c s ud </parameter>
-  
-  <parameter name="DebugDumpEvent" type="int"> ${DebugDumpEvent} </parameter>
-  <parameter name="DebugDumpJet" type="int"> ${DebugDumpJet} </parameter>
-
-  <parameter name="ParticleNetFeatures_PFPoints" type="StringVec"> RapidityRelJet PhiRelJet</parameter>
-  <parameter name="ParticleNetFeatures_SVPoints" type="StringVec"> SecondaryVertexRapidityJetAxis SecondaryVertexPhiJetAxis</parameter>
-
-  <parameter name="ParticleNetFeatures_PFFeatures" type="StringVec"> 
-    RapidityRelJet Rapidity PhiRelJet TransverseMomentumLOG 
-    EnergyLOG TransverseMomentumFracLOG EnergyFracLOG DeltaRJet 
-    D0 D0Sig Z0 Z0Sig 
-    3DImpactPar 3DImpactParSig Charge IsElectron 
-    IsMuon IsChargedHadron IsNeutralHadron IsPhoton 
-    D0bprob D0cprob D0qprob Z0bprob 
-    Z0cprob Z0qprob UsedinPrimVertex LeptonMomRelJet 
-    Kaoness Chi2NDF LeptonMomFraction WeightedKaonnessMomFrac 
-    TrackJetDotProductNorm HCalFrac </parameter>
-
-  <parameter name="ParticleNetFeatures_SVFeatures" type="StringVec"> 
-    SecondaryVertexRapidityJetAxis SecondaryVertexRapidity SecondaryVertexPhiJetAxis SecondaryVertexPtLOG 
-    SecondaryVertexMass SecondaryVertexNTracks SecondaryVertexChi2NDF SecondaryVertexD0 
-    SecondaryVertexD0Sig SecondaryVertexImpactPar3d SecondaryVertexImpactPar3dSig SecondaryVertexCosMomPos 
-    SecondaryVertexEnergyJetEnergy SecondaryVertexEnergy </parameter>
-
-  <parameter name="MeanPFFeatures" type="FloatVec"> 
-    1.32407675E-05 9.45040451E-05 1.86711664E-04 2.56760987E-03 
-    3.31566855E-02 -2.71471605E-01 -2.74362616E-01 5.78479106E-02 
-    -1.12494724E-02 2.33654203E-01 1.09502082E-03 2.16266668E-02 
-    8.54738563E-01 7.83937323E+00 7.04696795E-04 6.29262649E-03 
-    8.39447064E-04 7.62233427E-02 1.83451814E-02 6.22003777E-02 
-    8.17265688E-03 4.36672755E-03 6.85390073E-03 3.13194473E-02 
-    1.49149196E-02 1.28969206E-02 6.49708034E-02 1.43666208E-01 
-    2.85324170E-02 1.03533790E-01 1.99147747E-03 1.74453144E-03 
-    4.23343115E-01 8.67380935E-03 </parameter>
-
-  <parameter name="StdPFFeatures" type="FloatVec"> 
-    1.63396139E-01 4.28404018E-01 1.79861445E-01 2.34864209E-01 
-    2.34134521E-01 6.06420942E-01 6.10758103E-01 1.93725098E-01 
-    9.26608360E+00 2.87265987E+02 1.01750425E+01 2.97420403E+02 
-    1.37094982E+01 3.26915009E+02 4.36694309E-01 7.87132513E-02 
-    2.78878710E-02 2.53952526E-01 1.33109609E-01 2.39715952E-01 
-    5.60058006E-02 3.05324066E-02 5.71289053E-02 1.25867892E-01 
-    6.03622077E-02 6.17379686E-02 2.39045113E-01 1.35673784E+00 
-    1.11935280E-01 4.91518416E-01 1.63956627E-02 1.25929118E-02 
-    2.68578652E+00 8.48011095E-02 </parameter>
-
-  <parameter name="MeanSVFeatures" type="FloatVec"> 
-    1.34697415E-04 9.74325621E-04 2.15175083E-05 1.55565610E-01 
-    1.73922294E-01 4.28159549E-01 2.54714492E+00 9.87300605E-01 
-    1.85506850E+10 1.37657706E+00 4.66740321E+10 1.50821873E-01 
-    4.11626210E-02 3.20931512E+00 </parameter>
-
-  <parameter name="StdSVFeatures" type="FloatVec"> 
-    5.31399050E-02 2.57073367E-01 6.13190434E-02 2.51656182E-01 
-    6.06686555E-01 7.08679222E-01 7.26482674E+02 9.77257848E+00 
-    2.05875802E+13 1.52452984E+01 5.22137926E+13 2.27491258E-01 
-    7.58027006E-02 6.91535264E+00 </parameter>
-</processor>
--->
 
 <processor name="ParticleIDFilter_6J" type="ReconstructedParticleParticleIDFilterProcessor">
     <parameter name="RecoParticleCollection" type="string" value="PandoraPFOs"/>
     <parameter name="FilterPIDAlgos" type="StringVev" value="mlflavortagging_pf_features mlflavortagging_pf_points mlflavortagging_sv_features mlflavortagging_sv_points"/>
     <parameter name="Verbosity" type="string" value="DEBUG"/>
-</processor>
-
-<processor name="MyJetTaggingComparison" type="JetTaggingComparison">
-  <parameter name="Collection" type="string" lcioInType="ReconstructedParticle"> Refined6Jets </parameter>
-  <parameter name="PIDAlgorithm1" type="string"> ParticleNetTagger_6J </parameter>
-  <parameter name="PIDAlgorithm2" type="string"> lcfiplus </parameter>
-  <parameter name="PIDParameters1" type="StringVev"> b c s ud </parameter>
-  <parameter name="PIDParameters2" type="StringVev"> BTag CTag OTag </parameter>
-  <parameter name="RootFile" type="string"></parameter>
-  <parameter name="Verbosity" type="string"> DEBUG </parameter>
 </processor>
 
 <processor name="LCIOOutputProcessor" type="LCIOOutputProcessor">

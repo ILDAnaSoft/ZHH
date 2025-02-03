@@ -32,7 +32,7 @@
 
   <processor name="ParticleIDFilter"/>
   
-  <processor name="StoreVariablesForDeepMLFlavorTagger_4J"/>
+  <processor name="StoreVariablesForMLTagging_4J"/>
   <processor name="ParticleNetTagger_4J_old"/>
   <processor name="ParticleNetTagger_4J_new"/>
   <processor name="ParticleIDFilter_4J"/>
@@ -1020,7 +1020,7 @@
     <parameter name="Verbosity" type="string" value="DEBUG"/>
 </processor>
 
-<processor name="StoreVariablesForDeepMLFlavorTagger_4J" type="StoreVariablesForDeepMLFlavorTagger">
+<processor name="StoreVariablesForMLTagging_4J" type="StoreVariablesForMLTagging">
   <parameter name="CollectionPrimaryVertex" type="string" value="PrimaryVertex" />
   <parameter name="CollectionRefinedJets" type="string" value="Refined4Jets"> </parameter>
   <parameter name="CollectionRefinedVertices" type="string" value="RefinedVertex4Jets" />

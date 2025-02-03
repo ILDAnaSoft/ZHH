@@ -13,12 +13,16 @@ function usage() {
     echo "       .env: environment variables in key=value format"
     echo "       .env.sh: shell script for additional environment setup"
     echo ""
-    echo "Dependencies"
-    echo "       MarlinMLFlavorTagging: absolute path to MarlinMLFlavorTagging repository with binaries inside lib (see https://gitlab.desy.de/bryan.bliewert/MarlinMLFlavorTagging)"
-    echo "       FlavorTagging_ML: absolute path to FlavorTagging_ML repository with binaries inside lib (see https://gitlab.desy.de/bryan.bliewert/FlavorTagging_ML)"
+    echo "Dependencies: absolute path to cloned repositories with binaries inside lib, where possible"
+    echo "       MarlinMLFlavorTagging: https://gitlab.desy.de/bryan.bliewert/MarlinMLFlavorTagging"
+    echo "       ILDConfig: https://github.com/iLCSoft/ILDConfig.git"
+    echo "       MarlinReco: https://github.com/nVentis/MarlinReco.git"
+    echo "       LCFIPlusConfig: https://github.com/suehara/LCFIPlusConfig"
+    echo "       LCFIPlus: https://github.com/suehara/LCFIPlus (onnx branch)"
+
 }
 
-ZHH_K4H_RELEASE_DEFAULT="2024-11-28"
+ZHH_K4H_RELEASE_DEFAULT="2025-01-28"
 # ILDConfig release: fb10b66
 
 function zhh_echo() {
@@ -70,7 +74,6 @@ function zhh_attach_marlin_dlls() {
         "$REPO_ROOT/source/TruthRecoComparison/lib/libTruthRecoComparison.so"
         "$REPO_ROOT/source/ExpandJetProcessor/lib/libExpandJetProcessor.so"
         "$REPO_ROOT/source/MergePIDProcessor/lib/libMergePIDProcessor.so"
-        "$MarlinMLFlavorTagging/lib/libMarlinMLFlavorTagging.so"
     )
 
     for lib in "${libs[@]}"; do
@@ -82,6 +85,32 @@ function zhh_attach_marlin_dlls() {
         zhh_echo "Attaching library $(basename $lib)"
         export MARLIN_DLL="$lib":$MARLIN_DLL
     done
+
+    local libs_old=(
+        "/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/lcfiplus/0.10.1-3azs6t/lib/libLCFIPlus.so"
+        "/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/marlinreco/1.36.1-ywnmqe/lib/libMarlinReco.so"
+        "/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/marlinmlflavortagging/0.1.0-2cepkq/lib/libMarlinMLFlavorTagging.so")
+    local libs_new=("$LCFIPlus/build/lib/libLCFIPlus.so" "$MarlinReco/lib/libMarlinReco.so" "$MarlinMLFlavorTagging/lib/libMarlinMLFlavorTagging.so")
+
+    # Cleanup conflicts with custom dependencies and key4hep stack
+    for i in "${!libs_new[@]}"; do
+        local lib="${libs_new[$i]}"
+        if [[ ! -f "$lib" ]]; then
+            zhh_echo "+++ WARNING +++ Library <$(basename $lib)> not found at $lib."
+            zhh_echo "    Make sure to compile it before you start Marlin. Continuing..."
+        fi
+
+        zhh_echo "Attaching library $(basename $lib)"
+        export MARLIN_DLL=$(echo "$MARLIN_DLL" | sed -e "s|${libs_old[$i]}:|${libs_new[$i]}:|g")
+    done
+
+
+    # LCFIPlus
+    
+    # MarlinReco
+    export MARLIN_DLL=$(echo "$MARLIN_DLL" | sed -e "s|:|:|g")
+    # MarlinMLFlavorTagging
+    export MARLIN_DLL=$(echo "$MARLIN_DLL" | sed -e "s|:|:|g")
 
     # v3 requires a recent version of ReconstructedParticleParticleIDFilterProcessor.cc 
     # https://github.com/iLCSoft/MarlinReco/blob/master/Analysis/PIDTools/src/ReconstructedParticleParticleIDFilterProcessor.cc
@@ -243,8 +272,8 @@ if [[ "$ZHH_COMMAND" = "compile" ]]; then
     zhh_echo "Successfully compiled all dependencies and libraries"
 fi
 
-if [[ ! -d "$MarlinMLFlavorTagging" || ! -d "$LCIO" || ! -d "${ILD_CONFIG_DIR}" ]]; then
-    zhh_echo "Error: MarlinMLFlavorTagging, LCIO and ILD_CONFIG_DIR must be set and point to valid directories."
+if [[ ! -d "$MarlinMLFlavorTagging" || ! -d "$LCFIPlus" || ! -d "$LCFIPlusConfig" || ! -d "$LCIO" || ! -d "${ILD_CONFIG_DIR}" ]]; then
+    zhh_echo "Error: MarlinMLFlavorTagging, LCFIPlus, LCFIPlusConfig, LCIO and ILD_CONFIG_DIR must be set and point to valid directories."
     zhh_echo "    Use --install to download and/or compile them here. Aborting."
     return 1
 fi

@@ -20,18 +20,17 @@
   <processor name="MyCheatedMCOverlayRemoval" />
 
   <!-- NEW OV removal -->
-  <!-- <processor name="MyMLOverlayRemoval" /> -->
+  <processor name="StoreVariablesForMLTagging"/>
+  <processor name="MyMLOverlayRemoval" />
 
   <processor name="MyIsolatedLeptonTaggingProcessor"/>
   <processor name="MyLeptonPairing"/>
 
   <processor name="MyTrueJet"/>
-  <processor name="MyMergePIDProcessor"/>
+  <!-- <processor name="MyMergePIDProcessor"/> -->
 
   <processor name="JC4FT"/>
   <processor name="EF6"/>
-
-  <processor name="StoreVariablesForDeepMLFlavorTagger_4J"/>
 
   <!--
   <if condition="${FilterTempPID}">
@@ -481,10 +480,11 @@
 </processor>
 -->
 
-<processor name="StoreVariablesForDeepMLFlavorTagger_4J" type="StoreVariablesForDeepMLFlavorTagger">
-  <parameter name="CollectionPrimaryVertex" type="string" value="PrimaryVertex" />
-  <parameter name="CollectionRefinedJets" type="string" value="Refined4Jets" />
-  <parameter name="CollectionRefinedVertices" type="string" value="RefinedVertex4Jets" />
+<processor name="MyStoreVariablesForMLTagging" type="StoreVariablesForMLTagging">
+  <parameter name="CollectionPrimaryVertex" type="string" value="None" />
+  <parameter name="CollectionRefinedJets" type="string" value="None" />
+  <parameter name="CollectionRefinedVertices" type="string" value="None" />
+  
   <parameter name="CollectionPFOs" type="string" value="PandoraPFOsWithoutLepPair" /> 
   <parameter name="D0ProbFileName" type="string" value="${ILDConfigDir}/LCFIPlusConfig/vtxprob/d0probv2_ildl5_6q500.root"/> <!-- vtxprob/d0probv2_ildl5_6q500.root -->
   <parameter name="Z0ProbFileName" type="string" value="${ILDConfigDir}/LCFIPlusConfig/vtxprob/z0probv2_ildl5_6q500.root"/>

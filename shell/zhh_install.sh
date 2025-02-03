@@ -90,10 +90,13 @@ function zhh_install_deps() {
             https://gitlab.desy.de/bryan.bliewert/MarlinMLFlavorTagging.git
             https://gitlab.desy.de/bryan.bliewert/FlavorTagging_ML.git
             https://github.com/iLCSoft/ILDConfig.git
-            https://github.com/nVentis/MarlinReco.git)
-        local varnames=(MarlinMLFlavorTagging FlavorTagging_ML ILD_CONFIG_DIR MarlinReco)
-        local dirnames=(MarlinMLFlavorTagging FlavorTagging_ML ILDConfig MarlinReco)
-        local commits=(latest latest fb10b66cdc2335d8f84443a14ec7fda64ab389ed latest)
+            https://github.com/nVentis/MarlinReco.git
+            https://github.com/suehara/LCFIPlusConfig
+            https://github.com/suehara/LCFIPlus)
+        local varnames=(MarlinMLFlavorTagging FlavorTagging_ML ILD_CONFIG_DIR MarlinReco LCFIPlusConfig LCFIPlus)
+        local dirnames=(MarlinMLFlavorTagging FlavorTagging_ML ILDConfig MarlinReco LCFIPlusConfig LCFIPlus)
+        local commits=(latest latest fb10b66cdc2335d8f84443a14ec7fda64ab389ed latest latest latest)
+        local branchnames=(main main master master master onnx)
         local cwd=$(pwd)
 
         mkdir -p $INSTALL_DIR
@@ -113,7 +116,7 @@ function zhh_install_deps() {
 
                     if [[ ! -d "$install_dir" ]]; then
                         echo "Cloning to $INSTALL_DIR/$dirnamecur"
-                        git clone --recurse-submodules ${repositories[$ind]} "$install_dir"
+                        git clone -b ${branchnames[$ind]} --recurse-submodules ${repositories[$ind]} "$install_dir"
 
                         if [[ $commitcur != "latest" ]]; then
                             echo "Checking out commit $commitcur"
@@ -172,6 +175,8 @@ function zhh_install_deps() {
 REPO_ROOT="$REPO_ROOT"
 MarlinMLFlavorTagging="$MarlinMLFlavorTagging"
 FlavorTagging_ML="$FlavorTagging_ML"
+LCFIPlusConfig="$LCFIPlusConfig"
+LCFIPlus="$LCFIPlus"
 ILD_CONFIG_DIR="$ILD_CONFIG_DIR"
 MarlinReco="$MarlinReco"
 LCIO="$LCIO"
