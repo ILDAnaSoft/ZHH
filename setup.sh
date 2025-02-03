@@ -103,17 +103,6 @@ function zhh_attach_marlin_dlls() {
         zhh_echo "Attaching library $(basename $lib)"
         export MARLIN_DLL=$(echo "$MARLIN_DLL" | sed -e "s|${libs_old[$i]}:|${libs_new[$i]}:|g")
     done
-
-
-    # LCFIPlus
-    
-    # MarlinReco
-    export MARLIN_DLL=$(echo "$MARLIN_DLL" | sed -e "s|:|:|g")
-    # MarlinMLFlavorTagging
-    export MARLIN_DLL=$(echo "$MARLIN_DLL" | sed -e "s|:|:|g")
-
-    # v3 requires a recent version of ReconstructedParticleParticleIDFilterProcessor.cc 
-    # https://github.com/iLCSoft/MarlinReco/blob/master/Analysis/PIDTools/src/ReconstructedParticleParticleIDFilterProcessor.cc
 }
 
 # Inferring REPO_ROOT
