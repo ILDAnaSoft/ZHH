@@ -49,9 +49,11 @@ class FinalStateRecorder : public Processor
 		std::string m_process_name{};
 
 		// filter mechanism
-		std::vector<std::pair<int, int*>> construct_filter_lookup(std::vector<std::string> filter);
-		std::vector<std::pair<int, int*>> m_filter_lookup{};
+		std::vector<std::pair<int*, int>> construct_filter_lookup(std::vector<std::string> filter);
+		std::vector<std::pair<int*, int>> m_filter_lookup{};
 		std::vector<std::string> m_filter_quantities{};
+		std::vector<int> m_filter_operators{}; // 0,1,2,3,4 for "=", "<", ">", "<=", ">="
+		std::vector<std::string> m_filter_operator_names{}; // any of "=", "<", ">", "<=", ">=" for all selected filters
 		bool process_filter();
 		bool m_passed_filter{};
 

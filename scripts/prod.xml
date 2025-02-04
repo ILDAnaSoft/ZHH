@@ -79,7 +79,7 @@
         </if>
 
         <if condition="${Runqqbbbb}">
-            <processor name="JC4FT_qq" />
+            <processor name="JC6FT_qq" />
             <processor name="MyPreSelection_qq" />
         </if>
 
@@ -178,22 +178,16 @@
         <!--parameter name="Verbosity" type="string">DEBUG </parameter-->
     </processor>
 
-    <processor name="MyAddClusterProperties" type="AddClusterProperties">
-        <!--AddClusterProperties does whatever it does ...-->
-        <parameter name="PFOCollectionName" type="string" lcioInType="ReconstructedParticle">PandoraPFOs </parameter>
-        <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">DEBUG4 </parameter>
-    </processor>
-
+    <!--
     <processor name="MyMisclustering" type="Misclustering">
-        <!--Name of the input reconstructed Jet collection-->
         <parameter name="RecoJetCollection" type="string" lcioInType="ReconstructedParticle">RefinedJets_ll</parameter>
         <parameter name="JetMatchingCollection" type="string" lcioOutType="ReconstructedParticle">JetMatching</parameter>
         <parameter name="matchMethod" type="int">0</parameter>
         <parameter name="outputFilename" type="string">${OutputDirectory}/${OutputBaseName}_Misclustering.root</parameter>
-        <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
+
         <parameter name="Verbosity" type="string">DEBUG</parameter>
     </processor>
+    -->
 
     <processor name="ComputeCorrectAngulardEdX" type="AngularCorrection_dEdxProcessor">
         <!-- description not set by author -->
@@ -210,6 +204,8 @@
         <!--Performs particle identification-->
         <!--Debugging?-->
         <parameter name="Debug" type="int">0</parameter>
+        <parameter name="Verbosity" type="string">MESSAGE</parameter>
+
         <!--Boundaries for energy binning-->
         <parameter name="EnergyBoundaries" type="FloatVec">0 1.0e+07</parameter>
         <!--Name of files containing pdfs for charged particles-->
@@ -237,6 +233,14 @@
         <parameter name="PIDMethodsToRun_version" type="string"> v2 </parameter>
         <!--Name of the PFO collection-->
         <parameter name="RecoParticleCollection" type="string"> PandoraPFOs </parameter>
+    </processor>
+
+    <processor name="LeptonID" type="LeptonIDProcessor">
+        <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
+        <parameter name="Verbosity" type="string"> MESSAGE </parameter>
+        <parameter name="BuildTree" type="bool">false</parameter>
+        <parameter name="EvalMVA" type="bool">true</parameter>
+        <parameter name="weightfile">${ILDConfigDir}/StandardConfig/production/HighLevelReco/PIDFiles/CPID/LeptonID_multi_jet_dEdx_800t_3d_cm50r50_BDTG.weights.xml</parameter>
     </processor>
 
     <processor name="MyAddNeutralPFOCovMatLite" type="AddNeutralPFOCovMat">
@@ -731,7 +735,7 @@
         </parameter>
     </processor>
 
-    <processor name="JC4FT_qq" type="LcfiplusProcessor">
+    <processor name="JC6FT_qq" type="LcfiplusProcessor">
         <!-- run primary and secondary vertex finders -->
         <parameter name="Algorithms" type="stringVec"> JetClustering JetVertexRefiner FlavorTag ReadMVA </parameter>
         <parameter name="Verbosity" type="string">SILENT</parameter>

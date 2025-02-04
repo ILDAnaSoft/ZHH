@@ -24,7 +24,7 @@ action(){
             cmake -DCMAKE_CXX_STANDARD=17 ..
         fi
         
-        make install || { cd ../.. ; return 1; }
+        make install -j 4 || { cd ../.. ; return 1; }
         cd ../..
     }
 
