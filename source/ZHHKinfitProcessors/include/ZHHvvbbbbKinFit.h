@@ -1,5 +1,5 @@
-#ifndef ZHHllbbbbKinFit_h
-#define ZHHllbbbbKinFit_h 1
+#ifndef ZHHvvbbbbKinFit_h
+#define ZHHvvbbbbKinFit_h 1
 
 #include <iostream>
 #include <vector>
@@ -18,6 +18,7 @@
 #include "JetFitObject.h"
 #include "LeptonFitObject.h"
 #include "ISRPhotonFitObject.h"
+#include "ZinvisibleFitObject.h"
 #include "MomentumConstraint.h"
 #include "OPALFitterGSL.h"
 #include "NewFitterGSL.h"
@@ -42,19 +43,19 @@ using namespace lcio ;
 using namespace marlin ;
 using namespace std;
 
-class ZHHllbbbbKinFit : public Processor , public TrueJet_Parser
+class ZHHvvbbbbKinFit : public Processor , public TrueJet_Parser
 {
 
 	public:
 
 		virtual Processor*  newProcessor()
 		{
-			return new ZHHllbbbbKinFit;
+			return new ZHHvvbbbbKinFit;
 		}
-		ZHHllbbbbKinFit() ;
-		virtual ~ZHHllbbbbKinFit() = default;
-		ZHHllbbbbKinFit(const ZHHllbbbbKinFit&) = delete;
-		ZHHllbbbbKinFit& operator=(const ZHHllbbbbKinFit&) = delete;
+		ZHHvvbbbbKinFit() ;
+		virtual ~ZHHvvbbbbKinFit() = default;
+		ZHHvvbbbbKinFit(const ZHHvvbbbbKinFit&) = delete;
+		ZHHvvbbbbKinFit& operator=(const ZHHvvbbbbKinFit&) = delete;
 		typedef vector<EVENT::ReconstructedParticle*>	pfoVector;
 		typedef vector<vector<EVENT::ReconstructedParticle*>>	pfoVectorVector;
 		struct FitResult {
@@ -159,7 +160,7 @@ class ZHHllbbbbKinFit : public Processor , public TrueJet_Parser
                 float                                   m_ISREnergyTrue{};
                 float                                   m_BSEnergyTrue{};
                 float                                   m_HHMassHardProcess{};
-		int					m_FitErrorCode_woNu{};
+                int					m_FitErrorCode_woNu{};
 		float					m_ZMassBeforeFit_woNu{};
 		float					m_H1MassBeforeFit_woNu{};
                 float					m_H2MassBeforeFit_woNu{};

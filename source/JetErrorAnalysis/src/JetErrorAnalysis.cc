@@ -38,7 +38,7 @@ JetErrorAnalysis::JetErrorAnalysis() : Processor("JetErrorAnalysis"),
 {
 
   // modify processor description
-  _description = "JetErrorAnalysis does whatever it does ..." ;
+  _description = "JetErrorAnalysis calculates normalised residuals for jet fit objects in ZHH events" ;
 
 
   // register steering parameters: name, description, class-variable, default value

@@ -38,7 +38,7 @@ LeptonErrorAnalysis::LeptonErrorAnalysis() : Processor("LeptonErrorAnalysis"),
 {
 
   // modify processor description
-  _description = "LeptonErrorAnalysis does whatever it does ...";
+  _description = "LeptonErrorAnalysis calculates normalised residuals for lepton fit object in ZHH events";
 
 
   // register steering parameters: name, description, class-variable, default value

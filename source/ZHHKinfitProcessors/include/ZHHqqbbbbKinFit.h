@@ -1,5 +1,5 @@
-#ifndef ZHHllbbbbKinFit_h
-#define ZHHllbbbbKinFit_h 1
+#ifndef ZHHqqbbbbKinFit_h
+#define ZHHqqbbbbKinFit_h 1
 
 #include <iostream>
 #include <vector>
@@ -42,19 +42,19 @@ using namespace lcio ;
 using namespace marlin ;
 using namespace std;
 
-class ZHHllbbbbKinFit : public Processor , public TrueJet_Parser
+class ZHHqqbbbbKinFit : public Processor , public TrueJet_Parser
 {
 
 	public:
 
 		virtual Processor*  newProcessor()
 		{
-			return new ZHHllbbbbKinFit;
+			return new ZHHqqbbbbKinFit;
 		}
-		ZHHllbbbbKinFit() ;
-		virtual ~ZHHllbbbbKinFit() = default;
-		ZHHllbbbbKinFit(const ZHHllbbbbKinFit&) = delete;
-		ZHHllbbbbKinFit& operator=(const ZHHllbbbbKinFit&) = delete;
+		ZHHqqbbbbKinFit() ;
+		virtual ~ZHHqqbbbbKinFit() = default;
+		ZHHqqbbbbKinFit(const ZHHqqbbbbKinFit&) = delete;
+		ZHHqqbbbbKinFit& operator=(const ZHHqqbbbbKinFit&) = delete;
 		typedef vector<EVENT::ReconstructedParticle*>	pfoVector;
 		typedef vector<vector<EVENT::ReconstructedParticle*>>	pfoVectorVector;
 		struct FitResult {
