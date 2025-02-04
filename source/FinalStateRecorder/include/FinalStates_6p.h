@@ -332,6 +332,20 @@ class p6_llWW_llxyyx : public p6 {
 class p6_llWW_llvllv : public p6 {
     public: p6_llWW_llvllv(): p6( "llvllv", PROCESS_ID::f6_llWW_llvllv, EVENT_CATEGORY_TRUE::llWW ) {}; };
 
+class p6_ftag_uuuuuu : public p6 {
+    public: p6_ftag_uuuuuu(): p6( "uuuuuu", PROCESS_ID::f6_ftag_uuuuuu, EVENT_CATEGORY_TRUE::OTHER ) {}; };
+
+class p6_ftag_dddddd : public p6 {
+    public: p6_ftag_dddddd(): p6( "dddddd", PROCESS_ID::f6_ftag_dddddd, EVENT_CATEGORY_TRUE::OTHER ) {}; };
+
+class p6_ftag_ssssss : public p6 {
+    public: p6_ftag_ssssss(): p6( "ssssss", PROCESS_ID::f6_ftag_ssssss, EVENT_CATEGORY_TRUE::OTHER ) {}; };
+
+class p6_ftag_cccccc : public p6 {
+    public: p6_ftag_cccccc(): p6( "cccccc", PROCESS_ID::f6_ftag_cccccc, EVENT_CATEGORY_TRUE::OTHER ) {}; };
+
+class p6_ftag_bbbbbb : public p6 {
+    public: p6_ftag_bbbbbb(): p6( "bbbbbb", PROCESS_ID::f6_ftag_bbbbbb, EVENT_CATEGORY_TRUE::OTHER ) {}; };
 
 
 #endif

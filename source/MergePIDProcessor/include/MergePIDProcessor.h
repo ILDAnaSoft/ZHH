@@ -27,6 +27,7 @@ class MergePIDProcessor : public Processor{
         std::string m_sourceCollection{};
         std::string m_targetCollection{};
         std::string m_outputCollection{};
+        bool m_do_nothing{};
 
     private:
         std::vector<std::string> m_PIDAlgorithmsToKeep{};

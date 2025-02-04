@@ -2,7 +2,7 @@
 
 # Meta information for preparing output structure and expected output files
 TASK_NAME="MarlinTesting"
-outputs=(AIDAFile_$suffix.root.root)
+outputs=(AIDAFile_$suffix.root.root FinalStates_$suffix.root)
 
 # Receive parameters
 raw_file=${1}
@@ -58,7 +58,7 @@ if [[ $outputs_exist_all = "False" ]]; then
 
     # Run Marlin and transfer outputs
     echo "Running Marlin"
-    Marlin "$REPO_ROOT/scripts/dev_flavortag_inference.xml" --global.LCIOInputFiles=$raw_file --constant.ILDConfigDir=$ILD_CONFIG_DIR  --global.MaxRecordNumber=0 --constant.OutputSuffix=$suffix
+    Marlin "$REPO_ROOT/scripts/dev_flavortag_lcfiml.xml" --global.LCIOInputFiles=$raw_file --constant.ILDConfigDir=$ILD_CONFIG_DIR  --global.MaxRecordNumber=0 --constant.OutputSuffix=$suffix
     excode=$(exit 1)
 
     echo "Finished Marlin at $(date) with exit-code $excode"

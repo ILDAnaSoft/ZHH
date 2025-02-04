@@ -68,7 +68,7 @@ FinalStateRecorder::FinalStateRecorder() :
 				);
 	
 	registerProcessorParameter("EventFilter",
-				"if given, adds a GoodEvent processor return value which is true only if all conditions are fulfilled. expects a string vector of the form prop=(int)value; supports nu,nd,nc,ns,nb,nt,ne1,ne2,ne3,nv1,nv2,nv3,ngluon,ngamma,nW,nZ,nb_from_higgs,nc_from_higgs ",
+				"controls the GoodEvent return value which is true only if all conditions are fulfilled. expects a string vector of the form prop=(int)value; supports nu,nd,nc,ns,nb,nt,ne1,ne2,ne3,nv1,nv2,nv3,ngluon,ngamma,nW,nZ,nb_from_higgs,nc_from_higgs ",
 				m_eventFilter,
 				std::vector<std::string>{}
 				);
@@ -402,6 +402,14 @@ void FinalStateRecorder::init()
 	this->register_process(new p6_llWW_llxyyx());
 	this->register_process(new p6_llWW_llvllv());
 
+	this->register_process(new p6_ftag_uuuuuu());
+	this->register_process(new p6_ftag_dddddd());
+	this->register_process(new p6_ftag_ssssss());
+	this->register_process(new p6_ftag_cccccc());
+	this->register_process(new p6_ftag_bbbbbb());
+
+
+
 	streamlog_out(MESSAGE) << "   init finished  " << std::endl;
 }
 
@@ -505,16 +513,20 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 				setReturnValue("GoodEvent", m_passed_filter);
 			} catch (int err) {
 				std::cerr << "Encountered exception (error " << err << ") in run " << m_n_run << " (process " << m_process << ") at event " << m_n_evt << std::endl ;
+				setReturnValue("GoodEvent", false);
 				throw err;
 			}
 
 		} else {
 			m_error_code = ERROR_CODES::PROCESS_NOT_FOUND;
+			streamlog_out(MESSAGE) << "processEvent : process not registered: " << process << std::endl;
+			setReturnValue("GoodEvent", false);
 		}
 
 	} catch(DataNotAvailableException &e) {
 		m_error_code = ERROR_CODES::COLLECTION_NOT_FOUND;
 		streamlog_out(MESSAGE) << "processEvent : Input collections not found in event " << m_n_evt << std::endl;
+		setReturnValue("GoodEvent", false);
 	}
 
 	if (m_write_ttree) {

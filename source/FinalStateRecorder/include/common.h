@@ -198,6 +198,12 @@ struct PROCESS_ID {
 		f6_llWW_llxyev = 2206,
 		f6_llWW_llxyyx = 2207,
 		f6_llWW_llvllv = 2208,
+
+		f6_ftag_uuuuuu = 5001,
+		f6_ftag_dddddd = 5002,
+		f6_ftag_ssssss = 5003,
+		f6_ftag_cccccc = 5004,
+		f6_ftag_bbbbbb = 5005,
 	};
 };
 

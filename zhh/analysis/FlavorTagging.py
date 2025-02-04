@@ -10,14 +10,14 @@ import os.path as osp
 # 1: c tag
 # 2: uds tag
 
-def parse_files(fileAIDA:str, fileFinalStates:str|None=None, valid_jet_pdgs:list[int]=[1,2,3,4,5], exclude_pgs:Optional[list[int]]=[21,23,24]):
+def parse_files(fileAIDA:str, fileFinalStates:str|None=None, valid_jet_pdgs:list[int]=[1,2,3,4,5], exclude_pdgs:Optional[list[int]]=[21,23,24]):
     """_summary_
 
     Args:
         fileFinalStates (str): _description_
         fileAIDA (str): _description_
         valid_jet_pdgs (list[int], optional): _description_. Defaults to [1,2,3,4,5].
-        exclude_pgs (list[int], optional): if not None, a list of PDGs that are checked to not exist. an Exception is raised if any are found. 
+        exclude_pdgs (list[int], optional): if not None, a list of PDGs that are checked to not exist. an Exception is raised if any are found. 
             defaults to [21,23,24] -> no gluons,Z,W
 
 
@@ -25,13 +25,13 @@ def parse_files(fileAIDA:str, fileFinalStates:str|None=None, valid_jet_pdgs:list
         tuple: tot_length, y_true[valid_jets_mask], tags1, tags2, valid_jets_mask
             valid_jets_mask is used as a mask for using only the jets comming from valid_jet_pdgs jets
     """
-    if exclude_pgs is not None:
+    if exclude_pdgs is not None:
         with ur.open(fileFinalStates) as ff:
             fs_mask = np.array(ff['FinalStates']['passed'].array(), dtype=bool)
             fs_counts = np.array(ff['FinalStates']['final_state_counts.second'].array())
             
             pdgs = np.array(ff['FinalStates']['final_state_counts.first'].array(entry_stop=1))[0]
-            for pdg in exclude_pgs:
+            for pdg in exclude_pdgs:
                 pdg_index = np.where(pdgs == pdg)[0]
                 assert(len(pdg_index) == 1)
                 pdg_index = pdg_index[0]

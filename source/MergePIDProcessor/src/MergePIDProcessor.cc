@@ -12,7 +12,7 @@ using namespace marlin;
 MergePIDProcessor aMergePIDProcessor;
 
 MergePIDProcessor::MergePIDProcessor()
-    :Processor("MergePIDProcessor"){
+    : m_do_nothing(false), Processor("MergePIDProcessor"){
 
     //processor description
     _description = "MergePIDProcessor takes in two collections (from, to; to subset of from) of ReconstructedParticle objects and copies PID parameters from the one to the other collection. ";
@@ -41,6 +41,8 @@ MergePIDProcessor::MergePIDProcessor()
 
 void MergePIDProcessor::init(){
     printParameters();
+
+    m_do_nothing = m_sourceCollection == m_outputCollection;
 }
 
 void MergePIDProcessor::processRunHeader( LCRunHeader* run ){
@@ -48,6 +50,9 @@ void MergePIDProcessor::processRunHeader( LCRunHeader* run ){
 }
 
 void MergePIDProcessor::processEvent( LCEvent* evt ){
+    if (m_do_nothing)
+        return;
+
     try{
         const EVENT::LCCollection* source_col = evt->getCollection(m_sourceCollection);
         const EVENT::LCCollection *target_col = evt->getCollection(m_targetCollection);
