@@ -28,6 +28,7 @@ FinalStateRecorder::FinalStateRecorder() :
   m_cross_section_err(0.),
   m_event_weight(1.),
   m_process_id(0),
+  m_passed_filter(true),
   m_n_run(0),
   m_n_evt(0),
   m_n_evt_sum(0),
@@ -73,13 +74,23 @@ FinalStateRecorder::FinalStateRecorder() :
 				);
 }
 
-std::vector<std::pair<int, int*>> FinalStateRecorder::construct_filter_lookup(std::vector<std::string> filter) {
-	std::vector<std::pair<int, int*>> result;
+std::vector<std::pair<int*, int>> FinalStateRecorder::construct_filter_lookup(std::vector<std::string> filter) {
+	std::vector<std::pair<int*, int>> result;
+	std::vector<std::string> operators = { "=", "<", ">", "<=", ">=" };
 
 	for (std::string &piece : filter) {
-		size_t split_pos = piece.find("=");
-		if (split_pos == std::string::npos) {
-			streamlog_out(ERROR) << "Delimiter = not found in filter part: " << piece << std::endl;
+		int operator_id = -1;
+		size_t split_pos;
+		for (size_t i = 0; i < operators.size(); i++) {
+			split_pos = piece.find(operators[i]);
+			if (split_pos != std::string::npos) {
+				operator_id = (int)i;
+				break;
+			}
+		}
+		
+		if (operator_id == -1) {
+			streamlog_out(ERROR) << "No valid delimiter (=,<,>,>=,<=) found in filter. " << std::endl;
 			throw EVENT::Exception("Cannot parse filter");
 		}
 
@@ -137,10 +148,12 @@ std::vector<std::pair<int, int*>> FinalStateRecorder::construct_filter_lookup(st
 		streamlog_out(MESSAGE) << "Added check for " << property_name << " = " << property_should << std::endl ;
 
 		m_filter_quantities.push_back(property_name);
+		m_filter_operators.push_back(operator_id);
+		m_filter_operator_names.push_back(operators[operator_id]);
 
 		result.push_back(std::make_pair(
-			property_should,
-			property_is
+			property_is,
+			property_should
 		));		
 	}
 
@@ -150,8 +163,21 @@ std::vector<std::pair<int, int*>> FinalStateRecorder::construct_filter_lookup(st
 bool FinalStateRecorder::process_filter(){
 	for (size_t i = 0; i < m_filter_lookup.size(); i++) {
 		auto& is_should_pair = m_filter_lookup[i];
-		if (is_should_pair.first != *is_should_pair.second) {
-			streamlog_out(MESSAGE) << "Event did not pass filter for quantity " << m_filter_quantities[i] << ": " << *is_should_pair.second << " != " << is_should_pair.first << std::endl ;
+		bool check;
+
+		switch (m_filter_operators[i]) {
+			case 0: check = *is_should_pair.first == is_should_pair.second; break;
+			case 1: check = *is_should_pair.first  < is_should_pair.second; break;
+			case 2: check = *is_should_pair.first  > is_should_pair.second; break;
+			case 3: check = *is_should_pair.first <= is_should_pair.second; break;
+			case 4: check = *is_should_pair.first >= is_should_pair.second; break;
+			default:
+				// do nothing
+				break;
+		}
+		
+		if (!check) {
+			streamlog_out(MESSAGE) << "Event did not pass filter for quantity " << m_filter_quantities[i] << ": " << *is_should_pair.first << m_filter_operator_names[i] << is_should_pair.second << std::endl ;
 			return false;
 		}
 	}
@@ -475,9 +501,8 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 				if (m_setReturnValues) {
 					m_passed_filter = process_filter();
 					streamlog_out(MESSAGE) << "Passed event " << m_n_evt << ": " << (m_passed_filter ? "YES" : "NO") << std::endl;
-
-					setReturnValue("GoodEvent", m_passed_filter);
 				}
+				setReturnValue("GoodEvent", m_passed_filter);
 			} catch (int err) {
 				std::cerr << "Encountered exception (error " << err << ") in run " << m_n_run << " (process " << m_process << ") at event " << m_n_evt << std::endl ;
 				throw err;

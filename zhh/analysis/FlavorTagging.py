@@ -17,13 +17,12 @@ def parse_files(fileAIDA:str, fileFinalStates:str|None=None, valid_jet_pdgs:list
         fileFinalStates (str): _description_
         fileAIDA (str): _description_
         valid_jet_pdgs (list[int], optional): _description_. Defaults to [1,2,3,4,5].
-        exclude_pgs (list[int], optional):
-            if not None, a list of PDGs that are checked to not exist. an Exception is raised if any are found. 
+        exclude_pgs (list[int], optional): if not None, a list of PDGs that are checked to not exist. an Exception is raised if any are found. 
             defaults to [21,23,24] -> no gluons,Z,W
 
 
     Returns:
-        tuple: tot_length, y_true[valid_jets_mask], tagsPNet[valid_jets_mask], tagsLCFI[valid_jets_mask], valid_jets_mask
+        tuple: tot_length, y_true[valid_jets_mask], tags1, tags2, valid_jets_mask
             valid_jets_mask is used as a mask for using only the jets comming from valid_jet_pdgs jets
     """
     if exclude_pgs is not None:
@@ -38,6 +37,7 @@ def parse_files(fileAIDA:str, fileFinalStates:str|None=None, valid_jet_pdgs:list
                 pdg_index = pdg_index[0]
                 
                 n_found = fs_counts[fs_mask, pdg_index].sum()
+                print(f'{pdg}: {n_found}')
                 if n_found > 0:
                     raise Exception(f'Found {n_found} entries of PDG {pdg} which was requested to be excluded')
         
@@ -45,12 +45,15 @@ def parse_files(fileAIDA:str, fileFinalStates:str|None=None, valid_jet_pdgs:list
         y_true = np.abs(np.array(af['Jets']['TrueJetInitialElementonPDG'].array()))
         valid_jets_mask = np.isin(y_true, valid_jet_pdgs)
         
-        tagsML = np.array(af['JetTaggingComparison']['tags1'].array())
-        tagsLCFI = np.array(af['JetTaggingComparison']['tags2'].array())
+        tags1 = np.array(af['JetTaggingComparison']['tags1'].array())
+        tags2 = np.array(af['JetTaggingComparison']['tags2'].array())
         
-        assert(len(y_true) == len(tagsML))
+        if not (np.sum(af['JetTaggingComparison']['energy'].array() == af['Jets']['JetEnergy'].array()) == len(valid_jets_mask)):
+            raise Exception('Order of jets must match exactly')
+        
+        assert(len(y_true) == len(tags1) and len(tags1) == len(tags2))
     
-    return len(valid_jets_mask), y_true, tagsML, tagsLCFI, valid_jets_mask
+    return len(valid_jets_mask), y_true, tags1, tags2, valid_jets_mask
 
 def get_tot_length(paths:list[str])->int:
     result = 0
@@ -74,8 +77,8 @@ def load_ftag_results(filesAIDA:list[str], n_tagsML:int=4, n_tagsLCFI:int=3):
         
     tot_length = get_tot_length(filesAIDA)
         
-    tagsPNet = np.zeros((tot_length, n_tagsML))
-    tagsLCFI = np.zeros((tot_length, n_tagsLCFI))
+    tags1 = np.zeros((tot_length, n_tagsML))
+    tags2 = np.zeros((tot_length, n_tagsLCFI))
     pdgs = np.zeros(tot_length, dtype='B')
     valid_jets_mask = np.zeros(tot_length, dtype=bool)
     pointer_valid = 0
@@ -84,12 +87,12 @@ def load_ftag_results(filesAIDA:list[str], n_tagsML:int=4, n_tagsLCFI:int=3):
     for fileFinalStates, fileAIDA in (pbar := tqdm(list(zip(filesFinalStates, filesAIDA)))):
         pbar.set_description(fileAIDA)
         
-        chunk_length, chunk_pdgs, chunk_tags_pnet, chunk_tags_lcfi, chunk_valid_jets_mask = parse_files(fileAIDA, fileFinalStates)
+        chunk_length, chunk_pdgs, chunk_tags1, chunk_tags2, chunk_valid_jets_mask = parse_files(fileAIDA, fileFinalStates)
         
         pdgs[pointer_valid:pointer_valid+chunk_length] = chunk_pdgs
-        tagsPNet[pointer_valid:pointer_valid+chunk_length] = chunk_tags_pnet
-        tagsLCFI[pointer_valid:pointer_valid+chunk_length] = chunk_tags_lcfi
-        valid_jets_mask[pointer_all:pointer_all+len(chunk_valid_jets_mask)] = chunk_valid_jets_mask
+        tags1[pointer_valid:pointer_valid+chunk_length] = chunk_tags1
+        tags2[pointer_valid:pointer_valid+chunk_length] = chunk_tags2
+        valid_jets_mask[pointer_all:pointer_all+chunk_length] = chunk_valid_jets_mask
         
         pointer_valid += chunk_length
         pointer_all += len(chunk_valid_jets_mask)
@@ -108,4 +111,4 @@ def load_ftag_results(filesAIDA:list[str], n_tagsML:int=4, n_tagsLCFI:int=3):
     ]:
         y_true[pdgs == needle] = replace
     
-    return y_true, tagsPNet, tagsLCFI, valid_jets_mask
+    return y_true, tags1, tags2, valid_jets_mask
