@@ -1,14 +1,14 @@
 #!/bin/bash
 
-# Meta information for preparing output structure and expected output files
-TASK_NAME="MarlinTesting"
-outputs=(AIDAFile_$suffix.root.root FinalStates_$suffix.root)
-
 # Receive parameters
 raw_file=${1}
 suffix=${2}
 env_file=${3}
 job_id=${4}
+
+# Meta information for preparing output structure and expected output files
+TASK_NAME="MarlinTesting"
+outputs=(AIDAFile_$suffix.root.root FinalStates_$suffix.root)
 
 # Prepare ZHH working environment
 export $(grep -v '^#' "${env_file}" | xargs)
