@@ -128,3 +128,12 @@ cresgvexe merge sgvopt "" "" "" "" "eflow_par_type.o zaccon.o"
 
 # now everything with lcio
 cresgvexe merge usesgvlcio "-DEXTREAD" "" "" "" "eflow_par_type.o zaccon.o"
+
+# prepare the steering file; use sgv_ild_lcio.steer as template file
+# will be filled by Python helper class SGVSteeringModifier
+cp $SGV_DIR/samples/lcio/sgv_ild_lcio_extread.steer $SGV_DIR/tests
+ln -s $SGV_DIR/tests/sgv_ild_lcio_extread.steer $SGV_DIR/tests/sgv.steer
+
+# testing
+ln -s sgv.steer fort.17
+# ln -s /pnfs/desy.de/ilc/prod/ilc/mc-2020/generated/550-Test/6f-test/E550-Test.P6f_yyxylv.Gwhizard-3_1_5.eR.pL.I410003_0.0.slcio $SGV_DIR/tests/test.lcio

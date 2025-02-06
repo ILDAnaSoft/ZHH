@@ -68,23 +68,29 @@ def get_preselection_summary_for_branch(
     
     try:
         with open(f'{DATA_ROOT}/stdall_{branch}To{branch+1}.txt') as file:
+            # parse start time, end time, exit code to list of int/float (values)
             signals = ['start time    :', 'end time      :', 'job exit code :']
-            values = [0, 0, 0]
+            temp = ["", "", ""]
+            values:list[int|float] = [0, 0, 0]
             lsig = len(signals)
             
             for line in file.readlines():
                 for i in range(lsig):
                     if line.startswith(signals[i]):
-                        values[i] = line.split(f'{signals[i]} ')[1].strip()
+                        temp[i] = line.split(f'{signals[i]} ')[1].strip()
                     elif src_path == '' and '--global.LCIOInputFiles=' in line:
                         src_path = line.split('--global.LCIOInputFiles=')[1].strip().split(' --constant.OutputDirectory=')[0]
-
+                        
             for i in [0, 1]:
-                if values[i] != '':
-                    if ' (' in values[i]:
-                        values[i] = values[i].split(' (')[0]
+                if temp[i] != '':
+                    if ' (' in temp[i]:
+                        temp[i] = temp[i].split(' (')[0]
                     
-                    values[i] = float(parser.parse(values[i]).timestamp())
+                    values[i] = float(parser.parse(temp[i]).timestamp())
+            
+            # exit code
+            values[2] = int(temp[2])
+                    
     except:
         values = [0, 0, 0]
     
@@ -93,7 +99,7 @@ def get_preselection_summary_for_branch(
     if src_path != '':
         loc, polarization = parse_sample_path(src_path, PROD_NAME=PROD_NAME, ILD_VERSION=ILD_VERSION)
             
-    return (branch, loc, process, polarization[0], polarization[1], src_path, values[0], values[1], values[1] - values[0], int(values[2]))
+    return (branch, loc, process, polarization[0], polarization[1], src_path, values[0], values[1], values[1] - values[0], values[2])
 
 def get_preselection_summary(DATA_ROOT:str, meta:dict)->np.ndarray:
     """_summary_

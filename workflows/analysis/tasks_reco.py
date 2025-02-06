@@ -21,5 +21,5 @@ class FastSimSGV(FastSimSGVExternalReadJob):
         )}
         
     def output(self):
-        # output filename = input filename but extention changed to 'slcio'
+        # output filename = input filename but extension changed to 'slcio'; necessary for stdhep input
         return self.local_target(f'{osp.splitext(osp.basename(self.branch_data[0]))[0]}.slcio')

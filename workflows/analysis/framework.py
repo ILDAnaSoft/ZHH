@@ -10,7 +10,7 @@ and only needs to be defined once per user / group / etc.
 
 import law.contrib.htcondor.workflow
 import os, luigi, law, law.util, law.contrib, law.contrib.htcondor, law.job.base, math
-from typing import Optional, Union, cast, TYPE_CHECKING
+from typing import Optional, Union, cast, TYPE_CHECKING, Any
 from collections.abc import Callable
 from .utils.types import SGVOptions
 if TYPE_CHECKING:
@@ -150,7 +150,7 @@ class AnalysisConfiguration:
     custom_statistics:Optional[list] = None
     
     marlin_globals:dict[str,Union[int,float,str]] = {}
-    marlin_constants:dict[str,Union[int,float,str]] = {}
+    marlin_constants:dict[str,Union[int,float,str]]|Callable[[int, Any], dict[str,Union[int,float,str]]] = {}
     
     def __init__(self):
         # if not slcio files are supplied, add the outputs from SGV

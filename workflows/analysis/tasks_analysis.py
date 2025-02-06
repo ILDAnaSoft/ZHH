@@ -1,5 +1,6 @@
 from analysis.tasks_abstract import MarlinJob
 from typing import Union, Optional, cast
+from collections.abc import Callable
 from law.util import flatten
 from analysis.framework import zhh_configs
 import numpy as np
@@ -39,7 +40,8 @@ class AnalysisAbstract(MarlinJob):
         
         self.constants.append(('MCParticleCollectionName', mcp_col_name))
         
-        for key, value in config.marlin_constants.items():
+        marlin_constants = config.marlin_constants(self.branch, self.branch_data) if isinstance(config.marlin_constants, Callable) else config.marlin_constants
+        for key, value in marlin_constants.items():
             self.constants.append((key, str(value)))
         
         for key, value in config.marlin_globals.items():

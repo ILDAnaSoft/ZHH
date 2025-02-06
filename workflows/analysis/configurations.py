@@ -53,6 +53,50 @@ class Config_550_hh_full(AnalysisConfiguration):
     marlin_globals = {  }
     marlin_constants = { 'CMSEnergy': 550 }
     
+class Config_550_test_fast(AnalysisConfiguration):
+    """Fast simulation on
+    - 550 GeV 6f test samples
+
+    Args:
+        AnalysisConfiguration (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    tag = '5x0-ft-fast'
+    
+    def sgv_inputs(self):
+        input_files:list[str] = []
+        input_options:list[dict] = []
+        
+        for cms_energy, sgv_input_format, source_dir, file_ending in [
+            (550, 'LCIO', '/pnfs/desy.de/ilc/prod/ilc/mc-2020/generated/550-Test/6f-test', 'slcio'),
+        ]:
+            sgv_options:SGVOptions = {
+                'global_steering.MAXEV': 999999,
+                'global_generation_steering.CMS_ENE': cms_energy,
+                'external_read_generation_steering.GENERATOR_INPUT_TYPE': sgv_input_format,
+                'external_read_generation_steering.INPUT_FILENAMES': f'input.{file_ending}'
+            }
+            files = glob(f'{source_dir}/*.{file_ending}')
+            files.sort()
+            
+            for file in files:
+                input_files.append(file)
+                input_options.append(sgv_options)
+        
+        return input_files, input_options
+    
+    # Retrieve the paths to the output files of the SGV runs
+    def slcio_files(self, raw_index_task: 'RawIndex'):
+        input_targets = raw_index_task.input()[0]['collection'].targets.values()
+
+        return [f.path for f in input_targets]
+    
+    statistics = 1.
+    marlin_globals = {  }
+    marlin_constants = { 'CMSEnergy': 550 }
+
 class Config_5x0_ft_fast(AnalysisConfiguration):
     """Fast simulation on
     - 500 GeV ZHH+ZZH
@@ -78,6 +122,7 @@ class Config_5x0_ft_fast(AnalysisConfiguration):
             (500, 'STDH', '/pnfs/desy.de/ilc/prod/ilc/mc-dbd/generated/500-TDR_ws/flavortag', 'stdhep')
         ]:
             sgv_options:SGVOptions = {
+                'global_steering.MAXEV': 999999,
                 'global_generation_steering.CMS_ENE': cms_energy,
                 'external_read_generation_steering.GENERATOR_INPUT_TYPE': sgv_input_format,
                 'external_read_generation_steering.INPUT_FILENAMES': f'input.{file_ending}'
@@ -99,10 +144,19 @@ class Config_5x0_ft_fast(AnalysisConfiguration):
     
     statistics = 1.
     marlin_globals = {  }
-    marlin_constants = { 'CMSEnergy': 550 }
+    
+    def marlin_constants(self, branch:int, branch_value):
+        print(branch, branch_value)
+        
+        raise Exception('To be implemented')
+        
+        return {
+            'CMSEnergy': 550
+        }
 
 # Add them to the registry
 zhh_configs.add(Config_500_all_full())
 zhh_configs.add(Config_550_hh_fast())
 zhh_configs.add(Config_550_hh_full())
 zhh_configs.add(Config_5x0_ft_fast())
+zhh_configs.add(Config_550_test_fast())
