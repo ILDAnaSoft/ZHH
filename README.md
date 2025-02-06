@@ -34,26 +34,23 @@ Either you or `source setup.sh --install` should make sure the following environ
 |--------------------------------|------------------------|
 | REPO_ROOT                      | this repository        |
 | ILD_CONFIG_DIR                 | https://github.com/iLCSoft/ILDConfig |
-| MarlinML                       | https://gitlab.desy.de/ilcsoft/MarlinML |
-| VariablesForDeepMLFlavorTagger | https://gitlab.desy.de/ilcsoft/variablesfordeepmlflavortagger |
-| BTaggingVariables              | https://gitlab.desy.de/ilcsoft/btaggingvariables |
 | DATA_PATH                      | Where all batch jobs save their outputs. Defaults to `/nfs/dust/ilc/user/$(whoami)/zhh`. |
 | TORCH_PATH (*)                 | `python -c 'import torch; print(f"{torch.__file__}")'` |
-| PYTHON_VERSION (**)            | Defaults to `3.11`. |
+| LCFIPlus | Necessary for weaver jet tagging. [This version](https://github.com/nVentis/LCFIPlus) continues fixes. |
+| LCFIPlusConfig | Weight files for LCFIPlus |
+| FlavorTagging_ML | Python code and models for flavor tagging analysis |
+| MarlinMLFlavorTagging | Marlin processors for flavor tagging data extraction and inference. |
+| MarlinReco | Required as [this version](https://github.com/nVentis/MarlinReco.git) here contains fixes. |
+| SGV_DIR                      | https://gitlab.desy.de/mikael.berggren/sgv |
+| ONNXRUNTIMEPATH              | Is hardwired for each key4hep stack release at the moment (see `zhh_install.sh`) |
 
 (*) autodiscovered from the key4hep-stack. Necessary for ParticleNet.   
-(**) autodiscovered from the python installation of the conda environment
 
-Optional variables are
-
-| Environment variable         | Target / Description   |
-|------------------------------|------------------------|
-| SGV_DIR                      | https://gitlab.desy.de/mikael.berggren/sgv |
-
-
-### Caveats
+### Comments on the fixed versions
 
 With the current key4hep stack version, SLDCorrection fails before other processors (e.g. FinalStateRecorder) can complete. This is temporarily fixed either by setting `fillRootTree=false` in the steering file or using a fixed version of SLDCorrection, see [here](https://github.com/nVentis/MarlinReco). In the latter case, create a `zhh_post_setup` function in `.env.sh` that updates `MARLIN_DLL` to point to your MarlinReco library.
+
+In the fixed version of LCFIPlus, logging can be changed or completely deactivated more rigorously as before. Also, it is (as a temporary solution) possible to point to the ONNX runtime via the ONNXRUNTIMEPATH environment variable.
 
 ### Compiling and installing processors
 

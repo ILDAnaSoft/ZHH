@@ -17,6 +17,7 @@ Physsim
 test*.ipynb
 view*.ipynb
 Ranlux.coonf
+dependencies
 *.csv
 *_local.*
 *.pyc

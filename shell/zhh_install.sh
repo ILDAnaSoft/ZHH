@@ -95,7 +95,7 @@ function zhh_install_deps() {
             https://github.com/iLCSoft/ILDConfig.git
             https://github.com/nVentis/MarlinReco.git
             https://github.com/suehara/LCFIPlusConfig
-            https://github.com/suehara/LCFIPlus)
+            https://github.com/nVentis/LCFIPlus)
         local varnames=(MarlinMLFlavorTagging FlavorTagging_ML ILD_CONFIG_DIR MarlinReco LCFIPlusConfig LCFIPlus)
         local dirnames=(MarlinMLFlavorTagging FlavorTagging_ML ILDConfig MarlinReco LCFIPlusConfig LCFIPlus)
         local commits=(latest latest latest latest latest latest)
@@ -172,6 +172,14 @@ function zhh_install_deps() {
 
     mkdir -p "$data_dir"
 
+    # install SGV
+    local default_sgv_dir="$REPO_ROOT/dependencies/sgv"
+    local sgv_dir=""
+    read -p "Where do you want to install SGV? ($default_sgv_dir) " sgv_dir
+    local sgv_dir=${sgv_dir:-$default_sgv_dir}
+
+    source "$REPO_ROOT/shell/sgv_install.sh" $sgv_dir
+
     # Save directories to .env
     # For $ZHH_ENV_NAME, see zhh_install_venv.sh
     cat > "$REPO_ROOT/.env" <<EOF
@@ -186,6 +194,8 @@ LCIO="$LCIO"
 TORCH_PATH="$TORCH_PATH"
 ZHH_VENV_NAME="$ZHH_VENV_NAME"
 DATA_PATH="$data_dir"
+SGV_DIR="$sgv_dir"
+ONNXRUNTIMEPATH="/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/py-onnxruntime/1.17.1-s4gp4m"
 
 EOF
 }

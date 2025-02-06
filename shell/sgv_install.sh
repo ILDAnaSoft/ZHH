@@ -91,7 +91,14 @@ ANSWERS
 
 # enable lcio support
 # see samples/lcio/00_README
-cd $SGV_DIR/samples/lcio && . ./move_to_src $LCIO_INTERFACE_VERSION
+
+return
+
+rm -rf $SGV_DIR/src/sgvlcio/*
+cp -R $SGV_DIR/samples/lcio/src-$LCIO_INTERFACE_VERSION/* $SGV_DIR/src/sgvlcio
+cd $SGV_DIR/src/sgvlcio
+rm -rf -- ..?* .[!.]*
+
 cp $SGV_DIR/samples/lcio/usesgvlcio.F95 $SGV_DIR/tests
 
 cd $SGV_DIR/tests
