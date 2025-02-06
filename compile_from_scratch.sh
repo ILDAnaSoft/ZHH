@@ -40,7 +40,7 @@ action(){
 
     echo "Compiling ZHH dependencies..."
 
-    for module_to_compile in "$VariablesForDeepMLFlavorTagger" "$BTaggingVariables" "$MarlinML"
+    for module_to_compile in "$MarlinMLFlavorTagging" "$MarlinReco"
     do
         if [[ -d $module_to_compile ]]; then
             compile_pkg $module_to_compile && echo "${GREEN}+++ Successfully compiled $module_to_compile +++${NC}" || { echo "${RED}!!! Error [$?] while trying to compile $module_to_compile !!!${NC}"; cd $start_dir; return 1; }

@@ -16,13 +16,16 @@ function zhh_install_venv() {
     if [[ ! -d "$REPO_ROOT/$ZHH_VENV_NAME" ]]; then
         unset PYTHONPATH
         cd $REPO_ROOT
-        python -m venv $ZHH_VENV_NAME
 
-        ( env -i source $REPO_ROOT/$ZHH_VENV_NAME/bin/activate && pip install -r $REPO_ROOT/requirements.txt )
+        python -m venv $ZHH_VENV_NAME && cd $REPO_ROOT/$ZHH_VENV_NAME && (
+            source ./bin/activate && pip install -r ../requirements.txt
+        )
         
+        cd $REPO_ROOT
+
         # Add $REPO_ROOT to PYTHONPATH
         echo "$REPO_ROOT" >> "$(realpath $REPO_ROOT/$ZHH_VENV_NAME/lib/python*/site-packages)/zhh.pth"
-        
+
         # Replace the python executable with a shim so it is guaranteed
         # that the key4hep stack is sourced and the correct env active.
         local PYVER=$( python -c "from sys import version_info as v; print(f'{v.major}.{v.minor}')" )
@@ -82,7 +85,7 @@ function zhh_install_deps() {
         fi
     fi
 
-    if [[ -z $MarlinMLFlavorTagging || -z $ILD_CONFIG_DIR || -z $MarlinReco ]]; then
+    if [[ -z $MarlinMLFlavorTagging || -z $FlavorTagging_ML || -z $ILD_CONFIG_DIR || -z $MarlinReco || -z $LCFIPlusConfig || -z $LCFIPlus ]]; then
         echo "At least one of the dependencies could not be found. Retrieving them..."
 
         local ind="$( [ -z "${ZSH_VERSION}" ] && echo "0" || echo "1" )" # ZSH arrays are 1-indexed
@@ -95,7 +98,7 @@ function zhh_install_deps() {
             https://github.com/suehara/LCFIPlus)
         local varnames=(MarlinMLFlavorTagging FlavorTagging_ML ILD_CONFIG_DIR MarlinReco LCFIPlusConfig LCFIPlus)
         local dirnames=(MarlinMLFlavorTagging FlavorTagging_ML ILDConfig MarlinReco LCFIPlusConfig LCFIPlus)
-        local commits=(latest latest fb10b66cdc2335d8f84443a14ec7fda64ab389ed latest latest latest)
+        local commits=(latest latest latest latest latest latest)
         local branchnames=(main main master master master onnx)
         local cwd=$(pwd)
 

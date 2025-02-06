@@ -34,30 +34,14 @@ function zhh_recompile() {
     cd $REPO_ROOT
     unset yn
     read -p "Do you wish to keep existing binaries of compiled ZHH processors? (y) " yn
+    
     if [[  "$yn" = "y" || -z "$yn" ]]; then
         source compile_from_scratch.sh keep
     else
         source compile_from_scratch.sh
     fi
 
-    compile_pkg ()
-    {
-        cd $1
-        rm -rf build
-        mkdir -p build
-        cd build
-        (cmake -DCMAKE_CXX_STANDARD=17 .. && make install ) || ( cd ../.. && return 1 )
-        cd ../..
-    }
-
-    # Compile the ML and helper libraries
-    for module_to_compile in "$MarlinMLFlavorTagging" "$MarlinReco"
-    do
-        compile_pkg $module_to_compile && zhh_echo "+++ Successfully compiled $module_to_compile +++" || { zhh_echo "!!! Error [$?] while trying to compile $module_to_compile !!!"; cd $REPO_ROOT; return 1; }
-    done
-
     cd $REPO_ROOT
-    
 }
 
 function zhh_attach_marlin_dlls() {
