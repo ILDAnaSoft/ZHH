@@ -24,6 +24,12 @@ class OptionDict():
     def addProperty(self, prop, default):
         self.properties[prop] = default
     
+    def __getitem__(self, key):
+        return self.properties[key]
+    
+    def __setitem__(self, key, value):
+        self.addProperty(key, value)
+    
     def default(self):
         res = {}
         for prop in self.properties:
@@ -34,3 +40,14 @@ class OptionDict():
     def merge(self, values:dict={}):
         res = self.default()
         return merge(values, res)
+    
+    def clone(self):
+        return OptionDict(list(zip(self.properties.keys(), self.properties.values())))
+    
+    def __repr__(self):
+        res = '['
+        for i, (key, value) in enumerate(self.properties.items()):        
+            res += f"{'' if i == 0 else ' '}('{key}', {f'{value}' if isinstance(value, str) else value}),\n"
+        res = res[:-2]
+        res += ']'
+        return res

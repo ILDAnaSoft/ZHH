@@ -3,7 +3,6 @@
 <execute>
   <processor name="AIDA"/>
   <processor name="InitDD4hep"/>
-  <processor name="Statusmonitor"/>
   <processor name="MyFinalStateRecorder" />
   
   <!--processor name="FastJetOverlay"/> -->
@@ -58,14 +57,21 @@
   <constant name="ZHH_REPO_ROOT" value="" />
   <constant name="OutputDir" value="." />
   <constant name="OutputSuffix" value="6f_ttbar_yycyyc" />
+
+  <!-- set to true for mc-opt-3 samples: 500 GeV flavortag, SM brackground samples
+  can be checked using anajob; does not greatly influence of elementon PDGs, if at all -->
+  <constant name="Whizard1" value="false" />
+
+  <!-- for zzh events: nc=2 ngluon=0 nW=0 nZ=0 to study b vs. c ftag performance -->
   <constant name="EventFilter" value="" />
-  <!-- for zzh events: nc=2 ngluon=0 nW=0 nZ=0 for ftag performance -->
   
   <constant name="FilterTempPID" value="true" /> <!-- set to "false" for debugging -->
   <constant name="DebugDumpEvent" value="0" />
   <constant name="DebugDumpJet" value="0" />
 
-  <constant name="MCParticleCollectionName" value="MCParticle" /> <!-- MCParticle MCParticlesSkimmed -->
+  <!-- for mc-2020 productionm set to MCParticlesSkimmed -->
+  <constant name="MCParticleCollectionName" value="MCParticle" />
+
   <constant name="PFOsWithoutOverlayCollection" value="PFOsWithoutOverlayCheated" />
   <constant name="PFOsForClustering" value="PFOsWithoutOverlayCheated" />
   <!--
@@ -90,7 +96,7 @@
 
 <processor name="MyFinalStateRecorder" type="FinalStateRecorder">
   <!-- controls the GoodEvent return value which is true only if all conditions are fulfilled. expects a string vector of the form prop=(int)value; supports nu,nd,nc,ns,nb,nt,ne1,ne2,ne3,nv1,nv2,nv3,ngluon,ngamma,nW,nZ,nb_from_higgs,nc_from_higgs -->
-  <parameter name="EventFilter" type="StringVec">nc=0</parameter>
+  <parameter name="EventFilter" type="StringVec"></parameter>
 
   <!--MyFinalStateRecorder identified events that have passed the preselection-->
   <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
@@ -112,6 +118,7 @@
 <processor name="MyTrueJet" type="TrueJet">
   <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
   <parameter name="TrueJets" type="string" lcioOutType="ReconstructedParticle">TrueJets</parameter>
+  <parameter name="Whizard1" type="bool">${Whizard1}</parameter>
 </processor>
 
 <processor name="MyCheatedMCOverlayRemoval" type="CheatedMCOverlayRemoval">

@@ -37,16 +37,28 @@ JetTaggingComparison::JetTaggingComparison():
 			  string("particlenet")
 			  );
 
+  registerProcessorParameter("PIDAlgorithm3",
+			  "Name of the second PID Handler",
+			  m_pidAlgorithm3,
+			  string("")
+			  );
+
   registerProcessorParameter("PIDParameters1",
-			  "Name of the argument in the first PID Handler",
+			  "Names of parameters to read for the first PID Handler",
 			  m_pidParameters1,
 			  std::vector<std::string>{"BTag"}
 			  );
 
   registerProcessorParameter("PIDParameters2",
-			  "Name of the argument in the second PID Handler",
+			  "Names of parameters to read for the second PID Handler",
 			  m_pidParameters2,
 			  std::vector<std::string>{"BTag"}
+			  );
+
+  registerProcessorParameter("PIDParameters3",
+			  "Names of parameters to read for the third PID Handler",
+			  m_pidParameters3,
+			  std::vector<std::string>{}
 			  );
 
   registerProcessorParameter("RootFile", "Name of the output root file. set to empty, this will output to AIDA", m_rootFile, string(""));
@@ -66,8 +78,16 @@ void JetTaggingComparison::init() {
   m_pTTree->Branch("njet", &m_n_jet);
   m_pTTree->Branch("energy", &m_jet_energy);
 
+  m_read_algo2 = m_pidAlgorithm2 != "";
+  m_read_algo3 = m_pidAlgorithm3 != "";
+
   m_pTTree->Branch("tags1", &m_tags1);
-  m_pTTree->Branch("tags2", &m_tags2);
+
+  if (m_read_algo2)
+    m_pTTree->Branch("tags2", &m_tags2);
+
+  if (m_read_algo3)
+    m_pTTree->Branch("tags3", &m_tags3);
 
   this->Clear();
 
@@ -83,10 +103,15 @@ void JetTaggingComparison::Clear() {
   m_n_jet = 0;
   m_tags1.clear();
   m_tags2.clear();
+  m_tags3.clear();
+
+  m_parametersIDs1.clear();
+  m_parametersIDs2.clear();
+  m_parametersIDs3.clear();
 }
 
 void JetTaggingComparison::processRunHeader( LCRunHeader* run ) { 
-
+  (void) run;
 } 
 
 void JetTaggingComparison::processEvent( EVENT::LCEvent *pLCEvent ) {
@@ -110,34 +135,48 @@ void JetTaggingComparison::processEvent( EVENT::LCEvent *pLCEvent ) {
 
     PIDHandler PIDh(inputCollection);
 
-    std::vector<int> parameter1IDxs = {};
-    std::vector<int> parameter2IDxs = {};
-
     int algorithm1IDx = PIDh.getAlgorithmID(m_pidAlgorithm1);
-    for (size_t i = 0; i < m_pidParameters1.size(); i++) {
-      int parameter1IDx = PIDh.getParameterIndex(algorithm1IDx, m_pidParameters1[i]);
-      parameter1IDxs.push_back(parameter1IDx);
+    for (size_t i = 0; i < m_pidParameters1.size(); i++)
+      m_parametersIDs1.push_back(PIDh.getParameterIndex(algorithm1IDx, m_pidParameters1[i]));
+
+    int algorithm2IDx = -1;
+    int algorithm3IDx = -1;
+
+    if (m_read_algo2) {
+      algorithm2IDx = PIDh.getAlgorithmID(m_pidAlgorithm2);
+      for (size_t i = 0; i < m_pidParameters2.size(); i++)
+        m_parametersIDs2.push_back(PIDh.getParameterIndex(algorithm2IDx, m_pidParameters2[i]));
     }
 
-    int algorithm2IDx = PIDh.getAlgorithmID(m_pidAlgorithm2);
-    for (size_t i = 0; i < m_pidParameters2.size(); i++) {
-      int parameter2IDx = PIDh.getParameterIndex(algorithm2IDx, m_pidParameters2[i]);
-      parameter2IDxs.push_back(parameter2IDx);
+    if (m_read_algo3) {
+      algorithm3IDx = PIDh.getAlgorithmID(m_pidAlgorithm3);
+      for (size_t i = 0; i < m_pidParameters3.size(); i++)
+        m_parametersIDs3.push_back(PIDh.getParameterIndex(algorithm3IDx, m_pidParameters3[i]));
     }
 
-    for (size_t j = 0; j < inputCollection->getNumberOfElements(); j++) {
+    for (int j = 0; j < inputCollection->getNumberOfElements(); j++) {
       ReconstructedParticle* jet = (ReconstructedParticle*) inputCollection->getElementAt(j);
       
       const ParticleIDImpl& pid1 = dynamic_cast<const ParticleIDImpl&>(PIDh.getParticleID(jet, algorithm1IDx));
       const FloatVec& pid1Params = pid1.getParameters();
-      for (size_t i = 0; i < parameter1IDxs.size(); i++) {
-        m_tags1.push_back(pid1Params[parameter1IDxs[i]]);
+      for (size_t i = 0; i < m_parametersIDs1.size(); i++) {
+        m_tags1.push_back(pid1Params[m_parametersIDs1[i]]);
       }
 
-      const ParticleIDImpl& pid2 = dynamic_cast<const ParticleIDImpl&>(PIDh.getParticleID(jet, algorithm2IDx));
-      const FloatVec& pid2Params = pid2.getParameters();
-      for (size_t i = 0; i < parameter2IDxs.size(); i++) {
-        m_tags2.push_back(pid2Params[parameter2IDxs[i]]);
+      if (algorithm2IDx != -1) {
+        const ParticleIDImpl& pid2 = dynamic_cast<const ParticleIDImpl&>(PIDh.getParticleID(jet, algorithm2IDx));
+        const FloatVec& pid2Params = pid2.getParameters();
+        for (size_t i = 0; i < m_parametersIDs2.size(); i++) {
+          m_tags2.push_back(pid2Params[m_parametersIDs2[i]]);
+        }
+      }
+
+      if (algorithm3IDx != -1) {
+        const ParticleIDImpl& pid3 = dynamic_cast<const ParticleIDImpl&>(PIDh.getParticleID(jet, algorithm3IDx));
+        const FloatVec& pid3Params = pid3.getParameters();
+        for (size_t i = 0; i < m_parametersIDs3.size(); i++) {
+          m_tags3.push_back(pid3Params[m_parametersIDs3[i]]);
+        }
       }
       
       m_jet_energy = jet->getEnergy();
@@ -147,6 +186,7 @@ void JetTaggingComparison::processEvent( EVENT::LCEvent *pLCEvent ) {
 
       m_tags1.clear();
       m_tags2.clear();
+      m_tags3.clear();
 		}
   } catch( DataNotAvailableException &e ) {
     streamlog_out(MESSAGE) << "     Input collection not found in event " << m_n_evt << endl;
@@ -155,6 +195,7 @@ void JetTaggingComparison::processEvent( EVENT::LCEvent *pLCEvent ) {
 
 void JetTaggingComparison::check(EVENT::LCEvent *pLCEvent) {
   // nothing to check here - could be used to fill checkplots in reconstruction processor
+  (void) pLCEvent;
 }
 
 
