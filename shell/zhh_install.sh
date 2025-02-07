@@ -184,6 +184,7 @@ function zhh_install_deps() {
     # For $ZHH_ENV_NAME, see zhh_install_venv.sh
     cat > "$REPO_ROOT/.env" <<EOF
 REPO_ROOT="$REPO_ROOT"
+ZHH_K4H_RELEASE="$ZHH_K4H_RELEASE"
 MarlinMLFlavorTagging="$MarlinMLFlavorTagging"
 FlavorTagging_ML="$FlavorTagging_ML"
 LCFIPlusConfig="$LCFIPlusConfig"

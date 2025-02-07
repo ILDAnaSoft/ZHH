@@ -1,0 +1,78 @@
+#!/usr/bin/bash
+
+# Helper file to submit any batch job
+# must be defined in a sub directory
+
+JOB_NAME=$1
+START_DIR=$(pwd)
+
+export DATA_PATH="/group/ilc/users/$(whoami)/jobresults"
+export ZHH_REPO_ROOT="/home/ilc/$(whoami)/DevRepositories/ZHH"
+
+if [[ ! -d $ZHH_REPO_ROOT ]]; then
+    echo "Please link the ZHH repository to ~/DevRepositories/ZHH"
+    exit 1
+fi
+
+if [[ ! -d $DATA_PATH ]]; then
+    echo "The data path <$DATA_PATH> does not exist. Please make sure it exists."
+    exit 1
+fi
+
+if [[ ! -d $ZHH_REPO_ROOT/jobs/kek/$JOB_NAME ]]; then
+    echo "Unknown job <$JOB_NAME>"
+    exit 2
+fi
+
+if [[ ! -f $ZHH_REPO_ROOT/jobs/kek/$JOB_NAME/definition.sh || ! -f $ZHH_REPO_ROOT/jobs/kek/$JOB_NAME/payload.template ]]; then
+    echo "Job definition invalid"
+    exit 3
+fi
+
+# clear job definitions
+JOB_BASEDIR="$ZHH_REPO_ROOT/jobs/kek/$JOB_NAME"
+
+rm -rf $JOB_BASEDIR/definitions
+rm -f $JOB_BASEDIR/pack.job
+mkdir -p $JOB_BASEDIR/definitions
+
+cd $JOB_BASEDIR
+
+function abort_job_submission() {
+    rm -rf $JOB_BASEDIR/definitions
+    rm -f $JOB_BASEDIR/pack.job
+}
+
+(
+    # create updated definitions
+    . definition.sh $DATA_PATH $JOB_NAME $JOB_BASEDIR
+
+    yn=""
+    read -p "Do you wish to continue? (n) " yn
+    yn=${yn:-"n"}
+
+    if [[ $yn != "y" ]]; then
+        abort_job_submission
+        exit 4
+    fi
+
+    if [[ ! -f pack.job ]]; then
+        echo "No pack.job file found"
+        exit 5
+    fi
+
+    #bsub -q s -J $JOB_NAME -pack pack.job
+
+    njob=0
+    JOB_GROUP=/$(whoami)/$JOB_NAME
+
+    while read line; do
+        bsub -q s -g $JOB_GROUP -J $njob "$line" #  || echo "Job submission failed. Bailing out" && exit 6
+        njob=$((njob + 1 ))
+    done < pack.job
+
+    echo "Submitted $njob jobs under group $JOB_GROUP"
+
+) && echo "Success" || echo "Critical error"
+
+cd $START_DIR

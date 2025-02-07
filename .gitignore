@@ -44,3 +44,8 @@ scripts/**/TMVA*
 *.pth
 *.pt
 *.npz
+scratch
+scratch-*
+setup.sh
+definitions
+*.job

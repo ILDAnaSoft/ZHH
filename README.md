@@ -12,10 +12,10 @@ If you wish to use your own local copies of the repositories, create (or edit, i
 ### Fresh install
 
 ```shell
-source setup.sh --install --install-dir ./dependencies
+source install.sh
 ```
 
-This will download the necessary repositories and for ILDConfig extract LCFIPlus weights. Also, if the directory `$ZHH_VENV_NAME` (defaults `zhhvenv`) is not found, a virtual environment can be automatically set up, including python 3.11 and all dependencies defined in the `requirements.txt` file. Also, all ZHH and dependency processors will be compiled. 
+This will download the necessary repositories into `dependencies` and for ILDConfig extract LCFIPlus weights. Also, if the directory `$ZHH_VENV_NAME` (defaults `zhhvenv`) is not found, a virtual environment can be automatically set up, including python 3.11 and all dependencies defined in the `requirements.txt` file. Also, all ZHH and dependency processors will be compiled.
 
 After that, the framework is setup for both the analysis of individual files and the submission of batch jobs using `law` (see [here](#For-production)). 
 
@@ -25,6 +25,7 @@ After that, the framework is setup for both the analysis of individual files and
 source setup.sh
 ```
 
+After running `source install.sh`, a `setup.sh` file will be created. This can be sourced to reproduce the same environment with the key4hep stack, all ZHH specific dependencies and processors ready. If you want to create `setup.sh`, run `source install.sh --setup`
 
 ### List of required dependencies
 
