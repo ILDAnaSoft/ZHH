@@ -19,6 +19,7 @@ test*.ipynb
 view*.ipynb
 Ranlux.coonf
 dependencies
+dependencies/**
 *.csv
 *_local.*
 *.pyc

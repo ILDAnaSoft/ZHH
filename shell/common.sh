@@ -20,6 +20,14 @@ function zhh_recompile() {
     cd $REPO_ROOT
 }
 
+function zhh_git_ignore_deps() {
+    cd $REPO_ROOT
+    for folder in $(ls dependencies);
+    do
+        git rm --cached dependencies/$folder >/dev/null 2>/dev/null && echo "Removed $folder from VCS" || echo "Skipping $folder"
+    done
+}
+
 if [[ -z "${MARLIN_DLL}" || $ZHH_FORCE_RELOAD -eq 1 ]]; then
     if [[ ! -f "/cvmfs/sw.hsf.org/key4hep/setup.sh" ]]; then
         zhh_echo "Error: key4hep stack not found. Make sure CVMFS is available and sw.hsf.org loaded. Aborting." && return 1
