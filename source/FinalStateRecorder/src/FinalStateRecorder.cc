@@ -37,7 +37,8 @@ FinalStateRecorder::FinalStateRecorder() :
   m_event_category(EVENT_CATEGORY_TRUE::OTHER),
   m_event_category_zhh(EVENT_CATEGORY_ZHH::OTHER),
   m_n_fermion(0),
-  m_n_higgs(0)
+  m_n_higgs(0),
+  m_pTFile(NULL)
 {
 
 	_description = "FinalStateRecorder writes meta information about the hard interaction, e.g. number of produced quarks per flavor, b/c from Higgs etc. should support all major SM, di-Higgs and single Higgs productions " ;
@@ -340,6 +341,7 @@ void FinalStateRecorder::init()
 	this->register_process(new p6_ttbar_yycyyc());
 	this->register_process(new p6_ttbar_yyvlyx());
 	this->register_process(new p6_ttbar_yyxylv());
+	this->register_process(new p6_ttbar_yyxylv_alias());
 	this->register_process(new p6_ttbar_yyuyyu());
 	this->register_process(new p6_ttbar_yyuyyc());
 	this->register_process(new p6_ttbar_yyxyev());
@@ -544,13 +546,13 @@ void FinalStateRecorder::end()
 {
 	// Write ROOT file
 	if (m_write_ttree) {
-		if (m_outputRootFile != "None") {
+		if (m_pTFile != NULL) {
 			m_pTFile->cd();
 		}
 
 		m_pTTree->Write();
 
-		if (m_outputRootFile != "None") {
+		if (m_pTFile != NULL) {
 			m_pTFile->Close();
 			delete m_pTFile;
 		}
@@ -573,4 +575,7 @@ void FinalStateRecorder::end()
 		std::ofstream file(m_outputJsonFile);
 		file << m_jsonFile;
 	}
+
+	// delete all registered FinalStateRecorders
+	
 }

@@ -127,12 +127,14 @@ fi
 
 # install the setup.sh script
 if [[ ! -f "$REPO_ROOT/setup.sh" || $ZHH_WRITE_SETUP = "1" ]]; then
-    zhh_echo "Writing "
+    zhh_echo "Compiling setup.sh file"
 
     rm -f $REPO_ROOT/setup.sh
     cp $REPO_ROOT/shell/setup.sh.template $REPO_ROOT/setup.sh
     sed -i -e "s|<REPO_ROOT>|$REPO_ROOT|g" $REPO_ROOT/setup.sh
     sed -i -e "s|<ZHH_K4H_RELEASE>|$ZHH_K4H_RELEASE|g" $REPO_ROOT/setup.sh
+
+    zhh_echo "Done. Attempting to load environment..."
 
     unset ZHH_WRITE_SETUP
 fi

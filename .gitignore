@@ -3,6 +3,7 @@ source/*/.gitignore
 source/*/build
 source/*/lib
 source/*/xml
+source/build
 *#
 *oldsrc*
 *.swp

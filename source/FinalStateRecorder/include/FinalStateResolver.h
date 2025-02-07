@@ -15,7 +15,7 @@ struct RESOLVER_ERRORS {
     enum Values: unsigned int {
         OK = 0,
         UNKNOWN_ERROR = 5001,
-        UNALLOWED_VALUES = 5002,
+        UNALLOWED_VALUES = 5002, // the definition of expected particles does not match for an encounted event. probably the way the event was generated has changed 
         UNEXPECTED_CHILDREN = 5020,
         HIGGS_NOT_FOUND = 5030,
         UNEXPECTED_SIZE = 5040,

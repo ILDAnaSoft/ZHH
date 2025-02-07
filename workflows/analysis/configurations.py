@@ -63,7 +63,7 @@ class Config_550_test_fast(AnalysisConfiguration):
     Returns:
         _type_: _description_
     """
-    tag = '5x0-ft-fast'
+    tag = '550-test-fast'
     
     def sgv_inputs(self):
         input_files:list[str] = []

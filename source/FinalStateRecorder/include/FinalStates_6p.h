@@ -12,10 +12,38 @@ class p6: public FinalStateResolver {
     public:
         // Set process ID and event category
         p6( string process_name, int process_id, int event_category ):
-            FinalStateResolver( process_name, process_id, event_category, 6, 0, vector<int> {4,5} ) {};
+            FinalStateResolver( process_name, process_id, event_category, 6, 0, vector<int> {4,5} ),
+            first_event_check(false) {};
             
-        p6( string process_name, int process_id, int event_category, int n_fermions, int n_higgs, vector<int> isr_particles ):
-            FinalStateResolver( process_name, process_id, event_category, n_fermions, n_higgs, isr_particles ) {};
+        // for the new (Whizard 2,3) samples, first_event_check is not necessary
+        p6( string process_name, int process_id, int event_category, int n_fermions, int n_higgs, vector<int> isr_particles, bool skip_first_event_check = true ):
+            FinalStateResolver( process_name, process_id, event_category, n_fermions, n_higgs, isr_particles ),
+            first_event_check(skip_first_event_check) {};
+
+        // on_first_event takes care of generation with Whizard 2 and 3: if the first
+        // (two) particle(s) have gen=4, beam particles are included, and all positions
+        // must be shifted by two; the ZHH and ZZH samples are new enough (Whizard2/3)
+        // that this is not an issue, so the correction is not done in hh2f and h4f
+
+        // see M Berggren https://agenda.linearcollider.org/event/7371/contributions/37870/attachments/30856/46172/berggren-lcws-morioka-2016-sw.pdf
+        // 1 for stable particles
+        // 2 particle ( meson or baryon ) decayed in generator
+        // 3 documentation line
+        // 4 incoming (beam) particles
+        // 5 outgoing partons ( hard process )
+        // remarks: 
+        // in case of generated final state leptons they will be copied once with genstat
+        // ISR photons will not have genstat 5
+        void on_first_event(LCCollection *mcp_collection) {
+            shift_pos = 2;
+
+            if (((MCParticle*)mcp_collection->getElementAt(1))->getGeneratorStatus() == 4) {
+                m_isr_indices[0] += shift_pos;
+                m_isr_indices[1] += shift_pos;
+            }
+        };
+        bool first_event_check{};
+        int shift_pos = 0;
 
         vector<MCParticle*> resolve_fs_particles(LCCollection *mcp_collection, bool resolve_higgs = false) {
             (void) resolve_higgs;
@@ -23,17 +51,22 @@ class p6: public FinalStateResolver {
             vector<MCParticle*> fs_particles;
 
             // Get fermions
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(6 ));
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(7 ));
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(8 ));
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(9 ));
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(10));
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(11));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(shift_pos + 6 ));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(shift_pos + 7 ));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(shift_pos + 8 ));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(shift_pos + 9 ));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(shift_pos + 10));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(shift_pos + 11));
 
             return fs_particles;
         }
 
         vector<int> resolve(LCCollection *mcp_collection) {
+            if (!first_event_check) {
+                on_first_event(mcp_collection);
+                first_event_check = true;
+            }
+
             vector<MCParticle*> fs_particles = resolve_fs_particles(mcp_collection);
 
             assert_true(
@@ -148,6 +181,10 @@ class p6_ttbar_yyvlyx : public p6 {
 
 class p6_ttbar_yyxylv : public p6 {
     public: p6_ttbar_yyxylv(): p6( "yyxylv", PROCESS_ID::f6_ttbar_yyxylv, EVENT_CATEGORY_TRUE::OTHER_TTBAR ) {}; };
+
+// Junping 6f test sample
+class p6_ttbar_yyxylv_alias : public p6 {
+    public: p6_ttbar_yyxylv_alias(): p6( "P6f_yyxylv", PROCESS_ID::f6_ttbar_yyxylv, EVENT_CATEGORY_TRUE::OTHER_TTBAR ) {}; };
 
 class p6_ttbar_yyuyyu : public p6 {
     public: p6_ttbar_yyuyyu(): p6( "yyuyyu", PROCESS_ID::f6_ttbar_yyuyyu, EVENT_CATEGORY_TRUE::OTHER_TTBAR ) {}; };

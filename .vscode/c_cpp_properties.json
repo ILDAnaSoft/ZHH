@@ -21,7 +21,8 @@
                 "${workspaceFolder}/source/TruthRecoComparison/include/**",
                 "${workspaceFolder}/source/ExpandJetProcessor/include/**",
                 "${workspaceFolder}/source/MergePIDProcessor/include/**",
-                "${workspaceFolder}/dependencies/MarlinMLFlavorTagging/VariablesForDeepMLFlavorTagger/include/**",
+                "${workspaceFolder}/source/CommonTools/include/**",
+                "${workspaceFolder}/dependencies/MarlinMLFlavorTagging/StoreVariablesForMLTagging/include/**",
                 "${workspaceFolder}/dependencies/MarlinMLFlavorTagging/JetTaggers/include/**",
                 "${workspaceFolder}/dependencies/MarlinMLFlavorTagging/PFOTaggers/include/**"
             ],

@@ -4,52 +4,43 @@
 action(){
     local RED='\033[0;31m'
     local GREEN='\033[0;32m'
+    local BLUE='\033[0;34m'
     local NC='\033[0m'
     local module_to_compile    
     local delete_existing=$( [[ "$1" == "keep" || "$2" == "keep" ]] && echo "False" || echo "True" )
+    local startdir=$(pwd)
 
     compile_pkg ()
-    {
-        echo "Compiling $1..."
-        cd $1
-        if [[ $delete_existing = "True" ]]; then
-            echo "Deleting any existing build directory..."
-            rm -rf build
-        fi
+    {        
+        (
+            cd $1
+            if [[ $delete_existing = "True" ]]; then
+                echo "Deleting any existing build directory..."
+                rm -rf build
+            fi
 
-        mkdir -p build
-        cd build
+            mkdir -p build
+            cd build
 
-        if [[ $delete_existing = "True" || ! -f Makefile  ]]; then
-            cmake -DCMAKE_CXX_STANDARD=17 ..
-        fi
-        
-        make install -j 4 || { cd ../.. ; return 1; }
-        cd ../..
+            if [[ $delete_existing = "True" || ! -f Makefile  ]]; then
+                cmake -DCMAKE_CXX_STANDARD=17 ..
+            fi
+            
+            make install -j 4 && cd ../..
+        )
     }
 
-    cd source
-
-    for module_to_compile in AddNeutralPFOCovMat ChargedPFOCorrection CheatedMCOverlayRemoval ExpandJetProcessor FinalStateRecorder HdecayMode JetErrorAnalysis JetTaggingComparison LeptonErrorAnalysis LeptonPairing MergePIDProcessor Misclustering PreSelection TruthRecoComparison ZHHKinfitProcessors
+    for module_to_compile in "source" "$MarlinMLFlavorTagging" "$MarlinReco"
     do
-        compile_pkg $module_to_compile && echo "${GREEN}+++ Successfully compiled $module_to_compile +++${NC}" || { echo "${RED}!!! Error [$?] while trying to compile $module_to_compile !!!${NC}"; cd $start_dir; return 1; }
-    done
-    cd $start_dir
-
-    echo "${GREEN}+++ Successfully compiled ZHH projects +++${NC}"
-
-    echo "Compiling ZHH dependencies..."
-
-    for module_to_compile in "$MarlinMLFlavorTagging" "$MarlinReco"
-    do
+        echo -e "$BLUE+++ Compiling $(basename $module_to_compile)... +++$NC"
         if [[ -d $module_to_compile ]]; then
-            compile_pkg $module_to_compile && echo "${GREEN}+++ Successfully compiled $module_to_compile +++${NC}" || { echo "${RED}!!! Error [$?] while trying to compile $module_to_compile !!!${NC}"; cd $start_dir; return 1; }
+            compile_pkg $module_to_compile && echo -e "$GREEN+++ Successfully compiled $module_to_compile +++$NC" || { echo -e "$RED!!! Error [$?] while trying to compile $module_to_compile !!!$NC" && cd $start_dir && return 1; }
         else
-            echo "${RED}!!! Error: $module_to_compile not found !!!${NC}"
+            echo -e "$RED!!! Error: $module_to_compile not found !!!$NC"
         fi
     done
 
-    echo "${GREEN}+++ Successfully compiled ZHH dependencies +++${NC}"
+    echo -e "$GREEN+++ Successfully compiled ZHH dependencies +++$NC"
 
     unset compile_pkg
 

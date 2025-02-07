@@ -25,7 +25,12 @@ if [[ -z "${MARLIN_DLL}" || $ZHH_FORCE_RELOAD -eq 1 ]]; then
         zhh_echo "Error: key4hep stack not found. Make sure CVMFS is available and sw.hsf.org loaded. Aborting." && return 1
     fi
     
-    source /cvmfs/sw.hsf.org/key4hep/setup.sh -r $ZHH_K4H_RELEASE
+    if [[ ! -d "/cvmfs/sw.hsf.org/key4hep/releases/$ZHH_K4H_RELEASE" ]]; then
+        zhh_echo "Warning: There is no $ZHH_K4H_RELEASE directory in /cvmfs/sw.hsf.org/key4hep/releases. Please make sure it exists (or update this script :) ). Continuing..."
+    fi
+
+    zhh_echo "Sourcing key4hep stack $ZHH_K4H_RELEASE"
+    source /cvmfs/sw.hsf.org/key4hep/setup.sh -r $ZHH_K4H_RELEASE 2>&1 >/dev/null;
 else
     zhh_echo "Info: key4hep stack already loaded."
 fi

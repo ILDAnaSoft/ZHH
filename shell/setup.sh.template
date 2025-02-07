@@ -6,19 +6,9 @@ export ZHH_K4H_RELEASE="<ZHH_K4H_RELEASE>"
 source $REPO_ROOT/shell/common.sh
 
 function zhh_attach_marlin_dlls() {
+    # TODO: no need for loop
     local libs=(
-        "$REPO_ROOT/source/CheatedMCOverlayRemoval/lib/libCheatedMCOverlayRemoval.so"
-        "$REPO_ROOT/source/AddNeutralPFOCovMat/lib/libAddNeutralPFOCovMat.so"
-        "$REPO_ROOT/source/ChargedPFOCorrection/lib/libChargedPFOCorrection.so"
-        "$REPO_ROOT/source/LeptonPairing/lib/libLeptonPairing.so"
-        "$REPO_ROOT/source/HdecayMode/lib/libHdecayMode.so"
-        "$REPO_ROOT/source/JetTaggingComparison/lib/libJetTaggingComparison.so"
-        "$REPO_ROOT/source/PreSelection/lib/libPreSelection.so"
-        "$REPO_ROOT/source/FinalStateRecorder/lib/libFinalStateRecorder.so"
-        "$REPO_ROOT/source/ZHHKinfitProcessors/lib/libZHHKinfitProcessors.so"
-        "$REPO_ROOT/source/TruthRecoComparison/lib/libTruthRecoComparison.so"
-        "$REPO_ROOT/source/ExpandJetProcessor/lib/libExpandJetProcessor.so"
-        "$REPO_ROOT/source/MergePIDProcessor/lib/libMergePIDProcessor.so"
+        "$REPO_ROOT/source/lib/libZHHProcessors.so"
     )
 
     for lib in "${libs[@]}"; do
@@ -61,7 +51,7 @@ if [[ ! -d "$MarlinMLFlavorTagging" || ! -d "$LCFIPlus" || ! -d "$LCFIPlusConfig
     return 1
 fi
 
-if [[ $MARLIN_DLL != *"libFinalStateRecorder"* ]]; then
+if [[ $MARLIN_DLL != *"libZHHProcessors"* ]]; then
     zhh_attach_marlin_dlls
 fi
 
