@@ -35,7 +35,7 @@ FinalStateRecorder::FinalStateRecorder() :
   m_error_code(ERROR_CODES::UNINITIALIZED),
   m_process(0),
   m_event_category(EVENT_CATEGORY_TRUE::OTHER),
-  m_event_category_zhh(EVENT_CATEGORY_ZHH::OTHER),
+  m_event_category_zhh(EVENT_CATEGORY::NONE),
   m_n_fermion(0),
   m_n_higgs(0),
   m_pTFile(NULL)
@@ -430,7 +430,7 @@ void FinalStateRecorder::clear()
 	m_n_c_from_higgs = 0;
 
 	m_event_category = EVENT_CATEGORY_TRUE::OTHER;
-	m_event_category_zhh = EVENT_CATEGORY_ZHH::OTHER;
+	m_event_category_zhh = EVENT_CATEGORY::NONE;
 }
 void FinalStateRecorder::processRunHeader( LCRunHeader*  /*run*/) { 
 	m_n_run++ ;
@@ -498,11 +498,11 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 				
 				// Set ZHH event category
 				if (m_process >= PROCESS_ID::e1e1hh && m_process <= PROCESS_ID::e2e2hh) {
-					m_event_category_zhh = EVENT_CATEGORY_ZHH::LEPTONIC;
+					m_event_category_zhh = EVENT_CATEGORY::LEPTONIC;
 				} else if (m_process == PROCESS_ID::n1n1hh || m_process == PROCESS_ID::n23n23hh) {
-					m_event_category_zhh = EVENT_CATEGORY_ZHH::NEUTRINO;
+					m_event_category_zhh = EVENT_CATEGORY::NEUTRINO;
 				} else if (m_process == PROCESS_ID::qqhh) {
-					m_event_category_zhh = EVENT_CATEGORY_ZHH::HADRONIC;
+					m_event_category_zhh = EVENT_CATEGORY::HADRONIC;
 				}
 
 				m_event_category = resolver->get_event_category(m_final_state_counts);
@@ -556,6 +556,14 @@ void FinalStateRecorder::end()
 			m_pTFile->Close();
 			delete m_pTFile;
 		}
+	}
+
+	// delete all resolvers
+	for (std::pair<std::string, FinalStateResolver*> elem : resolvers) {
+		resolvers.erase(elem.first);
+
+		FinalStateResolver* resolver = elem.second;
+		delete resolver;
 	}
 
 	// Write JSON metadata file

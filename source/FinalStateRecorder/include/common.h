@@ -5,17 +5,11 @@
 #include <vector>
 #include <map>
 #include <algorithm>
+#include <EventCategory.h>
 
 // If the final state is a ZHH (with H -> bbar), the channel is given by the decay channel of the Z boson (else OTHER)
 // NONE is for initialization only and should not occur in practice
-struct EVENT_CATEGORY_ZHH {
-	enum Values: int {
-		OTHER = 0,
-		LEPTONIC = 11,
-		NEUTRINO = 21,
-		HADRONIC = 31
-	};
-};
+// see EVENT_CATEGORY in EventCategory.h
 
 // Map processes to integers
 struct PROCESS_ID {

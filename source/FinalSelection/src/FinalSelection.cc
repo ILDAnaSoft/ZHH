@@ -1,4 +1,4 @@
-#include "PreSelection.h"
+#include "FinalSelection.h"
 #include <iostream>
 #include <fstream>
 #include <numeric>
@@ -12,6 +12,7 @@
 using namespace lcio ;
 using namespace marlin ;
 using namespace std ;
+using namespace lcme ;
 
 template<class T>
 double inv_mass(T* p1, T* p2){
@@ -27,18 +28,18 @@ TLorentzVector v4(T* p){
   return TLorentzVector( p->getMomentum()[0],p->getMomentum()[1], p->getMomentum()[2],p->getEnergy());
 }
 
-PreSelection aPreSelection ;
+FinalSelection aFinalSelection ;
 
-PreSelection::PreSelection() :
+FinalSelection::FinalSelection() :
 
-  Processor("PreSelection"),
+  Processor("FinalSelection"),
   m_nRun(0),
   m_nEvt(0),
   m_errorCode(0),
   m_pTFile(NULL)
 {
 
-	_description = "PreSelection writes relevant observables to root-file " ;
+	_description = "FinalSelection writes relevant observables to root-file " ;
 
 		registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
 				"isolatedleptonCollection" ,
@@ -68,9 +69,9 @@ PreSelection::PreSelection() :
 				std::string("PandoraPFOs")
 				);
 
-	registerProcessorParameter("whichPreselection",
-				   "Which set of cuts to use in the preselection. This will overwrite any input preselection values.",
-				   m_whichPreselection,
+	registerProcessorParameter("whichFinalSelection",
+				   "Which set of cuts to use in the FinalSelection. This will overwrite any input FinalSelection values.",
+				   m_whichFinalSelection,
 				   std::string("llbbbb")
 				   );
 
@@ -81,7 +82,7 @@ PreSelection::PreSelection() :
 				);
 
 	registerProcessorParameter("cutDefinitionsJSONFile",
-				   "A JSON file containing cut definitions. See cuts.json in the repository for an example. If given, this will overwrite any input preselection as well as any predefined (hard-coded) preselection values.",
+				   "A JSON file containing cut definitions. See cuts.json in the repository for an example. If given, this will overwrite any input FinalSelection as well as any predefined (hard-coded) FinalSelection values.",
 				   m_cutDefinitionsJSONFile,
 				   std::string("")
 				   );
@@ -173,10 +174,10 @@ PreSelection::PreSelection() :
 				);
 
 	registerOutputCollection(LCIO::RECONSTRUCTEDPARTICLE,
-				 "PreSelectionCollection",
-				 "preselection collection",
-				 m_PreSelectionCollection,
-				 std::string("preselection")
+				 "FinalSelectionCollection",
+				 "FinalSelection collection",
+				 m_FinalSelectionCollection,
+				 std::string("FinalSelection")
 				 );
 
 	registerOutputCollection(LCIO::RECONSTRUCTEDPARTICLE,
@@ -188,14 +189,14 @@ PreSelection::PreSelection() :
 
 	registerOutputCollection( LCIO::LCINTVEC,
 				  "isPassed",
-				  "Output for whether preselection is passed" ,
+				  "Output for whether FinalSelection is passed" ,
 				  m_isPassedCollection,
 				  std::string("ispassed")
 				  );
 
 }
 
-void PreSelection::init()
+void FinalSelection::init()
 {
 	streamlog_out(DEBUG) << "   init called  " << std::endl;
 	this->Clear();
@@ -240,28 +241,28 @@ void PreSelection::init()
 	streamlog_out(DEBUG) << "   init finished  " << std::endl;
 
 	if (m_cutDefinitionsJSONFile.length() > 0) {
-		streamlog_out(DEBUG) << "Reading preselection cuts from file " << m_cutDefinitionsJSONFile << std::endl;
+		streamlog_out(DEBUG) << "Reading FinalSelection cuts from file " << m_cutDefinitionsJSONFile << std::endl;
 
 		std::ifstream ifs(m_cutDefinitionsJSONFile);
 		jsonf cuts = jsonf::parse(ifs);
 		
-		std::string preselection_key = m_whichPreselection.substr(0, 2);
+		std::string FinalSelection_key = m_whichFinalSelection.substr(0, 2);
 
-		m_nAskedJets = cuts[preselection_key]["nAskedJets"];
-		m_nAskedIsoLeps = cuts[preselection_key]["nAskedIsoLeps"];
-		m_maxdileptonmassdiff = cuts[preselection_key]["maxDileptonMassDiff"];
-		m_maxdijetmassdiff = cuts[preselection_key]["maxDijetMassDiff"];
-		m_mindijetmass = cuts[preselection_key]["dijetMass"][0];
-		m_maxdijetmass = cuts[preselection_key]["dijetMass"][1];
-		m_minmissingPT = cuts[preselection_key]["missingPT"][0];
-		m_maxmissingPT = cuts[preselection_key]["missingPT"][1];
-		m_maxthrust = cuts[preselection_key]["maxThrust"];
-		m_minblikeliness = cuts[preselection_key]["minBLikeliness"];
-		m_minnbjets = cuts[preselection_key]["minNBJets"];
-		m_maxEvis = cuts[preselection_key]["maxEvis"];
-		m_minHHmass = cuts[preselection_key]["minHHmass"];
+		m_nAskedJets = cuts[FinalSelection_key]["nAskedJets"];
+		m_nAskedIsoLeps = cuts[FinalSelection_key]["nAskedIsoLeps"];
+		m_maxdileptonmassdiff = cuts[FinalSelection_key]["maxDileptonMassDiff"];
+		m_maxdijetmassdiff = cuts[FinalSelection_key]["maxDijetMassDiff"];
+		m_mindijetmass = cuts[FinalSelection_key]["dijetMass"][0];
+		m_maxdijetmass = cuts[FinalSelection_key]["dijetMass"][1];
+		m_minmissingPT = cuts[FinalSelection_key]["missingPT"][0];
+		m_maxmissingPT = cuts[FinalSelection_key]["missingPT"][1];
+		m_maxthrust = cuts[FinalSelection_key]["maxThrust"];
+		m_minblikeliness = cuts[FinalSelection_key]["minBLikeliness"];
+		m_minnbjets = cuts[FinalSelection_key]["minNBJets"];
+		m_maxEvis = cuts[FinalSelection_key]["maxEvis"];
+		m_minHHmass = cuts[FinalSelection_key]["minHHmass"];
 	} else {
-		if (m_whichPreselection == "llbbbb") {
+		if (m_whichFinalSelection == "llbbbb") {
 			m_nAskedJets = 4;
 			m_nAskedIsoLeps = 2;
 			m_maxdileptonmassdiff = 40.;
@@ -275,7 +276,7 @@ void PreSelection::init()
 			m_minnbjets = 0;
 			m_maxEvis = 999.;
 			m_minHHmass = 0.;
-		} else if (m_whichPreselection == "vvbbbb") {
+		} else if (m_whichFinalSelection == "vvbbbb") {
 			m_nAskedJets = 4;
 			m_nAskedIsoLeps = 0;
 			m_maxdileptonmassdiff = 999.;
@@ -289,7 +290,7 @@ void PreSelection::init()
 			m_minnbjets = 3;
 			m_maxEvis= 400.;
 			m_minHHmass = 220.;
-		} else if (m_whichPreselection == "qqbbbb") {
+		} else if (m_whichFinalSelection == "qqbbbb") {
 			m_nAskedJets = 6;
 			m_nAskedIsoLeps = 0;
 			m_maxdileptonmassdiff = 999.;
@@ -307,7 +308,7 @@ void PreSelection::init()
 	}
 }
 
-void PreSelection::Clear() 
+void FinalSelection::Clear() 
 {
 	streamlog_out(DEBUG) << "   Clear called  " << std::endl;
 
@@ -338,11 +339,11 @@ void PreSelection::Clear()
 	m_preselsPassedConsec = 0;
 	m_isPassed = 0;
 }
-void PreSelection::processRunHeader( LCRunHeader*  /*run*/) { 
+void FinalSelection::processRunHeader( LCRunHeader*  /*run*/) { 
 	m_nRun++ ;
 } 
 
-void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
+void FinalSelection::processEvent( EVENT::LCEvent *pLCEvent )
 {
 	this->Clear();
 
@@ -365,7 +366,7 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
 		streamlog_out(DEBUG0) << "        getting pfo collection: " << m_inputPfoCollection << std::endl ;
 		inputPfoCollection = pLCEvent->getCollection( m_inputPfoCollection );
 
-		LCCollectionVec* preselectioncol = new LCCollectionVec(LCIO::RECONSTRUCTEDPARTICLE);
+		LCCollectionVec* FinalSelectioncol = new LCCollectionVec(LCIO::RECONSTRUCTEDPARTICLE);
 		LCCollectionVec* higgscol = new LCCollectionVec(LCIO::RECONSTRUCTEDPARTICLE);
 		LCCollectionVec *ispassedcol = new LCCollectionVec(LCIO::LCINTVEC);
 		LCIntVec *ispassedvec = new LCIntVec;
@@ -535,7 +536,7 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
 			}
 		}
 
-		// ---------- PRESELECTION ----------
+		// ---------- FinalSelection ----------
 		m_preselsPassedVec.push_back(m_nJets == m_nAskedJets);
 		m_preselsPassedVec.push_back(m_nIsoLeps == m_nAskedIsoLeps);
 		m_preselsPassedVec.push_back(m_dileptonMassDiff <= m_maxdileptonmassdiff );
@@ -574,12 +575,12 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
 		// ---------- SAVE OUTPUT ----------
 		ReconstructedParticleImpl* ispassedparticle = new ReconstructedParticleImpl;
 		ispassedparticle->setType(m_isPassed);
-		preselectioncol->addElement(ispassedparticle);
-		preselectioncol->parameters().setValue("isPassed", m_isPassed);
+		FinalSelectioncol->addElement(ispassedparticle);
+		FinalSelectioncol->parameters().setValue("isPassed", m_isPassed);
 		ispassedvec->push_back(m_isPassed);
 		ispassedcol->addElement(ispassedvec);
 		pLCEvent->removeCollection(m_HiggsCollection);
-		pLCEvent->addCollection(preselectioncol, m_PreSelectionCollection);
+		pLCEvent->addCollection(FinalSelectioncol, m_FinalSelectionCollection);
 		pLCEvent->addCollection(higgscol, m_HiggsCollection);
 		pLCEvent->addCollection(ispassedcol, m_isPassedCollection);
 
@@ -594,13 +595,13 @@ void PreSelection::processEvent( EVENT::LCEvent *pLCEvent )
 	}
 }
 
-void PreSelection::check()
+void FinalSelection::check()
 {
 	// nothing to check here - could be used to fill checkplots in reconstruction processor
 }
 
 
-void PreSelection::end()
+void FinalSelection::end()
 {
 	if (m_pTFile != NULL) {
 		m_pTFile->cd();

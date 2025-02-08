@@ -95,11 +95,12 @@ function zhh_install_deps() {
             https://github.com/iLCSoft/ILDConfig.git
             https://github.com/nVentis/MarlinReco.git
             https://github.com/suehara/LCFIPlusConfig
-            https://github.com/nVentis/LCFIPlus)
-        local varnames=(MarlinMLFlavorTagging FlavorTagging_ML ILD_CONFIG_DIR MarlinReco LCFIPlusConfig LCFIPlus)
-        local dirnames=(MarlinMLFlavorTagging FlavorTagging_ML ILDConfig MarlinReco LCFIPlusConfig LCFIPlus)
-        local commits=(latest latest latest latest latest latest)
-        local branchnames=(main main master master master onnx)
+            https://github.com/nVentis/LCFIPlus
+            https://github.com/iLCSoft/Physsim.git)
+        local varnames=(MarlinMLFlavorTagging FlavorTagging_ML ILD_CONFIG_DIR MarlinReco LCFIPlusConfig LCFIPlus Physsim)
+        local dirnames=(MarlinMLFlavorTagging FlavorTagging_ML ILDConfig MarlinReco LCFIPlusConfig LCFIPlus Physsim)
+        local commits=(latest latest latest latest latest latest latest)
+        local branchnames=(main main master master master onnx master)
         local cwd=$(pwd)
 
         mkdir -p $INSTALL_DIR

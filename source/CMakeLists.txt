@@ -37,6 +37,7 @@ find_package(LCFIVertex REQUIRED )
 find_package(MarlinUtil 1.0 REQUIRED ) # minimum required MarlinUtil version
 find_package(AIDA REQUIRED)
 find_package(nlohmann_json REQUIRED)
+find_package(Physsim REQUIRED)
 
 # for kinfits
 find_package(MarlinKinfit REQUIRED)
@@ -51,10 +52,12 @@ set(sources
   ChargedPFOCorrection/src/ChargedPFOCorrection.cc
   CheatedMCOverlayRemoval/src/CheatedMCOverlayRemoval.cc
   ExpandJetProcessor/src/ExpandJetProcessor.cc
+  #FinalSelection/src/FinalSelection.cc
   FinalStateRecorder/src/FinalStateResolver.cc
   FinalStateRecorder/src/FinalStateRecorder.cc
   HdecayMode/src/HdecayMode.cc
   JetErrorAnalysis/src/JetErrorAnalysis.cc
+  JetTaggingComparison/src/JetTaggingComparison.cc
   LeptonErrorAnalysis/src/LeptonErrorAnalysis.cc
   LeptonPairing/src/Utilities.cc
   LeptonPairing/src/ZHHUtilities.cc
@@ -63,6 +66,7 @@ set(sources
   Misclustering/src/Misclustering.cc
   PreSelection/src/PreSelection.cc
   TruthRecoComparison/src/TruthRecoComparison.cc
+  ZHHKinfitProcessors/src/ZHHBaseKinfitProcessor.cc
   ZHHKinfitProcessors/src/ZHHllbbbbKinFit.cc
   ZHHKinfitProcessors/src/ZHHqqbbbbKinFit.cc
   ZHHKinfitProcessors/src/ZHHvvbbbbKinFit.cc
@@ -77,6 +81,7 @@ target_link_libraries(ZHHProcessors PRIVATE
   ${AIDA_LIBRARIES}
   ${CLHEP_LIBRARIES}
   ${GSL_LIBRARIES}
+  Physsim::Physsim
   LCIO::lcio
   nlohmann_json::nlohmann_json
   ${ROOT_LIBRARIES}
@@ -90,14 +95,17 @@ target_include_directories(ZHHProcessors PRIVATE
   ${CLHEP_LIBRARIES}
   ${GSL_INCLUDE_DIRS}
   ${ROOT_INCLUDE_DIRS}
+  ${PHYSSIM_INCLUDE_DIRS}
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/CommonTools/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/AddNeutralPFOCovMat/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/ChargedPFOCorrection/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/CheatedMCOverlayRemoval/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/ExpandJetProcessor/include>
+  #$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/FinalSelection/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/FinalStateRecorder/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/HdecayMode/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/JetErrorAnalysis/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/JetTaggingComparison/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/LeptonErrorAnalysis/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/LeptonPairing/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/MergePIDProcessor/include>

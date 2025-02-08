@@ -27,6 +27,10 @@ HdecayMode::HdecayMode() :
 	m_ISR2Px(0.f),
 	m_ISR2Py(0.f),
 	m_ISR2Pz(0.f),
+	m_nRun(0),
+	m_nEvt(0),
+	m_nHdecayTob(0),
+	m_nZdecayTob(0),
 	m_pTFile(NULL)
 {
 

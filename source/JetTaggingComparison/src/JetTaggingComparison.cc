@@ -34,7 +34,7 @@ JetTaggingComparison::JetTaggingComparison():
   registerProcessorParameter("PIDAlgorithm2",
 			  "Name of the second PID Handler",
 			  m_pidAlgorithm2,
-			  string("particlenet")
+			  string("")
 			  );
 
   registerProcessorParameter("PIDAlgorithm3",
@@ -52,7 +52,7 @@ JetTaggingComparison::JetTaggingComparison():
   registerProcessorParameter("PIDParameters2",
 			  "Names of parameters to read for the second PID Handler",
 			  m_pidParameters2,
-			  std::vector<std::string>{"BTag"}
+			  std::vector<std::string>{}
 			  );
 
   registerProcessorParameter("PIDParameters3",

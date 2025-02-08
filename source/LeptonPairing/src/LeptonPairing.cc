@@ -46,8 +46,8 @@ LeptonPairing::LeptonPairing():
   m_nRun(0),
   m_nEvt(0),
   m_IsoLepsInvMass{},
-  m_RecoLepsInvMass{}
-
+  m_RecoLepsInvMass{},
+  m_pTFile(NULL)
 {
   _description = "LeptonPairing pairs isolated leptons of opposite charge and adds additional leptons to the list of PFOs or rejects the event" ;
 
@@ -135,7 +135,7 @@ void LeptonPairing::Clear() {
 }
 
 void LeptonPairing::processRunHeader( LCRunHeader* run ) { 
-
+  (void) run;
 } 
 
 void LeptonPairing::processEvent( EVENT::LCEvent *pLCEvent ) {
@@ -252,18 +252,18 @@ void LeptonPairing::processEvent( EVENT::LCEvent *pLCEvent ) {
 }
 
 void LeptonPairing::check(EVENT::LCEvent *pLCEvent) {
-  // nothing to check here - could be used to fill checkplots in reconstruction processor
+  (void) pLCEvent;
 }
 
 
 void LeptonPairing::end() {
   if ( m_fillRootTree ) {
-    if (m_rootFile.size()) {
+    if (m_pTFile != NULL) {
       m_pTFile->cd();
     }
     m_pTTree->Write();
 
-    if (m_rootFile.size()) {
+    if (m_pTFile != NULL) {
       m_pTFile->Close();
       delete m_pTFile;
     }

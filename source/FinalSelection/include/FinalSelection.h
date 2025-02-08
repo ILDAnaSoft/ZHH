@@ -1,5 +1,5 @@
-#ifndef PreSelection_h
-#define PreSelection_h 1
+#ifndef FinalSelection_h
+#define FinalSelection_h 1
 
 #include "nlohmann/json.hpp"
 #include "marlin/Processor.h"
@@ -10,7 +10,8 @@
 #include <TTree.h>
 #include <vector>
 #include "TLorentzVector.h"
-#include <EventCategory.h>
+#include "physsim/LCMEZZH.h"
+#include "physsim/LCMEZHH.h"
 
 class TFile;
 class TH1F;
@@ -20,24 +21,31 @@ class TTree;
 
 using namespace lcio ;
 using namespace marlin ;
+using namespace lcme ;
 using jsonf = nlohmann::json;
 
 // If the final state is a ZHH (with H -> bbar), the channel is given by the decay channel of the Z boson (else OTHER)
 // NONE is for initialization only and should not occur in practice
-// TODO: implement, using EventCategory
+enum EVENT_CATEGORY: unsigned int {
+	NONE = 0,
+	OTHER = 1,
+	LEPTONIC = 11,
+	NEUTRINO = 21,
+	HADRONIC = 31
+};
 
-class PreSelection : public Processor
+class FinalSelection : public Processor
 {
 	public:
 
 		virtual Processor*  newProcessor()
 		{
-			return new PreSelection;
+			return new FinalSelection;
 		}
-		PreSelection();
-		virtual ~PreSelection() = default;
-		PreSelection(const PreSelection&) = delete;
-		PreSelection& operator=(const PreSelection&) = delete;
+		FinalSelection();
+		virtual ~FinalSelection() = default;
+		FinalSelection(const FinalSelection&) = delete;
+		FinalSelection& operator=(const FinalSelection&) = delete;
 		virtual void init();
 		virtual void Clear();
 		virtual void processRunHeader( LCRunHeader*  /*run*/);
@@ -57,10 +65,10 @@ class PreSelection : public Processor
 		std::string m_inputLepPairCollection{};
 		std::string m_inputJetCollection{};
 		std::string m_inputPfoCollection{};
-		std::string m_PreSelectionCollection{};
+		std::string m_FinalSelectionCollection{};
 		std::string m_HiggsCollection{};
 		std::string m_outputFile{};
-		std::string m_whichPreselection{};
+		std::string m_whichFinalSelection{};
 		std::string m_isPassedCollection{};
 		std::string m_cutDefinitionsJSONFile{};
 		std::string m_PIDAlgorithmBTag{};
@@ -102,7 +110,7 @@ class PreSelection : public Processor
 		
 		int m_isPassed{};
 
-		// Event values for improving/investigating preselection efficiency
+		// Event values for improving/investigating FinalSelection efficiency
 		std::vector<int> m_dijetPairing{};
 		std::vector<float> m_dijetMass{};
 		std::vector<float> m_dijetMassDiff{};
@@ -117,7 +125,7 @@ class PreSelection : public Processor
 		std::vector<float> m_blikelihoodness{};
 
 		TFile *m_pTFile{};        
-		TTree *m_pTTree = new TTree("PreSelection", "PreSelection");
+		TTree *m_pTTree = new TTree("FinalSelection", "FinalSelection");
 
 };
 

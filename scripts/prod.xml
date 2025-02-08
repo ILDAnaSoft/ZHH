@@ -33,9 +33,8 @@
     </constants>
 
     <execute>
-        <processor name="InitDD4hep" />
-
         <processor name="MyAIDAProcessor" />
+        <processor name="InitDD4hep" />
 
         <processor name="MyAddNeutralPFOCovMatLite" />
         <processor name="MyChargedPFOCorrection" />
@@ -52,6 +51,8 @@
         <!-- Isolated lepton tagging and lepton pairing with BS/FSR recovery is run to separate llbbbb from vv/qqbbbb -->
         <processor name="MyIsolatedLeptonTaggingProcessor" />
         <processor name="MyLeptonPairing" />
+
+        <processor name="MyPatchCollections" />
         
         <if condition="${Runllbbbb}">
             <processor name="JC4FT_ll" />
@@ -70,6 +71,7 @@
                 </if>
             </if>
 
+            <processor name="MyJetTaggingComparison" />
             <processor name="MyPreSelection_ll" />
         </if>
 
@@ -113,6 +115,22 @@
         <!--parameter name="LCIOReadCollectionNames">MCParticle PandoraPFOs</parameter-->
     </global>
 
+    <processor name="MyAIDAProcessor" type="AIDAProcessor">
+        <!--Processor that handles AIDA files. Creates on directory per processor.  Processors only need to create and fill the histograms,clouds and tuples. Needs to be the first ActiveProcessor-->
+        <!-- compression of output file 0: false >0: true (default) -->
+        <parameter name="Compress" type="int">1</parameter>
+        <!-- filename without extension-->
+        <parameter name="FileName" type="string">${OutputDirectory}/${OutputBaseName}_AIDA</parameter>
+        <!-- type of output file root (default) or xml )-->
+        <parameter name="FileType" type="string">root</parameter>
+        <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
+        <!--parameter name="Verbosity" type="string">DEBUG </parameter-->
+    </processor>
+
+    <processor name="MyPatchCollections" type="PatchCollections">
+        <parameter name="PatchCollections" type="string">BuildUpVertex_V0 Vertex</parameter>
+    </processor>
+
     <processor name="MyZHHKinFit_ll" type="ZHHllbbbbKinFit">
     <!--ZHHKinFit does a 5C fit on 4 jet events and 2 leptons (Px, Py, Pz, E, M12 = M34 (for all three permutations)) -->
     <!--Name of the input collections: isolated leptons, jets, SLD vertices, Jet-SLDvertex relations, and SLDvertex-neutrino relations -->
@@ -132,8 +150,7 @@
     <parameter name="fitter" type="int"> 0 </parameter>
     <!-- name of fit hypothesis: MH, ZHH, ZZH, equal mass (default), NMC (no mass constraint) -->
     <parameter name="fithypothesis">NMC</parameter>
-    <!-- name of Output root file -->
-    <parameter name="outputFilename">${OutputDirectory}/${OutputBaseName}_Kinfit.root</parameter>
+    
     <!-- Factor for scaling up inverse pT error for leptons (default: 1)-->
     <parameter name="SigmaInvPtScaleFactor" type="float"> 1.1 </parameter>
     <!-- Factor for scaling up energy error for jets (default: 1)-->
@@ -164,18 +181,6 @@
         <!--Name of the DD4hep compact xml file to load-->
         <parameter name="DD4hepXMLFile" type="string">${CompactFile}</parameter>
         <parameter name="Verbosity" type="string">SILENT</parameter>
-    </processor>
-
-    <processor name="MyAIDAProcessor" type="AIDAProcessor">
-        <!--Processor that handles AIDA files. Creates on directory per processor.  Processors only need to create and fill the histograms,clouds and tuples. Needs to be the first ActiveProcessor-->
-        <!-- compression of output file 0: false >0: true (default) -->
-        <parameter name="Compress" type="int">1</parameter>
-        <!-- filename without extension-->
-        <parameter name="FileName" type="string">${OutputDirectory}/${OutputBaseName}_AIDA</parameter>
-        <!-- type of output file root (default) or xml )-->
-        <parameter name="FileType" type="string">root</parameter>
-        <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <!--parameter name="Verbosity" type="string">DEBUG </parameter-->
     </processor>
 
     <!--
@@ -380,7 +385,9 @@
         <parameter name="LeptonPair" type="string" lcioOutType="ReconstructedParticle">LeptonPair</parameter>
         <parameter name="PandoraPFOsWithoutLepPair" type="string" lcioOutType="ReconstructedParticle">PandoraPFOsWithoutLepPair</parameter>
         <parameter name="fillRootTree" type="bool">true</parameter>
-        <parameter name="RootFile" type="string">${OutputDirectory}/${OutputBaseName}_LeptonPairing.root</parameter>
+
+        <!-- empty to write to AIDA -->
+        <parameter name="RootFile" type="string"></parameter>
         <parameter name="Verbosity" type="string">SILENT</parameter>
     </processor>
 
@@ -475,8 +482,7 @@
 		<parameter name="displayEvent" type="bool">false</parameter>
 		<!--Whether create root file for new pfo collection or not true:create / false: do not create-->
         <parameter name="fillRootTree" type="bool">true</parameter>
-		<!--Name of the output root file-->
-        <parameter name="RootFile" type="string">${OutputDirectory}/${OutputBaseName}_SLDCorrection_ll.root</parameter>
+
 		<!--Event selection based on semi-leptonic decays of B-hadrons: (0): without BSLD (1): with >= 0 BSLD(all events) (2): with >= 1 BSLD (3): with correctable BSLD -->
         <parameter name="BSLDMode" type="int">1</parameter>
 		<!--Event selection based on semi-leptonic decays of C-hadrons: (0): without CSLD (1): with >= 0 CSLD(all events) (2): with >= 1 CSLD (3): with correctable CSLD -->
@@ -876,7 +882,6 @@
         <parameter name="whichPreselection"> llbbbb </parameter>
         <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
 
-        <parameter name="outputFilename" type="string">${OutputDirectory}/${OutputBaseName}_PreSelection_llHH.root</parameter>
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
         <parameter name="Verbosity" type="string">MESSAGE</parameter>
     </processor>
@@ -899,7 +904,6 @@
         <parameter name="whichPreselection"> vvbbbb </parameter>
         <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
 
-        <parameter name="outputFilename" type="string">${OutputDirectory}/${OutputBaseName}_PreSelection_vvHH.root</parameter>
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
         <parameter name="Verbosity" type="string">MESSAGE</parameter>
     </processor>
@@ -922,7 +926,6 @@
         <parameter name="whichPreselection"> qqbbbb </parameter>
         <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
 
-        <parameter name="outputFilename" type="string">${OutputDirectory}/${OutputBaseName}_PreSelection_qqHH.root</parameter>
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
         <parameter name="Verbosity" type="string">MESSAGE</parameter>
     </processor>
@@ -950,11 +953,20 @@
     <processor name="MyFinalStateRecorder" type="FinalStateRecorder">
         <!--MyFinalStateRecorder identified events that have passed the preselection-->
         <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
-        <parameter name="outputRootFilename" type="string">${OutputDirectory}/${OutputBaseName}_FinalStates.root</parameter>
+        <parameter name="outputRootFilename" type="string">None</parameter>
         <parameter name="outputJsonFilename" type="string">${OutputDirectory}/${OutputBaseName}_FinalStateMeta.json</parameter>
 
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
         <parameter name="Verbosity" type="string">DEBUG</parameter>
+    </processor>
+
+    <processor name="MyJetTaggingComparison" type="JetTaggingComparison">
+        <parameter name="Collection" type="string" lcioInType="ReconstructedParticle"> RefinedJets_ll </parameter>
+        <parameter name="PIDAlgorithm1" type="string"> lcfiplus </parameter>
+        <parameter name="PIDParameters1" type="StringVev"> BTag CTag OTag </parameter>
+
+        <parameter name="RootFile" type="string"></parameter>
+        <parameter name="Verbosity" type="string"> DEBUG </parameter>
     </processor>
 
     <processor name="MyTruthRecoComparison" type="TruthRecoComparison">
@@ -963,7 +975,6 @@
         <parameter name="inputJetCollection" type="string" lcioInType="ReconstructedParticle">RefinedJets_ll</parameter>
         <parameter name="inputPfoCollection" type="string" lcioInType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
 
-        <parameter name="outputRootFilename" type="string">${OutputDirectory}/${OutputBaseName}_TruthRecoComparison.root</parameter>
         <parameter name="ECM" type="float">${CMSEnergy}</parameter>
 
         <parameter name="outputKinematics" type="bool">True</parameter>

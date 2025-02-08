@@ -4,6 +4,7 @@ source/*/build
 source/*/lib
 source/*/xml
 source/build
+source/lib
 *#
 *oldsrc*
 *.swp
