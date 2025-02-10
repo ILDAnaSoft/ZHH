@@ -585,5 +585,9 @@ void FinalStateRecorder::end()
 	}
 
 	// delete all registered FinalStateRecorders
-	
+	for (auto [key, value]: resolvers) {
+		FinalStateResolver *resolver = resolvers[key];
+		delete resolver;
+	};
+	resolvers.clear();
 }
