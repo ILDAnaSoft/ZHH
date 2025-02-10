@@ -279,6 +279,9 @@ void ZHHvvbbbbKinFit::init()
 	m_pTTree->Branch( "ISREnergyAfterFit_woNu" , &m_ISREnergyAfterFit_woNu , "ISREnergyAfterFit_woNu/F" );
 	m_pTTree->Branch( "FitProbability_woNu" , &m_FitProbability_woNu , "FitProbability_woNu/F" );
 	m_pTTree->Branch( "FitChi2_woNu" , &m_FitChi2_woNu , "FitChi2_woNu/F" );
+  m_pTTree->Branch( "FitChi2_byMass" , &m_FitChi2_byMass , "FitChi2_byMass/F" );
+  m_pTTree->Branch( "BestMatchingKinfit" , &m_bestMatchingKinfit );
+  m_pTTree->Branch( "BestMatchingByMass" , &m_bestMatchingByMass );
 	m_pTTree->Branch( "pullJetEnergy_woNu" , &m_pullJetEnergy_woNu );
 	m_pTTree->Branch( "pullJetTheta_woNu" , &m_pullJetTheta_woNu );
 	m_pTTree->Branch( "pullJetPhi_woNu" , &m_pullJetPhi_woNu );
@@ -335,6 +338,8 @@ void ZHHvvbbbbKinFit::init()
 	m_pTTree->Branch("Sigma_PzE",&m_Sigma_PzE);
 	m_pTTree->Branch("Sigma_E2",&m_Sigma_E2);
 
+  assignPermutations(4, m_fithypothesis);
+
 	streamlog_out(DEBUG) << "   init finished  " << std::endl;
 
 }
@@ -366,6 +371,9 @@ void ZHHvvbbbbKinFit::Clear()
 	m_ISREnergyAfterFit_woNu = 0.0;
 	m_FitProbability_woNu = 0.0;
 	m_FitChi2_woNu = 0.0;
+  m_FitChi2_byMass = 0.0;
+  m_bestMatchingKinfit.clear();
+  m_bestMatchingByMass.clear();
 	m_pullJetEnergy_woNu.clear();
 	m_pullJetTheta_woNu.clear();
 	m_pullJetPhi_woNu.clear();
@@ -454,7 +462,7 @@ void ZHHvvbbbbKinFit::processEvent( EVENT::LCEvent *pLCEvent )
   IMPL::LCCollectionVec* outputStartJetCollection = NULL;
   outputStartJetCollection = new IMPL::LCCollectionVec(LCIO::RECONSTRUCTEDPARTICLE);
   outputStartJetCollection->setSubset( true );
-  LCCollectionVec *outputNuEnergyCollection = new LCCollectionVec(LCIO::LCFLOATVEC);
+  //LCCollectionVec *outputNuEnergyCollection = new LCCollectionVec(LCIO::LCFLOATVEC);
 
   LCRelationNavigator* JetSLDNav = NULL;
   LCRelationNavigator* SLDNuNav = NULL;
@@ -744,9 +752,13 @@ void ZHHvvbbbbKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     }*/
 
   streamlog_out(MESSAGE) << "Performed fit" << endl;
+
   if (!bestFitResult.fitter) {
     streamlog_out(MESSAGE) << "Did not find a functioning fit" << endl;
-    vector<double> startmasses = calculateMassesFromSimpleChi2Pairing(Jets, Leptons);
+
+    vector<double> startmasses;
+    std::tie(startmasses, m_FitChi2_byMass, m_bestMatchingByMass) = calculateMassesFromSimpleChi2Pairing(Jets, Leptons);
+    
     m_ZMassBeforeFit  = startmasses[0];
     m_H1MassBeforeFit = startmasses[1];
     m_H2MassBeforeFit = startmasses[2];
@@ -755,6 +767,7 @@ void ZHHvvbbbbKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     streamlog_out(MESSAGE) << "masses from simple chi2:" << m_ZMassBeforeFit << ", " << m_H1MassBeforeFit << ", " << m_H2MassBeforeFit << ", " << m_HHMassBeforeFit << std::endl ; 
 
     m_pTTree->Fill();
+    attachBestPermutation(inputJetCollection, m_bestMatchingByMass, "vv_by_mass");
     return;
   }
   for (unsigned int i_jet =0; i_jet < bestJets.size(); i_jet++) {
@@ -764,6 +777,8 @@ void ZHHvvbbbbKinFit::processEvent( EVENT::LCEvent *pLCEvent )
   m_FitErrorCode = bestFitResult.fitter->getError();
   m_FitProbability = bestFitResult.fitter->getProbability();
   m_FitChi2 = bestFitResult.fitter->getChi2();
+  m_bestMatchingKinfit = bestFitResult.permutation;
+
   streamlog_out(MESSAGE1) << "error code = " << bestFitResult.fitter->getError() << endl;
   streamlog_out(MESSAGE1) << "fit prob = " << bestFitResult.fitter->getProbability() << endl;
   streamlog_out(MESSAGE1) << "fit chi2 = " << bestFitResult.fitter->getChi2()<< endl;
@@ -901,40 +916,21 @@ void ZHHvvbbbbKinFit::processEvent( EVENT::LCEvent *pLCEvent )
   //pLCEvent->addCollection( outputNuEnergyCollection, m_outputNuEnergyCollection.c_str() );
   //streamlog_out(DEBUG0) << " Output true and reco Nu collection added to event" << std::endl;
   m_pTTree->Fill();
-}
-
-/*
- * Given a vector A of n vectors we want to return
- * all possible vectors of length n where the first
- * element is from A[0], the second from A[1] etc.
- */
-std::vector<std::vector<EVENT::ReconstructedParticle*>> ZHHvvbbbbKinFit::combinations(pfoVectorVector collector,
-											     pfoVectorVector sets, 
-											     int n,
-											     pfoVector combo) {
-  if (n == sets.size()) {
-    collector.push_back({combo});
-    return collector;
-  }
-
-  for (auto c : sets.at(n)) {
-    combo.push_back(c);
-    collector = combinations(collector, sets, n + 1, combo);
-    combo.pop_back();
-  }
-  return collector;
+  attachBestPermutation(inputJetCollection, m_bestMatchingKinfit, "vv_kinfit");
 }
 
 ZHHvvbbbbKinFit::FitResult ZHHvvbbbbKinFit::performFIT( pfoVector jets, 
 							pfoVector leptons,
 							bool traceEvent) {
+  (void) leptons;
+
   shared_ptr<vector<shared_ptr<JetFitObject>>> jfo = make_shared<vector<shared_ptr<JetFitObject>>>();
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //////												  //////
   //////					Set JetFitObjects					  //////
   //////												  //////
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  for (unsigned int i_jet =0; i_jet < jets.size(); i_jet++) {
+  for (size_t i_jet =0; i_jet < jets.size(); i_jet++) {
     streamlog_out(MESSAGE6) << "get jet"<< i_jet+1 <<" parameters"  << std::endl ; //changed from debug level
     float parameters[ 3 ]{ 0.0 } , errors[ 3 ]{ 0.0 };
     getJetParameters( jets[ i_jet ] , parameters , errors );
@@ -953,41 +949,22 @@ ZHHvvbbbbKinFit::FitResult ZHHvvbbbbKinFit::performFIT( pfoVector jets,
   //calculate 4-momentum of Z->invisible 
   ROOT::Math::PxPyPzEVector seenFourMomentum(0.,0.,0.,0.);
   std::vector<ReconstructedParticle*> Jets{};
-  for (unsigned int i_jet = 0; i_jet < m_nJets; i_jet++) {
+  for (int i_jet = 0; i_jet < m_nJets; i_jet++) {
     seenFourMomentum += ROOT::Math::PxPyPzEVector(jets[ i_jet ]->getMomentum()[0],jets[ i_jet ]->getMomentum()[1],jets[ i_jet ]->getMomentum()[2], jets[ i_jet ]->getEnergy());
   }
   ROOT::Math::PxPyPzMVector ZinvFourMomentum(-seenFourMomentum.Px(), -seenFourMomentum.Pz(), -seenFourMomentum.Pz(),91.1880); // M_Z PDG average in 2024 review
   shared_ptr<ZinvisibleFitObject> zfo = make_shared<ZinvisibleFitObject> (ZinvFourMomentum.E(), ZinvFourMomentum.Theta(), ZinvFourMomentum.Phi(), 1.0, 0.1, 0.1,91.1880);
   zfo->setName("Zinvisible");
   
-  const int NJETS = 4;
-  const int NLEPTONS = 0;
+  //const int NJETS = 4;
+  //const int NLEPTONS = 0;
   const int NZINVISIBLES = 1;
   
   double bestProb = -1;
   double bestChi2 = 9999999999999.;
   FitResult bestFitResult;
 
-  assert(NJETS==4);
-  vector<vector<unsigned int>> perms;
-  if (m_fithypothesis == "ZZH" || m_fithypothesis == "ZZHsoft" || m_fithypothesis == "MH") {
-    perms = {
-      {0, 1, 2, 3},
-      {0, 2, 1, 3},
-      {0, 3, 1, 2},
-      {1, 2, 0, 3},
-      {1, 3, 0, 2},
-      {2, 3, 0, 1}
-    };
-  } else if (m_fithypothesis == "ZHH" || m_fithypothesis == "EQM") {
-    perms = {
-      {0, 1, 2, 3}, 
-      {0, 2, 1, 3}, 
-      {0, 3, 1, 2}
-    };
-  } else {
-    perms = {{0, 1, 2, 3}};
-  }
+  assert(m_nJets == 4);
 
   for (unsigned int iperm = 0; iperm < perms.size(); iperm++) {
     streamlog_out(MESSAGE) << " ================================================= " << std::endl ;
@@ -1226,7 +1203,7 @@ ZHHvvbbbbKinFit::FitResult ZHHvvbbbbKinFit::performFIT( pfoVector jets,
 	  streamlog_out(MESSAGE)  << "After fit ISR energy" << photon->getE() << endl;
 	}
 	
-	FitResult fitresult(fitter, constraints, fos);
+	FitResult fitresult(fitter, constraints, fos, perms[iperm]);
 	/*for(auto it = fitresult.constraints->begin(); it != fitresult.constraints->end(); it++) {
 	  streamlog_out(MESSAGE) << "   testing " << (*it)->getName() << endl;
 	  if (strcmp((*it)->getName(), "h1 mass")==0) {
@@ -1285,7 +1262,7 @@ std::vector<double> ZHHvvbbbbKinFit::calculateInitialMasses(pfoVector jets, pfoV
   //calculate 4-momentum of Z->invisible
   ROOT::Math::PxPyPzEVector seenFourMomentum(0.,0.,0.,0.);
   std::vector<ReconstructedParticle*> Jets{};
-  for (unsigned int i_jet = 0; i_jet < m_nJets; i_jet++) {
+  for (int i_jet = 0; i_jet < m_nJets; i_jet++) {
     seenFourMomentum += ROOT::Math::PxPyPzEVector(jets[ i_jet ]->getMomentum()[0],jets[ i_jet ]->getMomentum()[1],jets[ i_jet ]->getMomentum()[2], jets[ i_jet ]->getEnergy());
   }
   ROOT::Math::PxPyPzMVector ZinvFourMomentum(-seenFourMomentum.Px(), -seenFourMomentum.Pz(), -seenFourMomentum.Pz(),91.1880); // M_Z PDG average in 2024 review    
@@ -1324,26 +1301,14 @@ std::vector<double> ZHHvvbbbbKinFit::calculateInitialMasses(pfoVector jets, pfoV
   return masses;
 }
 
-std::vector<double> ZHHvvbbbbKinFit::calculateMassesFromSimpleChi2Pairing(pfoVector jets, pfoVector leptons) 
+std::tuple<std::vector<double>, double, std::vector<unsigned int>>
+  ZHHvvbbbbKinFit::calculateMassesFromSimpleChi2Pairing(pfoVector jets, pfoVector leptons) 
 {
+  (void) leptons;
+
   std::vector<double> masses;
-  vector<vector<unsigned int>> perms;
-  if (m_fithypothesis == "ZZH" || m_fithypothesis == "MH") {
-    perms = {
-      {0, 1, 2, 3},
-      {0, 2, 1, 3},
-      {0, 3, 1, 2},
-      {1, 2, 0, 3},
-      {1, 3, 0, 2},
-      {2, 3, 0, 1}
-    };
-  } else{
-    perms = {
-      {0, 1, 2, 3},
-      {0, 2, 1, 3},
-      {0, 3, 1, 2}
-    };
-  }
+  std::vector<unsigned int> bestperm;
+
   double m1;
   double m2;
   if (m_fithypothesis == "ZZH") {
@@ -1359,7 +1324,7 @@ std::vector<double> ZHHvvbbbbKinFit::calculateMassesFromSimpleChi2Pairing(pfoVec
   //calculate 4-momentum of Z->invisible
   ROOT::Math::PxPyPzEVector seenFourMomentum(0.,0.,0.,0.);
   std::vector<ReconstructedParticle*> Jets{};
-  for (unsigned int i_jet = 0; i_jet < m_nJets; i_jet++) {
+  for (int i_jet = 0; i_jet < m_nJets; i_jet++) {
     seenFourMomentum += ROOT::Math::PxPyPzEVector(jets[ i_jet ]->getMomentum()[0],jets[ i_jet ]->getMomentum()[1],jets[ i_jet ]->getMomentum()[2], jets[ i_jet ]->getEnergy());
   }
   ROOT::Math::PxPyPzMVector ZinvFourMomentum(-seenFourMomentum.Px(), -seenFourMomentum.Pz(), -seenFourMomentum.Pz(),91.1880); // M_Z PDG average in 2024 review
@@ -1372,7 +1337,11 @@ std::vector<double> ZHHvvbbbbKinFit::calculateMassesFromSimpleChi2Pairing(pfoVec
   double hh = hhFourMomentum.M();
   double zhh = zhhFourMomentum.M();
   double chi2min = 99999. ;
-  for (auto perm : perms) {
+  
+  size_t iperm;
+  for (iperm = 0; iperm < perms.size(); iperm++) {
+    vector<unsigned int> perm = perms[iperm];
+
     double temp1 = inv_mass(jets.at(perm[0]),jets.at(perm[1]));
     double temp2 = inv_mass(jets.at(perm[2]),jets.at(perm[3]));
     double chi2;
@@ -1395,8 +1364,10 @@ std::vector<double> ZHHvvbbbbKinFit::calculateMassesFromSimpleChi2Pairing(pfoVec
 
   streamlog_out(MESSAGE) << "masses from simple chi2:" << z << ", " << h1 << ", " << h2 << ", " << hh << std::endl ; 
 
-  return masses;
+  for (size_t i = 0; i < perms[iperm].size(); i++) 
+    bestperm.push_back(perms[iperm][i]);
 
+  return std::make_tuple(masses, chi2min, bestperm);
 }
 
 void ZHHvvbbbbKinFit::check( LCEvent* event )

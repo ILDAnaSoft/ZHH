@@ -236,6 +236,28 @@ double ZHHBaseKinfitProcessor::calcChi2(shared_ptr<vector<shared_ptr<BaseFitObje
   return chi2;
 }
 
+/*
+ * Given a vector A of n vectors we want to return
+ * all possible vectors of length n where the first
+ * element is from A[0], the second from A[1] etc.
+ */
+std::vector<std::vector<EVENT::ReconstructedParticle*>> ZHHBaseKinfitProcessor::combinations(pfoVectorVector collector,
+											     pfoVectorVector sets, 
+											     int n,
+											     pfoVector combo) {
+  if (n == (int)sets.size()) {
+    collector.push_back({combo});
+    return collector;
+  }
+
+  for (auto c : sets.at(n)) {
+    combo.push_back(c);
+    collector = combinations(collector, sets, n + 1, combo);
+    combo.pop_back();
+  }
+  return collector;
+}
+
 void ZHHBaseKinfitProcessor::end()
 {
 //	streamlog_out(MESSAGE) << "# of events: " << m_nEvt << std::endl;
@@ -251,3 +273,56 @@ void ZHHBaseKinfitProcessor::end()
     delete m_pTFile;
   }
 }
+
+void ZHHBaseKinfitProcessor::assignPermutations(size_t njets, string fithypothesis) {
+  if (njets == 4) {
+    if (m_fithypothesis == "ZZH" || m_fithypothesis == "ZZHsoft" || m_fithypothesis == "MH") {
+      perms = {
+        {0, 1, 2, 3},
+        {0, 2, 1, 3},
+        {0, 3, 1, 2},
+        {1, 2, 0, 3},
+        {1, 3, 0, 2},
+        {2, 3, 0, 1}
+      };
+    } else if (m_fithypothesis == "ZHH" || m_fithypothesis == "EQM") {
+      perms = {
+        {0, 1, 2, 3}, 
+        {0, 2, 1, 3}, 
+        {0, 3, 1, 2}
+      };
+    } else {
+      perms = {{0, 1, 2, 3}};
+    }
+  } else if (njets == 6) {
+    if (m_fithypothesis == "ZZH" || m_fithypothesis == "ZZHsoft" || m_fithypothesis == "MH" || m_fithypothesis == "ZHH" || m_fithypothesis == "EQM") {
+      //TO DO: redo permutations for each hypothesis
+      perms = {
+        {0, 1, 2, 3, 4, 5}, {1, 2, 0, 3, 4, 5}, {2, 4, 0, 1, 3, 5},
+        {0, 1, 2, 4, 3, 5}, {1, 2, 0, 4, 3, 5}, {2, 4, 0, 3, 1, 5},
+        {0, 1, 2, 5, 3, 4}, {1, 2, 0, 5, 3, 4}, {2, 4, 0, 5, 1, 3},
+        {0, 2, 1, 3, 4, 5}, {1, 3, 0, 2, 4, 5}, {2, 5, 0, 1, 3, 4},
+        {0, 2, 1, 4, 3, 5}, {1, 3, 0, 4, 2, 5}, {2, 5, 0, 3, 1, 4},
+        {0, 2, 1, 5, 3, 4}, {1, 3, 0, 5, 2, 4}, {2, 5, 0, 4, 1, 3},
+        {0, 3, 1, 2, 4, 5}, {1, 4, 0, 2, 3, 5}, {3, 4, 0, 1, 2, 5},
+        {0, 3, 1, 4, 2, 5}, {1, 4, 0, 3, 2, 5}, {3, 4, 0, 2, 1, 5},
+        {0, 3, 1, 5, 2, 4}, {1, 4, 0, 5, 2, 3}, {3, 4, 0, 5, 1, 2},
+        {0, 4, 1, 2, 3, 5}, {1, 5, 0, 2, 3, 4}, {3, 5, 0, 1, 2, 4},
+        {0, 4, 1, 3, 2, 5}, {1, 5, 0, 3, 2, 4}, {3, 5, 0, 2, 1, 4},
+        {0, 4, 1, 5, 2, 3}, {1, 5, 0, 4, 2, 3}, {3, 5, 0, 4, 1, 2},
+        {0, 5, 1, 2, 3, 4}, {2, 3, 0, 1, 4, 5}, {4, 5, 0, 1, 2, 3},
+        {0, 5, 1, 3, 2, 4}, {2, 3, 0, 4, 1, 5}, {4, 5, 0, 2, 1, 3},
+        {0, 5, 1, 4, 2, 3}, {2, 3, 0, 5, 1, 4}, {4, 5, 0, 3, 1, 2},
+      };
+    } else {
+      perms = {{0, 1, 2, 3, 4, 5}};
+    }
+  } else
+    throw EVENT::Exception("Only njets=4 and njets=6 are implemented");
+};
+
+
+void ZHHBaseKinfitProcessor::attachBestPermutation(LCCollection *jets, vector<unsigned int> bestperm, string parameterSuffix) {
+  const EVENT::IntVec intvec(bestperm.begin(), bestperm.end());
+  jets->parameters().setValues(std::string("best_perm_").append(parameterSuffix), intvec);
+};

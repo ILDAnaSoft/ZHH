@@ -21,35 +21,14 @@ class ZHHllbbbbKinFit : public Processor , public ZHHBaseKinfitProcessor
 		ZHHllbbbbKinFit(const ZHHllbbbbKinFit&) = delete;
 		ZHHllbbbbKinFit& operator=(const ZHHllbbbbKinFit&) = delete;
 
-		struct FitResult {
-		  FitResult() {
-		    fitter = shared_ptr<BaseFitter>();
-		    constraints = shared_ptr<vector<shared_ptr<BaseHardConstraint>>>();
-		    fitobjects = shared_ptr<vector<shared_ptr<BaseFitObject>>>();
-		  };
-		  FitResult(shared_ptr<BaseFitter> _fitter, 
-			    shared_ptr<vector<shared_ptr<BaseHardConstraint>>> _constraints, 
-			    shared_ptr<vector<shared_ptr<BaseFitObject>>> _fitobjects) : 
-		  fitter(_fitter), constraints(_constraints), fitobjects(_fitobjects) {};
-		  shared_ptr<BaseFitter> fitter;
-		  shared_ptr<vector<shared_ptr<BaseHardConstraint>>> constraints;
-		  shared_ptr<vector<shared_ptr<BaseFitObject>>> fitobjects;
-		};
 		virtual void	init();
 		virtual void	Clear();
 		virtual void	processRunHeader();
 		virtual void	processEvent( EVENT::LCEvent *pLCEvent );
-						   
-
-		pfoVectorVector combinations(pfoVectorVector collector,
-					     pfoVectorVector sets, 
-					     int n,
-					     pfoVector combo);
 		
 		FitResult performFIT( pfoVector jets,pfoVector leptons,bool traceEvent);	    
-
 		std::vector<double> calculateInitialMasses(pfoVector jets, pfoVector leptons, vector<unsigned int> perm);
-		std::vector<double> calculateMassesFromSimpleChi2Pairing(pfoVector jets, pfoVector leptons);
+		std::tuple<std::vector<double>, double, std::vector<unsigned int>> calculateMassesFromSimpleChi2Pairing(pfoVector jets, pfoVector leptons);
 
 		virtual void	check( LCEvent * evt );
 

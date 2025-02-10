@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <tuple>
 
 #include "marlin/Processor.h"
 #include "lcio.h"
@@ -26,7 +27,7 @@
 #include "MassConstraint.h"
 #include "SoftGaussParticleConstraint.h"
 #include "SoftGaussMassConstraint.h"
-#include "FourJetPairing.h"
+//#include "FourJetPairing.h"
 #include "IMPL/ReconstructedParticleImpl.h"
 #include "IMPL/LCCollectionVec.h"
 #include <EVENT/LCCollection.h>
@@ -61,7 +62,31 @@ class ZHHBaseKinfitProcessor
 		TFile *m_pTFile{};
 		TTree *m_pTTree{};
 
+		struct FitResult {
+		  FitResult():
+		  	fitter(shared_ptr<BaseFitter>()),
+		    constraints(shared_ptr<vector<shared_ptr<BaseHardConstraint>>>()),
+		    fitobjects(shared_ptr<vector<shared_ptr<BaseFitObject>>>()),
+			permutation({}) {};
+
+		  FitResult(shared_ptr<BaseFitter> _fitter, 
+			    shared_ptr<vector<shared_ptr<BaseHardConstraint>>> _constraints, 
+			    shared_ptr<vector<shared_ptr<BaseFitObject>>> _fitobjects,
+				vector<unsigned int> _permutation) : 
+		  		fitter(_fitter), constraints(_constraints), fitobjects(_fitobjects), permutation(_permutation) {};
+
+		  shared_ptr<BaseFitter> fitter;
+		  shared_ptr<vector<shared_ptr<BaseHardConstraint>>> constraints;
+		  shared_ptr<vector<shared_ptr<BaseFitObject>>> fitobjects;
+		  vector<unsigned int> permutation;
+		};
+
     protected:
+		pfoVectorVector combinations(pfoVectorVector collector,
+					     pfoVectorVector sets, 
+					     int n,
+					     pfoVector combo);
+						 
 		ReconstructedParticle* addNeutrinoCorrection(ReconstructedParticle* jet,
 									pfoVector neutrinos);
 
@@ -75,6 +100,11 @@ class ZHHBaseKinfitProcessor
 
 		virtual void	getJetParameters( ReconstructedParticle* jet , float (&parameters)[ 3 ] , float (&errors)[ 3 ] );
 		virtual void	getLeptonParameters( ReconstructedParticle* lepton , float (&parameters)[ 3 ] , float (&errors)[ 3 ] );
+
+		void attachBestPermutation(LCCollection *jets, vector<unsigned int> bestperm, string parameterSuffix);
+
+		void assignPermutations(size_t njets, string fithypothesis);
+		vector<vector<unsigned int>> perms{};
 
 		std::vector<double> calculatePulls(std::shared_ptr<ParticleFitObject> fittedobject, ReconstructedParticle* startobject, int type);
 		double calcChi2(shared_ptr<vector<shared_ptr<BaseFitObject>>> fitobjects);
@@ -148,6 +178,9 @@ class ZHHBaseKinfitProcessor
         float                                   m_ISREnergyAfterFit_woNu{};
 		float					m_FitProbability_woNu{};
 		float					m_FitChi2_woNu{};
+		float 					m_FitChi2_byMass{};
+		std::vector<unsigned int>   m_bestMatchingKinfit{};
+		std::vector<unsigned int>   m_bestMatchingByMass{};
 		std::vector<float>			m_pullJetEnergy_woNu{};
 		std::vector<float>			m_pullJetTheta_woNu{};
 		std::vector<float>			m_pullJetPhi_woNu{};

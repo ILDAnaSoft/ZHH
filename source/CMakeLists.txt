@@ -52,7 +52,6 @@ set(sources
   ChargedPFOCorrection/src/ChargedPFOCorrection.cc
   CheatedMCOverlayRemoval/src/CheatedMCOverlayRemoval.cc
   ExpandJetProcessor/src/ExpandJetProcessor.cc
-  #FinalSelection/src/FinalSelection.cc
   FinalStateRecorder/src/FinalStateResolver.cc
   FinalStateRecorder/src/FinalStateRecorder.cc
   HdecayMode/src/HdecayMode.cc
@@ -64,7 +63,10 @@ set(sources
   LeptonPairing/src/LeptonPairing.cc
   MergePIDProcessor/src/MergePIDProcessor.cc
   Misclustering/src/Misclustering.cc
-  PreSelection/src/PreSelection.cc
+  EventObservables/src/EventObservablesBase.cc
+  #EventObservables/src/EventObservablesLL.cc
+  #EventObservables/src/EventObservablesVV.cc
+  EventObservables/src/EventObservablesQQ.cc
   TruthRecoComparison/src/TruthRecoComparison.cc
   ZHHKinfitProcessors/src/ZHHBaseKinfitProcessor.cc
   ZHHKinfitProcessors/src/ZHHllbbbbKinFit.cc
@@ -101,7 +103,6 @@ target_include_directories(ZHHProcessors PRIVATE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/ChargedPFOCorrection/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/CheatedMCOverlayRemoval/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/ExpandJetProcessor/include>
-  #$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/FinalSelection/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/FinalStateRecorder/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/HdecayMode/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/JetErrorAnalysis/include>
@@ -110,7 +111,7 @@ target_include_directories(ZHHProcessors PRIVATE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/LeptonPairing/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/MergePIDProcessor/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Misclustering/include>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/PreSelection/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/EventObservables/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/TruthRecoComparison/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/ZHHKinfitProcessors/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/ZinvisibleErrorAnalysis/include>

@@ -139,4 +139,11 @@ if [[ ! -f "$REPO_ROOT/setup.sh" || $ZHH_WRITE_SETUP = "1" ]]; then
     unset ZHH_WRITE_SETUP
 fi
 
+# check zhh macros
+if [[ -f ~/.bashrc ]]; then
+    if ! grep -q "alias srczhh" ~/.bashrc; then
+        echo "alias srczhh='source $REPO_ROOT/setup.sh'" >> ~/.bashrc
+    fi
+fi
+
 source $REPO_ROOT/setup.sh

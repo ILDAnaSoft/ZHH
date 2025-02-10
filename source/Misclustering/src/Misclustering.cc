@@ -42,7 +42,8 @@ Misclustering::Misclustering() : Processor("Misclustering"),
 				       m_nRunSum(0),
 				       m_nEvtSum(0),
 				       m_nTrueJets(0),
-				       m_nRecoJets(0)
+				       m_nRecoJets(0),
+               m_pTFile(NULL)
 
 {
 
@@ -188,9 +189,10 @@ void Misclustering::init()
 {
   streamlog_out(DEBUG6) << "   init called  " << endl ;
 
-  m_pTFile = new TFile(m_outputFile.c_str(),"recreate");
-  m_pTTree = new TTree("eventTree","eventTree");
-  m_pTTree->SetDirectory(m_pTFile);
+  if (m_outputFile.size()) {
+    m_pTFile = new TFile(m_outputFile.c_str(), "recreate");
+    m_pTTree->SetDirectory(m_pTFile);
+  }  
 
   m_pTTree->Branch("run", &m_nRun, "run/I");
   m_pTTree->Branch("event", &m_nEvt, "event/I");
@@ -337,8 +339,8 @@ void Misclustering::processEvent( LCEvent* pLCEvent)
       };
 
       float chi2min = 99999. ;
-      float higgs1 = 0. ;
-      float higgs2 = 0. ;
+      //float higgs1 = 0. ;
+      //float higgs2 = 0. ;
       vector<int> recojetpermChi2;
       for (auto perm : perms) {
         float m1 = inv_mass(recoJets.at(perm[0]),recoJets.at(perm[1]));
@@ -347,8 +349,8 @@ void Misclustering::processEvent( LCEvent* pLCEvent)
 
         if (chi2 < chi2min) {
           chi2min = chi2;
-          higgs1 = m1;
-          higgs2 = m2;
+          //higgs1 = m1;
+          //higgs2 = m2;
           recojetpermChi2 = perm;
         }
       }
@@ -408,7 +410,7 @@ void Misclustering::processEvent( LCEvent* pLCEvent)
       }
 
       vector<int> recojetpermICNs;
-      for (int i=0; i<truejetpermICNs.size(); i++) {
+      for (size_t i=0; i<truejetpermICNs.size(); i++) {
         int ijet = truejetpermICNs[i];
         streamlog_out(DEBUG3) << "ijet = "<< ijet << endl;
         auto it = std::find_if( reco2truejetindex.begin(), reco2truejetindex.end(),
@@ -684,9 +686,15 @@ void Misclustering::check()
 
 void Misclustering::end()
 {
-  m_pTFile->cd();
+  if (m_pTFile != NULL) {
+    m_pTFile->cd();
+  }
+  
   m_pTTree->Write();
-  m_pTFile->Close();
-  delete m_pTFile;
+
+  if (m_pTFile != NULL) {
+    m_pTFile->Close();
+    delete m_pTFile;
+  }
 }
 

@@ -1,63 +1,54 @@
-#ifndef PreSelection_h
-#define PreSelection_h 1
+#ifndef EventObservablesBase_h
+#define EventObservablesBase_h 1
 
 #include "nlohmann/json.hpp"
 #include "marlin/Processor.h"
 #include "IMPL/LCCollectionVec.h"
+#include "EVENT/ReconstructedParticle.h"
 #include "lcio.h"
 #include <string>
-#include <TFile.h>
-#include <TTree.h>
 #include <vector>
 #include "TLorentzVector.h"
 #include <EventCategory.h>
-
-class TFile;
-class TH1F;
-class TH1I;
-class TH2I;
-class TTree;
+#include "physsim/LCMEZHH.h"
+#include "physsim/LCMEZZH.h"
+#include <tuple>
+#include "TFile.h"
+#include "TTree.h"
+#include "TH1F.h"
+#include "TH1I.h"
+#include "TH2I.h"
+#include "inv_mass.h"
 
 using namespace lcio ;
 using namespace marlin ;
 using jsonf = nlohmann::json;
+using namespace lcme ;
 
 // If the final state is a ZHH (with H -> bbar), the channel is given by the decay channel of the Z boson (else OTHER)
 // NONE is for initialization only and should not occur in practice
 // TODO: implement, using EventCategory
 
-class PreSelection : public Processor
+class EventObservablesBase
 {
 	public:
+		EventObservablesBase();
+		virtual ~EventObservablesBase() = default;
+		EventObservablesBase(const EventObservablesBase&) = delete;
+		EventObservablesBase& operator=(const EventObservablesBase&) = delete;
+		
+	protected:
+		void prepareBaseTree();
+		void baseClear();
+		void updateValues(EVENT::LCEvent *pLCEvent);
+		std::vector<int> pairJetsByMass(std::vector<EVENT::ReconstructedParticle*> jets, IMPL::LCCollectionVec* higgsCandidates);
 
-		virtual Processor*  newProcessor()
-		{
-			return new PreSelection;
-		}
-		PreSelection();
-		virtual ~PreSelection() = default;
-		PreSelection(const PreSelection&) = delete;
-		PreSelection& operator=(const PreSelection&) = delete;
-		virtual void init();
-		virtual void Clear();
-		virtual void processRunHeader( LCRunHeader*  /*run*/);
-		virtual void processEvent( EVENT::LCEvent *pLCEvent );
-		virtual void check();
-		virtual void end();
-		
- protected:
-		
-		/**
-		 * Add the expected output collections
-		 */
-		
-		/** Input collection name.
-		 */
+		// names of input collections
 		std::string m_inputIsolatedleptonCollection{};
 		std::string m_inputLepPairCollection{};
 		std::string m_inputJetCollection{};
 		std::string m_inputPfoCollection{};
-		std::string m_PreSelectionCollection{};
+		std::string m_EventObservablesBaseCollection{};
 		std::string m_HiggsCollection{};
 		std::string m_outputFile{};
 		std::string m_whichPreselection{};
@@ -66,10 +57,13 @@ class PreSelection : public Processor
 		std::string m_PIDAlgorithmBTag{};
 		bool m_write_ttree{};
 
+		// outputs
+		TFile *m_pTFile{};
+		TTree *m_pTTree{};
+
+		// PreSelection cut values and inputs
 		int m_nAskedJets{};
         int m_nAskedIsoLeps{};
-		float m_ECM{};
-
 		float m_maxdileptonmassdiff{};
 		float m_maxdijetmassdiff{};
 		float m_mindijetmass{};
@@ -82,18 +76,53 @@ class PreSelection : public Processor
 		float m_maxEvis{};
 		float m_minHHmass{};
 
+		float m_ECM{};
+
+		// meta information and observables
 		int m_nRun;
 		int m_nEvt;
 		int m_errorCode;
 
+		float m_todo{};
+
+		int m_ndijets{};
+
+		float m_Evis{};
+		float m_missingMass{};
+		float m_mh1{};
+		float m_mh2{};
+		float m_mhh{};
+		float m_pz{};
+		float m_ph1{};
+		float m_ph2{};
+		float m_cosz{};
+		float m_cosh1{};
+		float m_cosh2{};
+		float m_yminus{}; //?
+		float m_yplus{}; //?
+
+		int m_nhbb{};
 		int m_nJets{};
+
+		float m_bmax1{};
+		float m_bmax2{};
+		float m_bmax3{};
+		float m_bmax4{};
+
+		float m_cmax1{};
+		float m_cmax2{};
+		float m_cmax3{};
+		float m_cmax4{};
+
+
+
 		int m_nIsoLeps{};
 		std::vector<int> m_lepTypes{};
 		int m_lepTypesPaired{};
 		float m_missingPT{};
-		float m_missingMass{};
+		
 		float m_missingE{};
-		float m_Evis{};
+		
 		float m_thrust{};
 		float m_dileptonMassPrePairing{};
 		float m_dileptonMass{};
@@ -107,6 +136,7 @@ class PreSelection : public Processor
 		std::vector<float> m_dijetMass{};
 		std::vector<float> m_dijetMassDiff{};
 		std::vector<double> m_bTagValues{};
+		std::vector<double> m_cTagValues{};
 		
 		float m_dihiggsMass{};
 		std::vector<int>  m_preselsPassedVec{};
@@ -115,9 +145,6 @@ class PreSelection : public Processor
 		int m_preselsPassedConsec{};
 		int m_nbjets{};
 		std::vector<float> m_blikelihoodness{};
-
-		TFile *m_pTFile{};        
-		TTree *m_pTTree = new TTree("PreSelection", "PreSelection");
 
 };
 
