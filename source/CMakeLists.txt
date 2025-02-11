@@ -64,8 +64,8 @@ set(sources
   MergePIDProcessor/src/MergePIDProcessor.cc
   Misclustering/src/Misclustering.cc
   EventObservables/src/EventObservablesBase.cc
-  #EventObservables/src/EventObservablesLL.cc
-  #EventObservables/src/EventObservablesVV.cc
+  EventObservables/src/EventObservablesLL.cc
+  EventObservables/src/EventObservablesVV.cc
   EventObservables/src/EventObservablesQQ.cc
   TruthRecoComparison/src/TruthRecoComparison.cc
   ZHHKinfitProcessors/src/ZHHBaseKinfitProcessor.cc

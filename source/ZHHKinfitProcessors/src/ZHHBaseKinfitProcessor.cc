@@ -276,7 +276,7 @@ void ZHHBaseKinfitProcessor::end()
 
 void ZHHBaseKinfitProcessor::assignPermutations(size_t njets, string fithypothesis) {
   if (njets == 4) {
-    if (m_fithypothesis == "ZZH" || m_fithypothesis == "ZZHsoft" || m_fithypothesis == "MH") {
+    if (fithypothesis == "ZZH" || fithypothesis == "ZZHsoft" || fithypothesis == "MH") {
       perms = {
         {0, 1, 2, 3},
         {0, 2, 1, 3},
@@ -285,7 +285,7 @@ void ZHHBaseKinfitProcessor::assignPermutations(size_t njets, string fithypothes
         {1, 3, 0, 2},
         {2, 3, 0, 1}
       };
-    } else if (m_fithypothesis == "ZHH" || m_fithypothesis == "EQM") {
+    } else if (fithypothesis == "ZHH" || fithypothesis == "EQM") {
       perms = {
         {0, 1, 2, 3}, 
         {0, 2, 1, 3}, 
@@ -295,7 +295,7 @@ void ZHHBaseKinfitProcessor::assignPermutations(size_t njets, string fithypothes
       perms = {{0, 1, 2, 3}};
     }
   } else if (njets == 6) {
-    if (m_fithypothesis == "ZZH" || m_fithypothesis == "ZZHsoft" || m_fithypothesis == "MH" || m_fithypothesis == "ZHH" || m_fithypothesis == "EQM") {
+    if (fithypothesis == "ZZH" || fithypothesis == "ZZHsoft" || fithypothesis == "MH" || fithypothesis == "ZHH" || fithypothesis == "EQM") {
       //TO DO: redo permutations for each hypothesis
       perms = {
         {0, 1, 2, 3, 4, 5}, {1, 2, 0, 3, 4, 5}, {2, 4, 0, 1, 3, 5},

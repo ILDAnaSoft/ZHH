@@ -11,8 +11,8 @@ using namespace marlin;
 
 MergePIDProcessor aMergePIDProcessor;
 
-MergePIDProcessor::MergePIDProcessor()
-    : m_do_nothing(false), Processor("MergePIDProcessor"){
+MergePIDProcessor::MergePIDProcessor(): Processor("MergePIDProcessor"),
+m_do_nothing(false) {
 
     //processor description
     _description = "MergePIDProcessor takes in two collections (from, to; to subset of from) of ReconstructedParticle objects and copies PID parameters from the one to the other collection. ";

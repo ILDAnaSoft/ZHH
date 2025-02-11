@@ -6,16 +6,22 @@
 #include "EventObservablesBase.h"
 #include "marlin/Processor.h"
 
-class EventObservablesQQ : public Processor , public EventObservablesBase {
+class EventObservablesQQ : public EventObservablesBase {
 	public:
 		virtual Processor*  newProcessor() {
-			return new EventObservablesQQ;
+			return new EventObservablesQQ();
 		}
-		EventObservablesQQ() ;
+		EventObservablesQQ();
 		virtual ~EventObservablesQQ() = default;
 		EventObservablesQQ(const EventObservablesQQ&) = delete;
 		EventObservablesQQ& operator=(const EventObservablesQQ&) = delete;
+
+		// channel specific properties
+		void prepareChannelTree();
+		void clearChannelValues();
+		void updateChannelValues(EVENT::LCEvent *pLCEvent);
      
+	 	TTree *getTTree() { return m_pTTree; };
         TTree *m_pTTree = new TTree("EventObservablesQQ", "EventObservablesQQ");
 };
 

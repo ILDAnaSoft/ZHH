@@ -13,8 +13,8 @@
         In the job submission script, all channels are run
         -->
         <constant name="Runllbbbb" value="True" />
-        <constant name="Runvvbbbb" value="False" />
-        <constant name="Runqqbbbb" value="False" />
+        <constant name="Runvvbbbb" value="True" />
+        <constant name="Runqqbbbb" value="True" />
         <constant name="RunKinfit" value="True" />
         <constant name="RunTruthRecoComparison" value="False" />
 
@@ -57,32 +57,30 @@
         <if condition="${Runllbbbb}">
             <processor name="JC4FT_ll" />
 
-            <if condition="${RunKinfit}">
-                <processor name="MySLDCorrection_ll" />
+            <processor name="MySLDCorrection_ll" />
 
-                <processor name="MyErrorFlow_ll" />
+            <processor name="MyErrorFlow_ll" />
 
-                <if condition="MyHdecayMode.GoodEvent">
-                    <processor name="MyZHHKinFit_ll" />
-                    <!--
-                    <processor name="MyTrueJet"/>
-                    <processor name="MyMisclustering"/>
-                    -->
-                </if>
+            
+            <processor name="MyZHHKinFit_ll" />
+            <!--
+            <if condition="MyHdecayMode.GoodEvent">
+            <processor name="MyTrueJet"/>
+            <processor name="MyMisclustering"/>
             </if>
+            -->
 
-            <processor name="MyJetTaggingComparison" />
-            <processor name="MyPreSelection_ll" />
+            <processor name="MyEventObservablesLL" />
         </if>
 
         <if condition="${Runvvbbbb}">
             <processor name="JC4FT_vv" />
-            <processor name="MyPreSelection_vv" />
+            <processor name="MyEventObservablesVV" />
         </if>
 
         <if condition="${Runqqbbbb}">
             <processor name="JC6FT_qq" />
-            <processor name="MyPreSelection_qq" />
+            <processor name="MyEventObservablesQQ" />
         </if>
 
         <if condition="${RunTruthRecoComparison} && ${Runllbbbb}">
@@ -572,7 +570,7 @@
         <parameter name="FlavorTag.Z0ProbFileName" type="string" value="${ILDConfigDir}/LCFIPlusConfig/vtxprob/z0probv2_ildl5_6q500.root"/>
 
         <parameter name="FlavorTag.CategoryDefinition1" type="string">nvtx==0</parameter>
-        <parameter name="FlavorTag.CategoryPreselection1" type="string">trk1d0sig!=0</parameter>
+        <parameter name="FlavorTag.CategoryEventObservables1" type="string">trk1d0sig!=0</parameter>
         <parameter name="FlavorTag.CategoryVariables1" type="stringVec">
         trk1d0sig trk2d0sig trk1z0sig trk2z0sig trk1pt_jete trk2pt_jete jprobr25sigma jprobz25sigma
         d0bprob2 d0cprob2 d0qprob2 z0bprob2 z0cprob2 z0qprob2 nmuon nelectron trkmass
@@ -582,7 +580,7 @@
         </parameter>
 
         <parameter name="FlavorTag.CategoryDefinition2" type="string">nvtx==1&&nvtxall==1</parameter>
-        <parameter name="FlavorTag.CategoryPreselection2" type="string">trk1d0sig!=0</parameter>
+        <parameter name="FlavorTag.CategoryEventObservables2" type="string">trk1d0sig!=0</parameter>
         <parameter name="FlavorTag.CategoryVariables2" type="stringVec">
         trk1d0sig trk2d0sig trk1z0sig trk2z0sig trk1pt_jete trk2pt_jete jprobr2 jprobz2
         vtxlen1_jete vtxsig1_jete vtxdirang1_jete vtxmom1_jete vtxmass1 vtxmult1 vtxmasspc vtxprob
@@ -594,7 +592,7 @@
         </parameter>
 
         <parameter name="FlavorTag.CategoryDefinition3" type="string">nvtx==1&&nvtxall==2</parameter>
-        <parameter name="FlavorTag.CategoryPreselection3" type="string">trk1d0sig!=0</parameter>
+        <parameter name="FlavorTag.CategoryEventObservables3" type="string">trk1d0sig!=0</parameter>
         <parameter name="FlavorTag.CategoryVariables3" type="stringVec">
         trk1d0sig trk2d0sig trk1z0sig trk2z0sig trk1pt_jete trk2pt_jete jprobr2 jprobz2
         vtxlen1_jete vtxsig1_jete vtxdirang1_jete vtxmom1_jete vtxmass1 vtxmult1 vtxmasspc vtxprob
@@ -605,7 +603,7 @@
         </parameter>
 
         <parameter name="FlavorTag.CategoryDefinition4" type="string">nvtx>=2</parameter>
-        <parameter name="FlavorTag.CategoryPreselection4" type="string">trk1d0sig!=0</parameter>
+        <parameter name="FlavorTag.CategoryEventObservables4" type="string">trk1d0sig!=0</parameter>
         <parameter name="FlavorTag.CategoryVariables4" type="stringVec">
         trk1d0sig trk2d0sig trk1z0sig trk2z0sig trk1pt_jete trk2pt_jete jprobr2 jprobz2
         vtxlen1_jete vtxsig1_jete vtxdirang1_jete vtxmom1_jete vtxmass1 vtxmult1 vtxmasspc vtxprob
@@ -695,7 +693,7 @@
         <parameter name="FlavorTag.Z0ProbFileName" type="string" value="${ILDConfigDir}/LCFIPlusConfig/vtxprob/z0probv2_ildl5_6q500.root"/>
 
         <parameter name="FlavorTag.CategoryDefinition1" type="string">nvtx==0</parameter>
-        <parameter name="FlavorTag.CategoryPreselection1" type="string">trk1d0sig!=0</parameter>
+        <parameter name="FlavorTag.CategoryEventObservables1" type="string">trk1d0sig!=0</parameter>
         <parameter name="FlavorTag.CategoryVariables1" type="stringVec">
         trk1d0sig trk2d0sig trk1z0sig trk2z0sig trk1pt_jete trk2pt_jete jprobr25sigma jprobz25sigma
         d0bprob2 d0cprob2 d0qprob2 z0bprob2 z0cprob2 z0qprob2 nmuon nelectron trkmass
@@ -705,7 +703,7 @@
         </parameter>
 
         <parameter name="FlavorTag.CategoryDefinition2" type="string">nvtx==1&&nvtxall==1</parameter>
-        <parameter name="FlavorTag.CategoryPreselection2" type="string">trk1d0sig!=0</parameter>
+        <parameter name="FlavorTag.CategoryEventObservables2" type="string">trk1d0sig!=0</parameter>
         <parameter name="FlavorTag.CategoryVariables2" type="stringVec">
         trk1d0sig trk2d0sig trk1z0sig trk2z0sig trk1pt_jete trk2pt_jete jprobr2 jprobz2
         vtxlen1_jete vtxsig1_jete vtxdirang1_jete vtxmom1_jete vtxmass1 vtxmult1 vtxmasspc vtxprob
@@ -717,7 +715,7 @@
         </parameter>
 
         <parameter name="FlavorTag.CategoryDefinition3" type="string">nvtx==1&&nvtxall==2</parameter>
-        <parameter name="FlavorTag.CategoryPreselection3" type="string">trk1d0sig!=0</parameter>
+        <parameter name="FlavorTag.CategoryEventObservables3" type="string">trk1d0sig!=0</parameter>
         <parameter name="FlavorTag.CategoryVariables3" type="stringVec">
         trk1d0sig trk2d0sig trk1z0sig trk2z0sig trk1pt_jete trk2pt_jete jprobr2 jprobz2
         vtxlen1_jete vtxsig1_jete vtxdirang1_jete vtxmom1_jete vtxmass1 vtxmult1 vtxmasspc vtxprob
@@ -728,7 +726,7 @@
         </parameter>
 
         <parameter name="FlavorTag.CategoryDefinition4" type="string">nvtx>=2</parameter>
-        <parameter name="FlavorTag.CategoryPreselection4" type="string">trk1d0sig!=0</parameter>
+        <parameter name="FlavorTag.CategoryEventObservables4" type="string">trk1d0sig!=0</parameter>
         <parameter name="FlavorTag.CategoryVariables4" type="stringVec">
         trk1d0sig trk2d0sig trk1z0sig trk2z0sig trk1pt_jete trk2pt_jete jprobr2 jprobz2
         vtxlen1_jete vtxsig1_jete vtxdirang1_jete vtxmom1_jete vtxmass1 vtxmult1 vtxmasspc vtxprob
@@ -818,7 +816,7 @@
         <parameter name="FlavorTag.Z0ProbFileName" type="string" value="${ILDConfigDir}/LCFIPlusConfig/vtxprob/z0probv2_ildl5_6q500.root"/>
 
         <parameter name="FlavorTag.CategoryDefinition1" type="string">nvtx==0</parameter>
-        <parameter name="FlavorTag.CategoryPreselection1" type="string">trk1d0sig!=0</parameter>
+        <parameter name="FlavorTag.CategoryEventObservables1" type="string">trk1d0sig!=0</parameter>
         <parameter name="FlavorTag.CategoryVariables1" type="stringVec">
         trk1d0sig trk2d0sig trk1z0sig trk2z0sig trk1pt_jete trk2pt_jete jprobr25sigma jprobz25sigma
         d0bprob2 d0cprob2 d0qprob2 z0bprob2 z0cprob2 z0qprob2 nmuon nelectron trkmass
@@ -828,7 +826,7 @@
         </parameter>
 
         <parameter name="FlavorTag.CategoryDefinition2" type="string">nvtx==1&&nvtxall==1</parameter>
-        <parameter name="FlavorTag.CategoryPreselection2" type="string">trk1d0sig!=0</parameter>
+        <parameter name="FlavorTag.CategoryEventObservables2" type="string">trk1d0sig!=0</parameter>
         <parameter name="FlavorTag.CategoryVariables2" type="stringVec">
         trk1d0sig trk2d0sig trk1z0sig trk2z0sig trk1pt_jete trk2pt_jete jprobr2 jprobz2
         vtxlen1_jete vtxsig1_jete vtxdirang1_jete vtxmom1_jete vtxmass1 vtxmult1 vtxmasspc vtxprob
@@ -840,7 +838,7 @@
         </parameter>
 
         <parameter name="FlavorTag.CategoryDefinition3" type="string">nvtx==1&&nvtxall==2</parameter>
-        <parameter name="FlavorTag.CategoryPreselection3" type="string">trk1d0sig!=0</parameter>
+        <parameter name="FlavorTag.CategoryEventObservables3" type="string">trk1d0sig!=0</parameter>
         <parameter name="FlavorTag.CategoryVariables3" type="stringVec">
         trk1d0sig trk2d0sig trk1z0sig trk2z0sig trk1pt_jete trk2pt_jete jprobr2 jprobz2
         vtxlen1_jete vtxsig1_jete vtxdirang1_jete vtxmom1_jete vtxmass1 vtxmult1 vtxmasspc vtxprob
@@ -851,7 +849,7 @@
         </parameter>
 
         <parameter name="FlavorTag.CategoryDefinition4" type="string">nvtx>=2</parameter>
-        <parameter name="FlavorTag.CategoryPreselection4" type="string">trk1d0sig!=0</parameter>
+        <parameter name="FlavorTag.CategoryEventObservables4" type="string">trk1d0sig!=0</parameter>
         <parameter name="FlavorTag.CategoryVariables4" type="stringVec">
         trk1d0sig trk2d0sig trk1z0sig trk2z0sig trk1pt_jete trk2pt_jete jprobr2 jprobz2
         vtxlen1_jete vtxsig1_jete vtxdirang1_jete vtxmom1_jete vtxmass1 vtxmult1 vtxmasspc vtxprob
@@ -864,66 +862,57 @@
         </parameter>
     </processor>
 
-    <processor name="MyPreSelection_ll" type="PreSelection">
-        <!--MyPreSelection identified events that have passed the preselection-->
+    <processor name="MyEventObservablesLL" type="EventObservablesLL">
+        <!--MyEventObservables identified events that have passed the EventObservables-->
         <!--Name of the input collections-->
         <parameter name="isolatedleptonCollection" type="string" lcioInType="ReconstructedParticle">ISOLeptons</parameter>
         <parameter name="LepPairCollection" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
-        <parameter name="HiggsCollection" type="string" lcioOutType="ReconstructedParticle">HiggsPair</parameter>
-        <parameter name="PreSelectionCollection" type="string" lcioOutType="ReconstructedParticle">PreSelectionHHll</parameter>
-        <parameter name="isPassed" type="string" lcioOutType="ReconstructedParticle">isPassedHHll</parameter>
         <parameter name="JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets_ll</parameter>
         <parameter name="inputPfoCollection" type="string" lcioInType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
         <parameter name="PIDAlgorithmBTag" type="string">lcfiplus</parameter>
         <parameter name="cutDefinitionsJSONFile" type="string">${ZHH_REPO_ROOT}/config/preselection_cuts_cd.json</parameter>
 
-        <!--Parameters for preselection -->
-        <!--predefined preselection available for llbbbb, vvbbbb, and qqbbbb-->
-        <parameter name="whichPreselection"> llbbbb </parameter>
+        <!--Parameters for EventObservables -->
+        <!--predefined EventObservables available for llbbbb, vvbbbb, and qqbbbb-->
+        <parameter name="whichEventObservables"> llbbbb </parameter>
         <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
 
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
         <parameter name="Verbosity" type="string">MESSAGE</parameter>
     </processor>
 
-    <processor name="MyPreSelection_vv" type="PreSelection">
-        <!--MyPreSelection identified events that have passed the preselection-->
+    <processor name="MyEventObservablesVV" type="EventObservablesVV">
+        <!--MyEventObservables identified events that have passed the EventObservables-->
         <!--Name of the input collections-->
         <parameter name="isolatedleptonCollection" type="string" lcioInType="ReconstructedParticle">ISOLeptons</parameter>
         <parameter name="LepPairCollection" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
-        <parameter name="HiggsCollection" type="string" lcioOutType="ReconstructedParticle">HiggsPair</parameter>
-        <parameter name="PreSelectionCollection" type="string" lcioOutType="ReconstructedParticle">PreSelectionHHvv</parameter>
-        <parameter name="isPassed" type="string" lcioOutType="ReconstructedParticle">isPassedHHvv</parameter>
         <parameter name="JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets_vv</parameter>
         <parameter name="inputPfoCollection" type="string" lcioInType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
         <parameter name="PIDAlgorithmBTag" type="string">lcfiplus</parameter>
         <parameter name="cutDefinitionsJSONFile" type="string">${ZHH_REPO_ROOT}/config/preselection_cuts_cd.json</parameter>
 
-        <!--Parameters for preselection -->
-        <!--predefined preselection available for llbbbb, vvbbbb, and qqbbbb-->
-        <parameter name="whichPreselection"> vvbbbb </parameter>
+        <!--Parameters for EventObservables -->
+        <!--predefined EventObservables available for llbbbb, vvbbbb, and qqbbbb-->
+        <parameter name="whichEventObservables"> vvbbbb </parameter>
         <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
 
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
         <parameter name="Verbosity" type="string">MESSAGE</parameter>
     </processor>
 
-    <processor name="MyPreSelection_qq" type="PreSelection">
-        <!--MyPreSelection identified events that have passed the preselection-->
+    <processor name="MyEventObservablesQQ" type="EventObservablesQQ">
+        <!--MyEventObservables identified events that have passed the EventObservables-->
         <!--Name of the input collections-->
         <parameter name="isolatedleptonCollection" type="string" lcioInType="ReconstructedParticle">ISOLeptons</parameter>
         <parameter name="LepPairCollection" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
-        <parameter name="HiggsCollection" type="string" lcioOutType="ReconstructedParticle">HiggsPair</parameter>
-        <parameter name="PreSelectionCollection" type="string" lcioOutType="ReconstructedParticle">PreSelectionHHqq</parameter>
-        <parameter name="isPassed" type="string" lcioOutType="ReconstructedParticle">isPassedHHqq</parameter>
         <parameter name="JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets_qq</parameter>
         <parameter name="inputPfoCollection" type="string" lcioInType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
         <parameter name="PIDAlgorithmBTag" type="string">lcfiplus</parameter>
         <parameter name="cutDefinitionsJSONFile" type="string">${ZHH_REPO_ROOT}/config/preselection_cuts_cd.json</parameter>
         
-        <!--Parameters for preselection -->
-        <!--predefined preselection available for llbbbb, vvbbbb, and qqbbbb-->
-        <parameter name="whichPreselection"> qqbbbb </parameter>
+        <!--Parameters for EventObservables -->
+        <!--predefined EventObservables available for llbbbb, vvbbbb, and qqbbbb-->
+        <parameter name="whichEventObservables"> qqbbbb </parameter>
         <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
 
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
@@ -951,7 +940,7 @@
     </processor>
     
     <processor name="MyFinalStateRecorder" type="FinalStateRecorder">
-        <!--MyFinalStateRecorder identified events that have passed the preselection-->
+        <!--MyFinalStateRecorder identified events that have passed the EventObservables-->
         <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
         <parameter name="outputRootFilename" type="string">None</parameter>
         <parameter name="outputJsonFilename" type="string">${OutputDirectory}/${OutputBaseName}_FinalStateMeta.json</parameter>
@@ -960,17 +949,8 @@
         <parameter name="Verbosity" type="string">DEBUG</parameter>
     </processor>
 
-    <processor name="MyJetTaggingComparison" type="JetTaggingComparison">
-        <parameter name="Collection" type="string" lcioInType="ReconstructedParticle"> RefinedJets_ll </parameter>
-        <parameter name="PIDAlgorithm1" type="string"> lcfiplus </parameter>
-        <parameter name="PIDParameters1" type="StringVev"> BTag CTag OTag </parameter>
-
-        <parameter name="RootFile" type="string"></parameter>
-        <parameter name="Verbosity" type="string"> DEBUG </parameter>
-    </processor>
-
     <processor name="MyTruthRecoComparison" type="TruthRecoComparison">
-        <!--MyFinalStateRecorder identified events that have passed the preselection-->
+        <!--MyFinalStateRecorder identified events that have passed the EventObservables-->
         <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
         <parameter name="inputJetCollection" type="string" lcioInType="ReconstructedParticle">RefinedJets_ll</parameter>
         <parameter name="inputPfoCollection" type="string" lcioInType="ReconstructedParticle">PFOsWithoutOverlay</parameter>
@@ -992,7 +972,7 @@
         <!-- write complete objects in subset collections to the file (i.e. ignore subset flag)-->
         <!--parameter name="FullSubsetCollections" type="StringVec">${MCParticleCollectionName}</parameter-->
         <!--force keep of the named collections - overrules DropCollectionTypes (and DropCollectionNames)-->
-        <parameter name="KeepCollectionNames" type="StringVec"> recoNeutrinos SemiLeptonicDecay_RP SemiLeptonicDecayVertex PandoraClusters MarlinTrkTracks MarlinTrkTracksKaon MarlinTrkTracksProton JetSLDLink SLDJetLink mcNurecoNuLink recoNumcNuLink NuSLDLink SLDNuLink PandoraPFOs PFOsWithoutOverlay IsolatedLeptons ISOLeptons PandoraPFOsWithoutLepPair PandoraPFOsWithoutIsoLep RefinedJets_ll RefinedJets_qq RefinedJets_vv PreSelectionHHll PreSelectionHHqq PreSelectionHHvv TrueJets FinalColourNeutrals InitialColourNeutrals TrueJetPFOLink TrueJetMCParticleLink FinalElementonLink InitialElementonLink FinalColourNeutralLink InitialColourNeutralLink HdecayMode </parameter>
+        <parameter name="KeepCollectionNames" type="StringVec"> recoNeutrinos SemiLeptonicDecay_RP SemiLeptonicDecayVertex PandoraClusters MarlinTrkTracks MarlinTrkTracksKaon MarlinTrkTracksProton JetSLDLink SLDJetLink mcNurecoNuLink recoNumcNuLink NuSLDLink SLDNuLink PandoraPFOs PFOsWithoutOverlay IsolatedLeptons ISOLeptons PandoraPFOsWithoutLepPair PandoraPFOsWithoutIsoLep RefinedJets_ll RefinedJets_qq RefinedJets_vv EventObservablesHHll EventObservablesHHqq EventObservablesHHvv TrueJets FinalColourNeutrals InitialColourNeutrals TrueJetPFOLink TrueJetMCParticleLink FinalElementonLink InitialElementonLink FinalColourNeutralLink InitialColourNeutralLink HdecayMode </parameter>
         <!-- name of output file -->
         <parameter name="LCIOOutputFile" type="string">${OutputDirectory}/${OutputBaseName}.slcio</parameter>
         <!--write mode for output file:  WRITE_APPEND or WRITE_NEW-->

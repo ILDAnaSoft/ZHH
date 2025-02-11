@@ -17,6 +17,7 @@ class MergePIDProcessor : public Processor{
     public:
         virtual Processor* newProcessor() { return new MergePIDProcessor; }
         MergePIDProcessor();
+        
         virtual void init();
         virtual void processRunHeader( LCRunHeader* run );
         virtual void processEvent( LCEvent* evt );

@@ -29,18 +29,32 @@ using namespace lcme ;
 // NONE is for initialization only and should not occur in practice
 // TODO: implement, using EventCategory
 
-class EventObservablesBase
+class EventObservablesBase: public Processor
 {
 	public:
-		EventObservablesBase();
+		EventObservablesBase(const std::string& name);
 		virtual ~EventObservablesBase() = default;
 		EventObservablesBase(const EventObservablesBase&) = delete;
 		EventObservablesBase& operator=(const EventObservablesBase&) = delete;
+
+		virtual void init();
+        virtual void processRunHeader( LCRunHeader* run );
+        virtual void processEvent( LCEvent* evt );
+        virtual void check( LCEvent* evt );
+        virtual void end();
 		
 	protected:
+		// common properties for all channels
 		void prepareBaseTree();
-		void baseClear();
-		void updateValues(EVENT::LCEvent *pLCEvent);
+		void clearBaseValues();
+		void updateBaseValues(EVENT::LCEvent *pLCEvent);
+
+		// channel specific properties; must be implemented by inheriting classes
+		virtual void prepareChannelTree() = 0;
+		virtual void clearChannelValues() = 0;
+		virtual void updateChannelValues(EVENT::LCEvent *pLCEvent) = 0;
+		virtual TTree* getTTree() = 0;
+
 		std::vector<int> pairJetsByMass(std::vector<EVENT::ReconstructedParticle*> jets, IMPL::LCCollectionVec* higgsCandidates);
 
 		// names of input collections
@@ -48,18 +62,14 @@ class EventObservablesBase
 		std::string m_inputLepPairCollection{};
 		std::string m_inputJetCollection{};
 		std::string m_inputPfoCollection{};
-		std::string m_EventObservablesBaseCollection{};
-		std::string m_HiggsCollection{};
 		std::string m_outputFile{};
 		std::string m_whichPreselection{};
-		std::string m_isPassedCollection{};
 		std::string m_cutDefinitionsJSONFile{};
 		std::string m_PIDAlgorithmBTag{};
 		bool m_write_ttree{};
 
 		// outputs
 		TFile *m_pTFile{};
-		TTree *m_pTTree{};
 
 		// PreSelection cut values and inputs
 		int m_nAskedJets{};
