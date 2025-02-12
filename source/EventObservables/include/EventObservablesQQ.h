@@ -23,6 +23,18 @@ class EventObservablesQQ : public EventObservablesBase {
      
 	 	TTree *getTTree() { return m_pTTree; };
         TTree *m_pTTree = new TTree("EventObservablesQQ", "EventObservablesQQ");
+
+		int m_nAskedJets() { return 6; };
+		int m_nAskedIsoLeps() { return 0; };
+		
+		std::string m_jetMatchingParameter() { return m_JMP; };
+		std::string m_jetMatchingSourceParameter() { return m_JMSP; };
+
+	protected:
+		std::string m_JMP{};
+		std::string m_JMSP{};
+
+
 };
 
 

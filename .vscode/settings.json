@@ -83,7 +83,8 @@
         "shared_mutex": "cpp",
         "regex": "cpp",
         "charconv": "cpp",
-        "*.icc": "cpp"
+        "*.icc": "cpp",
+        "future": "cpp"
     },
     "cmake.cmakePath": "/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-almalinux9-gcc11.3.1-opt/cmake/3.27.9-4qfmfr/bin/cmake",
     "cmake.preferredGenerators": [

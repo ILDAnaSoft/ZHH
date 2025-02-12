@@ -322,7 +322,9 @@ void ZHHBaseKinfitProcessor::assignPermutations(size_t njets, string fithypothes
 };
 
 
-void ZHHBaseKinfitProcessor::attachBestPermutation(LCCollection *jets, vector<unsigned int> bestperm, string parameterSuffix) {
+void ZHHBaseKinfitProcessor::attachBestPermutation(LCCollection *jets, vector<unsigned int> bestperm, string parameterSuffix, bool fromKinfit) {
   const EVENT::IntVec intvec(bestperm.begin(), bestperm.end());
+
   jets->parameters().setValues(std::string("best_perm_").append(parameterSuffix), intvec);
+  jets->parameters().setValue(std::string("best_perm_").append(parameterSuffix).append("_from_kinfit"), fromKinfit ? 2 : 1);
 };

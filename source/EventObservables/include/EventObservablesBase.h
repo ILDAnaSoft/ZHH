@@ -3,6 +3,7 @@
 
 #include "nlohmann/json.hpp"
 #include "marlin/Processor.h"
+#include "marlin/VerbosityLevels.h"
 #include "IMPL/LCCollectionVec.h"
 #include "EVENT/ReconstructedParticle.h"
 #include "lcio.h"
@@ -54,8 +55,10 @@ class EventObservablesBase: public Processor
 		virtual void clearChannelValues() = 0;
 		virtual void updateChannelValues(EVENT::LCEvent *pLCEvent) = 0;
 		virtual TTree* getTTree() = 0;
-
-		std::vector<int> pairJetsByMass(std::vector<EVENT::ReconstructedParticle*> jets, IMPL::LCCollectionVec* higgsCandidates);
+		virtual int m_nAskedJets() = 0;
+		virtual int m_nAskedIsoLeps() = 0;
+		virtual std::string m_jetMatchingParameter() = 0; // e.g. best_perm_ll
+		virtual std::string m_jetMatchingSourceParameter() = 0; // e.g. best_perm_ll_from_kinfit ; 1 for "from mass chi2", 2 for "from kinfit"
 
 		// names of input collections
 		std::string m_inputIsolatedleptonCollection{};
@@ -65,15 +68,15 @@ class EventObservablesBase: public Processor
 		std::string m_outputFile{};
 		std::string m_whichPreselection{};
 		std::string m_cutDefinitionsJSONFile{};
-		std::string m_PIDAlgorithmBTag{};
+		std::string m_JetTaggingPIDAlgorithm{};
+		std::string m_JetTaggingPIDParameterB{};
+		std::string m_JetTaggingPIDParameterC{};
 		bool m_write_ttree{};
 
 		// outputs
 		TFile *m_pTFile{};
 
 		// PreSelection cut values and inputs
-		int m_nAskedJets{};
-        int m_nAskedIsoLeps{};
 		float m_maxdileptonmassdiff{};
 		float m_maxdijetmassdiff{};
 		float m_mindijetmass{};
@@ -95,7 +98,9 @@ class EventObservablesBase: public Processor
 
 		float m_todo{};
 
-		int m_ndijets{};
+		float m_missingPT{};
+		float m_missingE{};
+		float m_thrust{};
 
 		float m_Evis{};
 		float m_missingMass{};
@@ -124,37 +129,59 @@ class EventObservablesBase: public Processor
 		float m_cmax3{};
 		float m_cmax4{};
 
+		// jet momenta and energies
+		float m_px11{};
+		float m_py11{};
+		float m_pz11{};
+		float m_e11{};
+
+		float m_px12{};
+		float m_py12{};
+		float m_pz12{};
+		float m_e12{};
+
+		float m_px21{};
+		float m_py21{};
+		float m_pz21{};
+		float m_e21{};
+
+		float m_px22{};
+		float m_py22{};
+		float m_pz22{};
+		float m_e22{};
+
+		// jet matching
+		std::vector<int> m_jet_matching{};
+		int m_jet_matching_source{}; // 1 for "from mass chi2", 2 for "from kinfit"
 
 
 		int m_nIsoLeps{};
-		std::vector<int> m_lepTypes{};
-		int m_lepTypesPaired{};
-		float m_missingPT{};
+		std::vector<int> m_lep_types{};
 		
-		float m_missingE{};
-		
-		float m_thrust{};
+
+		/*  old variables for preselection (to be done in post)
+		most are now calculated by the Kinfit processors
 		float m_dileptonMassPrePairing{};
 		float m_dileptonMass{};
 		float m_dileptonMassDiff{};
 		float m_chi2min{};
+		int m_ndijets{};
 		
-		int m_isPassed{};
-
-		// Event values for improving/investigating preselection efficiency
 		std::vector<int> m_dijetPairing{};
 		std::vector<float> m_dijetMass{};
 		std::vector<float> m_dijetMassDiff{};
-		std::vector<double> m_bTagValues{};
-		std::vector<double> m_cTagValues{};
-		
 		float m_dihiggsMass{};
-		std::vector<int>  m_preselsPassedVec{};
 
+		std::vector<int>  m_preselsPassedVec{};
 		size_t m_preselsPassedAll{};
 		int m_preselsPassedConsec{};
 		int m_nbjets{};
-		std::vector<float> m_blikelihoodness{};
+		int m_isPassed{};
+		*/
+
+		std::vector<double> m_bTagValues{};
+		std::vector<double> m_cTagValues{};
+		std::string m_jetMatchingParamName{};
 
 };
 

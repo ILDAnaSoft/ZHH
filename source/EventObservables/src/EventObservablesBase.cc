@@ -24,9 +24,7 @@ EventObservablesBase::EventObservablesBase(const std::string &name) : Processor(
   m_pTFile(NULL),
   m_nRun(0),
   m_nEvt(0),
-  m_errorCode(0),
-  m_bTagValues(m_nJets, -1.),
-  m_cTagValues(m_nJets, -1.)
+  m_errorCode(0)
 {
 	registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
             "isolatedleptonCollection" ,
@@ -68,101 +66,101 @@ EventObservablesBase::EventObservablesBase(const std::string &name) : Processor(
             std::string("")
             );
 
-	registerProcessorParameter("PIDAlgorithmBTag",
+	registerProcessorParameter("JetTaggingPIDAlgorithm",
             "Number of jet should be in the event",
-            m_PIDAlgorithmBTag,
+            m_JetTaggingPIDAlgorithm,
             std::string("lcfiplus")
             );
 
-	registerProcessorParameter("nJets",
+	registerProcessorParameter("JetTaggingPIDParameterB",
             "Number of jet should be in the event",
-            m_nAskedJets,
-            int(4)
+            m_JetTaggingPIDParameterB,
+            std::string("BTag")
             );
 
-	registerProcessorParameter("nIsoLeps",
-            "Number of Isolated Leptons should be in the event",
-            m_nAskedIsoLeps,
-            int(2)
+	registerProcessorParameter("JetTaggingPIDParameterC",
+            "Number of jet should be in the event",
+            m_JetTaggingPIDParameterC,
+            std::string("CTag")
             );
   	
 	registerProcessorParameter("maxdileptonmassdiff",
-                "maximum on dilepton mass difference",
-                m_maxdileptonmassdiff,
-                float(999.)
-                );
+			"maximum on dilepton mass difference",
+			m_maxdileptonmassdiff,
+			float(999.)
+			);
 
 	registerProcessorParameter("maxdijetmassdiff",
-                "maximum on dijet mass difference (m_jj-125 GeV)",
-                m_maxdijetmassdiff,
-                float(999.)
-                );
+			"maximum on dijet mass difference (m_jj-125 GeV)",
+			m_maxdijetmassdiff,
+			float(999.)
+			);
 
 	registerProcessorParameter("mindijetmass",
-                "minimum on dijet mass",
-                m_mindijetmass,
-                float(0.)
-                );
+			"minimum on dijet mass",
+			m_mindijetmass,
+			float(0.)
+			);
 
 	registerProcessorParameter("maxdijetmass",
-                "maximum on dijet mass",
-                m_maxdijetmass,
-                float(999.)
-                );
+			"maximum on dijet mass",
+			m_maxdijetmass,
+			float(999.)
+			);
 
 	registerProcessorParameter("minmissingPT",
-                "minimum on missing PT",
-                m_minmissingPT,
-                float(0.)
-                );
+			"minimum on missing PT",
+			m_minmissingPT,
+			float(0.)
+			);
 
 	registerProcessorParameter("maxmissingPT",
-                "maximum on missing PT",
-                m_maxmissingPT,
-                float(999.)
-                );
+			"maximum on missing PT",
+			m_maxmissingPT,
+			float(999.)
+			);
 
 	registerProcessorParameter("maxthrust",
-                "maximum on thrust",
-                m_maxthrust,
-                float(999.)
-                );
+			"maximum on thrust",
+			m_maxthrust,
+			float(999.)
+			);
 
 	registerProcessorParameter("minblikeliness",
-                "minimum on blikeliness",
-                m_minblikeliness,
-                float(0.)
-                );
+			"minimum on blikeliness",
+			m_minblikeliness,
+			float(0.)
+			);
 
 	registerProcessorParameter("minnbjets",
-                "minimum number of bjets that fulfill blikeliness criteria",
-                m_minnbjets,
-                int(0)
-                );
+			"minimum number of bjets that fulfill blikeliness criteria",
+			m_minnbjets,
+			int(0)
+			);
 
 	registerProcessorParameter("maxEvis",
-                "maximum on visible energy",
-                m_maxEvis,
-                float(999.)
-                );
+			"maximum on visible energy",
+			m_maxEvis,
+			float(999.)
+			);
 
 	registerProcessorParameter("minHHmass",
-                "minimum on higgs pairs mass",
-                m_minHHmass,
-                float(0.)
-                );
+			"minimum on higgs pairs mass",
+			m_minHHmass,
+			float(0.)
+			);
 	
 	registerProcessorParameter("ECM" ,
-                "Center-of-Mass Energy in GeV",
-                m_ECM,
-                float(500.f)
-                );
+			"Center-of-Mass Energy in GeV",
+			m_ECM,
+			float(500.f)
+			);
 
   	registerProcessorParameter("outputFilename",
-				"name of output root file",
-				m_outputFile,
-				std::string("")
-				);
+			"name of output root file",
+			m_outputFile,
+			std::string("")
+			);
 };
 
 void EventObservablesBase::prepareBaseTree()
@@ -195,25 +193,13 @@ void EventObservablesBase::prepareBaseTree()
 		ttree->Branch("yplus", &m_yplus, "yplus/F");
 
 		// nhbb:njet:chi2:mpt:prob11:prob12:prob21:prob22
-		ttree->Branch("nJets",&m_nJets,"nJets/I");
-		ttree->Branch("nIsoLeptons",&m_nIsoLeps,"nIsoLeptons/I");
-		ttree->Branch("lepTypes", &m_lepTypes);
-		ttree->Branch("lepTypesPaired", &m_lepTypesPaired, "lepTypesPaired/I");
-		ttree->Branch("missingPT", &m_missingPT, "missingPT/F");
-		
-		ttree->Branch("missingEnergy", &m_missingE, "missingEnergy/F");
-		
+		ttree->Branch("n_jets",&m_nJets,"n_jets/I");
+		ttree->Branch("n_iso_leptons",&m_nIsoLeps,"n_iso_leptons/I");
+		ttree->Branch("lep_types", &m_lep_types);
+		ttree->Branch("pt_miss", &m_missingPT, "pt_miss/F");
+		ttree->Branch("e_miss", &m_missingE, "e_miss/F");
 		ttree->Branch("thrust", &m_thrust, "thrust/F");
-		ttree->Branch("dileptonMassPrePairing", &m_dileptonMassPrePairing, "dileptonMassPrePairing/F");
-		ttree->Branch("dileptonMass", &m_dileptonMass, "dileptonMass/F");
-		ttree->Branch("dileptonMassDiff", &m_dileptonMassDiff, "dileptonMassDiff/F");
-		ttree->Branch("dijetChi2min", &m_chi2min, "dijetChi2min/F");
-		ttree->Branch("dijetPairing", &m_dijetPairing);
-		ttree->Branch("dijetMass", &m_dijetMass);
-		ttree->Branch("dijetMassDiff", &m_dijetMassDiff);
 		ttree->Branch("bTags", &m_bTagValues);
-		ttree->Branch("dihiggsMass", &m_dihiggsMass, "dihiggsMass/F");
-		ttree->Branch("nbjets", &m_nbjets, "nbjets/I");
 
 		// bmax1:bmax2:bmax3:bmax4:pj1jets2:pj2jets2
 		ttree->Branch("bmax1", &m_bmax1, "bmax1/F");
@@ -226,13 +212,52 @@ void EventObservablesBase::prepareBaseTree()
 		ttree->Branch("cmax3", &m_cmax3, "cmax3/F");
 		ttree->Branch("cmax4", &m_cmax4, "cmax4/F");
 
+		// pxij:pyij:pzij:eij for all dijets i=(1,2) and associated jets (1,2)
+		// that all hypotheses have in common
+		ttree->Branch("px11", &m_px11, "px11/F");
+		ttree->Branch("py11", &m_py11, "py11/F");
+		ttree->Branch("pz11", &m_pz11, "pz11/F");
+		ttree->Branch("e11", &m_e11, "e11/F");
+
+		ttree->Branch("px12", &m_px12, "px12/F");
+		ttree->Branch("py12", &m_py12, "py12/F");
+		ttree->Branch("pz12", &m_pz12, "pz12/F");
+		ttree->Branch("e12", &m_e12, "e12/F");
+
+		ttree->Branch("px21", &m_px21, "px21/F");
+		ttree->Branch("py21", &m_py21, "py21/F");
+		ttree->Branch("pz21", &m_pz21, "pz21/F");
+		ttree->Branch("e21", &m_e21, "e21/F");
+
+		ttree->Branch("px22", &m_px22, "px22/F");
+		ttree->Branch("py22", &m_py22, "py22/F");
+		ttree->Branch("pz22", &m_pz22, "pz22/F");
+		ttree->Branch("e22", &m_e22, "e22/F");
+
+		// jet matching
+		ttree->Branch("jet_matching", &m_jet_matching);
+		ttree->Branch("jet_matching_source", &m_jet_matching_source, "jet_matching_source/I");
+
+		/* old variables for pre selection
+		ttree->Branch("dileptonMassPrePairing", &m_dileptonMassPrePairing, "dileptonMassPrePairing/F");
+		ttree->Branch("dileptonMass", &m_dileptonMass, "dileptonMass/F");
+		ttree->Branch("dileptonMassDiff", &m_dileptonMassDiff, "dileptonMassDiff/F");
+		ttree->Branch("dijetChi2min", &m_chi2min, "dijetChi2min/F");
+		ttree->Branch("dijetPairing", &m_dijetPairing);
+		ttree->Branch("dijetMass", &m_dijetMass);
+		ttree->Branch("dijetMassDiff", &m_dijetMassDiff);
+		ttree->Branch("dihiggsMass", &m_dihiggsMass, "dihiggsMass/F");
+		ttree->Branch("nbjets", &m_nbjets, "nbjets/I");
 		ttree->Branch("preselsPassedVec", &m_preselsPassedVec);
 		ttree->Branch("preselsPassedAll", &m_preselsPassedAll);
 		ttree->Branch("preselsPassedConsec", &m_preselsPassedConsec);
 		ttree->Branch("preselPassed", &m_isPassed);
+		*/
 	}
 
 	streamlog_out(DEBUG) << "   init finished  " << std::endl;
+
+	// m_nAskedJets() must be implemented by the processor
 
 	if (m_cutDefinitionsJSONFile.length() > 0) {
 		streamlog_out(DEBUG) << "Reading preselection cuts from file " << m_cutDefinitionsJSONFile << std::endl;
@@ -242,8 +267,6 @@ void EventObservablesBase::prepareBaseTree()
 		
 		std::string preselection_key = m_whichPreselection.substr(0, 2);
 
-		m_nAskedJets = cuts[preselection_key]["nAskedJets"];
-		m_nAskedIsoLeps = cuts[preselection_key]["nAskedIsoLeps"];
 		m_maxdileptonmassdiff = cuts[preselection_key]["maxDileptonMassDiff"];
 		m_maxdijetmassdiff = cuts[preselection_key]["maxDijetMassDiff"];
 		m_mindijetmass = cuts[preselection_key]["dijetMass"][0];
@@ -257,8 +280,6 @@ void EventObservablesBase::prepareBaseTree()
 		m_minHHmass = cuts[preselection_key]["minHHmass"];
 	} else {
 		if (m_whichPreselection == "llbbbb") {
-			m_nAskedJets = 4;
-			m_nAskedIsoLeps = 2;
 			m_maxdileptonmassdiff = 40.;
 			m_maxdijetmassdiff = 80.;
 			m_mindijetmass = 60.;
@@ -271,8 +292,6 @@ void EventObservablesBase::prepareBaseTree()
 			m_maxEvis = 999.;
 			m_minHHmass = 0.;
 		} else if (m_whichPreselection == "vvbbbb") {
-			m_nAskedJets = 4;
-			m_nAskedIsoLeps = 0;
 			m_maxdileptonmassdiff = 999.;
 			m_maxdijetmassdiff = 80.;
 			m_mindijetmass = 60.;
@@ -285,8 +304,6 @@ void EventObservablesBase::prepareBaseTree()
 			m_maxEvis= 400.;
 			m_minHHmass = 220.;
 		} else if (m_whichPreselection == "qqbbbb") {
-			m_nAskedJets = 6;
-			m_nAskedIsoLeps = 0;
 			m_maxdileptonmassdiff = 999.;
 			m_maxdijetmassdiff = 999.;
 			m_mindijetmass = 60.;
@@ -310,29 +327,33 @@ void EventObservablesBase::clearBaseValues()
 
 	m_nJets = 0;
 	m_nIsoLeps = 0;
-	m_lepTypes.clear();
-	m_lepTypesPaired = 0;
+	m_lep_types.clear();
 	m_missingPT = -999.;
 	m_missingMass = -999.;
 	m_missingE = -999.;
 	m_Evis  = -999.;
 	m_thrust = -999.;
+	std::fill(m_bTagValues.begin(), m_bTagValues.end(), -1.);
+	std::fill(m_cTagValues.begin(), m_cTagValues.end(), -1.);
+
+	m_jet_matching.clear();
+	m_jet_matching_source = 0;
+	
+	/*
 	m_dileptonMassPrePairing = -999.;
 	m_dileptonMass = -999.;
 	m_dileptonMassDiff = -999.;
 	m_dijetMass.clear();
 	m_dijetMassDiff.clear();
-	std::fill(m_bTagValues.begin(), m_bTagValues.end(), -1.);
-	std::fill(m_cTagValues.begin(), m_cTagValues.end(), -1.);
 	m_dihiggsMass = -999;
 	m_nbjets = 0;
-	m_chi2min = 99999.;
 	m_dijetPairing.clear();
-
+	m_chi2min = 99999.;
 	m_preselsPassedVec.clear();
 	m_preselsPassedAll = 0;
 	m_preselsPassedConsec = 0;
 	m_isPassed = 0;
+	*/
 }
 
 void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
@@ -340,24 +361,18 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 
 	m_nRun = pLCEvent->getRunNumber();
 	m_nEvt = pLCEvent->getEventNumber();
+
 	streamlog_out(DEBUG) << "processing event: " << pLCEvent->getEventNumber() << "  in run: " << pLCEvent->getRunNumber() << endl;
 
-	LCCollection *inputJetCollection{};
-	LCCollection *inputLeptonCollection{};
-	LCCollection *inputLepPairCollection{};
-	LCCollection *inputPfoCollection{};
-
 	try {
-		streamlog_out(DEBUG0) << "        getting jet collection: " << m_inputJetCollection << std::endl ;
-		inputJetCollection = pLCEvent->getCollection( m_inputJetCollection );
-		streamlog_out(DEBUG0) << "        getting isolated lepton collection: " << m_inputIsolatedleptonCollection << std::endl ;
-		inputLeptonCollection = pLCEvent->getCollection( m_inputIsolatedleptonCollection );
-		streamlog_out(DEBUG0) << "        getting lepton pair collection: " << m_inputLepPairCollection << std::endl ;
-		inputLepPairCollection = pLCEvent->getCollection( m_inputLepPairCollection );
-		streamlog_out(DEBUG0) << "        getting pfo collection: " << m_inputPfoCollection << std::endl ;
-		inputPfoCollection = pLCEvent->getCollection( m_inputPfoCollection );
+		LCCollection *inputJetCollection = pLCEvent->getCollection( m_inputJetCollection );
+		LCCollection *inputLeptonCollection = pLCEvent->getCollection( m_inputIsolatedleptonCollection );
+		LCCollection *inputLepPairCollection = pLCEvent->getCollection( m_inputLepPairCollection );
+		LCCollection *inputPfoCollection = pLCEvent->getCollection( m_inputPfoCollection );
 
 		m_nJets = inputJetCollection->getNumberOfElements();
+		assert(m_nJets == m_nAskedJets());
+
 		m_nIsoLeps = inputLeptonCollection->getNumberOfElements();
 		int nPFOs = inputPfoCollection->getNumberOfElements();    
 		// ---------- MISSING PT ----------
@@ -378,30 +393,34 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 		// ---------- VISIBLE ENERGY ----------                                          
 		m_Evis = pfosum.E();
 
-		// ---------- THRUST ----------                                                        
+		// ---------- THRUST ----------
 		const EVENT::LCParameters& pfo_params = inputPfoCollection->getParameters();
 		m_thrust = pfo_params.getFloatVal("principleThrustValue");
-
-		//-----------------  REQUIRE CORRECT NUMBER OF SIGNATURE PARTICLES  -----------------
-		if (inputLepPairCollection->getNumberOfElements() == 2 ) {
-			m_dileptonMass = inputLepPairCollection->parameters().getFloatVal("RecoLepsInvMass");
-			m_dileptonMassPrePairing = inputLepPairCollection->parameters().getFloatVal("IsoLepsInvMass");
-
-			m_dileptonMassDiff = fabs( m_dileptonMass - 91.2 );
-
-			// ---------- SAVE TYPES OF PAIRED ISOLATED LEPTONS ----------
-			ReconstructedParticle* first_iso_lepton_from_pair = dynamic_cast<ReconstructedParticle*>( inputLepPairCollection->getElementAt(0));
-			m_lepTypesPaired = first_iso_lepton_from_pair->getType();
-		}
 
 		// ---------- SAVE TYPES OF ALL ISOLATED LEPTONS ----------
 		for (int j = 0; j < inputLeptonCollection->getNumberOfElements(); j++) {
 			ReconstructedParticle* iso_lepton = dynamic_cast<ReconstructedParticle*>( inputLeptonCollection->getElementAt( j ) );
-			m_lepTypes.push_back( iso_lepton->getType() );
+			m_lep_types.push_back( iso_lepton->getType() );
 		}
 
-		// ---------- JET PROPERTIES AND FLAVOUR TAGGING ----------
-		if ( m_nJets == m_nAskedJets ) {
+		// continue only if the number of jets and isolated leptons match the preselection
+		// and the numbers in the Kinfit processors
+		if ( m_nJets == m_nAskedJets() && inputLepPairCollection->getNumberOfElements() == m_nAskedIsoLeps() ) {
+			streamlog_out(MESSAGE) << "Continue with "<< m_nJets << " jets and "<< inputLepPairCollection->getNumberOfElements() << " ISOLeptons" << std::endl;
+
+			// ---------- JET MATCHING ----------
+			(void) inputJetCollection->getParameters().getIntVals(m_jetMatchingParameter().c_str(), m_jet_matching);
+			m_jet_matching_source = inputJetCollection->getParameters().getIntVal(m_jetMatchingSourceParameter());
+
+			assert(m_jet_matching.size() == m_nJets);
+			assert(m_jet_matching_source == 1 || m_jet_matching_source == 2);
+
+			std::cerr << "VEC SIZE of "<< m_jetMatchingParameter().c_str() << " : " << m_jet_matching.size() << std::endl;
+			std::cerr << std::string("TEST_").append("STRING") << std::endl;
+			std::cerr << "Reading parameters " << m_jet_matching[0] << " " << m_jet_matching[1] << " " << m_jet_matching[2] << " " << m_jet_matching[3] << std::endl;
+
+			// ---------- JET PROPERTIES AND FLAVOUR TAGGING ----------
+		
 			vector<ReconstructedParticle*> jets;
 			for (int i=0; i<m_nJets; ++i) {
 				ReconstructedParticle* jet = (ReconstructedParticle*) inputJetCollection->getElementAt(i);
@@ -409,23 +428,23 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 			}
 
 			PIDHandler FTHan(inputJetCollection);
-			int _FTAlgoID = FTHan.getAlgorithmID(m_PIDAlgorithmBTag);
-			int BTagID = FTHan.getParameterIndex(_FTAlgoID, "BTag");
-			int CTagID = FTHan.getParameterIndex(_FTAlgoID, "CTag");
+			int _FTAlgoID = FTHan.getAlgorithmID(m_JetTaggingPIDAlgorithm);
+			int BTagID = FTHan.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterB);
+			int CTagID = FTHan.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterC);
 			//int OTagID = FTHan.getParameterIndex(_FTAlgoID, "OTag");
 
 			for (int i=0; i<m_nJets; ++i) {
 				const ParticleIDImpl& FTImpl = dynamic_cast<const ParticleIDImpl&>(FTHan.getParticleID(jets[i], _FTAlgoID));
 				const FloatVec& FTPara = FTImpl.getParameters();
+				std::cerr << "Reading parameters " << BTagID << " " << CTagID << " of vector with " << FTPara.size() << " elements at " << &FTPara << std::endl;
 				double bTagValue = FTPara[BTagID];
 				double cTagValue = FTPara[CTagID];
 				//double oTagValue = FTPara[OTagID];
 
+				std::cerr << "Read parameters " << bTagValue << " and " << cTagValue << std::endl;
+
 				m_bTagValues[i] = bTagValue;
 				m_cTagValues[i] = cTagValue;
-
-				if (bTagValue > m_minblikeliness)
-					m_nbjets++;
 			}
 
 			// calculate bmax1,2,3,4
@@ -453,8 +472,10 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 		// MATRIX ELEMENTS
 
 		// ---------- PRESELECTION ----------
-		m_preselsPassedVec.push_back(m_nJets == m_nAskedJets);
-		m_preselsPassedVec.push_back(m_nIsoLeps == m_nAskedIsoLeps);
+		// so far skipped, do it in post
+		/*
+		m_preselsPassedVec.push_back(m_nJets == m_nAskedJets());
+		m_preselsPassedVec.push_back(m_nIsoLeps == m_nAskedIsoLeps());
 		m_preselsPassedVec.push_back(m_dileptonMassDiff <= m_maxdileptonmassdiff );
 
 		for (size_t i=0; i < m_dijetMassDiff.size(); i++) {
@@ -468,11 +489,9 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 		m_preselsPassedVec.push_back(m_dihiggsMass >= m_minHHmass);
 		m_preselsPassedVec.push_back(m_nbjets >= m_minnbjets);
 		
-		// Compile outputs
 		m_preselsPassedAll = std::accumulate(m_preselsPassedVec.begin(), m_preselsPassedVec.end(), 0); // 
 		m_isPassed = m_preselsPassedAll == m_preselsPassedVec.size(); // Passed if passed all
 
-		// Check how many presels passed consecutively
 		for (size_t i=0; i < m_preselsPassedVec.size(); i++) {
 			if (m_preselsPassedVec[i]) {
 				m_preselsPassedConsec++;
@@ -480,14 +499,21 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 				break;
 			}
 		}
+		*/
 
 	} catch(DataNotAvailableException &e) {
 		streamlog_out(MESSAGE) << "processEvent : Input collections not found in event " << m_nEvt << std::endl;
+	} catch (const std::exception &exc) {
+		// remove for production
+    	std::cerr << exc.what();
 	}
 };
 
 void EventObservablesBase::init(){
     printParameters();
+
+	m_bTagValues = std::vector<double>(m_nAskedJets(), -1.);
+  	m_cTagValues = std::vector<double>(m_nAskedJets(), -1.);
 
 	prepareBaseTree();
 	prepareChannelTree();
@@ -500,7 +526,8 @@ void EventObservablesBase::processEvent( LCEvent* evt ){
 	clearChannelValues();
 	updateChannelValues(evt);
 
-	getTTree()->Fill();
+	if (m_write_ttree)
+		getTTree()->Fill();
 };
 
 void EventObservablesBase::processRunHeader( LCRunHeader* run ){

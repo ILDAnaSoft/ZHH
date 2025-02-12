@@ -21,13 +21,13 @@ function zhh_attach_marlin_dlls() {
         export MARLIN_DLL="$lib":$MARLIN_DLL
     done
 
+    # Cleanup conflicts with custom dependencies and key4hep stack
     local libs_old=(
         "/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/lcfiplus/0.10.1-3azs6t/lib/libLCFIPlus.so"
         "/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/marlinreco/1.36.1-ywnmqe/lib/libMarlinReco.so"
         "/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/marlinmlflavortagging/0.1.0-2cepkq/lib/libMarlinMLFlavorTagging.so")
     local libs_new=("$LCFIPlus/build/lib/libLCFIPlus.so" "$MarlinReco/lib/libMarlinReco.so" "$MarlinMLFlavorTagging/lib/libMarlinMLFlavorTagging.so")
 
-    # Cleanup conflicts with custom dependencies and key4hep stack
     for i in "${!libs_new[@]}"; do
         local lib="${libs_new[$i]}"
         if [[ ! -f "$lib" ]]; then
@@ -54,6 +54,9 @@ fi
 if [[ $MARLIN_DLL != *"libZHHProcessors"* ]]; then
     zhh_attach_marlin_dlls
 fi
+
+# Fix wrong Physsim include paths in key4hep
+export CPATH=$(echo $CPATH | sed -e "s|/include/physsim|/include|g")
 
 function MarlinZHH() {
     local steering_file

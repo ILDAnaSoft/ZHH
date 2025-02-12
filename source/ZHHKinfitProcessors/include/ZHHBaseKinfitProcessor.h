@@ -7,6 +7,7 @@
 #include <tuple>
 
 #include "marlin/Processor.h"
+#include "marlin/VerbosityLevels.h"
 #include "lcio.h"
 #include "TrueJet_Parser.h"
 #include <EVENT/Vertex.h>
@@ -101,7 +102,7 @@ class ZHHBaseKinfitProcessor
 		virtual void	getJetParameters( ReconstructedParticle* jet , float (&parameters)[ 3 ] , float (&errors)[ 3 ] );
 		virtual void	getLeptonParameters( ReconstructedParticle* lepton , float (&parameters)[ 3 ] , float (&errors)[ 3 ] );
 
-		void attachBestPermutation(LCCollection *jets, vector<unsigned int> bestperm, string parameterSuffix);
+		void attachBestPermutation(LCCollection *jets, vector<unsigned int> bestperm, string parameterSuffix, bool fromKinfit);
 
 		void assignPermutations(size_t njets, string fithypothesis);
 		vector<vector<unsigned int>> perms{};

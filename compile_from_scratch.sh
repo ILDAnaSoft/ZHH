@@ -8,6 +8,7 @@ action(){
     local NC='\033[0m'
     local module_to_compile    
     local delete_existing=$( [[ "$1" == "keep" || "$2" == "keep" ]] && echo "False" || echo "True" )
+    local isdebug=$( [[ "$1" == "debug" || "$2" == "debug" ]] && echo "True" || echo "False" )
     local startdir=$(pwd)
 
     compile_pkg ()
@@ -19,6 +20,7 @@ action(){
                 rm -rf build
             fi
 
+            git pull
             mkdir -p build
             cd build
 
@@ -26,11 +28,31 @@ action(){
                 cmake -DCMAKE_CXX_STANDARD=17 ..
             fi
             
-            make install -j 4 && cd ../..
+            if [[ $isdebug = "True" ]]; then
+                make install -j 4 || exit $?
+            else
+                rm -f build.log
+                make install -j 4 &> build.log
+            
+                local retval=$?
+
+                if [[ $retval -ne 0 ]]; then
+                    echo -e "$RED!!! Error [$retval] while trying to compile $1 !!!$NC"
+
+                    cat build.log
+                    rm -f build.log
+
+                    exit $retval
+                fi
+
+                rm -f build.log
+            fi
+            
+            cd ../..
         )
     }
 
-    for module_to_compile in "source" "$MarlinMLFlavorTagging" "$MarlinReco"
+    for module_to_compile in "source" "$MarlinMLFlavorTagging" "$MarlinReco" "$LCFIPlus"
     do
         echo -e "$BLUE+++ Compiling $(basename $module_to_compile)... +++$NC"
         if [[ -d $module_to_compile ]]; then
@@ -46,4 +68,4 @@ action(){
 
     return 0
 }
-action $1
+action $1 $2

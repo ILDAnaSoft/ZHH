@@ -525,6 +525,7 @@ void ZHHqqbbbbKinFit::processEvent( EVENT::LCEvent *pLCEvent )
   else streamlog_out(WARNING) << "////////////////////////////////////////////////// MC Higgs pair not found //////////////////////////////////////////////////" << endl;
 
   if ( m_nJets != m_nAskedJets || m_nIsoLeps != m_nAskedIsoLeps ) {
+    streamlog_out(MESSAGE) << "Skipping event: Jets(Actual:Required)=(" << m_nJets << " : " << m_nAskedJets << ") |  ISOLeptons(Actual:Required)=(" << m_nIsoLeps << ":" << m_nAskedIsoLeps << ")" << std::endl;
     m_pTTree->Fill();
     return;
   }  
@@ -780,7 +781,7 @@ void ZHHqqbbbbKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     streamlog_out(MESSAGE) << "masses from simple chi2:" << m_ZMassBeforeFit << ", " << m_H1MassBeforeFit << ", " << m_H2MassBeforeFit << ", " << m_HHMassBeforeFit << ", " << m_ZHHMassBeforeFit << std::endl ; 
 
     m_pTTree->Fill();
-    attachBestPermutation(inputJetCollection, m_bestMatchingByMass, "qq_by_mass");
+    attachBestPermutation(inputJetCollection, m_bestMatchingByMass, "qq", false);
     return;
   }
   for (unsigned int i_jet =0; i_jet < bestJets.size(); i_jet++) {
@@ -929,7 +930,7 @@ void ZHHqqbbbbKinFit::processEvent( EVENT::LCEvent *pLCEvent )
   //pLCEvent->addCollection( outputNuEnergyCollection, m_outputNuEnergyCollection.c_str() );
   //streamlog_out(DEBUG0) << " Output true and reco Nu collection added to event" << std::endl;
   m_pTTree->Fill();
-  attachBestPermutation(inputJetCollection, m_bestMatchingKinfit, "qq_kinfit");
+  attachBestPermutation(inputJetCollection, m_bestMatchingKinfit, "qq", true);
 }
 
 ZHHqqbbbbKinFit::FitResult ZHHqqbbbbKinFit::performFIT( pfoVector jets, 
@@ -1306,10 +1307,10 @@ std::tuple<std::vector<double>, double, std::vector<unsigned int>>
   double zhh = zhhFourMomentum.M();
   double chi2min = 99999. ;
 
-  size_t iperm;
   // TODO: use b-tagging information; e.g. use only 4 out of 6 jets with highest b-tag
-   
-  for (iperm = 0; iperm < perms.size(); iperm++) {
+
+  int bestpermindex = 0;
+  for (size_t iperm = 0; iperm < perms.size(); iperm++) {
     vector<unsigned int> perm = perms[iperm];
 
     double temp1 = inv_mass(jets.at(perm[0]),jets.at(perm[1]));
@@ -1324,6 +1325,7 @@ std::tuple<std::vector<double>, double, std::vector<unsigned int>>
       chi2min = chi2;
       h1 = temp1;
       h2 = temp2;
+      bestpermindex = iperm;
     }
   }
   masses.push_back(z);
@@ -1333,8 +1335,8 @@ std::tuple<std::vector<double>, double, std::vector<unsigned int>>
 
   streamlog_out(MESSAGE) << "masses from simple chi2:" << z << ", " << h1 << ", " << h2 << ", " << zhh << std::endl ;
 
-  for (size_t i = 0; i < perms[iperm].size(); i++) 
-    bestperm.push_back(perms[iperm][i]);
+  for (size_t i = 0; i < perms[bestpermindex].size(); i++) 
+    bestperm.push_back(perms[bestpermindex][i]);
 
   return std::make_tuple(masses, chi2min, bestperm);
 }

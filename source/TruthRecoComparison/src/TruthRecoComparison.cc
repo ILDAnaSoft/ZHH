@@ -109,8 +109,6 @@ void TruthRecoComparison::init()
 	
 	this->clear();
 
-	m_pTTree = new TTree("TruthRecoComparison", "TruthRecoComparison");
-
 	if (m_outputRootFile.size()) {
 		m_pTFile = new TFile(m_outputRootFile.c_str(),"recreate");
 		m_pTTree->SetDirectory(m_pTFile);

@@ -12,9 +12,9 @@ function zhh_recompile() {
     read -p "Do you wish to keep existing binaries of compiled ZHH processors? (y) " yn
     
     if [[  "$yn" = "y" || -z "$yn" ]]; then
-        source compile_from_scratch.sh keep
+        source compile_from_scratch.sh keep "$1"
     else
-        source compile_from_scratch.sh
+        source compile_from_scratch.sh "$1"
     fi
 
     cd $REPO_ROOT

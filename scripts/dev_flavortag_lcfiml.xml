@@ -13,9 +13,11 @@
     <processor name="MyIsolatedLeptonTaggingProcessor"/>
     <processor name="MyLeptonPairing"/>
 
+    <!--
     <processor name="LikelihoodPID"/>
     <processor name="LeptonID"/>
     <processor name="MyMergePIDProcessor"/>
+    -->
 
     <processor name="JC4FT"/>
     <processor name="MyJetTaggingComparisonLCFIML" />
@@ -26,8 +28,10 @@
     <processor name="ParticleIDFilter"/>
     -->
     
+    <!--
     <processor name="MyTrueJet"/>
     <processor name="StoreVariablesForMLTagging_4J"/>
+    -->
 
     <!--
     <processor name="ParticleNetTagger_4J"/>
@@ -70,7 +74,7 @@
   <constant name="DebugDumpJet" value="0" />
 
   <!-- for mc-2020 productionm set to MCParticlesSkimmed -->
-  <constant name="MCParticleCollectionName" value="MCParticle" />
+  <constant name="MCParticleCollectionName" value="MCParticlesSkimmed" />
 
   <constant name="PFOsWithoutOverlayCollection" value="PFOsWithoutOverlayCheated" />
   <constant name="PFOsForClustering" value="PFOsWithoutOverlayCheated" />

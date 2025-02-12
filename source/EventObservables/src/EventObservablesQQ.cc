@@ -2,7 +2,8 @@
 
 EventObservablesQQ aEventObservablesQQ;
 
-EventObservablesQQ::EventObservablesQQ(): EventObservablesBase("EventObservablesQQ") {
+EventObservablesQQ::EventObservablesQQ(): EventObservablesBase("EventObservablesQQ"),
+m_JMP("best_perm_qq") {
     _description = "EventObservablesQQ writes relevant observables to root-file " ;
 }
 

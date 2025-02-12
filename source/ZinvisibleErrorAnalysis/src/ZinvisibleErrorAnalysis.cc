@@ -41,7 +41,8 @@ ZinvisibleErrorAnalysis::ZinvisibleErrorAnalysis() : Processor("ZinvisibleErrorA
 						     m_PhiZvv(0.),
 						     m_EnergyResidual(0.),
 						     m_ThetaResidual(0.),
-						     m_PhiResidual(0.)
+						     m_PhiResidual(0.),
+                 m_pTFile(NULL)
 
 
 {
@@ -102,10 +103,11 @@ void ZinvisibleErrorAnalysis::init()
   m_nRunSum = 0;
   m_nEvtSum = 0;
 
-  m_pTFile = new TFile(m_outputFile.c_str(),"recreate");
+  if (m_outputFile.size()) {
+    m_pTFile = new TFile(m_outputFile.c_str(),"recreate");
+    m_pTTree->SetDirectory(m_pTFile);
+  }
   
-  m_pTTree = new TTree("eventTree","eventTree");
-  m_pTTree->SetDirectory(m_pTFile);
   m_pTTree->Branch("run", &m_nRun, "run/I");
   m_pTTree->Branch("event", &m_nEvt, "event/I");
   m_pTTree->Branch("nJets",&m_nJets,"nJets/I") ;
@@ -239,8 +241,13 @@ void ZinvisibleErrorAnalysis::check()
 
 void ZinvisibleErrorAnalysis::end()
 {
-  m_pTFile->cd();
+  if (m_pTFile != NULL) {
+    m_pTFile->cd();
+  }
   m_pTTree->Write();
-  m_pTFile->Close();
-  delete m_pTFile;
+
+  if (m_pTFile != NULL) {
+    m_pTFile->Close();
+    delete m_pTFile;
+  }
 }

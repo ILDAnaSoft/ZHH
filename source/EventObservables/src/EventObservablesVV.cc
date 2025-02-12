@@ -2,7 +2,8 @@
 
 EventObservablesVV aEventObservablesVV;
 
-EventObservablesVV::EventObservablesVV(): EventObservablesBase("EventObservablesVV") {
+EventObservablesVV::EventObservablesVV(): EventObservablesBase("EventObservablesVV"),
+m_JMP("best_perm_vv") {
     _description = "EventObservablesVV writes relevant observables to root-file " ;
 }
 

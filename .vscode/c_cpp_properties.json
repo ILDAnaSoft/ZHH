@@ -14,7 +14,6 @@
                 "${workspaceFolder}/source/CheatedMCOverlayRemoval/include/**",
                 "${workspaceFolder}/source/CommonTools/include/**",
                 "${workspaceFolder}/source/ExpandJetProcessor/include/**",
-                "${workspaceFolder}/source/FinalSelection/include/**",
                 "${workspaceFolder}/source/FinalStateRecorder/include/**",
                 "${workspaceFolder}/source/HdecayMode/include/**",
                 "${workspaceFolder}/source/JetTaggingComparison/include/**",

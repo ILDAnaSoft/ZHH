@@ -53,7 +53,7 @@ FinalStateRecorder::FinalStateRecorder() :
   	registerProcessorParameter("outputRootFilename",
 				"name of output root file. will use AIDA if 'None'",
 				m_outputRootFile,
-				std::string("FinalStates.root")
+				std::string("")
 				);
 
 	registerProcessorParameter("writeTTree",
@@ -195,7 +195,7 @@ void FinalStateRecorder::init()
 	m_setReturnValues = m_eventFilter.size() > 0;
 
 	if (m_write_ttree) {
-		if (m_outputRootFile != "None") {
+		if (m_outputRootFile.size()) {
 			m_pTFile = new TFile(m_outputRootFile.c_str(),"recreate");
 			m_pTTree->SetDirectory(m_pTFile);
 		}
@@ -558,14 +558,6 @@ void FinalStateRecorder::end()
 		}
 	}
 
-	// delete all resolvers
-	for (std::pair<std::string, FinalStateResolver*> elem : resolvers) {
-		resolvers.erase(elem.first);
-
-		FinalStateResolver* resolver = elem.second;
-		delete resolver;
-	}
-
 	// Write JSON metadata file
 	if (m_outputJsonFile != "None") {
 		m_jsonFile["run"] = m_n_run;
@@ -586,8 +578,7 @@ void FinalStateRecorder::end()
 
 	// delete all registered FinalStateRecorders
 	for (auto [key, value]: resolvers) {
-		FinalStateResolver *resolver = resolvers[key];
-		delete resolver;
+		delete value;
 	};
 	resolvers.clear();
 }
