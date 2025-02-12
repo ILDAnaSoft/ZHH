@@ -60,6 +60,8 @@ class EventObservablesBase: public Processor
 		virtual std::string m_jetMatchingParameter() = 0; // e.g. best_perm_ll
 		virtual std::string m_jetMatchingSourceParameter() = 0; // e.g. best_perm_ll_from_kinfit ; 1 for "from mass chi2", 2 for "from kinfit"
 
+		virtual bool m_use_matrix_elements() = 0;
+
 		// names of input collections
 		std::string m_inputIsolatedleptonCollection{};
 		std::string m_inputLepPairCollection{};
@@ -68,13 +70,22 @@ class EventObservablesBase: public Processor
 		std::string m_outputFile{};
 		std::string m_whichPreselection{};
 		std::string m_cutDefinitionsJSONFile{};
+
+		// flavortag
 		std::string m_JetTaggingPIDAlgorithm{};
 		std::string m_JetTaggingPIDParameterB{};
 		std::string m_JetTaggingPIDParameterC{};
-		bool m_write_ttree{};
+
+		std::string m_JetTaggingPIDAlgorithm2{};
+		std::string m_JetTaggingPIDParameterB2{};
+		std::string m_JetTaggingPIDParameterC2{};
 
 		// outputs
+		bool m_write_ttree{};
 		TFile *m_pTFile{};
+
+		// enable/disable certain outputs and calculations in inheriting classes
+		bool m_use_tags2{};
 
 		// PreSelection cut values and inputs
 		float m_maxdileptonmassdiff{};
@@ -90,6 +101,40 @@ class EventObservablesBase: public Processor
 		float m_minHHmass{};
 
 		float m_ECM{};
+		std::vector <float> m_polarizations{};
+
+		// matrix elements
+		double m_lcme_zhh_avg{};
+		double m_lcme_zzh_avg{};
+
+		lcme::LCMEZHH *m_lcmezhh{}; // ZHH MEM calculator instance
+		lcme::LCMEZZH *m_lcmezzh{}; // ZZH MEM calculator instance
+
+		// assumptions:
+		// - from_z1 + from_z2 come from Z, relates to z_decay_pdg; can be any of (ll, vv, qq)
+		// - jet3 + jet4 come from either H, or Z (if H, then simply Hdijet=jet3+jet4), relates to z_or_h_decay_pdg
+		// - dijet: a Higgs present in both ZHH and ZZH
+		void calculateMatrixElements(
+			int z_decay_pdg,
+			int z_or_h_decay_pdg,
+			TLorentzVector from_z1, TLorentzVector from_z2,
+			TLorentzVector from_z_or_h_1, TLorentzVector from_z_or_h_2,
+			TLorentzVector dijet);
+		
+		// the following is energy dependant; if ECM changes, this may need to be updated!!!
+		std::map<int, int> m_pdg_to_lcme_mode = {
+			{  1,  9 },
+			{  2,  7 },
+			{  3, 10 },
+			{  4,  8 },
+			{  5, 11 },
+			{ 11,  4 },
+			{ 12,  1 },
+			{ 13,  5 },
+			{ 14,  2 },
+			{ 15,  6 },
+			{ 16,  3 }
+		};
 
 		// meta information and observables
 		int m_nRun;
@@ -119,6 +164,9 @@ class EventObservablesBase: public Processor
 		int m_nhbb{};
 		int m_nJets{};
 
+		std::vector<double> m_bTagValues{};
+		std::vector<double> m_cTagValues{};
+
 		float m_bmax1{};
 		float m_bmax2{};
 		float m_bmax3{};
@@ -128,6 +176,19 @@ class EventObservablesBase: public Processor
 		float m_cmax2{};
 		float m_cmax3{};
 		float m_cmax4{};
+
+		std::vector<double> m_bTagValues2{};
+		std::vector<double> m_cTagValues2{};
+
+		float m_bmax12{};
+		float m_bmax22{};
+		float m_bmax32{};
+		float m_bmax42{};
+
+		float m_cmax12{};
+		float m_cmax22{};
+		float m_cmax32{};
+		float m_cmax42{};
 
 		// jet momenta and energies
 		float m_px11{};
@@ -153,11 +214,12 @@ class EventObservablesBase: public Processor
 		// jet matching
 		std::vector<int> m_jet_matching{};
 		int m_jet_matching_source{}; // 1 for "from mass chi2", 2 for "from kinfit"
+		bool m_using_kinfit{}; // 1 if m_jet_matching_source == 2
+		bool m_using_mass_chi2{}; // 1 if m_jet_matching_source == 1
 
 
 		int m_nIsoLeps{};
-		std::vector<int> m_lep_types{};
-		
+		std::vector<int> m_lep_types{};		
 
 		/*  old variables for preselection (to be done in post)
 		most are now calculated by the Kinfit processors
@@ -179,8 +241,6 @@ class EventObservablesBase: public Processor
 		int m_isPassed{};
 		*/
 
-		std::vector<double> m_bTagValues{};
-		std::vector<double> m_cTagValues{};
 		std::string m_jetMatchingParamName{};
 
 };

@@ -30,6 +30,8 @@ class EventObservablesLL : public EventObservablesBase {
 		std::string m_jetMatchingParameter() { return m_JMP; };
 		std::string m_jetMatchingSourceParameter() { return m_JMSP; };
 
+		bool m_use_matrix_elements() { return true; };
+
 	protected:
 		std::string m_JMP{};
 		std::string m_JMSP{};
@@ -50,7 +52,7 @@ class EventObservablesLL : public EventObservablesBase {
 		// float m_m_diff_z{};
 		float m_mzll_pre_pairing{};
 		int m_paired_lep_type{};
-		
+
 };
 
 

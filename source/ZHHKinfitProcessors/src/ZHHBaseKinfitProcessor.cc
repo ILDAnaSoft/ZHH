@@ -328,3 +328,22 @@ void ZHHBaseKinfitProcessor::attachBestPermutation(LCCollection *jets, vector<un
   jets->parameters().setValues(std::string("best_perm_").append(parameterSuffix), intvec);
   jets->parameters().setValue(std::string("best_perm_").append(parameterSuffix).append("_from_kinfit"), fromKinfit ? 2 : 1);
 };
+
+// returns the jets in the same order as they appeared in the source collection
+void ZHHBaseKinfitProcessor::fillOutputCollections(
+  EVENT::LCEvent *pLCEvent,
+  std::vector<ReconstructedParticle*> bestjets
+) {
+  IMPL::LCCollectionVec* outputJetCollection = new IMPL::LCCollectionVec(LCIO::RECONSTRUCTEDPARTICLE);
+
+  for(unsigned int i = 0; i < bestjets.size(); i++) {
+    ReconstructedParticleImpl * newJet = new ReconstructedParticleImpl();
+    newJet->setMomentum(bestjets[i]->getMomentum());
+    newJet->setEnergy(bestjets[i]->getEnergy());
+    newJet->setCovMatrix(bestjets[i]->getCovMatrix());
+
+    outputJetCollection->addElement( newJet );
+  }
+
+  pLCEvent->addCollection( outputJetCollection , m_outputJetCollection.c_str() );
+};

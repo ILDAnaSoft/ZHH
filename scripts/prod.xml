@@ -30,7 +30,7 @@
         <constant name="NumberOfHiggs" value="2" />
         <constant name="MCParticleCollectionName" value="MCParticlesSkimmed" />
         <constant name="CMSEnergy" value="550." />
-	<constant name="ISRPzMax" value="125.6" />
+	    <constant name="ISRPzMax" value="125.6" />
         <constant name="Verbosity" value="SILENT" />
     </constants>
 
@@ -619,10 +619,10 @@
         <!--Name of the input collections: isolated leptons, jets, SLD vertices, Jet-SLDvertex relations, and SLDvertex-neutrino relations -->
         <parameter name="InputIsoLeptonsCollection" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
         <parameter name="JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets_llvv</parameter>
-        <parameter name="SLDVertexCollection" type="string" lcioInType="Vertex">SemiLeptonicDecayVertex_ll</parameter>
-        <parameter name="JetSLDRelationCollection" type="string" lcioInType="LCRelation">JetSLDLink_ll</parameter>
-        <parameter name="SLDNeutrinoRelationCollection" type="string" lcioInType="LCRelation">SLDNuLink_ll</parameter>
-        <parameter name="recoNumcNuLinkName" type="string" lcioInType="LCRelation">recoNumcNuLink_ll</parameter>
+        <parameter name="SLDVertexCollection" type="string" lcioInType="Vertex">SemiLeptonicDecayVertex_llvv</parameter>
+        <parameter name="JetSLDRelationCollection" type="string" lcioInType="LCRelation">JetSLDLink_llvv</parameter>
+        <parameter name="SLDNeutrinoRelationCollection" type="string" lcioInType="LCRelation">SLDNuLink_llvv</parameter>
+        <parameter name="recoNumcNuLinkName" type="string" lcioInType="LCRelation">recoNumcNuLink_llvv</parameter>
 
         <!-- center-of-mass energy (default: 500.) -->
         <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
@@ -650,7 +650,7 @@
         <parameter name="outputLeptonCollection" type="string" lcioOutType="ReconstructedParticle">LeptonsKinFit_ll</parameter>
         <parameter name="outputJetCollection" type="string" lcioOutType="ReconstructedParticle">JetsKinFit_ll</parameter>
         <parameter name="outputStartLeptonCollection" type="string" lcioOutType="ReconstructedParticle">LeptonsPreFit_ll</parameter>
-        <parameter name="outputJetCollection" type="string" lcioOutType="ReconstructedParticle">JetsPreFit_ll</parameter>
+        <parameter name="outputStartJetCollection" type="string" lcioOutType="ReconstructedParticle">JetsPreFit_ll</parameter>
         <parameter name="LeptonPullsOutputCollection" type="string" lcioOutType="LCFloatVec">LeptonPulls_ll</parameter>
         <parameter name="JetPullsOutputCollection" type="string" lcioOutType="LCFloatVec">JetPulls_ll</parameter>
         <!--parameter name="LeptonPullsOutputColection" type="string" lcioOutType="LCFloatVec">LeptonPulls</parameter-->
@@ -719,7 +719,7 @@
         <parameter name="outputLeptonCollection" type="string" lcioOutType="ReconstructedParticle">LeptonsKinFit_vv</parameter>
         <parameter name="outputJetCollection" type="string" lcioOutType="ReconstructedParticle">JetsKinFit_vv</parameter>
         <parameter name="outputStartLeptonCollection" type="string" lcioOutType="ReconstructedParticle">LeptonsPreFit_vv</parameter>
-        <parameter name="outputJetCollection" type="string" lcioOutType="ReconstructedParticle">JetsPreFit_vv</parameter>
+        <parameter name="outputStartJetCollection" type="string" lcioOutType="ReconstructedParticle">JetsPreFit_vv</parameter>
         <parameter name="LeptonPullsOutputCollection" type="string" lcioOutType="LCFloatVec">LeptonPulls_vv</parameter>
         <parameter name="JetPullsOutputCollection" type="string" lcioOutType="LCFloatVec">JetPulls_vv</parameter>
         <!--parameter name="LeptonPullsOutputColection" type="string" lcioOutType="LCFloatVec">LeptonPulls</parameter-->
@@ -1034,7 +1034,7 @@
         <parameter name="outputLeptonCollection" type="string" lcioOutType="ReconstructedParticle">LeptonsKinFit_qq</parameter>
         <parameter name="outputJetCollection" type="string" lcioOutType="ReconstructedParticle">JetsKinFit_qq</parameter>
         <parameter name="outputStartLeptonCollection" type="string" lcioOutType="ReconstructedParticle">LeptonsPreFit_qq</parameter>
-        <parameter name="outputJetCollection" type="string" lcioOutType="ReconstructedParticle">JetsPreFit_qq</parameter>
+        <parameter name="outputStartJetCollection" type="string" lcioOutType="ReconstructedParticle">JetsPreFit_qq</parameter>
         <parameter name="LeptonPullsOutputCollection" type="string" lcioOutType="LCFloatVec">LeptonPulls_qq</parameter>
         <parameter name="JetPullsOutputCollection" type="string" lcioOutType="LCFloatVec">JetPulls_qq</parameter>
         <!--parameter name="LeptonPullsOutputColection" type="string" lcioOutType="LCFloatVec">LeptonPulls</parameter-->

@@ -83,6 +83,24 @@ EventObservablesBase::EventObservablesBase(const std::string &name) : Processor(
             m_JetTaggingPIDParameterC,
             std::string("CTag")
             );
+
+	registerProcessorParameter("JetTaggingPIDAlgorithm2",
+            "Number of jet should be in the event",
+            m_JetTaggingPIDAlgorithm2,
+            std::string("weaver")
+            );
+
+	registerProcessorParameter("JetTaggingPIDParameterB2",
+            "Number of jet should be in the event",
+            m_JetTaggingPIDParameterB2,
+            std::string("mc_b")
+            );
+
+	registerProcessorParameter("JetTaggingPIDParameterC2",
+            "Number of jet should be in the event",
+            m_JetTaggingPIDParameterC2,
+            std::string("mc_c")
+            );
   	
 	registerProcessorParameter("maxdileptonmassdiff",
 			"maximum on dilepton mass difference",
@@ -156,6 +174,12 @@ EventObservablesBase::EventObservablesBase(const std::string &name) : Processor(
 			float(500.f)
 			);
 
+	registerProcessorParameter("polarizations",
+            "vector of (Pe-, Pe+). used for averaging over zhh and zzh matrix elements.",
+            m_polarizations,
+            std::vector<float>{-.8, .3}
+            );
+
   	registerProcessorParameter("outputFilename",
 			"name of output root file",
 			m_outputFile,
@@ -200,6 +224,7 @@ void EventObservablesBase::prepareBaseTree()
 		ttree->Branch("e_miss", &m_missingE, "e_miss/F");
 		ttree->Branch("thrust", &m_thrust, "thrust/F");
 		ttree->Branch("bTags", &m_bTagValues);
+		ttree->Branch("cTags", &m_cTagValues);
 
 		// bmax1:bmax2:bmax3:bmax4:pj1jets2:pj2jets2
 		ttree->Branch("bmax1", &m_bmax1, "bmax1/F");
@@ -211,6 +236,21 @@ void EventObservablesBase::prepareBaseTree()
 		ttree->Branch("cmax2", &m_cmax2, "cmax2/F");
 		ttree->Branch("cmax3", &m_cmax3, "cmax3/F");
 		ttree->Branch("cmax4", &m_cmax4, "cmax4/F");
+
+		if (m_use_tags2) {
+			ttree->Branch("bTags2", &m_bTagValues2);
+			ttree->Branch("cTags2", &m_cTagValues2);
+
+			ttree->Branch("bmax12", &m_bmax12, "bmax12/F");
+			ttree->Branch("bmax22", &m_bmax22, "bmax22/F");
+			ttree->Branch("bmax32", &m_bmax32, "bmax32/F");
+			ttree->Branch("bmax42", &m_bmax42, "bmax42/F");
+
+			ttree->Branch("cmax12", &m_cmax12, "cmax12/F");
+			ttree->Branch("cmax22", &m_cmax22, "cmax22/F");
+			ttree->Branch("cmax32", &m_cmax32, "cmax32/F");
+			ttree->Branch("cmax42", &m_cmax42, "cmax42/F");
+		}
 
 		// pxij:pyij:pzij:eij for all dijets i=(1,2) and associated jets (1,2)
 		// that all hypotheses have in common
@@ -237,6 +277,14 @@ void EventObservablesBase::prepareBaseTree()
 		// jet matching
 		ttree->Branch("jet_matching", &m_jet_matching);
 		ttree->Branch("jet_matching_source", &m_jet_matching_source, "jet_matching_source/I");
+		ttree->Branch("using_kinfit", &m_using_kinfit, "using_kinfit/B");
+		ttree->Branch("using_mass_chi2", &m_using_mass_chi2, "using_mass_chi2/B");
+
+		// matrix elements
+		if (m_use_matrix_elements()) {
+			ttree->Branch("me_zhh_avg", &m_lcme_zhh_avg, "me_zhh_avg/D");
+			ttree->Branch("me_zzh_avg", &m_lcme_zzh_avg, "me_zzh_avg/D");
+		}
 
 		/* old variables for pre selection
 		ttree->Branch("dileptonMassPrePairing", &m_dileptonMassPrePairing, "dileptonMassPrePairing/F");
@@ -336,8 +384,13 @@ void EventObservablesBase::clearBaseValues()
 	std::fill(m_bTagValues.begin(), m_bTagValues.end(), -1.);
 	std::fill(m_cTagValues.begin(), m_cTagValues.end(), -1.);
 
+	std::fill(m_bTagValues2.begin(), m_bTagValues2.end(), -1.);
+	std::fill(m_cTagValues2.begin(), m_cTagValues2.end(), -1.);
+
 	m_jet_matching.clear();
 	m_jet_matching_source = 0;
+	m_using_kinfit = false;
+	m_using_mass_chi2 = false;
 	
 	/*
 	m_dileptonMassPrePairing = -999.;
@@ -415,9 +468,10 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 			assert(m_jet_matching.size() == m_nJets);
 			assert(m_jet_matching_source == 1 || m_jet_matching_source == 2);
 
-			std::cerr << "VEC SIZE of "<< m_jetMatchingParameter().c_str() << " : " << m_jet_matching.size() << std::endl;
-			std::cerr << std::string("TEST_").append("STRING") << std::endl;
-			std::cerr << "Reading parameters " << m_jet_matching[0] << " " << m_jet_matching[1] << " " << m_jet_matching[2] << " " << m_jet_matching[3] << std::endl;
+			m_using_kinfit = m_jet_matching_source == 2;
+			m_using_mass_chi2 = m_jet_matching_source == 1;
+
+			std::cerr << "Jet matching from source " << m_jet_matching_source << " : (" << m_jet_matching[0] << "," << m_jet_matching[1] << ") + (" << m_jet_matching[2] << "," << m_jet_matching[3] << ")" << std::endl;
 
 			// ---------- JET PROPERTIES AND FLAVOUR TAGGING ----------
 		
@@ -429,22 +483,35 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 
 			PIDHandler FTHan(inputJetCollection);
 			int _FTAlgoID = FTHan.getAlgorithmID(m_JetTaggingPIDAlgorithm);
+			int _FTAlgoID2 = m_use_tags2 ? FTHan.getAlgorithmID(m_JetTaggingPIDAlgorithm2) : -1;
+
 			int BTagID = FTHan.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterB);
 			int CTagID = FTHan.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterC);
+
+			int BTagID2 = m_use_tags2 ? FTHan.getParameterIndex(_FTAlgoID2, m_JetTaggingPIDParameterB2) : -1;
+			int CTagID2 = m_use_tags2 ? FTHan.getParameterIndex(_FTAlgoID2, m_JetTaggingPIDParameterC2) : -1;
 			//int OTagID = FTHan.getParameterIndex(_FTAlgoID, "OTag");
 
 			for (int i=0; i<m_nJets; ++i) {
 				const ParticleIDImpl& FTImpl = dynamic_cast<const ParticleIDImpl&>(FTHan.getParticleID(jets[i], _FTAlgoID));
 				const FloatVec& FTPara = FTImpl.getParameters();
-				std::cerr << "Reading parameters " << BTagID << " " << CTagID << " of vector with " << FTPara.size() << " elements at " << &FTPara << std::endl;
-				double bTagValue = FTPara[BTagID];
-				double cTagValue = FTPara[CTagID];
+
+				std::cerr << "Reading parameters " << BTagID << " " << CTagID << " of vector with " << FTPara.size() << " elements" << std::endl;
 				//double oTagValue = FTPara[OTagID];
 
-				std::cerr << "Read parameters " << bTagValue << " and " << cTagValue << std::endl;
+				m_bTagValues[i] = FTPara[BTagID];
+				m_cTagValues[i] = FTPara[CTagID];
 
-				m_bTagValues[i] = bTagValue;
-				m_cTagValues[i] = cTagValue;
+				if (m_use_tags2) {
+					const ParticleIDImpl& FTImpl2 = dynamic_cast<const ParticleIDImpl&>(FTHan.getParticleID(jets[i], _FTAlgoID2));
+					const FloatVec& FTPara2 = FTImpl2.getParameters();
+
+					std::cerr << "Reading parameters2 " << BTagID2 << " " << CTagID2 << " of vector with " << FTPara2.size() << " elements" << std::endl;
+					//double oTagValue = FTPara[OTagID];
+
+					m_bTagValues2[i] = FTPara2[BTagID2];
+					m_cTagValues2[i] = FTPara2[CTagID2];
+				}
 			}
 
 			// calculate bmax1,2,3,4
@@ -463,6 +530,24 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 			m_cmax2 = cTagsSorted.rbegin()[1];
 			m_cmax3 = cTagsSorted.rbegin()[2];
 			m_cmax4 = cTagsSorted.rbegin()[3];
+
+			if (m_use_tags2) {
+				std::vector<double> bTagsSorted2(m_bTagValues2.begin(), m_bTagValues2.end());
+				std::sort (bTagsSorted2.begin(), bTagsSorted2.end());
+
+				m_bmax12 = bTagsSorted2.rbegin()[0];
+				m_bmax22 = bTagsSorted2.rbegin()[1];
+				m_bmax32 = bTagsSorted2.rbegin()[2];
+				m_bmax42 = bTagsSorted2.rbegin()[3];
+
+				std::vector<double> cTagsSorted2(m_cTagValues2.begin(), m_cTagValues2.end());
+				std::sort (cTagsSorted2.begin(), cTagsSorted2.end());
+
+				m_cmax12 = cTagsSorted2.rbegin()[0];
+				m_cmax22 = cTagsSorted2.rbegin()[1];
+				m_cmax32 = cTagsSorted2.rbegin()[2];
+				m_cmax42 = cTagsSorted2.rbegin()[3];
+			}
 		}
 
 		// JET-MATCHING
@@ -512,8 +597,26 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 void EventObservablesBase::init(){
     printParameters();
 
+	// A. prepare some variables
+	assert(m_polarizations.size() == 2);
+
+	float Pem = m_polarizations[0];
+	float Pep = m_polarizations[0];
+
+	assert(abs(Pem) <= 1 && abs(Pep) <= 1);
+
+	// A.2. prepare the matrix elements
+	m_lcmezhh = new LCMEZHH("LCMEZHH", "ZHH", 125., Pem, Pep);
+	m_lcmezzh = new LCMEZZH("LCMEZZH", "ZZH", 125., Pem, Pep);
+
+	// A.3. flavor tagging variables
 	m_bTagValues = std::vector<double>(m_nAskedJets(), -1.);
   	m_cTagValues = std::vector<double>(m_nAskedJets(), -1.);
+
+	m_use_tags2 = m_JetTaggingPIDAlgorithm2.size() && m_JetTaggingPIDParameterB2.size() && m_JetTaggingPIDParameterC2.size();
+
+	m_bTagValues2 = std::vector<double>(m_nAskedJets(), -1.);
+  	m_cTagValues2 = std::vector<double>(m_nAskedJets(), -1.);
 
 	prepareBaseTree();
 	prepareChannelTree();
@@ -549,3 +652,20 @@ void EventObservablesBase::end(){
       delete m_pTFile;
     }
 }
+
+void EventObservablesBase::calculateMatrixElements(
+	int z_decay_pdg,
+	int z_or_h_decay_pdg,
+	TLorentzVector from_z1, TLorentzVector from_z2,
+	TLorentzVector from_z_or_h_1, TLorentzVector from_z_or_h_2,
+	TLorentzVector dijet
+){
+	m_lcmezhh->SetZDecayMode(m_pdg_to_lcme_mode[z_decay_pdg]);
+	m_lcmezzh->SetZDecayMode(m_pdg_to_lcme_mode[z_decay_pdg], m_pdg_to_lcme_mode[z_or_h_decay_pdg]);
+
+	TLorentzVector zhh_inputs [4] = {from_z1, from_z2, from_z_or_h_1 + from_z_or_h_2, dijet};
+	TLorentzVector zzh_inputs [5] = {from_z1, from_z2, from_z_or_h_1, from_z_or_h_2, dijet};
+
+	m_lcmezhh->SetMomentumFinal(zhh_inputs);
+	m_lcmezzh->SetMomentumFinal(zzh_inputs);
+};

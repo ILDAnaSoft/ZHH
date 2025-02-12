@@ -452,18 +452,14 @@ void ZHHllbbbbKinFit::processEvent( EVENT::LCEvent *pLCEvent )
   LCCollection *inputLeptonCollection = NULL;
   LCCollection *inputSLDecayCollection = NULL;
   LCCollection *inputMCParticleCollection = NULL;
+
+  /*
   IMPL::LCCollectionVec* outputLeptonCollection = NULL;
   outputLeptonCollection = new IMPL::LCCollectionVec(LCIO::RECONSTRUCTEDPARTICLE);
-  outputLeptonCollection->setSubset( true );
-  IMPL::LCCollectionVec* outputJetCollection = NULL;
-  outputJetCollection = new IMPL::LCCollectionVec(LCIO::RECONSTRUCTEDPARTICLE);
-  outputJetCollection->setSubset( true );
   IMPL::LCCollectionVec* outputStartLeptonCollection = NULL;
   outputStartLeptonCollection = new IMPL::LCCollectionVec(LCIO::RECONSTRUCTEDPARTICLE);
-  outputStartLeptonCollection->setSubset( true );
   IMPL::LCCollectionVec* outputStartJetCollection = NULL;
-  outputStartJetCollection = new IMPL::LCCollectionVec(LCIO::RECONSTRUCTEDPARTICLE);
-  outputStartJetCollection->setSubset( true );
+  outputStartJetCollection = new IMPL::LCCollectionVec(LCIO::RECONSTRUCTEDPARTICLE); */
   //LCCollectionVec *outputNuEnergyCollection = new LCCollectionVec(LCIO::LCFLOATVEC);
 
   LCRelationNavigator* JetSLDNav = NULL;
@@ -919,7 +915,9 @@ void ZHHllbbbbKinFit::processEvent( EVENT::LCEvent *pLCEvent )
   //pLCEvent->addCollection( outputNuEnergyCollection, m_outputNuEnergyCollection.c_str() );
   //streamlog_out(DEBUG0) << " Output true and reco Nu collection added to event" << std::endl;
   m_pTTree->Fill();
+
   attachBestPermutation(inputJetCollection, m_bestMatchingKinfit, "ll", true);
+  fillOutputCollections(pLCEvent, bestJets);
 }
 
 ZHHllbbbbKinFit::FitResult ZHHllbbbbKinFit::performFIT( pfoVector jets, 
@@ -968,6 +966,8 @@ ZHHllbbbbKinFit::FitResult ZHHllbbbbKinFit::performFIT( pfoVector jets,
   FitResult bestFitResult;
 
   assert(jets.size() == 4);
+
+  streamlog_out(MESSAGE) << "perms.size() = " << perms.size() << std::endl ; 
 
   for (unsigned int iperm = 0; iperm < perms.size(); iperm++) {
     streamlog_out(MESSAGE) << " ================================================= " << std::endl ;
