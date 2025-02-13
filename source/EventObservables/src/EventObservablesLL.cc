@@ -58,7 +58,13 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         // ---------- SAVE TYPES OF PAIRED ISOLATED LEPTONS ----------
         ReconstructedParticle* paired_isolep1 = dynamic_cast<ReconstructedParticle*>( inputLepPairCollection->getElementAt(0));
         ReconstructedParticle* paired_isolep2 = dynamic_cast<ReconstructedParticle*>( inputLepPairCollection->getElementAt(1));
-        m_paired_lep_type = paired_isolep1->getType();
+
+        // for ME calculation, first lepton must be the negative charged one
+        if (paired_isolep1->getCharge() > 0){
+            std::swap(paired_isolep1, paired_isolep2);
+        }
+
+        m_paired_lep_type = abs(paired_isolep1->getType());
 
         TLorentzVector v4_paired_isolep1 = v4(paired_isolep1);
         TLorentzVector v4_paired_isolep2 = v4(paired_isolep2);
@@ -73,12 +79,10 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         m_pz32 = v4_paired_isolep2.Pz();
         m_e32 = v4_paired_isolep2.E();
 
-        int lep_type = abs(m_paired_lep_type);
+        assert(m_paired_lep_type == 11 || m_paired_lep_type == 13);
 
-        assert(lep_type == 11 || lep_type == 13);
-
-        calculateMatrixElements(lep_type, 5, v4_paired_isolep1, v4_paired_isolep2,
+        calculateMatrixElements(m_paired_lep_type, 5, v4_paired_isolep1, v4_paired_isolep2,
                                 v4(inputJetCollection->getElementAt(0)), v4(inputJetCollection->getElementAt(1)),
-                                v4(inputJetCollection->getElementAt(2)), v4(inputJetCollection->getElementAt(3)));
+                                v4(inputJetCollection->getElementAt(2)), v4(inputJetCollection->getElementAt(3)), false);
     }
 };

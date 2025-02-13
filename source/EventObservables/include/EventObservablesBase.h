@@ -121,7 +121,7 @@ class EventObservablesBase: public Processor
 
 		// dijet_targets: a list of PDGs to constitute the jets (in this order)
 		// used in the 6jet case to reduce permutation space from (1-6)=720 to (1-4)=24
-		std::tuple<std::vector<unsigned short>, vector<float>, float> pairJetsByMass(std::vector<ReconstructedParticle*> jets, std::vector<unsigned short> dijet_targets);
+		std::tuple<std::vector<unsigned short>, std::vector<float>, float> pairJetsByMass(std::vector<ReconstructedParticle*> jets, std::vector<unsigned short> dijet_targets);
 
 		// assumptions:
 		// - from_z1 + from_z2 come from Z, relates to z_decay_pdg; can be any of (ll, vv, qq)
@@ -133,7 +133,8 @@ class EventObservablesBase: public Processor
 			int dj2_decay_pdg, // dijet2
 			TLorentzVector from_z1, TLorentzVector from_z2,
 			TLorentzVector jet1, TLorentzVector jet2,
-			TLorentzVector jet3, TLorentzVector jet4);
+			TLorentzVector jet3, TLorentzVector jet4,
+			bool permute_from_z);
 		
 		// the following is energy dependant; if ECM changes, this may need to be updated!!!
 		std::map<int, int> m_pdg_to_lcme_mode = {

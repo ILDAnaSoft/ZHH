@@ -74,9 +74,9 @@ function zhh_install_deps() {
     fi
 
     if [[ -f ".env" ]]; then
-        local yn="n"
-        
         read -p "You wish to install the dependencies, but an .env file which would be overwritten already exists. Do you wish to continue anyway? (y) " yn
+        local yn=${yn:-"y"}
+
         if [[ "$yn" = "y" ]]; then
             rm -f .env.bck
             mv .env .env.bck
@@ -85,7 +85,7 @@ function zhh_install_deps() {
         fi
     fi
 
-    if [[ -z $MarlinMLFlavorTagging || -z $FlavorTagging_ML || -z $ILD_CONFIG_DIR || -z $MarlinReco || -z $LCFIPlusConfig || -z $LCFIPlus ]]; then
+    if [[ -z $MarlinMLFlavorTagging || -z $FlavorTagging_ML || -z $ILD_CONFIG_DIR || -z $MarlinReco || -z $LCFIPlusConfig || -z $LCFIPlus || -z $Physsim ]]; then
         echo "At least one of the dependencies could not be found. Retrieving them..."
 
         local ind="$( [ -z "${ZSH_VERSION}" ] && echo "0" || echo "1" )" # ZSH arrays are 1-indexed
@@ -179,7 +179,11 @@ function zhh_install_deps() {
     read -p "Where do you want to install SGV? ($default_sgv_dir) " sgv_dir
     local sgv_dir=${sgv_dir:-$default_sgv_dir}
 
-    source "$REPO_ROOT/shell/sgv_install.sh" $sgv_dir
+    if [[ -d $sgv_dir ]]; then  
+        echo "SGV_DIR <$sgv_dir> already exists. Skipping..."
+    else
+        source "$REPO_ROOT/shell/sgv_install.sh" $sgv_dir
+    fi
 
     # Save directories to .env
     # For $ZHH_ENV_NAME, see zhh_install_venv.sh

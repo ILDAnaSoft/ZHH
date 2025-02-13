@@ -1,7 +1,7 @@
 #!/bin/bash
 
 function usage() {
-    echo "Usage: source install.sh [-r <key4hep-release>] [--install [--install-dir ./install]] [--compile]"
+    echo "Usage: source install.sh [-r <key4hep-release>] [--install-dir ./dependencies] [--compile]"
     echo "       -r <release> : setup a specific release, if not specified the latest release will be used"
     echo "       --setup      : re-writes the setup.sh file"
     echo "       --install-dir, -d: defaults to dependencies"
@@ -17,7 +17,6 @@ function usage() {
     echo "       MarlinReco: https://github.com/nVentis/MarlinReco.git"
     echo "       LCFIPlusConfig: https://github.com/suehara/LCFIPlusConfig"
     echo "       LCFIPlus: https://github.com/suehara/LCFIPlus (onnx branch)"
-
 }
 
 ZHH_K4H_RELEASE="2025-01-28"
@@ -42,7 +41,7 @@ if [[ ! -d "$REPO_ROOT" ]]; then
 fi
 
 # Parse user input
-ZHH_COMMAND=""
+ZHH_COMMAND="install"
 
 for ((i=1; i<=$#; i++)); do
     eval arg=\$$i
@@ -54,9 +53,6 @@ for ((i=1; i<=$#; i++)); do
             ;;
         --setup|-f)
             ZHH_WRITE_SETUP=1
-            ;;
-        --install)
-            ZHH_COMMAND="install"
             ;;
         --install-dir|-d)
             if [[ -z "$argn" ]]; then

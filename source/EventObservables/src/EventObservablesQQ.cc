@@ -29,7 +29,15 @@ void EventObservablesQQ::prepareChannelTree() {
 };
 
 void EventObservablesQQ::clearChannelValues() {
+    m_px31 = 0.;
+    m_py31 = 0.;
+    m_pz31 = 0.;
+    m_e31 = 0.;
 
+    m_px32 = 0.;
+    m_py32 = 0.;
+    m_pz32 = 0.;
+    m_e32 = 0.;
 };
 
 void EventObservablesQQ::updateChannelValues(EVENT::LCEvent *pLCEvent) {
@@ -38,8 +46,9 @@ void EventObservablesQQ::updateChannelValues(EVENT::LCEvent *pLCEvent) {
     if ( inputJetCollection->getNumberOfElements() == m_nAskedJets() ) {
         // find best matching to Z boson to eliminate some combinatorics
         std::vector<unsigned short> jet_matching_by_mass;
-        vector<float> dijetmasses;
+        std::vector<float> dijetmasses;
 
+        // first, find two jets with highest b-tag
         std::tie(jet_matching_by_mass, dijetmasses, m_lcme_jet_matching_chi2) = pairJetsByMass(getElements(inputJetCollection, {0, 1, 2, 3, 4, 5}), {23, 25, 25});
 
         m_lcme_jet_matching_mz = dijetmasses[0];
@@ -50,7 +59,7 @@ void EventObservablesQQ::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         TLorentzVector v4_jet_from_z2 = v4(inputJetCollection->getElementAt(jet_matching_by_mass[1]));
 
         // assume charm (background), per default
-        int z1_decay_pdg = 4;
+        unsigned int z1_decay_pdg = 4;
         if ((m_bTagValues[jet_matching_by_mass[0]] + m_bTagValues[jet_matching_by_mass[1]]) > 
             (m_cTagValues[jet_matching_by_mass[0]] + m_cTagValues[jet_matching_by_mass[1]]))
             // assume bottom
@@ -67,8 +76,8 @@ void EventObservablesQQ::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         m_e32 = v4_jet_from_z2.E();
 
         // assume remaining jets to be b-jets
-        calculateMatrixElements(4, 5, v4_jet_from_z1, v4_jet_from_z2,
+        calculateMatrixElements(z1_decay_pdg, 5, v4_jet_from_z1, v4_jet_from_z2,
                                 v4(inputJetCollection->getElementAt(jet_matching_by_mass[2])), v4(inputJetCollection->getElementAt(jet_matching_by_mass[3])),
-                                v4(inputJetCollection->getElementAt(jet_matching_by_mass[4])), v4(inputJetCollection->getElementAt(jet_matching_by_mass[5])));
+                                v4(inputJetCollection->getElementAt(jet_matching_by_mass[4])), v4(inputJetCollection->getElementAt(jet_matching_by_mass[5])), true);
     }
 };

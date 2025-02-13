@@ -473,7 +473,7 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 			m_using_kinfit = m_jet_matching_source == 2;
 			m_using_mass_chi2 = m_jet_matching_source == 1;
 
-			std::cerr << "Jet matching from source " << m_jet_matching_source << " : (" << m_jet_matching[0] << "," << m_jet_matching[1] << ") + (" << m_jet_matching[2] << "," << m_jet_matching[3] << ")" << std::endl;
+			streamlog_out(MESSAGE) << "Jet matching from source " << m_jet_matching_source << " : (" << m_jet_matching[0] << "," << m_jet_matching[1] << ") + (" << m_jet_matching[2] << "," << m_jet_matching[3] << ")" << std::endl;
 
 			// ---------- JET PROPERTIES AND FLAVOUR TAGGING ----------
 		
@@ -498,7 +498,7 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 				const ParticleIDImpl& FTImpl = dynamic_cast<const ParticleIDImpl&>(FTHan.getParticleID(jets[i], _FTAlgoID));
 				const FloatVec& FTPara = FTImpl.getParameters();
 
-				std::cerr << "Reading parameters " << BTagID << " " << CTagID << " of vector with " << FTPara.size() << " elements" << std::endl;
+				streamlog_out(MESSAGE) << "Reading parameters " << BTagID << " " << CTagID << " of vector with " << FTPara.size() << " elements" << std::endl;
 				//double oTagValue = FTPara[OTagID];
 
 				m_bTagValues[i] = FTPara[BTagID];
@@ -508,7 +508,7 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 					const ParticleIDImpl& FTImpl2 = dynamic_cast<const ParticleIDImpl&>(FTHan.getParticleID(jets[i], _FTAlgoID2));
 					const FloatVec& FTPara2 = FTImpl2.getParameters();
 
-					std::cerr << "Reading parameters2 " << BTagID2 << " " << CTagID2 << " of vector with " << FTPara2.size() << " elements" << std::endl;
+					streamlog_out(MESSAGE) << "Reading parameters2 " << BTagID2 << " " << CTagID2 << " of vector with " << FTPara2.size() << " elements" << std::endl;
 					//double oTagValue = FTPara[OTagID];
 
 					m_bTagValues2[i] = FTPara2[BTagID2];
@@ -592,7 +592,7 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 		streamlog_out(MESSAGE) << "processEvent : Input collections not found in event " << m_nEvt << std::endl;
 	} catch (const std::exception &exc) {
 		// remove for production
-    	std::cerr << exc.what();
+    	streamlog_out(MESSAGE) << exc.what();
 	}
 };
 
@@ -657,7 +657,7 @@ void EventObservablesBase::end(){
 
 // so far only supports
 // (dijet_targets)=(Z,H,H), 6 jets
-// (dijet targets)=(Z), 6 jets
+// (dijet targets)=(Z,H), 4asdf jets
 std::tuple<std::vector<unsigned short>, vector<float>, float> EventObservablesBase::pairJetsByMass(
 	std::vector<ReconstructedParticle*> jets,
 	std::vector<unsigned short> dijet_targets
@@ -666,7 +666,7 @@ std::tuple<std::vector<unsigned short>, vector<float>, float> EventObservablesBa
 
 	assert(dijet_targets.size() *2 == jets.size());
 
-	if (m_nAskedJets() == 6 && dijet_targets.size() == 3 && dijet_targets[0] == 23 && dijet_targets[1] == 25 && dijet_targets[2] == 25) {
+	if (jets.size() == 6 && dijet_targets[0] == 23 && dijet_targets[1] == 25 && dijet_targets[2] == 25) {
 		perms = {
 			{0,1,2,3,4,5},
 			{0,2,1,3,4,5},
@@ -683,6 +683,15 @@ std::tuple<std::vector<unsigned short>, vector<float>, float> EventObservablesBa
 			{3,4,0,1,2,5},
 			{3,5,0,1,2,4},
 			{4,5,0,1,2,3}
+		};
+	} else if (jets.size() == 4 && dijet_targets[0] == 23 && dijet_targets[1] == 25) {
+		perms = {
+			{0,1,2,3},
+			{0,2,1,3},
+			{0,3,1,2},
+			{1,2,0,3},
+			{1,3,0,2},
+			{2,3,0,1}
 		};
 	} else
 		throw EVENT::Exception("Not implemented dijet pairing case");
@@ -739,63 +748,76 @@ void EventObservablesBase::calculateMatrixElements(
 	int b2_decay_pdg,
 	TLorentzVector from_z_1, TLorentzVector from_z_2, // from z
 	TLorentzVector jet1, TLorentzVector jet2, // from z or h
-	TLorentzVector jet3, TLorentzVector jet4 // from h
+	TLorentzVector jet3, TLorentzVector jet4, // from h
+	bool permute_from_z
 ){
 	m_lcmezhh->SetZDecayMode(m_pdg_to_lcme_mode[b1_decay_pdg]);
 	m_lcmezzh->SetZDecayMode(m_pdg_to_lcme_mode[b1_decay_pdg], m_pdg_to_lcme_mode[b2_decay_pdg]);
 
 	std::vector<unsigned short> idx = { 0, 1, 2, 3 };
-	TLorentzVector vectors [4] = { jet1, jet2, jet3, jet4 };
-
-	// TODO: only calculating 12 is necessary, as H -> a+b is symmetric with respect to a <-> b
-	int nperms = 24;
-	float default_weight = 1./nperms;
-
-	std::vector<float> weights (nperms, default_weight);
+	TLorentzVector vecs_jet [4] = { jet1, jet2, jet3, jet4 };
 
 	double result_zhh = 0.;
 	double result_zzh = 0.;
 
-	streamlog_out(DEBUG) << "LCME Debug: E, Px, Py, Pz " << std::endl;
-	streamlog_out(DEBUG) << "  Z_1: " << from_z_1.E() << " " << from_z_1.Px() << " " << from_z_1.Py() << " " << from_z_1.Pz() << std::endl;
-	streamlog_out(DEBUG) << "  Z_2: " << from_z_2.E() << " " << from_z_2.Px() << " " << from_z_2.Py() << " " << from_z_2.Pz() << std::endl;
-	streamlog_out(DEBUG) << "  J_1: " << vectors[idx[0]].E() << " " << vectors[idx[0]].Px() << " " << vectors[idx[0]].Py() << " " << vectors[idx[0]].Pz() << std::endl;
-	streamlog_out(DEBUG) << "  J_2: " << vectors[idx[1]].E() << " " << vectors[idx[1]].Px() << " " << vectors[idx[1]].Py() << " " << vectors[idx[1]].Pz() << std::endl;
-	streamlog_out(DEBUG) << "  J_3: " << vectors[idx[2]].E() << " " << vectors[idx[2]].Px() << " " << vectors[idx[2]].Py() << " " << vectors[idx[2]].Pz() << std::endl;
-	streamlog_out(DEBUG) << "  J_4: " << vectors[idx[3]].E() << " " << vectors[idx[3]].Px() << " " << vectors[idx[3]].Py() << " " << vectors[idx[3]].Pz() << std::endl;
+	streamlog_out(MESSAGE) << "LCME Debug: E, Px, Py, Pz " << std::endl;
+	streamlog_out(MESSAGE) << "  Z_1: " << from_z_1.E() << " " << from_z_1.Px() << " " << from_z_1.Py() << " " << from_z_1.Pz() << std::endl;
+	streamlog_out(MESSAGE) << "  Z_2: " << from_z_2.E() << " " << from_z_2.Px() << " " << from_z_2.Py() << " " << from_z_2.Pz() << std::endl;
+	streamlog_out(MESSAGE) << "  J_1: " << vecs_jet[idx[0]].E() << " " << vecs_jet[idx[0]].Px() << " " << vecs_jet[idx[0]].Py() << " " << vecs_jet[idx[0]].Pz() << std::endl;
+	streamlog_out(MESSAGE) << "  J_2: " << vecs_jet[idx[1]].E() << " " << vecs_jet[idx[1]].Px() << " " << vecs_jet[idx[1]].Py() << " " << vecs_jet[idx[1]].Pz() << std::endl;
+	streamlog_out(MESSAGE) << "  J_3: " << vecs_jet[idx[2]].E() << " " << vecs_jet[idx[2]].Px() << " " << vecs_jet[idx[2]].Py() << " " << vecs_jet[idx[2]].Pz() << std::endl;
+	streamlog_out(MESSAGE) << "  J_4: " << vecs_jet[idx[3]].E() << " " << vecs_jet[idx[3]].Px() << " " << vecs_jet[idx[3]].Py() << " " << vecs_jet[idx[3]].Pz() << std::endl;
 
 	/*
-	std::cout << "  TOT: " << from_z_1.E() + from_z_2.E() + vectors[idx[0]].E() + vectors[idx[1]].E() + vectors[idx[2]].E() + vectors[idx[3]].E() << " "
-							<< from_z_1.Px() + from_z_2.Px() + vectors[idx[0]].Px() + vectors[idx[1]].Px() + vectors[idx[2]].Px() + vectors[idx[3]].Px() << " "
-							<< from_z_1.Py() + from_z_2.Py() + vectors[idx[0]].Py() + vectors[idx[1]].Py() + vectors[idx[2]].Py() + vectors[idx[3]].Py() << " "
-							<< from_z_1.Pz() + from_z_2.Pz() + vectors[idx[0]].Pz() + vectors[idx[1]].Pz() + vectors[idx[2]].Pz() + vectors[idx[3]].Pz()
+	std::cout << "  TOT: " << from_z_1.E() + from_z_2.E() + vecs_jet[idx[0]].E() + vecs_jet[idx[1]].E() + vecs_jet[idx[2]].E() + vecs_jet[idx[3]].E() << " "
+							<< from_z_1.Px() + from_z_2.Px() + vecs_jet[idx[0]].Px() + vecs_jet[idx[1]].Px() + vecs_jet[idx[2]].Px() + vecs_jet[idx[3]].Px() << " "
+							<< from_z_1.Py() + from_z_2.Py() + vecs_jet[idx[0]].Py() + vecs_jet[idx[1]].Py() + vecs_jet[idx[2]].Py() + vecs_jet[idx[3]].Py() << " "
+							<< from_z_1.Pz() + from_z_2.Pz() + vecs_jet[idx[0]].Pz() + vecs_jet[idx[1]].Pz() + vecs_jet[idx[2]].Pz() + vecs_jet[idx[3]].Pz()
 							<< std::endl;
 	*/
+
+	int nperms = 24;
+
+	std::vector<std::vector<unsigned short>> perms_from_z = {{ 0, 1 }};
+	if (permute_from_z) {
+		perms_from_z.push_back({1, 0});
+		nperms = nperms * 2;
+	}
+	TLorentzVector vecs_from_z [2] = { from_z_1, from_z_2 };
+
+	// TODO: only calculating 12 is necessary, as H -> a+b is symmetric with respect to a <-> b
+	
+	float default_weight = 1./nperms;
+
+	std::vector<float> weights (nperms, default_weight);
 
 	int nperm = 0;
 	double lcme_zhh = 0.;
 	double lcme_zzh = 0.;
-	do {
-		TLorentzVector zhh_inputs [4] = { from_z_1, from_z_2, vectors[idx[0]] + vectors[idx[1]], vectors[idx[2]] + vectors[idx[3]] };
-		TLorentzVector zzh_inputs [5] = { from_z_1, from_z_2, vectors[idx[0]] , vectors[idx[1]], vectors[idx[2]] + vectors[idx[3]] };
 
-		m_lcmezhh->SetMomentumFinal(zhh_inputs);
-		m_lcmezzh->SetMomentumFinal(zzh_inputs);
+	for (auto perm_from_z: perms_from_z) {
+		do {
+			TLorentzVector zhh_inputs [4] = { vecs_from_z[perm_from_z[0]], vecs_from_z[perm_from_z[1]], vecs_jet[idx[0]] + vecs_jet[idx[1]], vecs_jet[idx[2]] + vecs_jet[idx[3]] };
+			TLorentzVector zzh_inputs [5] = { vecs_from_z[perm_from_z[0]], vecs_from_z[perm_from_z[1]], vecs_jet[idx[0]] , vecs_jet[idx[1]], vecs_jet[idx[2]] + vecs_jet[idx[3]] };
 
-		lcme_zhh = m_lcmezhh->GetMatrixElement2();
-		lcme_zzh = m_lcmezzh->GetMatrixElement2();
-		
-		streamlog_out(DEBUG) << "Perm " << nperm << "/" <<nperms  << ": MatrixElement2 (ZHH; ZZH)=(" << lcme_zhh << "; " << lcme_zzh << ") | Weight " << weights[nperm] << std::endl;
+			m_lcmezhh->SetMomentumFinal(zhh_inputs);
+			m_lcmezzh->SetMomentumFinal(zzh_inputs);
 
-		result_zhh += lcme_zhh * weights[nperm];
-		result_zzh += lcme_zzh * weights[nperm];
+			lcme_zhh = m_lcmezhh->GetMatrixElement2();
+			lcme_zzh = m_lcmezzh->GetMatrixElement2();
+			
+			streamlog_out(DEBUG) << "Perm " << nperm << "/" <<nperms  << ": MatrixElement2 (ZHH; ZZH)=(" << lcme_zhh << "; " << lcme_zzh << ") | Weight " << weights[nperm] << std::endl;
 
-		nperm += 1;
-    } while (std::next_permutation(idx.begin(), idx.end()));
+			result_zhh += lcme_zhh * weights[nperm];
+			result_zzh += lcme_zzh * weights[nperm];
+
+			nperm += 1;
+		} while (std::next_permutation(idx.begin(), idx.end()));
+	}
 
 	m_lcme_zhh_log = std::log(result_zhh);
 	m_lcme_zzh_log = std::log(result_zzh);
 
-	streamlog_out(DEBUG) << " log(LCMEZHH)=" << m_lcme_zhh_log << std::endl;
-	streamlog_out(DEBUG) << " log(LCMEZZH)=" << m_lcme_zzh_log << std::endl;
+	streamlog_out(MESSAGE) << " log(LCMEZHH)=" << m_lcme_zhh_log << std::endl;
+	streamlog_out(MESSAGE) << " log(LCMEZZH)=" << m_lcme_zzh_log << std::endl;
 };
