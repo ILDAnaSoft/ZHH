@@ -9,6 +9,9 @@
 #include "lcio.h"
 #include <string>
 #include <vector>
+#include <algorithm>
+#include <optional>
+#include <tuple>
 #include "TLorentzVector.h"
 #include <EventCategory.h>
 #include "physsim/LCMEZHH.h"
@@ -25,6 +28,9 @@ using namespace lcio ;
 using namespace marlin ;
 using jsonf = nlohmann::json;
 using namespace lcme ;
+
+TLorentzVector v4(ReconstructedParticle* p);
+TLorentzVector v4(LCObject* lcobj);
 
 // If the final state is a ZHH (with H -> bbar), the channel is given by the decay channel of the Z boson (else OTHER)
 // NONE is for initialization only and should not occur in practice
@@ -43,6 +49,9 @@ class EventObservablesBase: public Processor
         virtual void processEvent( LCEvent* evt );
         virtual void check( LCEvent* evt );
         virtual void end();
+
+		// helper functions
+		ReconstructedParticleVec getElements(LCCollection *collection, std::vector<int> elements);
 		
 	protected:
 		// common properties for all channels
@@ -103,23 +112,28 @@ class EventObservablesBase: public Processor
 		float m_ECM{};
 		std::vector <float> m_polarizations{};
 
-		// matrix elements
-		double m_lcme_zhh_avg{};
-		double m_lcme_zzh_avg{};
+		// matrix elements; here given as log of the mean over 4 permutations, and over ghe given polarization
+		double m_lcme_zhh_log{};
+		double m_lcme_zzh_log{};
 
 		lcme::LCMEZHH *m_lcmezhh{}; // ZHH MEM calculator instance
 		lcme::LCMEZZH *m_lcmezzh{}; // ZZH MEM calculator instance
+
+		// dijet_targets: a list of PDGs to constitute the jets (in this order)
+		// used in the 6jet case to reduce permutation space from (1-6)=720 to (1-4)=24
+		std::tuple<std::vector<unsigned short>, vector<float>, float> pairJetsByMass(std::vector<ReconstructedParticle*> jets, std::vector<unsigned short> dijet_targets);
 
 		// assumptions:
 		// - from_z1 + from_z2 come from Z, relates to z_decay_pdg; can be any of (ll, vv, qq)
 		// - jet3 + jet4 come from either H, or Z (if H, then simply Hdijet=jet3+jet4), relates to z_or_h_decay_pdg
 		// - dijet: a Higgs present in both ZHH and ZZH
+		// flavor of jet3, jet4 
 		void calculateMatrixElements(
-			int z_decay_pdg,
-			int z_or_h_decay_pdg,
+			int z1_decay_pdg, // Z=dijet1
+			int dj2_decay_pdg, // dijet2
 			TLorentzVector from_z1, TLorentzVector from_z2,
-			TLorentzVector from_z_or_h_1, TLorentzVector from_z_or_h_2,
-			TLorentzVector dijet);
+			TLorentzVector jet1, TLorentzVector jet2,
+			TLorentzVector jet3, TLorentzVector jet4);
 		
 		// the following is energy dependant; if ECM changes, this may need to be updated!!!
 		std::map<int, int> m_pdg_to_lcme_mode = {

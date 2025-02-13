@@ -10,7 +10,7 @@
                 "/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-almalinux9-gcc11.3.1-opt/ilcutil/1.7.2-vamvj5/include/**", // streamlog
                 "/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-almalinux9-gcc11.3.1-opt/nlohmann-json/3.11.2-mxh7ki/include", // nlohmann-json
                 "/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-almalinux9-gcc11.3.1-opt/py-torch/2.2.1-le2nos/lib/python3.10/site-packages/torch/include/**", // py-torch
-                "/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/physsim/0.5-433xdn/include**", // Physsim
+                "${workspaceFolder}/dependencies/Physsim/include**", // Physsim
                 "${workspaceFolder}/source/CheatedMCOverlayRemoval/include/**",
                 "${workspaceFolder}/source/CommonTools/include/**",
                 "${workspaceFolder}/source/ExpandJetProcessor/include/**",

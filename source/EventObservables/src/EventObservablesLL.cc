@@ -45,30 +45,40 @@ void EventObservablesLL::clearChannelValues() {
 };
 
 void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
+    LCCollection *inputJetCollection = pLCEvent->getCollection( m_inputJetCollection );
     LCCollection *inputLeptonCollection = pLCEvent->getCollection( m_inputIsolatedleptonCollection );
     LCCollection *inputLepPairCollection = pLCEvent->getCollection( m_inputLepPairCollection );
 
-    if ( inputLepPairCollection->getNumberOfElements() == m_nAskedIsoLeps() ) {
+    if ( inputLepPairCollection->getNumberOfElements() == m_nAskedIsoLeps() &&
+         inputJetCollection->getNumberOfElements() == m_nAskedJets() ) {
         //m_mzll = inputLepPairCollection->parameters().getFloatVal("RecoLepsInvMass");
         //m_m_diff_z = fabs( m_mzll - 91.2 );
         m_mzll_pre_pairing = inputLepPairCollection->parameters().getFloatVal("IsoLepsInvMass");
         
-
         // ---------- SAVE TYPES OF PAIRED ISOLATED LEPTONS ----------
         ReconstructedParticle* paired_isolep1 = dynamic_cast<ReconstructedParticle*>( inputLepPairCollection->getElementAt(0));
         ReconstructedParticle* paired_isolep2 = dynamic_cast<ReconstructedParticle*>( inputLepPairCollection->getElementAt(1));
         m_paired_lep_type = paired_isolep1->getType();
 
-        // ---------- SAVE MOMENTA + ENERGIES OF ISOLATED LEPTONS ----------
+        TLorentzVector v4_paired_isolep1 = v4(paired_isolep1);
+        TLorentzVector v4_paired_isolep2 = v4(paired_isolep2);
+
+        m_px31 = v4_paired_isolep1.Px();
+        m_py31 = v4_paired_isolep1.Py();
+        m_pz31 = v4_paired_isolep1.Pz();
+        m_e31 = v4_paired_isolep1.E();
+
+        m_px32 = v4_paired_isolep2.Px();
+        m_py32 = v4_paired_isolep2.Py();
+        m_pz32 = v4_paired_isolep2.Pz();
+        m_e32 = v4_paired_isolep2.E();
+
         int lep_type = abs(m_paired_lep_type);
 
         assert(lep_type == 11 || lep_type == 13);
 
-        // following convention in GENNumCon.h
-        // calculateMatrixElements();
-        
-        //_zzh->SetMomentumFinal(zzh_lortz);
-        //_zzh->SetMomentumFinal(zzh_lortz);
-
+        calculateMatrixElements(lep_type, 5, v4_paired_isolep1, v4_paired_isolep2,
+                                v4(inputJetCollection->getElementAt(0)), v4(inputJetCollection->getElementAt(1)),
+                                v4(inputJetCollection->getElementAt(2)), v4(inputJetCollection->getElementAt(3)));
     }
 };

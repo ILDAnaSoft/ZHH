@@ -669,6 +669,7 @@
         <parameter name="cutDefinitionsJSONFile" type="string">${ZHH_REPO_ROOT}/config/preselection_cuts_cd.json</parameter>
 
         <parameter name="whichEventObservables"> llbbbb </parameter>
+        <parameter name="inputPfoCollection" type="string" lcioInType="ReconstructedParticle">PandoraPFOsWithoutLepPair</parameter>
         <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
 
         <parameter name="Verbosity" type="string">MESSAGE</parameter>
@@ -1052,6 +1053,7 @@
         <parameter name="PIDAlgorithmJetTagging" type="string">lcfiplus</parameter>
         <parameter name="cutDefinitionsJSONFile" type="string">${ZHH_REPO_ROOT}/config/preselection_cuts_cd.json</parameter>
         
+        <parameter name="polarizations" type="FloatVec"> 1 0 </parameter>
         <parameter name="whichEventObservables"> qqbbbb </parameter>
         <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
 

@@ -52,7 +52,7 @@ action(){
         )
     }
 
-    for module_to_compile in "source" "$MarlinMLFlavorTagging" "$MarlinReco" "$LCFIPlus"
+    for module_to_compile in "source" "$MarlinMLFlavorTagging" "$MarlinReco" "$LCFIPlus" "$Physsim"
     do
         echo -e "$BLUE+++ Compiling $(basename $module_to_compile)... +++$NC"
         if [[ -d $module_to_compile ]]; then

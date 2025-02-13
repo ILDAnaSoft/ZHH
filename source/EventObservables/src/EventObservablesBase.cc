@@ -14,9 +14,11 @@ using namespace lcio ;
 using namespace marlin ;
 using namespace std ;
 
-template<class T>
-TLorentzVector v4(T* p){
-  return TLorentzVector( p->getMomentum()[0],p->getMomentum()[1], p->getMomentum()[2],p->getEnergy());
+TLorentzVector v4(ReconstructedParticle* p){
+	return TLorentzVector( p->getMomentum()[0], p->getMomentum()[1], p->getMomentum()[2], p->getEnergy() );
+}
+TLorentzVector v4(LCObject* lcobj){
+	ReconstructedParticle* p = dynamic_cast<ReconstructedParticle*>(lcobj); return v4(p);
 }
 
 EventObservablesBase::EventObservablesBase(const std::string &name) : Processor(name),
@@ -177,7 +179,7 @@ EventObservablesBase::EventObservablesBase(const std::string &name) : Processor(
 	registerProcessorParameter("polarizations",
             "vector of (Pe-, Pe+). used for averaging over zhh and zzh matrix elements.",
             m_polarizations,
-            std::vector<float>{-.8, .3}
+            std::vector<float>{ -0.8, 0.3 }
             );
 
   	registerProcessorParameter("outputFilename",
@@ -282,8 +284,8 @@ void EventObservablesBase::prepareBaseTree()
 
 		// matrix elements
 		if (m_use_matrix_elements()) {
-			ttree->Branch("me_zhh_avg", &m_lcme_zhh_avg, "me_zhh_avg/D");
-			ttree->Branch("me_zzh_avg", &m_lcme_zzh_avg, "me_zzh_avg/D");
+			ttree->Branch("me_zhh_log", &m_lcme_zhh_log, "me_zhh_log/D");
+			ttree->Branch("me_zzh_log", &m_lcme_zzh_log, "me_zzh_log/D");
 		}
 
 		/* old variables for pre selection
@@ -601,7 +603,7 @@ void EventObservablesBase::init(){
 	assert(m_polarizations.size() == 2);
 
 	float Pem = m_polarizations[0];
-	float Pep = m_polarizations[0];
+	float Pep = m_polarizations[1];
 
 	assert(abs(Pem) <= 1 && abs(Pep) <= 1);
 
@@ -653,19 +655,147 @@ void EventObservablesBase::end(){
     }
 }
 
+// so far only supports
+// (dijet_targets)=(Z,H,H), 6 jets
+// (dijet targets)=(Z), 6 jets
+std::tuple<std::vector<unsigned short>, vector<float>, float> EventObservablesBase::pairJetsByMass(
+	std::vector<ReconstructedParticle*> jets,
+	std::vector<unsigned short> dijet_targets
+) {
+	vector<vector<unsigned short>> perms;
+
+	assert(dijet_targets.size() *2 == jets.size());
+
+	if (m_nAskedJets() == 6 && dijet_targets.size() == 3 && dijet_targets[0] == 23 && dijet_targets[1] == 25 && dijet_targets[2] == 25) {
+		perms = {
+			{0,1,2,3,4,5},
+			{0,2,1,3,4,5},
+			{0,3,1,2,4,5},
+			{0,4,1,2,3,5},
+			{0,5,1,2,3,4},
+			{1,2,0,3,4,5},
+			{1,3,0,2,4,5},
+			{1,4,0,2,3,5},
+			{1,5,0,2,3,4},
+			{2,3,0,1,4,5},
+			{2,4,0,1,3,5},
+			{2,5,0,1,3,4},
+			{3,4,0,1,2,5},
+			{3,5,0,1,2,4},
+			{4,5,0,1,2,3}
+		};
+	} else
+		throw EVENT::Exception("Not implemented dijet pairing case");
+
+	size_t nperm = perms.size();
+	unsigned int best_idx = 0;
+	float chi2min = 999999.;
+
+	vector<float> dijetmasses_target (dijet_targets.size(), -999);
+	for (size_t j=0; j < dijetmasses_target.size(); j++) {
+		if (dijet_targets[j] == 23) {
+			dijetmasses_target[j] = 91.1876;
+		} else if (dijet_targets[j] == 25) {
+			dijetmasses_target[j] = 125.;
+		} else 
+			throw EVENT::Exception("Not implemented dijet pairing case");
+	}
+
+	vector<float> dijetmasses_temp (dijet_targets.size(), -999);
+	vector<float> dijetmasses (dijet_targets.size(), -999);
+	
+	float chi2;
+	for (size_t i=0; i < nperm; i++) {
+		chi2 = 0.;
+
+		for (size_t j=0; j < dijetmasses.size(); j++) {
+			dijetmasses_temp[j] = inv_mass(jets[perms[i][j*2]], jets[perms[i][j*2 + 1]]);
+			chi2 += TMath::Power(dijetmasses_temp[j] - dijetmasses_target[j], 2);
+		}
+
+		if (chi2 < chi2min) {
+			chi2min = chi2;
+			dijetmasses = dijetmasses_temp;
+			best_idx = i;
+		}
+	}
+	
+	return { perms[best_idx], dijetmasses, chi2min };
+};
+
+ReconstructedParticleVec EventObservablesBase::getElements(LCCollection *collection, std::vector<int> elements) {
+	ReconstructedParticleVec vec;
+	
+	for (size_t i=0; i < elements.size(); i++) {
+		ReconstructedParticle* p = dynamic_cast<ReconstructedParticle*>(collection->getElementAt(elements[i]));
+		vec.push_back(p);
+	}
+	
+	return vec;
+};
+
 void EventObservablesBase::calculateMatrixElements(
-	int z_decay_pdg,
-	int z_or_h_decay_pdg,
-	TLorentzVector from_z1, TLorentzVector from_z2,
-	TLorentzVector from_z_or_h_1, TLorentzVector from_z_or_h_2,
-	TLorentzVector dijet
+	int b1_decay_pdg,
+	int b2_decay_pdg,
+	TLorentzVector from_z_1, TLorentzVector from_z_2, // from z
+	TLorentzVector jet1, TLorentzVector jet2, // from z or h
+	TLorentzVector jet3, TLorentzVector jet4 // from h
 ){
-	m_lcmezhh->SetZDecayMode(m_pdg_to_lcme_mode[z_decay_pdg]);
-	m_lcmezzh->SetZDecayMode(m_pdg_to_lcme_mode[z_decay_pdg], m_pdg_to_lcme_mode[z_or_h_decay_pdg]);
+	m_lcmezhh->SetZDecayMode(m_pdg_to_lcme_mode[b1_decay_pdg]);
+	m_lcmezzh->SetZDecayMode(m_pdg_to_lcme_mode[b1_decay_pdg], m_pdg_to_lcme_mode[b2_decay_pdg]);
 
-	TLorentzVector zhh_inputs [4] = {from_z1, from_z2, from_z_or_h_1 + from_z_or_h_2, dijet};
-	TLorentzVector zzh_inputs [5] = {from_z1, from_z2, from_z_or_h_1, from_z_or_h_2, dijet};
+	std::vector<unsigned short> idx = { 0, 1, 2, 3 };
+	TLorentzVector vectors [4] = { jet1, jet2, jet3, jet4 };
 
-	m_lcmezhh->SetMomentumFinal(zhh_inputs);
-	m_lcmezzh->SetMomentumFinal(zzh_inputs);
+	// TODO: only calculating 12 is necessary, as H -> a+b is symmetric with respect to a <-> b
+	int nperms = 24;
+	float default_weight = 1./nperms;
+
+	std::vector<float> weights (nperms, default_weight);
+
+	double result_zhh = 0.;
+	double result_zzh = 0.;
+
+	streamlog_out(DEBUG) << "LCME Debug: E, Px, Py, Pz " << std::endl;
+	streamlog_out(DEBUG) << "  Z_1: " << from_z_1.E() << " " << from_z_1.Px() << " " << from_z_1.Py() << " " << from_z_1.Pz() << std::endl;
+	streamlog_out(DEBUG) << "  Z_2: " << from_z_2.E() << " " << from_z_2.Px() << " " << from_z_2.Py() << " " << from_z_2.Pz() << std::endl;
+	streamlog_out(DEBUG) << "  J_1: " << vectors[idx[0]].E() << " " << vectors[idx[0]].Px() << " " << vectors[idx[0]].Py() << " " << vectors[idx[0]].Pz() << std::endl;
+	streamlog_out(DEBUG) << "  J_2: " << vectors[idx[1]].E() << " " << vectors[idx[1]].Px() << " " << vectors[idx[1]].Py() << " " << vectors[idx[1]].Pz() << std::endl;
+	streamlog_out(DEBUG) << "  J_3: " << vectors[idx[2]].E() << " " << vectors[idx[2]].Px() << " " << vectors[idx[2]].Py() << " " << vectors[idx[2]].Pz() << std::endl;
+	streamlog_out(DEBUG) << "  J_4: " << vectors[idx[3]].E() << " " << vectors[idx[3]].Px() << " " << vectors[idx[3]].Py() << " " << vectors[idx[3]].Pz() << std::endl;
+
+	/*
+	std::cout << "  TOT: " << from_z_1.E() + from_z_2.E() + vectors[idx[0]].E() + vectors[idx[1]].E() + vectors[idx[2]].E() + vectors[idx[3]].E() << " "
+							<< from_z_1.Px() + from_z_2.Px() + vectors[idx[0]].Px() + vectors[idx[1]].Px() + vectors[idx[2]].Px() + vectors[idx[3]].Px() << " "
+							<< from_z_1.Py() + from_z_2.Py() + vectors[idx[0]].Py() + vectors[idx[1]].Py() + vectors[idx[2]].Py() + vectors[idx[3]].Py() << " "
+							<< from_z_1.Pz() + from_z_2.Pz() + vectors[idx[0]].Pz() + vectors[idx[1]].Pz() + vectors[idx[2]].Pz() + vectors[idx[3]].Pz()
+							<< std::endl;
+	*/
+
+	int nperm = 0;
+	double lcme_zhh = 0.;
+	double lcme_zzh = 0.;
+	do {
+		TLorentzVector zhh_inputs [4] = { from_z_1, from_z_2, vectors[idx[0]] + vectors[idx[1]], vectors[idx[2]] + vectors[idx[3]] };
+		TLorentzVector zzh_inputs [5] = { from_z_1, from_z_2, vectors[idx[0]] , vectors[idx[1]], vectors[idx[2]] + vectors[idx[3]] };
+
+		m_lcmezhh->SetMomentumFinal(zhh_inputs);
+		m_lcmezzh->SetMomentumFinal(zzh_inputs);
+
+		lcme_zhh = m_lcmezhh->GetMatrixElement2();
+		lcme_zzh = m_lcmezzh->GetMatrixElement2();
+		
+		streamlog_out(DEBUG) << "Perm " << nperm << "/" <<nperms  << ": FullAmplitude (ZHH; ZZH)=(" << lcme_zhh << "; " << lcme_zzh << ") | Weight " << weights[nperm] << std::endl;
+
+		result_zhh += lcme_zhh * weights[nperm];
+		result_zzh += lcme_zzh * weights[nperm];
+
+		nperm += 1;
+    } while (std::next_permutation(idx.begin(), idx.end()));
+
+	m_lcme_zhh_log = std::log(result_zhh);
+	m_lcme_zzh_log = std::log(result_zzh);
+
+	std::cerr << " log(LCMEZHH)=" << m_lcme_zhh_log << std::endl;
+	std::cerr << " log(LCMEZZH)=" << m_lcme_zzh_log << std::endl;
 };

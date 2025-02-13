@@ -56,7 +56,7 @@ if [[ $MARLIN_DLL != *"libZHHProcessors"* ]]; then
 fi
 
 # Fix wrong Physsim include paths in key4hep
-export CPATH=$(echo $CPATH | sed -e "s|/include/physsim|/include|g")
+export CPATH=$(echo $CPATH | sed -e "s|/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/physsim/0.5-433xdn/include/physsim|$REPO_ROOT/dependencies/Physsim/include|g")
 
 function MarlinZHH() {
     local steering_file

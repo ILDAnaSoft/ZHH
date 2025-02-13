@@ -96,7 +96,7 @@ function zhh_install_deps() {
             https://github.com/nVentis/MarlinReco.git
             https://github.com/suehara/LCFIPlusConfig
             https://github.com/nVentis/LCFIPlus
-            https://github.com/iLCSoft/Physsim.git)
+            https://github.com/nVentis/Physsim.git)
         local varnames=(MarlinMLFlavorTagging FlavorTagging_ML ILD_CONFIG_DIR MarlinReco LCFIPlusConfig LCFIPlus Physsim)
         local dirnames=(MarlinMLFlavorTagging FlavorTagging_ML ILDConfig MarlinReco LCFIPlusConfig LCFIPlus Physsim)
         local commits=(latest latest latest latest latest latest latest)
@@ -198,6 +198,7 @@ ZHH_VENV_NAME="$ZHH_VENV_NAME"
 DATA_PATH="$data_dir"
 SGV_DIR="$sgv_dir"
 ONNXRUNTIMEPATH="/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/py-onnxruntime/1.17.1-s4gp4m"
+Physsim="$Physsim"
 
 EOF
 }

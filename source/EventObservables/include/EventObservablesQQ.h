@@ -35,6 +35,23 @@ class EventObservablesQQ : public EventObservablesBase {
 	protected:
 		std::string m_JMP{};
 		std::string m_JMSP{};
+
+		float m_px31{};
+		float m_py31{};
+		float m_pz31{};
+		float m_e31{};
+
+		float m_px32{};
+		float m_py32{};
+		float m_pz32{};
+		float m_e32{};
+
+		// matrix element related
+		float m_lcme_jet_matching_chi2{};
+		float m_lcme_jet_matching_mz{};
+		float m_lcme_jet_matching_mh1{};
+		float m_lcme_jet_matching_mh2{};
+		
 };
 
 
