@@ -785,7 +785,7 @@ void EventObservablesBase::calculateMatrixElements(
 		lcme_zhh = m_lcmezhh->GetMatrixElement2();
 		lcme_zzh = m_lcmezzh->GetMatrixElement2();
 		
-		streamlog_out(DEBUG) << "Perm " << nperm << "/" <<nperms  << ": FullAmplitude (ZHH; ZZH)=(" << lcme_zhh << "; " << lcme_zzh << ") | Weight " << weights[nperm] << std::endl;
+		streamlog_out(DEBUG) << "Perm " << nperm << "/" <<nperms  << ": MatrixElement2 (ZHH; ZZH)=(" << lcme_zhh << "; " << lcme_zzh << ") | Weight " << weights[nperm] << std::endl;
 
 		result_zhh += lcme_zhh * weights[nperm];
 		result_zzh += lcme_zzh * weights[nperm];
@@ -796,6 +796,6 @@ void EventObservablesBase::calculateMatrixElements(
 	m_lcme_zhh_log = std::log(result_zhh);
 	m_lcme_zzh_log = std::log(result_zzh);
 
-	std::cerr << " log(LCMEZHH)=" << m_lcme_zhh_log << std::endl;
-	std::cerr << " log(LCMEZZH)=" << m_lcme_zzh_log << std::endl;
+	streamlog_out(DEBUG) << " log(LCMEZHH)=" << m_lcme_zhh_log << std::endl;
+	streamlog_out(DEBUG) << " log(LCMEZZH)=" << m_lcme_zzh_log << std::endl;
 };
