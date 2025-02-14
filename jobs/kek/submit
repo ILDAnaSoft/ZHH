@@ -6,7 +6,10 @@
 JOB_NAME=$1
 START_DIR=$(pwd)
 
-export DATA_PATH="/group/ilc/users/$(whoami)/jobresults"
+if [[ -z $DATA_PATH ]]; then
+    export DATA_PATH="/group/ilc/users/$(whoami)/jobresults"
+fi
+
 export ZHH_REPO_ROOT="/home/ilc/$(whoami)/DevRepositories/ZHH"
 
 if [[ ! -d $ZHH_REPO_ROOT ]]; then

@@ -11,14 +11,20 @@ fi
 # variables depending on SGV setup
 if [[ ! -z $3 ]]; then
     SGV_PRODUCED_FILE=$3
+else
+    SGV_PRODUCED_FILE=sgvout.slcio
 fi
 
 if [[ ! -z $4 ]]; then
     SGV_EXECUTABLE=$4
+else
+    SGV_EXECUTABLE=$SGV_DIR/tests/usesgvlcio.exe
 fi
 
 if [[ ! -z $5 ]]; then
     SGV_INPUT_FILE=$5
+else
+    SGV_INPUT_FILE=input.slcio
 fi
 
 if [[ -z $INPUT_FILE || -z $TARGET_FILE || -z $SGV_PRODUCED_FILE || -z $SGV_EXECUTABLE || -z $SGV_INPUT_FILE || -z $SGV_DIR ]]; then
