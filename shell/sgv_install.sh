@@ -2,26 +2,24 @@
 
 # this file installs SGV into the directory given to it as first argument
 # it should be sourced by you or whatever other file calls it
-# usage: source sgv_install.sh <SGV_DIR> <LCIO_PATH>
-# where LCIO_PATH is an optional second argument pointing to a user copy of LCIO
+# usage: source sgv_install.sh <SGV_DIR>
 
-# this file has been tested with key4hep stack release 2025-01-28 to source it,
+# this file has been tested with
+# - key4hep stack release 2025-01-28 and
+# - SGV release e781bad09ef30595ed1db0343145eebbf5d00a1a
+# to source this key4hep stack,
 #   source /cvmfs/sw.hsf.org/key4hep/setup.sh -r "2025-01-28"
-# remark: so far STDHEP is not working when setting up SGV using this file
+# remark 1: the LCIO version supplied by key4hep will be used per default
+# remark 2: so far STDHEP is not working when setting up SGV using this file
+#   this seems to be related with some dependency in the key4hep stack, as it
+#   at least compiles with 2024-03-10 (maybe the gfortran version?)
 
 # dependencies
 export SGV_DIR="$1"
-LCIO_PATH=$2
 
 echo "Installing SGV into <$SGV_DIR>..."
 
 LCIO_INTERFACE_VERSION="2.0.2"
-
-if [[ ! -z $LCIO_PATH && -d $LCIO_PATH ]]; then
-    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:"$LCIO/build/lib"
-    export CPATH=$CPATH:"$LCIO/src/cpp/include":"$LCIO/src/cpp/include/pre-generated"
-    export LCIO=$LCIO_PATH
-fi
 
 # abort on any error
 # set -e
@@ -92,7 +90,6 @@ ANSWERS
 # enable lcio support
 # see samples/lcio/00_README
 
-return
 
 rm -rf $SGV_DIR/src/sgvlcio/*
 cp -R $SGV_DIR/samples/lcio/src-$LCIO_INTERFACE_VERSION/* $SGV_DIR/src/sgvlcio
@@ -112,8 +109,6 @@ cp $SGV_DIR/samples/sgvopt.F95 $SGV_DIR/tests
 
 cd $SGV_DIR/tests
 
-cresgvexe merge sgvopt "-DEXTREAD"
-
 # enable PFL calorimetry option
 # samples/pflow/README
 cd $SGV_DIR/samples/pflow
@@ -131,7 +126,7 @@ ln -s em_loss_5.dat fort.83
 gfortran -c -I$SGV_LIB/mod eflow_par_type.F95
 gfortran -c -I$SGV_LIB/mod zaccon.F95
 
-cresgvexe merge sgvopt "" "" "" "" "eflow_par_type.o zaccon.o"
+cresgvexe merge sgvopt "-DEXTREAD" "" "" "" "eflow_par_type.o zaccon.o"
 
 # now everything with lcio
 cresgvexe merge usesgvlcio "-DEXTREAD" "" "" "" "eflow_par_type.o zaccon.o"
