@@ -16,5 +16,5 @@ void EventObservablesVV::clearChannelValues() {
 };
 
 void EventObservablesVV::updateChannelValues(EVENT::LCEvent *pLCEvent) {
-
+    (void) pLCEvent;
 };

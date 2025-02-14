@@ -46,8 +46,8 @@ void EventObservablesLL::clearChannelValues() {
 
 void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
     LCCollection *inputJetCollection = pLCEvent->getCollection( m_inputJetCollection );
-    LCCollection *inputLeptonCollection = pLCEvent->getCollection( m_inputIsolatedleptonCollection );
     LCCollection *inputLepPairCollection = pLCEvent->getCollection( m_inputLepPairCollection );
+    // LCCollection *inputLeptonCollection = pLCEvent->getCollection( m_inputIsolatedleptonCollection );
 
     if ( inputLepPairCollection->getNumberOfElements() == m_nAskedIsoLeps() &&
          inputJetCollection->getNumberOfElements() == m_nAskedJets() ) {

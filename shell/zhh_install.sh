@@ -85,7 +85,7 @@ function zhh_install_deps() {
         fi
     fi
 
-    if [[ -z $MarlinMLFlavorTagging || -z $FlavorTagging_ML || -z $ILD_CONFIG_DIR || -z $MarlinReco || -z $LCFIPlusConfig || -z $LCFIPlus || -z $Physsim ]]; then
+    if [[ ! -d $MarlinMLFlavorTagging || ! -d $MarlinMLFlavorTagging || ! -d $FlavorTagging_ML || ! -d $ILD_CONFIG_DIR || ! -d $MarlinReco || ! -d $LCFIPlusConfig || ! -d $LCFIPlus || ! -d $Physsim ]]; then
         echo "At least one of the dependencies could not be found. Retrieving them..."
 
         local ind="$( [ -z "${ZSH_VERSION}" ] && echo "0" || echo "1" )" # ZSH arrays are 1-indexed
@@ -108,10 +108,10 @@ function zhh_install_deps() {
         for dependency in ${varnames[*]}
         do
             # Check if the variables defined by varnames already exist
-            if [[ -z ${!dependency} ]]; then
+            if [[ -z ${!dependency} || ! -d ${!dependency} ]]; then
                 local install_dir
                 local ypath="y"
-                read -p "Dependency $dependency not found. You can either install it (y) or supply a path to it (enter path): " ypath
+                read -p "Dependency $dependency not found. Install it to default location (y) or supply a path to it: " ypath
 
                 if [[ $ypath = "y" || -z $ypath ]]; then
                     local dirnamecur="${dirnames[$ind]}"

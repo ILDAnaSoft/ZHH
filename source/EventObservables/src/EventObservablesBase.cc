@@ -383,6 +383,8 @@ void EventObservablesBase::clearBaseValues()
 	m_missingE = -999.;
 	m_Evis  = -999.;
 	m_thrust = -999.;
+
+	m_bTagsSorted.clear();
 	std::fill(m_bTagValues.begin(), m_bTagValues.end(), -1.);
 	std::fill(m_cTagValues.begin(), m_cTagValues.end(), -1.);
 
@@ -517,13 +519,16 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 			}
 
 			// calculate bmax1,2,3,4
-			std::vector<double> bTagsSorted(m_bTagValues.begin(), m_bTagValues.end());
-			std::sort (bTagsSorted.begin(), bTagsSorted.end());
+			for (size_t i = 0; i < m_bTagValues.size(); i++) {
+				m_bTagsSorted.push_back(std::make_pair(i, m_bTagValues[i]));
+			}
 
-			m_bmax1 = bTagsSorted.rbegin()[0];
-			m_bmax2 = bTagsSorted.rbegin()[1];
-			m_bmax3 = bTagsSorted.rbegin()[2];
-			m_bmax4 = bTagsSorted.rbegin()[3];
+			std::sort (m_bTagsSorted.begin(), m_bTagsSorted.end(), jetTaggingComparator);
+
+			m_bmax1 = m_bTagsSorted.rbegin()[0].second;
+			m_bmax2 = m_bTagsSorted.rbegin()[1].second;
+			m_bmax3 = m_bTagsSorted.rbegin()[2].second;
+			m_bmax4 = m_bTagsSorted.rbegin()[3].second;
 
 			std::vector<double> cTagsSorted(m_cTagValues.begin(), m_cTagValues.end());
 			std::sort (cTagsSorted.begin(), cTagsSorted.end());

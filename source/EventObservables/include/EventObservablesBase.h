@@ -179,6 +179,9 @@ class EventObservablesBase: public Processor
 		int m_nhbb{};
 		int m_nJets{};
 
+		typedef std::pair<unsigned short, double> JetTaggingPair;
+		static bool jetTaggingComparator ( const JetTaggingPair& l, const JetTaggingPair& r) { return l.first < r.first; };
+		std::vector<JetTaggingPair> m_bTagsSorted{}; // (jet index, btag1value) sorted; first highest, last lowest
 		std::vector<double> m_bTagValues{};
 		std::vector<double> m_cTagValues{};
 
