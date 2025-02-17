@@ -33,25 +33,40 @@ class EventObservablesQQ : public EventObservablesBase {
 		// PRELIMINARY!!!
 		bool m_use_matrix_elements() { return true; };
 
+		std::string m_yMinusParameter () { return "y56"; };
+		std::string m_yPlusParameter () { return "y67"; };
+
+		// helper functions
+		std::vector<float> chargeSumOfConstituents(std::vector<ReconstructedParticle*> jets);
+
 	protected:
+		// meta parameters
 		std::string m_JMP{};
 		std::string m_JMSP{};
 
-		float m_px31{};
-		float m_py31{};
-		float m_pz31{};
-		float m_e31{};
+		// overriden parent functions
+		void EventObservablesQQ::setJetMomenta();
 
-		float m_px32{};
-		float m_py32{};
-		float m_pz32{};
-		float m_e32{};
+		// data members
+		int m_npfosmin6j{};
+		int m_npfosmax6j{};
+
+		float m_pxj5{};
+		float m_pyj5{};
+		float m_pzj5{};
+		float m_ej5{};
+
+		float m_pxj6{};
+		float m_pyj6{};
+		float m_pzj6{};
+		float m_ej6{};
 
 		// matrix element related
 		float m_lcme_jet_matching_chi2{};
 		float m_lcme_jet_matching_mz{};
 		float m_lcme_jet_matching_mh1{};
 		float m_lcme_jet_matching_mh2{};
+
 		
 };
 

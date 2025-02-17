@@ -112,6 +112,7 @@ class ZHHBaseKinfitProcessor
 
 		void fillOutputCollections(EVENT::LCEvent *pLCEvent, std::vector<ReconstructedParticle*> bestjets);
 
+		std::string 		    m_ttreeName{};
         std::string				m_inputIsolatedleptonCollection{};
 		std::string				m_inputJetCollection{};
 		std::string				m_inputSLDVertexCollection{};

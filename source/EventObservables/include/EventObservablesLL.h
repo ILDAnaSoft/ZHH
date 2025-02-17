@@ -32,9 +32,16 @@ class EventObservablesLL : public EventObservablesBase {
 
 		bool m_use_matrix_elements() { return true; };
 
+		std::string m_yMinusParameter () { return "y34"; };
+		std::string m_yPlusParameter () { return "y45"; };
+
 	protected:
 		std::string m_JMP{};
 		std::string m_JMSP{};
+
+		// data members
+		int m_npfosmin4j{};
+		int m_npfosmax4j{};
 
 		// isolated lepton momenta and energies
 		float m_px31{};
@@ -46,6 +53,8 @@ class EventObservablesLL : public EventObservablesBase {
 		float m_py32{};
 		float m_pz32{};
 		float m_e32{};
+
+		
 
 		// dilepton mass; first two calculated by Kinfit processor
 		// float m_mzll{};

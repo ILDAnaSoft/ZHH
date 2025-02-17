@@ -6,6 +6,7 @@
 #include "marlin/VerbosityLevels.h"
 #include "IMPL/LCCollectionVec.h"
 #include "EVENT/ReconstructedParticle.h"
+#include "UTIL/PIDHandler.h"
 #include "lcio.h"
 #include <string>
 #include <vector>
@@ -23,14 +24,15 @@
 #include "TH1I.h"
 #include "TH2I.h"
 #include "inv_mass.h"
+#include "v4.h"
 
 using namespace lcio ;
 using namespace marlin ;
 using jsonf = nlohmann::json;
 using namespace lcme ;
 
-TLorentzVector v4(ReconstructedParticle* p);
-TLorentzVector v4(LCObject* lcobj);
+TLorentzVector v4old(ReconstructedParticle* p);
+TLorentzVector v4old(LCObject* lcobj);
 
 // If the final state is a ZHH (with H -> bbar), the channel is given by the decay channel of the Z boson (else OTHER)
 // NONE is for initialization only and should not occur in practice
@@ -52,6 +54,8 @@ class EventObservablesBase: public Processor
 
 		// helper functions
 		ReconstructedParticleVec getElements(LCCollection *collection, std::vector<int> elements);
+		std::pair<int, int> nPFOsMinMax(LCCollection *collection); // smallest and largest number of PFOs of jets
+		float leadingMomentum(ReconstructedParticleVec jets);
 		
 	protected:
 		// common properties for all channels
@@ -68,6 +72,8 @@ class EventObservablesBase: public Processor
 		virtual int m_nAskedIsoLeps() = 0;
 		virtual std::string m_jetMatchingParameter() = 0; // e.g. best_perm_ll
 		virtual std::string m_jetMatchingSourceParameter() = 0; // e.g. best_perm_ll_from_kinfit ; 1 for "from mass chi2", 2 for "from kinfit"
+		virtual std::string m_yMinusParameter() = 0;
+		virtual std::string m_yPlusParameter() = 0;
 
 		virtual bool m_use_matrix_elements() = 0;
 
@@ -158,26 +164,36 @@ class EventObservablesBase: public Processor
 
 		float m_todo{};
 
-		float m_missingPT{};
-		float m_missingE{};
-		float m_thrust{};
-
 		float m_Evis{};
 		float m_missingMass{};
-		float m_mh1{};
-		float m_mh2{};
-		float m_mhh{};
+		float m_missingPT{};
+		float m_missingE{};
+		float m_thrust{}; // principal thrust value
+		float m_thrustMajor{};
+		float m_thrustMinor{};
+		float m_thrustAxisCos{}; // cos theta of principle thrust axis
+
+		float m_ptpfomax{};
+		float m_ptjmax{};
+		
+		int m_nJets{};
+		int m_nIsoLeps{};
+		int m_npfos{};
+		std::vector<int> m_lep_types{};
+
+		//float m_mh1{};
+		//float m_mh2{};
+		//float m_mhh{};
 		float m_pz{};
 		float m_ph1{};
 		float m_ph2{};
 		float m_cosz{};
 		float m_cosh1{};
 		float m_cosh2{};
-		float m_yminus{}; //?
-		float m_yplus{}; //?
-
-		int m_nhbb{};
-		int m_nJets{};
+		float m_yMinus{};
+		float m_yPlus{};
+		
+		std::vector<ReconstructedParticle*> m_jets;
 
 		typedef std::pair<unsigned short, double> JetTaggingPair;
 		static bool jetTaggingComparator ( const JetTaggingPair& l, const JetTaggingPair& r) { return l.first < r.first; };
@@ -209,35 +225,33 @@ class EventObservablesBase: public Processor
 		float m_cmax42{};
 
 		// jet momenta and energies
-		float m_px11{};
-		float m_py11{};
-		float m_pz11{};
-		float m_e11{};
+		float m_pxj1{};
+		float m_pyj1{};
+		float m_pzj1{};
+		float m_ej1{};
 
-		float m_px12{};
-		float m_py12{};
-		float m_pz12{};
-		float m_e12{};
+		float m_pxj2{};
+		float m_pyj2{};
+		float m_pzj2{};
+		float m_ej2{};
 
-		float m_px21{};
-		float m_py21{};
-		float m_pz21{};
-		float m_e21{};
+		float m_pxj3{};
+		float m_pyj3{};
+		float m_pzj3{};
+		float m_ej3{};
 
-		float m_px22{};
-		float m_py22{};
-		float m_pz22{};
-		float m_e22{};
+		float m_pxj4{};
+		float m_pyj4{};
+		float m_pzj4{};
+		float m_ej4{};
+
+		void setJetMomenta();
 
 		// jet matching
 		std::vector<int> m_jet_matching{};
 		int m_jet_matching_source{}; // 1 for "from mass chi2", 2 for "from kinfit"
 		bool m_using_kinfit{}; // 1 if m_jet_matching_source == 2
 		bool m_using_mass_chi2{}; // 1 if m_jet_matching_source == 1
-
-
-		int m_nIsoLeps{};
-		std::vector<int> m_lep_types{};		
 
 		/*  old variables for preselection (to be done in post)
 		most are now calculated by the Kinfit processors

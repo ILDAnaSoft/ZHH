@@ -11,6 +11,9 @@ void EventObservablesLL::prepareChannelTree() {
     TTree* ttree = getTTree();
 
 	if (m_write_ttree) {
+        ttree->Branch("npfosmin4j", &m_npfosmin4j, "npfosmin4j/I");
+		ttree->Branch("npfosmax4j", &m_npfosmax4j, "npfosmax4j/I");
+
         ttree->Branch("px31", &m_px31, "px31/F");
 		ttree->Branch("py31", &m_py31, "py31/F");
 		ttree->Branch("pz31", &m_pz31, "pz31/F");
@@ -27,6 +30,9 @@ void EventObservablesLL::prepareChannelTree() {
 };
 
 void EventObservablesLL::clearChannelValues() {
+    m_npfosmin4j = 0;
+    m_npfosmax4j = 0;
+
     m_px31 = 0.;
     m_py31 = 0.;
     m_pz31 = 0.;
@@ -37,10 +43,12 @@ void EventObservablesLL::clearChannelValues() {
     m_pz32 = 0.;
     m_e32 = 0.;
 
+    m_paired_lep_type = 0;
+
     // m_mzll = 0.;
     // m_m_diff_z = 0.;
 	m_mzll_pre_pairing = 0.;
-    m_paired_lep_type = 0;
+
 	
 };
 
@@ -49,8 +57,11 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
     LCCollection *inputLepPairCollection = pLCEvent->getCollection( m_inputLepPairCollection );
     // LCCollection *inputLeptonCollection = pLCEvent->getCollection( m_inputIsolatedleptonCollection );
 
-    if ( inputLepPairCollection->getNumberOfElements() == m_nAskedIsoLeps() &&
-         inputJetCollection->getNumberOfElements() == m_nAskedJets() ) {
+    if ( inputLepPairCollection->getNumberOfElements() == m_nAskedIsoLeps() && inputJetCollection->getNumberOfElements() == m_nAskedJets() ) {
+        // NPFOS MIN/MAX
+        std::tie(m_npfosmin4j, m_npfosmax4j) = nPFOsMinMax(inputJetCollection);
+
+        // MATRIX ELEMENT
         //m_mzll = inputLepPairCollection->parameters().getFloatVal("RecoLepsInvMass");
         //m_m_diff_z = fabs( m_mzll - 91.2 );
         m_mzll_pre_pairing = inputLepPairCollection->parameters().getFloatVal("IsoLepsInvMass");
@@ -66,8 +77,8 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
 
         m_paired_lep_type = abs(paired_isolep1->getType());
 
-        TLorentzVector v4_paired_isolep1 = v4(paired_isolep1);
-        TLorentzVector v4_paired_isolep2 = v4(paired_isolep2);
+        TLorentzVector v4_paired_isolep1 = v4old(paired_isolep1);
+        TLorentzVector v4_paired_isolep2 = v4old(paired_isolep2);
 
         m_px31 = v4_paired_isolep1.Px();
         m_py31 = v4_paired_isolep1.Py();
@@ -82,7 +93,7 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         assert(m_paired_lep_type == 11 || m_paired_lep_type == 13);
 
         calculateMatrixElements(m_paired_lep_type, 5, v4_paired_isolep1, v4_paired_isolep2,
-                                v4(inputJetCollection->getElementAt(0)), v4(inputJetCollection->getElementAt(1)),
-                                v4(inputJetCollection->getElementAt(2)), v4(inputJetCollection->getElementAt(3)), false);
+                                v4old(inputJetCollection->getElementAt(0)), v4old(inputJetCollection->getElementAt(1)),
+                                v4old(inputJetCollection->getElementAt(2)), v4old(inputJetCollection->getElementAt(3)), false);
     }
 };

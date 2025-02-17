@@ -32,10 +32,42 @@ class EventObservablesVV : public EventObservablesBase {
 
 		bool m_use_matrix_elements() { return false; };
 
+		std::string m_yMinusParameter () { return "y34"; };
+		std::string m_yPlusParameter () { return "y45"; };
+
 	protected:
+		// meta parameters
+		std::string m_input5JetCollection{};
+		std::string m_input6JetCollection{};
+
 		std::string m_JMP{};
 		std::string m_JMSP{};
 
+		// data members
+		std::vector<ReconstructedParticle*> m_5jets;
+		std::vector<ReconstructedParticle*> m_6jets;
+
+		float m_npfosmin5j{};
+		float m_npfosmax5j{};
+
+		float m_ptjmax5{};
+		float m_pjmax5{};
+
+		float m_ptjmax6{};
+		float m_pjmax6{};
+
+		// ttbar
+		float m_cosBmax12{};
+		float m_massWtt4j{};
+		float m_massT1tt4j{};
+		float m_massT2tt4j{};
+
+		// ZZ
+		std::vector<unsigned short> m_zz_bestdijetpairing;
+		float m_zz_bestchi2{};
+		float m_zz_mz1{};
+		float m_zz_mz2{};
+		
 
 };
 
