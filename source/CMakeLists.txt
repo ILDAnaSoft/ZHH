@@ -63,6 +63,7 @@ set(sources
   LeptonPairing/src/LeptonPairing.cc
   MergePIDProcessor/src/MergePIDProcessor.cc
   Misclustering/src/Misclustering.cc
+  EventObservables/src/EventObservablesFromZZ.cc
   EventObservables/src/EventObservablesBase.cc
   EventObservables/src/EventObservablesLL.cc
   EventObservables/src/EventObservablesVV.cc

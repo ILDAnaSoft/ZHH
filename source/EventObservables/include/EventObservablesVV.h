@@ -6,7 +6,7 @@
 #include "EventObservablesBase.h"
 #include "marlin/Processor.h"
 
-class EventObservablesVV : public EventObservablesBase {
+class EventObservablesVV : public EventObservablesBase, public EventObservablesFromZZ {
 	public:
 		virtual Processor*  newProcessor() {
 			return new EventObservablesVV();
@@ -50,9 +50,8 @@ class EventObservablesVV : public EventObservablesBase {
 		float m_npfosmin5j{};
 		float m_npfosmax5j{};
 
-		float m_ptjmax5{};
-		float m_pjmax5{};
-
+		//float m_ptjmax5{};
+		//float m_pjmax5{};
 		float m_ptjmax6{};
 		float m_pjmax6{};
 
@@ -61,14 +60,6 @@ class EventObservablesVV : public EventObservablesBase {
 		float m_massWtt4j{};
 		float m_massT1tt4j{};
 		float m_massT2tt4j{};
-
-		// ZZ
-		std::vector<unsigned short> m_zz_bestdijetpairing;
-		float m_zz_bestchi2{};
-		float m_zz_mz1{};
-		float m_zz_mz2{};
-		
-
 };
 
 

@@ -110,7 +110,11 @@ class ZHHBaseKinfitProcessor
 		std::vector<double> calculatePulls(std::shared_ptr<ParticleFitObject> fittedobject, ReconstructedParticle* startobject, int type);
 		double calcChi2(shared_ptr<vector<shared_ptr<BaseFitObject>>> fitobjects);
 
-		void fillOutputCollections(EVENT::LCEvent *pLCEvent, std::vector<ReconstructedParticle*> bestjets);
+		void fillOutputCollections(EVENT::LCEvent *pLCEvent);
+		std::vector<ROOT::Math::PxPyPzEVector> m_v4_postfit_jets{};
+		std::vector<ROOT::Math::PxPyPzEVector> m_v4_postfit_leptons{};
+
+		void baseClear();
 
 		std::string 		    m_ttreeName{};
         std::string				m_inputIsolatedleptonCollection{};

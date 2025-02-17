@@ -6,7 +6,7 @@
 #include "EventObservablesBase.h"
 #include "marlin/Processor.h"
 
-class EventObservablesQQ : public EventObservablesBase {
+class EventObservablesQQ : public EventObservablesBase, public EventObservablesFromZZ {
 	public:
 		virtual Processor*  newProcessor() {
 			return new EventObservablesQQ();
@@ -41,15 +41,23 @@ class EventObservablesQQ : public EventObservablesBase {
 
 	protected:
 		// meta parameters
+		std::string m_input4JetCollection{};
+
 		std::string m_JMP{};
 		std::string m_JMSP{};
 
 		// overriden parent functions
-		void EventObservablesQQ::setJetMomenta();
+		void setJetMomenta();
 
 		// data members
+		ReconstructedParticleVec m_4jets{};
+
 		int m_npfosmin6j{};
 		int m_npfosmax6j{};
+
+		float m_cosjmax4{};
+		float m_pjmax4{};
+		float m_ptjmax4{};
 
 		float m_pxj5{};
 		float m_pyj5{};
@@ -60,6 +68,25 @@ class EventObservablesQQ : public EventObservablesBase {
 		float m_pyj6{};
 		float m_pzj6{};
 		float m_ej6{};
+
+		// ttbar
+		std::vector<float> m_tt_target_masses{};
+		std::vector<float> m_tt_target_resolutions{};
+
+		float m_tt_mw1{};
+		float m_tt_mw2{};
+		float m_tt_mt1{};
+		float m_tt_mt2{};
+		float m_tt_chi2{};
+
+		// ZHH
+		std::vector<float> m_zhh_target_masses{};
+		std::vector<float> m_zhh_target_resolutions{};
+
+		float m_zhh_mz{};
+		float m_zhh_mh1{};
+		float m_zhh_mh2{};
+		float m_zhh_chi2{};
 
 		// matrix element related
 		float m_lcme_jet_matching_chi2{};

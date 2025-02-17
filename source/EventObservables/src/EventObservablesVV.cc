@@ -28,9 +28,8 @@ void EventObservablesVV::prepareChannelTree() {
         ttree->Branch("npfosmin5j", &m_npfosmin5j, "npfosmin5j/I");
 		ttree->Branch("npfosmax5j", &m_npfosmax5j, "npfosmax5j/I");
 
-        ttree->Branch("ptjmax5", &m_ptjmax5, "ptjmax5/F");
-        ttree->Branch("pjmax5", &m_pjmax5, "pjmax5/F");
-
+        //ttree->Branch("ptjmax5", &m_ptjmax5, "ptjmax5/F");
+        //ttree->Branch("pjmax5", &m_pjmax5, "pjmax5/F");
         ttree->Branch("ptjmax6", &m_ptjmax6, "ptjmax6/F");
         ttree->Branch("pjmax6", &m_pjmax6, "pjmax6/F");
 
@@ -41,10 +40,7 @@ void EventObservablesVV::prepareChannelTree() {
         ttree->Branch("massT2tt4j", &m_massT2tt4j, "massT2tt4j/F");
 
         // ZZ
-        ttree->Branch("zz_bestdijetpairing", &m_zz_bestdijetpairing);
-        ttree->Branch("zz_bestchi2", &m_zz_bestchi2, "zz_bestchi2/F");
-        ttree->Branch("zz_mz1", &m_zz_mz1, "zz_mz1/F");
-        ttree->Branch("zz_mz2", &m_zz_mz2, "zz_mz2/F");
+        zz_init(ttree);
     }
 };
 
@@ -55,9 +51,8 @@ void EventObservablesVV::clearChannelValues() {
     m_npfosmin5j = 0;
     m_npfosmax5j = 0;
 
-    m_ptjmax5 = 0.;
-    m_pjmax5 = 0.;
-
+    //m_ptjmax5 = 0.;
+    //m_pjmax5 = 0.;
 	m_ptjmax6 = 0.;
 	m_pjmax6 = 0.;
 
@@ -68,10 +63,7 @@ void EventObservablesVV::clearChannelValues() {
     m_massT2tt4j = 0;
 
     // ZZ
-    m_zz_bestdijetpairing.clear();
-    m_zz_bestchi2 = 0.;
-    m_zz_mz1 = 0.;
-    m_zz_mz2 = 0.;
+    zz_clear();
 };
 
 void EventObservablesVV::updateChannelValues(EVENT::LCEvent *pLCEvent) {
@@ -82,13 +74,14 @@ void EventObservablesVV::updateChannelValues(EVENT::LCEvent *pLCEvent) {
     std::tie(m_npfosmin5j, m_npfosmax5j) = nPFOsMinMax(input5JetCollection);
 
     // TREAT 5 JET COLLECTION
+    /*
     for (int i=0; i < 5; ++i) {
         ReconstructedParticle* jet = (ReconstructedParticle*) input5JetCollection->getElementAt(i);
 
         m_pjmax5 = std::max(m_ptjmax5, (float)v4(jet).Pt());
         m_ptjmax5 = std::max(m_ptjmax5, (float)v4(jet).Pt());
         m_5jets.push_back(jet);
-    }
+    }*/
 
     // TREAT 6 JET COLLECTION
     for (int i=0; i < 6; ++i) {
@@ -115,9 +108,5 @@ void EventObservablesVV::updateChannelValues(EVENT::LCEvent *pLCEvent) {
     m_massT2tt4j = inv_mass(jetbmax2, jetbmax3, jetbmax4);
 
     // ZZ: CHECK BY CHI2
-    FloatVec zz_bestdijetmasses;
-    std::tie(m_zz_bestdijetpairing, zz_bestdijetmasses, m_zz_bestchi2) = pairJetsByMass(m_jets, {23, 23});
-
-    m_zz_mz1 = zz_bestdijetmasses[0];
-    m_zz_mz2 = zz_bestdijetmasses[1];
+    zz_update(m_jets);
 };

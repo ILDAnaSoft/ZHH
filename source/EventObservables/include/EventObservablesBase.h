@@ -23,8 +23,10 @@
 #include "TH1F.h"
 #include "TH1I.h"
 #include "TH2I.h"
+#include "TVector.h"
 #include "inv_mass.h"
 #include "v4.h"
+#include "EventObservablesFromZZ.h"
 
 using namespace lcio ;
 using namespace marlin ;
@@ -53,9 +55,46 @@ class EventObservablesBase: public Processor
         virtual void end();
 
 		// helper functions
-		ReconstructedParticleVec getElements(LCCollection *collection, std::vector<int> elements);
-		std::pair<int, int> nPFOsMinMax(LCCollection *collection); // smallest and largest number of PFOs of jets
-		float leadingMomentum(ReconstructedParticleVec jets);
+		static ReconstructedParticleVec getElements(LCCollection *collection, std::vector<int> elements);
+		static std::pair<int, int> nPFOsMinMax(LCCollection *collection); // smallest and largest number of PFOs of jets
+		static float leadingMomentum(ReconstructedParticleVec jets);
+		static std::vector<ROOT::Math::PxPyPzEVector> toFourVectors(ReconstructedParticleVec jets) {
+			std::vector<ROOT::Math::PxPyPzEVector> result;
+
+			for (size_t i = 0; i < jets.size(); i++)
+				result.push_back(v4(jets[i]));
+
+			return result;
+		};
+
+		// dijet_targets: a list of PDGs to constitute the jets (in this order)
+		// used in the 6jet case to reduce permutation space from (1-6)=720 to (1-4)=24
+		static constexpr float kMassTop = 173.76;
+		static constexpr float kMassZ   = 91.1876;
+		static constexpr float kMassW   = 80.377;
+		static constexpr float kMassH   = 125.;
+
+		// mass resolutions
+		static constexpr float kSigmaMassTop = 20.0;
+		static constexpr float kSigmaMassZ   = 6.0;
+		static constexpr float kSigmaMassW   = 4.8;
+		static constexpr float kSigmaMassH   = 7.2;
+
+		static std::tuple<std::vector<unsigned short>, std::vector<float>, float> pairJetsByMass(
+			std::vector<ReconstructedParticle*> jets, std::vector<unsigned short> dijet_targets);
+		static std::tuple<std::vector<unsigned short>, std::vector<float>, float> pairJetsByMass(
+			const std::vector<ROOT::Math::PxPyPzEVector> jets,
+			const std::vector<float> target_masses,
+			const std::vector<float> target_resolutions,
+			std::function<float (
+				const std::vector<ROOT::Math::PxPyPzEVector>,
+				const std::vector<unsigned short>,
+				std::vector<float>&,
+				const std::vector<float>,
+				const std::vector<float>)> calc_chi2);
+
+		static const std::vector<std::vector<unsigned short>> dijetPerms4;
+		static const std::vector<std::vector<unsigned short>> dijetPerms6;
 		
 	protected:
 		// common properties for all channels
@@ -125,10 +164,6 @@ class EventObservablesBase: public Processor
 		lcme::LCMEZHH *m_lcmezhh{}; // ZHH MEM calculator instance
 		lcme::LCMEZZH *m_lcmezzh{}; // ZZH MEM calculator instance
 
-		// dijet_targets: a list of PDGs to constitute the jets (in this order)
-		// used in the 6jet case to reduce permutation space from (1-6)=720 to (1-4)=24
-		std::tuple<std::vector<unsigned short>, std::vector<float>, float> pairJetsByMass(std::vector<ReconstructedParticle*> jets, std::vector<unsigned short> dijet_targets);
-
 		// assumptions:
 		// - from_z1 + from_z2 come from Z, relates to z_decay_pdg; can be any of (ll, vv, qq)
 		// - jet3 + jet4 come from either H, or Z (if H, then simply Hdijet=jet3+jet4), relates to z_or_h_decay_pdg
@@ -173,8 +208,13 @@ class EventObservablesBase: public Processor
 		float m_thrustMinor{};
 		float m_thrustAxisCos{}; // cos theta of principle thrust axis
 
+		float m_ptpfochargedmax{}; // largest pt of charged PFOs
+		float m_ppfochargedmax{}; // largest momentum magntiude of charged PFOs
+
 		float m_ptpfomax{};
 		float m_ptjmax{};
+		float m_pjmax{};
+		float m_cosjmax{};
 		
 		int m_nJets{};
 		int m_nIsoLeps{};
@@ -200,6 +240,8 @@ class EventObservablesBase: public Processor
 		std::vector<JetTaggingPair> m_bTagsSorted{}; // (jet index, btag1value) sorted; first highest, last lowest
 		std::vector<double> m_bTagValues{};
 		std::vector<double> m_cTagValues{};
+
+		float m_cosbmax{};
 
 		float m_bmax1{};
 		float m_bmax2{};

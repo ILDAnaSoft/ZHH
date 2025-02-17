@@ -331,19 +331,128 @@ void ZHHBaseKinfitProcessor::attachBestPermutation(LCCollection *jets, vector<un
 
 // returns the jets in the same order as they appeared in the source collection
 void ZHHBaseKinfitProcessor::fillOutputCollections(
-  EVENT::LCEvent *pLCEvent,
-  std::vector<ReconstructedParticle*> bestjets
+  EVENT::LCEvent *pLCEvent
 ) {
   IMPL::LCCollectionVec* outputJetCollection = new IMPL::LCCollectionVec(LCIO::RECONSTRUCTEDPARTICLE);
+  IMPL::LCCollectionVec* outputLeptonCollection = new IMPL::LCCollectionVec(LCIO::RECONSTRUCTEDPARTICLE);
 
-  for(unsigned int i = 0; i < bestjets.size(); i++) {
+  float momentum [3];
+  for(unsigned int i = 0; i < m_v4_postfit_jets.size(); i++) {
     ReconstructedParticleImpl * newJet = new ReconstructedParticleImpl();
-    newJet->setMomentum(bestjets[i]->getMomentum());
-    newJet->setEnergy(bestjets[i]->getEnergy());
-    newJet->setCovMatrix(bestjets[i]->getCovMatrix());
+
+    momentum[0] = m_v4_postfit_jets[i].Px();
+    momentum[1] = m_v4_postfit_jets[i].Py();
+    momentum[2] = m_v4_postfit_jets[i].Pz();
+
+    newJet->setMomentum(momentum);
+    newJet->setEnergy(m_v4_postfit_jets[i].E());
+    //newJet->setCovMatrix(bestjets[i]->getCovMatrix());
 
     outputJetCollection->addElement( newJet );
   }
 
+  for(unsigned int i = 0; i < m_v4_postfit_leptons.size(); i++) {
+    ReconstructedParticleImpl * newLep = new ReconstructedParticleImpl();
+
+    momentum[0] = m_v4_postfit_leptons[i].Px();
+    momentum[1] = m_v4_postfit_leptons[i].Py();
+    momentum[2] = m_v4_postfit_leptons[i].Pz();
+
+    newLep->setMomentum(momentum);
+    newLep->setEnergy(m_v4_postfit_leptons[i].E());
+
+    outputJetCollection->addElement( newLep );
+  }
+
   pLCEvent->addCollection( outputJetCollection , m_outputJetCollection.c_str() );
+  pLCEvent->addCollection( outputJetCollection , m_outputLeptonCollection.c_str() );
+};
+
+void ZHHBaseKinfitProcessor::baseClear() {
+  m_v4_postfit_jets.clear();
+  m_v4_postfit_leptons.clear();
+
+  m_nJets = 0;
+	m_nIsoLeps = 0;
+	m_nSLDecayBHadron = 0;
+	m_nSLDecayCHadron = 0;
+	m_nSLDecayTauLepton = 0;
+	m_nSLDecayTotal = 0;
+	m_nCorrectedSLD = 0;
+	m_ISREnergyTrue = 0.0;
+	m_BSEnergyTrue = 0.0;
+	m_HHMassHardProcess = 0.0;
+	m_FitErrorCode_woNu = 1;
+	m_ZMassBeforeFit_woNu = 0.0;
+	m_H1MassBeforeFit_woNu = 0.0;
+	m_H2MassBeforeFit_woNu = 0.0;
+	m_HHMassBeforeFit_woNu = 0.0;
+	m_ZHHMassBeforeFit_woNu = 0.0;
+	m_ISREnergyBeforeFit_woNu = 0.0;
+	m_ZMassAfterFit_woNu = 0.0;
+	m_H1MassAfterFit_woNu = 0.0;
+	m_H2MassAfterFit_woNu = 0.0;
+	m_HHMassAfterFit_woNu = 0.0;
+	m_ZHHMassAfterFit_woNu = 0.0;
+	m_ISREnergyAfterFit_woNu = 0.0;
+	m_FitProbability_woNu = 0.0;
+	m_FitChi2_woNu = 0.0;
+  m_FitChi2_byMass = 0.0;
+  m_bestMatchingKinfit.clear();
+  m_bestMatchingByMass.clear();
+	m_pullJetEnergy_woNu.clear();
+	m_pullJetTheta_woNu.clear();
+	m_pullJetPhi_woNu.clear();
+	m_pullLeptonInvPt_woNu.clear();
+	m_pullLeptonTheta_woNu.clear();
+	m_pullLeptonPhi_woNu.clear();
+	/*m_FitErrorCode_wNu = 1;
+	m_ZMassBeforeFit_wNu = 0.0;
+	m_H1MassBeforeFit_wNu = 0.0;
+	m_H2MassBeforeFit_wNu = 0.0;
+	m_ZMassAfterFit_wNu = 0.0;
+	m_H1MassAfterFit_wNu = 0.0;
+	m_H2MassAfterFit_wNu = 0.0;
+	m_FitProbability_wNu = 0.0;
+	m_FitChi2_wNu = 0.0;
+	m_pullJetEnergy_wNu.clear();
+	m_pullJetTheta_wNu.clear();
+	m_pullJetPhi_wNu.clear();
+	m_pullLeptonInvPt_wNu.clear();
+	m_pullLeptonTheta_wNu.clear();
+	m_pullLeptonPhi_wNu.clear();*/
+	m_FitErrorCode = 1;
+	m_ZMassBeforeFit = 0.0;
+	m_H1MassBeforeFit = 0.0;
+	m_H2MassBeforeFit = 0.0;
+	m_HHMassBeforeFit = 0.0;
+	m_ZHHMassBeforeFit = 0.0;
+	m_ISREnergyBeforeFit = 0.0;
+	m_ZMassAfterFit = 0.0;
+	m_H1MassAfterFit = 0.0;
+	m_H2MassAfterFit = 0.0;
+	m_HHMassAfterFit = 0.0;
+	m_ZHHMassAfterFit = 0.0;
+	m_ISREnergyAfterFit = 0.0;
+	m_FitProbability = 0.0;
+	m_FitChi2 = 0.0;
+	m_pullJetEnergy.clear();
+	m_pullJetTheta.clear();
+	m_pullJetPhi.clear();
+	m_pullLeptonInvPt.clear();
+	m_pullLeptonTheta.clear();
+	m_pullLeptonPhi.clear();
+  m_TrueNeutrinoEnergy.clear();
+  m_RecoNeutrinoEnergy.clear();
+  m_RecoNeutrinoEnergyKinfit.clear();
+	m_Sigma_Px2.clear();
+	m_Sigma_PxPy.clear();
+	m_Sigma_Py2.clear();
+	m_Sigma_PxPz.clear();
+	m_Sigma_PyPz.clear();
+	m_Sigma_Pz2.clear();
+	m_Sigma_PxE.clear();
+	m_Sigma_PyE.clear();
+	m_Sigma_PzE.clear();
+	m_Sigma_E2.clear();
 };

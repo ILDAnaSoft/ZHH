@@ -8,18 +8,42 @@
 #include <EVENT/LCIntVec.h>
 #include <IMPL/ReconstructedParticleImpl.h>
 #include <UTIL/PIDHandler.h>
-#include "inv_mass.h"
 
 using namespace lcio ;
 using namespace marlin ;
 using namespace std ;
 
-TLorentzVector v4old(ReconstructedParticle* p){
+TLorentzVector v4old(ReconstructedParticle* p){ 
 	return TLorentzVector( p->getMomentum()[0], p->getMomentum()[1], p->getMomentum()[2], p->getEnergy() );
 }
-TLorentzVector v4old(LCObject* lcobj){
-	ReconstructedParticle* p = dynamic_cast<ReconstructedParticle*>(lcobj); return v4old(p);
-}
+TLorentzVector v4old(LCObject* lcobj){ ReconstructedParticle* p = dynamic_cast<ReconstructedParticle*>(lcobj); return v4old(p); }
+
+const std::vector<std::vector<unsigned short>> EventObservablesBase::dijetPerms4 {
+	{0,1,2,3},
+	{0,2,1,3},
+	{0,3,1,2},
+	{1,2,0,3},
+	{1,3,0,2},
+	{2,3,0,1}
+};
+
+const std::vector<std::vector<unsigned short>> EventObservablesBase::dijetPerms6 {
+	{0,1,2,3,4,5},
+	{0,2,1,3,4,5},
+	{0,3,1,2,4,5},
+	{0,4,1,2,3,5},
+	{0,5,1,2,3,4},
+	{1,2,0,3,4,5},
+	{1,3,0,2,4,5},
+	{1,4,0,2,3,5},
+	{1,5,0,2,3,4},
+	{2,3,0,1,4,5},
+	{2,4,0,1,3,5},
+	{2,5,0,1,3,4},
+	{3,4,0,1,2,5},
+	{3,5,0,1,2,4},
+	{4,5,0,1,2,3}
+};
 
 EventObservablesBase::EventObservablesBase(const std::string &name) : Processor(name),
   m_write_ttree(true),
@@ -212,8 +236,13 @@ void EventObservablesBase::prepareBaseTree()
 		ttree->Branch("thrustminor", &m_thrustMinor, "thrustminor/F");
 		ttree->Branch("costhrust", &m_thrustAxisCos, "costhrust/F");
 
+		ttree->Branch("ptpfochargedmax", &m_ptpfochargedmax, "ptpfochargedmax/F");
+		ttree->Branch("ppfochargedmax", &m_ppfochargedmax, "ppfochargedmax/F");
+
 		ttree->Branch("ptpfomax", &m_ptpfomax, "ptpfomax/F");
 		ttree->Branch("ptjmax", &m_ptjmax, "ptjmax/F");
+		ttree->Branch("pjmax", &m_pjmax, "pjmax/F");
+		ttree->Branch("cosjmax", &m_cosjmax, "cosjmax/F");
 
 		ttree->Branch("njets",&m_nJets,"njets/I");
 		ttree->Branch("nisoleptons",&m_nIsoLeps,"nisoleptons/I");
@@ -243,6 +272,8 @@ void EventObservablesBase::prepareBaseTree()
 		ttree->Branch("cTags", &m_cTagValues);
 
 		// bmax1:bmax2:bmax3:bmax4:pj1jets2:pj2jets2
+		ttree->Branch("cosbmax", &m_cosbmax, "cosbmax/F");
+
 		ttree->Branch("bmax1", &m_bmax1, "bmax1/F");
 		ttree->Branch("bmax2", &m_bmax2, "bmax2/F");
 		ttree->Branch("bmax3", &m_bmax3, "bmax3/F");
@@ -396,8 +427,13 @@ void EventObservablesBase::clearBaseValues()
 	m_thrustMinor = -999.;
 	m_thrustAxisCos = -999.;
 
+	m_ptpfochargedmax = 0.;
+	m_ppfochargedmax = 0.;
+
 	m_ptpfomax = 0.;
 	m_ptjmax = 0.;
+	m_pjmax = 0.;
+	m_cosjmax = 0.;
 
 	m_nJets = 0;
 	m_nIsoLeps = 0;
@@ -422,6 +458,8 @@ void EventObservablesBase::clearBaseValues()
 	m_bTagsSorted.clear();
 	std::fill(m_bTagValues.begin(), m_bTagValues.end(), -1.);
 	std::fill(m_cTagValues.begin(), m_cTagValues.end(), -1.);
+
+	m_cosbmax = 0.;
 
 	m_bmax1 = 0.;
 	m_bmax2 = 0.;
@@ -524,6 +562,11 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 
 			pfosum += pfo_v4;
 			m_ptpfomax = std::max(m_ptpfomax, (float)pfo_v4.Pt());
+
+			if (pfo->getCharge() != 0) {
+				m_ptpfochargedmax = std::max(m_ptpfochargedmax, (float)pfo_v4.Pt());
+				m_ppfochargedmax = std::max(m_ppfochargedmax, (float)pfo_v4.P());
+			}
 		}
 		ROOT::Math::PxPyPzEVector pmis = ecms - pfosum;
 		
@@ -569,11 +612,17 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 			streamlog_out(MESSAGE) << "Jet matching from source " << m_jet_matching_source << " : (" << m_jet_matching[0] << "," << m_jet_matching[1] << ") + (" << m_jet_matching[2] << "," << m_jet_matching[3] << ")" << std::endl;
 
 			// ---------- JET PROPERTIES AND FLAVOUR TAGGING ----------
-		
 			for (int i=0; i < m_nJets; ++i) {
 				ReconstructedParticle* jet = (ReconstructedParticle*) inputJetCollection->getElementAt(i);
+				ROOT::Math::PxPyPzEVector jet_v4 = v4(jet);
+				
+				float currentJetMomentum = jet_v4.P();
 
-				m_ptjmax = std::max(m_ptjmax, (float)v4(jet).Pt());
+				if (currentJetMomentum > m_pjmax)
+					m_cosjmax = jet_v4.Pz() / currentJetMomentum;
+
+				m_ptjmax = std::max(m_ptjmax, (float)jet_v4.Pt());
+				m_pjmax = std::max(m_pjmax, currentJetMomentum);
 				m_jets.push_back(jet);
 			}
 
@@ -616,6 +665,10 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 			}
 
 			std::sort (m_bTagsSorted.begin(), m_bTagsSorted.end(), jetTaggingComparator);
+
+			TVector3 pjbmaxA1 (m_jets[m_bTagsSorted[0].first]->getMomentum());
+			TVector3 pjbmaxA2 (m_jets[m_bTagsSorted[1].first]->getMomentum());
+			m_cosbmax = pjbmaxA1.Dot(pjbmaxA2)/pjbmaxA1.Mag()/pjbmaxA2.Mag();
 
 			m_bmax1 = m_bTagsSorted.rbegin()[0].second;
 			m_bmax2 = m_bTagsSorted.rbegin()[1].second;
@@ -769,77 +822,83 @@ void EventObservablesBase::end(){
 // (dijet_targets)=(Z,H,H), 6 jets
 // (dijet targets)=(Z,H), 4asdf jets
 std::tuple<std::vector<unsigned short>, vector<float>, float> EventObservablesBase::pairJetsByMass(
-	std::vector<ReconstructedParticle*> jets,
-	std::vector<unsigned short> dijet_targets
+	const std::vector<ROOT::Math::PxPyPzEVector> v4_jets,
+	std::vector<float> target_masses,
+	std::vector<float> target_resolutions,
+	std::function<float (
+		const std::vector<ROOT::Math::PxPyPzEVector>,
+		const std::vector<unsigned short>,
+		std::vector<float>&,
+		const std::vector<float>,
+		const std::vector<float>)> calc_chi2
 ) {
-	vector<vector<unsigned short>> perms;
+	const std::vector<std::vector<unsigned short>> *perms;
 
-	assert(dijet_targets.size() *2 == jets.size());
-
-	if (jets.size() == 6) {
-		perms = {
-			{0,1,2,3,4,5},
-			{0,2,1,3,4,5},
-			{0,3,1,2,4,5},
-			{0,4,1,2,3,5},
-			{0,5,1,2,3,4},
-			{1,2,0,3,4,5},
-			{1,3,0,2,4,5},
-			{1,4,0,2,3,5},
-			{1,5,0,2,3,4},
-			{2,3,0,1,4,5},
-			{2,4,0,1,3,5},
-			{2,5,0,1,3,4},
-			{3,4,0,1,2,5},
-			{3,5,0,1,2,4},
-			{4,5,0,1,2,3}
-		};
-	} else if (jets.size() == 4) {
-		perms = {
-			{0,1,2,3},
-			{0,2,1,3},
-			{0,3,1,2},
-			{1,2,0,3},
-			{1,3,0,2},
-			{2,3,0,1}
-		};
+	if (v4_jets.size() == 4) {
+		perms = &dijetPerms4;
+	} else if (v4_jets.size() == 6) {
+		perms = &dijetPerms6;
 	} else
 		throw EVENT::Exception("Not implemented dijet pairing case");
 
-	size_t nperm = perms.size();
+	size_t nperm = perms->size();
 	unsigned int best_idx = 0;
 	float chi2min = 999999.;
 
-	vector<float> dijetmasses_target (dijet_targets.size(), -999);
-	for (size_t j=0; j < dijetmasses_target.size(); j++) {
-		if (dijet_targets[j] == 23) {
-			dijetmasses_target[j] = 91.1876;
-		} else if (dijet_targets[j] == 25) {
-			dijetmasses_target[j] = 125.;
-		} else 
-			throw EVENT::Exception("Not implemented dijet pairing case");
-	}
-
-	vector<float> dijetmasses_temp (dijet_targets.size(), -999);
-	vector<float> dijetmasses (dijet_targets.size(), -999);
+	std::vector<float> masses_temp (target_masses.size(), -999);
+	std::vector<float> masses (target_masses.size(), -999);
 	
 	float chi2;
 	for (size_t i=0; i < nperm; i++) {
-		chi2 = 0.;
-
-		for (size_t j=0; j < dijetmasses.size(); j++) {
-			dijetmasses_temp[j] = inv_mass(jets[perms[i][j*2]], jets[perms[i][j*2 + 1]]);
-			chi2 += TMath::Power(dijetmasses_temp[j] - dijetmasses_target[j], 2);
-		}
+		chi2 = calc_chi2(v4_jets, perms->at(i), masses_temp, target_masses, target_resolutions);
 
 		if (chi2 < chi2min) {
 			chi2min = chi2;
-			dijetmasses = dijetmasses_temp;
+			masses = masses_temp;
 			best_idx = i;
 		}
 	}
 	
-	return { perms[best_idx], dijetmasses, chi2min };
+	return { perms->at(best_idx), masses, chi2min };
+};
+
+std::tuple<std::vector<unsigned short>, vector<float>, float> EventObservablesBase::pairJetsByMass(
+	std::vector<ReconstructedParticle*> jets,
+	std::vector<unsigned short> dijet_targets
+) {
+	assert(dijet_targets.size() *2 == jets.size());
+
+	std::vector<float> target_masses (dijet_targets.size(), -999);
+	std::vector<float> target_resolutions (dijet_targets.size(), -999);
+
+	for (size_t j=0; j < target_masses.size(); j++) {
+		switch (dijet_targets[j]) {
+			case  6: target_masses[j] = kMassTop; target_resolutions[j] = kSigmaMassTop; break;
+			case 23: target_masses[j] = kMassZ  ; target_resolutions[j] = kSigmaMassZ; break;
+			case 24: target_masses[j] = kMassW  ; target_resolutions[j] = kSigmaMassW; break;
+			case 25: target_masses[j] = kMassH  ; target_resolutions[j] = kSigmaMassH; break;
+			
+			default: throw EVENT::Exception("Not implemented dijet pairing case");
+		}
+	}
+
+	return pairJetsByMass(toFourVectors(jets), target_masses, target_resolutions, [](
+		const std::vector<ROOT::Math::PxPyPzEVector> jets,
+		const std::vector<unsigned short> perm,
+		std::vector<float> &masses,
+		std::vector<float> targets,
+		std::vector<float> resolutions)
+		{
+			float result = 0;
+			
+			for (size_t i=0; i < masses.size(); i++) {
+				masses[i] = inv_mass(jets[perm[i*2]], jets[perm[i*2 + 1]]);
+				result += std::pow((masses[i] - targets[i])/resolutions[i], 2);
+			}
+
+			return result;
+		}
+	);
 };
 
 ReconstructedParticleVec EventObservablesBase::getElements(LCCollection *collection, std::vector<int> elements) {
@@ -936,7 +995,7 @@ std::pair<int, int> EventObservablesBase::nPFOsMinMax(LCCollection *collection) 
 	size_t min_res = 999;
 	size_t max_res = 0;
 	
-	for (size_t i=0; i < collection->getNumberOfElements(); i++) {
+	for (int i=0; i < collection->getNumberOfElements(); i++) {
 		ReconstructedParticle* jet = dynamic_cast<ReconstructedParticle*>(collection->getElementAt(i));
 
 		min_res = std::min(min_res, jet->getParticles().size());
