@@ -56,6 +56,8 @@ if [[ $MARLIN_DLL != *"libZHHProcessors"* ]]; then
 fi
 
 # Fix wrong Physsim include paths in key4hep
+export CMAKE_PREFIX_PATH=$(echo $CMAKE_PREFIX_PATH | sed -e "s|/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/physsim/0.5-433xdn:|$REPO_ROOT/dependencies/Physsim:|g")
+export LD_LIBRARY_PATH="$REPO_ROOT/dependencies/Physsim/lib64:$LD_LIBRARY_PATH"
 export CPATH=$(echo $CPATH | sed -e "s|/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/physsim/0.5-433xdn/include/physsim|$REPO_ROOT/dependencies/Physsim/include|g")
 
 function MarlinZHH() {

@@ -166,6 +166,9 @@ function zhh_install_deps() {
 
     # Set DATA_PATH
     local default_data_dir="/nfs/dust/ilc/user/$(whoami)/zhh"
+    if [[ ! -z $DATA_PATH ]]; then
+        default_data_dir=$DATA_PATH
+    fi
 
     local data_dir=""
     read -p "Where do you want to store analysis results for batch processing? ($default_data_dir) " data_dir

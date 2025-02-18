@@ -179,7 +179,7 @@
         <!--Performs particle identification-->
         <!--Debugging?-->
         <parameter name="Debug" type="int">0</parameter>
-        <parameter name="Verbosity" type="string">MESSAGE</parameter>
+        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
 
         <!--Boundaries for energy binning-->
         <parameter name="EnergyBoundaries" type="FloatVec">0 1.0e+07</parameter>
@@ -212,7 +212,7 @@
 
     <processor name="LeptonID" type="LeptonIDProcessor">
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string"> MESSAGE </parameter>
+        <parameter name="Verbosity" type="string"> SILENT </parameter>
         <parameter name="BuildTree" type="bool">false</parameter>
         <parameter name="EvalMVA" type="bool">true</parameter>
         <parameter name="weightfile">${ILDConfigDir}/StandardConfig/production/HighLevelReco/PIDFiles/CPID/LeptonID_multi_jet_dEdx_800t_3d_cm50r50_BDTG.weights.xml</parameter>
@@ -247,7 +247,7 @@
         <!--Names of the Output Higgs decay mode collection-->
         <parameter name="HdecayModeCollection" type="string" lcioOutType="MCParticle">HdecayMode</parameter>
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">MESSAGE</parameter>
+        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
     </processor>
 
     <processor name="MyFastJetProcessor" type="FastJetProcessor">
@@ -597,7 +597,7 @@
 		<!--Event selection based on semi-leptonic decays: (0): without SLD (1): with >= 0 SLD(all events) (2): with >= 1 SLD (3): with correctable SLD -->
         <parameter name="SLDMode" type="int">1</parameter>
 		<!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-		<parameter name="Verbosity" type="string">${Verbosity}</parameter>
+		<parameter name="Verbosity" type="string">SILENT</parameter>
 	</processor>
 
     <processor name="MyErrorFlow4J" type="ErrorFlow">
@@ -617,7 +617,7 @@
         <!-- A correction factor to be multiplied to angular uncertainties of Neutral Hadrons -->
         <parameter name="CovMatFactorNeutralHadrons" type="double">1.8</parameter>
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">MESSAGE</parameter>
+        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
     </processor>
 
     <processor name="JC5FT" type="LcfiplusProcessor">
@@ -850,7 +850,7 @@
 		<!--Event selection based on semi-leptonic decays: (0): without SLD (1): with >= 0 SLD(all events) (2): with >= 1 SLD (3): with correctable SLD -->
         <parameter name="SLDMode" type="int">1</parameter>
 		<!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-		<parameter name="Verbosity" type="string">${Verbosity}</parameter>
+		<parameter name="Verbosity" type="string">SILENT</parameter>
 	</processor>
 
     <processor name="MyErrorFlow5J" type="ErrorFlow">
@@ -870,7 +870,7 @@
         <!-- A correction factor to be multiplied to angular uncertainties of Neutral Hadrons -->
         <parameter name="CovMatFactorNeutralHadrons" type="double">1.8</parameter>
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">MESSAGE</parameter>
+        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
     </processor>
 
     <processor name="JC6FT" type="LcfiplusProcessor">
@@ -1103,7 +1103,7 @@
 		<!--Event selection based on semi-leptonic decays: (0): without SLD (1): with >= 0 SLD(all events) (2): with >= 1 SLD (3): with correctable SLD -->
         <parameter name="SLDMode" type="int">1</parameter>
 		<!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-		<parameter name="Verbosity" type="string">${Verbosity}</parameter>
+		<parameter name="Verbosity" type="string">SILENT</parameter>
 	</processor>
 
     <processor name="MyErrorFlow6J" type="ErrorFlow">
@@ -1123,7 +1123,7 @@
         <!-- A correction factor to be multiplied to angular uncertainties of Neutral Hadrons -->
         <parameter name="CovMatFactorNeutralHadrons" type="double">1.8</parameter>
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">MESSAGE</parameter>
+        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
     </processor>
 
     <!-- ANALYSIS -->
@@ -1170,7 +1170,7 @@
         <parameter name="JetPullsOutputCollection" type="string" lcioOutType="LCFloatVec">JetPullsLL_NMC</parameter>
         
         <!-- verbosity level - DEBUG only works if compiled in debug mode! -->
-        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> DEBUG </parameter>
+        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> ${Verbosity} </parameter>
     </processor>
 
     <processor name="MyZHHKinFitLL_ZHH" type="ZHHllbbbbKinFit">
@@ -1215,7 +1215,7 @@
         <parameter name="JetPullsOutputCollection" type="string" lcioOutType="LCFloatVec">JetPullsLL_ZHH</parameter>
         
         <!-- verbosity level - DEBUG only works if compiled in debug mode! -->
-        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> DEBUG </parameter>
+        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> ${Verbosity} </parameter>
     </processor>
 
     <processor name="MyZHHKinFitLL_ZZH" type="ZHHllbbbbKinFit">
@@ -1260,7 +1260,7 @@
         <parameter name="JetPullsOutputCollection" type="string" lcioOutType="LCFloatVec">JetPullsLL_ZZH</parameter>
         
         <!-- verbosity level - DEBUG only works if compiled in debug mode! -->
-        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> DEBUG </parameter>
+        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> ${Verbosity} </parameter>
     </processor>
 
     <processor name="MyZHHKinFitLL_ZZZ" type="ZHHllbbbbKinFit">
@@ -1305,7 +1305,7 @@
         <parameter name="JetPullsOutputCollection" type="string" lcioOutType="LCFloatVec">JetPullsLL_ZZZ</parameter>
         
         <!-- verbosity level - DEBUG only works if compiled in debug mode! -->
-        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> DEBUG </parameter>
+        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> ${Verbosity} </parameter>
     </processor>
 
     <processor name="MyEventObservablesLL" type="EventObservablesLL">
@@ -1327,7 +1327,7 @@
 
         <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
 
-        <parameter name="Verbosity" type="string">MESSAGE</parameter>
+        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
     </processor>
 
     <processor name="MyZinvisibleErrorAnalysis" type="ZinvisibleErrorAnalysis">
@@ -1337,7 +1337,7 @@
         <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
 
         <parameter name="ZinvisibleResidualsOutputCollection" type="string" lcioOutType="LCFloatVec">ZinvisibleResiduals</parameter>
-        <parameter name="Verbosity" type="string">DEBUG</parameter>
+        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
     </processor>
 
     <processor name="MyZHHKinFitVV_NMC" type="ZHHvvbbbbKinFit">
@@ -1382,7 +1382,7 @@
         <parameter name="JetPullsOutputCollection" type="string" lcioOutType="LCFloatVec">JetPullsVV_NMC</parameter>
         
         <!-- verbosity level - DEBUG only works if compiled in debug mode! -->
-        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> DEBUG </parameter>
+        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> ${Verbosity} </parameter>
     </processor>
 
     <processor name="MyEventObservablesVV" type="EventObservablesVV">
@@ -1406,7 +1406,7 @@
 
         <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
 
-        <parameter name="Verbosity" type="string">MESSAGE</parameter>
+        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
     </processor>
 
     <processor name="MyZHHKinFitQQ_NMC" type="ZHHqqbbbbKinFit">
@@ -1451,7 +1451,7 @@
         <parameter name="JetPullsOutputCollection" type="string" lcioOutType="LCFloatVec">JetPullsQQ_NMC</parameter>
         
         <!-- verbosity level - DEBUG only works if compiled in debug mode! -->
-        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> DEBUG </parameter>
+        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> ${Verbosity} </parameter>
     </processor>
 
     <processor name="MyZHHKinFitQQ_ZHH" type="ZHHqqbbbbKinFit">
@@ -1496,7 +1496,7 @@
         <parameter name="JetPullsOutputCollection" type="string" lcioOutType="LCFloatVec">JetPullsQQ_ZHH</parameter>
         
         <!-- verbosity level - DEBUG only works if compiled in debug mode! -->
-        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> DEBUG </parameter>
+        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> ${Verbosity} </parameter>
     </processor>
 
     <processor name="MyZHHKinFitQQ_ZZH" type="ZHHqqbbbbKinFit">
@@ -1541,7 +1541,7 @@
         <parameter name="JetPullsOutputCollection" type="string" lcioOutType="LCFloatVec">JetPullsQQ_ZZH</parameter>
         
         <!-- verbosity level - DEBUG only works if compiled in debug mode! -->
-        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> DEBUG </parameter>
+        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> ${Verbosity} </parameter>
     </processor>
 
     <processor name="MyEventObservablesQQ" type="EventObservablesQQ">
@@ -1565,7 +1565,7 @@
         <parameter name="polarizations" type="FloatVec"> 1 0 </parameter>
         <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
 
-        <parameter name="Verbosity" type="string">MESSAGE</parameter>
+        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
     </processor>
 
     <processor name="MyFinalStateRecorder" type="FinalStateRecorder">
@@ -1574,7 +1574,7 @@
         <parameter name="outputJsonFilename" type="string">${OutputDirectory}/${OutputBaseName}_FinalStateMeta.json</parameter>
 
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">DEBUG</parameter>
+        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
     </processor>
 
     <processor name="MyTruthRecoComparison" type="TruthRecoComparison">
@@ -1588,7 +1588,7 @@
         <parameter name="outputKinematics" type="bool">True</parameter>
 
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">SILENT</parameter>
+        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
     </processor>
 
     <processor name="MyLCIOOutputProcessor" type="LCIOOutputProcessor">

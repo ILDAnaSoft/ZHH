@@ -27,16 +27,16 @@ do
     INPUT_FILE="$dir/$file"
     OUT_BASE_NAME="${file%.*}"
     OUT_BASE_DIR="$OUTPUT_DIR/$JOB_NAME"
-    TARGET_FILE="$OUT_BASE_DIR/$OUT_BASE_NAME.slcio"
 
     nEvents=$( lcio_event_counter $INPUT_FILE )
     Pointer=0
     ChunkLocal=0
 
     # check for existing targets
-    if [[ ! -f $TARGET_FILE ]]; then
-        while [ $Pointer -lt $nEvents ];
-        do
+    while [ $Pointer -lt $nEvents ];
+    do
+        TARGET_FILE="$OUT_BASE_DIR/$OUT_BASE_NAME-$ChunkLocal.slcio"
+        if [[ ! -f $TARGET_FILE ]]; then
             # create job file
             JOB_FILE="$file-$ChunkLocal.sh"
 
@@ -49,19 +49,20 @@ do
             sed -i -e "s|<EVENTS_MAX>|$NMAX_PER_JOB|g" definitions/$JOB_FILE
             sed -i -e "s|<EVENTS_SKIP>|$Pointer|g" definitions/$JOB_FILE
 
-            # add to pack.job and index.txt
             echo "bash $JOB_BASEDIR/definitions/$JOB_FILE" >> pack.job
-            echo "$ChunkGlobal $INPUT_FILE $OUT_BASE_NAME-$ChunkLocal $ChunkLocal $Pointer $((Pointer + $NMAX_PER_JOB)) " >> index.txt
+        else
+            echo "File <$TARGET_FILE> already exists. No job will be scheduled for it."
+        fi
 
-            njobs=$((njobs + 1 ))
-            Pointer=$((Pointer + $NMAX_PER_JOB))
-            ChunkGlobal=$((ChunkGlobal + 1))
-            ChunkLocal=$((ChunkLocal + 1))
-        done
-    else
-        echo "File <$TARGET_FILE> already exists. Aborting due to index error."
-        exit 1
-    fi
+        # add to pack.job and index.txt
+        echo "$ChunkGlobal $INPUT_FILE $OUT_BASE_NAME-$ChunkLocal $ChunkLocal $Pointer $((Pointer + $NMAX_PER_JOB)) " >> index.txt
+
+        njobs=$((njobs + 1 ))
+        Pointer=$((Pointer + $NMAX_PER_JOB))
+        ChunkGlobal=$((ChunkGlobal + 1))
+        ChunkLocal=$((ChunkLocal + 1))
+    done
+    
 
     nfiles=$((nfiles + 1 ))
 done
