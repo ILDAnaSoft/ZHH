@@ -102,37 +102,37 @@ EventObservablesBase::EventObservablesBase(const std::string &name) : Processor(
 	registerProcessorParameter("JetTaggingPIDAlgorithm",
             "Number of jet should be in the event",
             m_JetTaggingPIDAlgorithm,
-            std::string("lcfiplus")
+            std::string("weaver")
             );
 
 	registerProcessorParameter("JetTaggingPIDParameterB",
             "Number of jet should be in the event",
             m_JetTaggingPIDParameterB,
-            std::string("BTag")
+            std::string("mc_b")
             );
 
 	registerProcessorParameter("JetTaggingPIDParameterC",
             "Number of jet should be in the event",
             m_JetTaggingPIDParameterC,
-            std::string("CTag")
+            std::string("mc_c")
             );
 
 	registerProcessorParameter("JetTaggingPIDAlgorithm2",
             "Number of jet should be in the event",
             m_JetTaggingPIDAlgorithm2,
-            std::string("weaver")
+            std::string("lcfiplus")
             );
 
 	registerProcessorParameter("JetTaggingPIDParameterB2",
             "Number of jet should be in the event",
             m_JetTaggingPIDParameterB2,
-            std::string("mc_b")
+            std::string("BTag")
             );
 
 	registerProcessorParameter("JetTaggingPIDParameterC2",
             "Number of jet should be in the event",
             m_JetTaggingPIDParameterC2,
-            std::string("mc_c")
+            std::string("CTag")
             );
   	
 	registerProcessorParameter("maxdileptonmassdiff",
@@ -549,7 +549,8 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 		LCCollection *inputPfoRawCollection = pLCEvent->getCollection( m_inputPfoRawCollection );
 
 		m_nJets = inputJetCollection->getNumberOfElements();
-		assert(m_nJets == m_nAskedJets());
+		if (m_nJets != m_nAskedJets())
+			throw EVENT::Exception("Unexpected number of input jets");
 
 		// ---------- NUMBER OF ISOLATED LEPTONS and PFOs ----------
 		m_nIsoLeps = inputLeptonCollection->getNumberOfElements();
@@ -779,12 +780,14 @@ void EventObservablesBase::init(){
     printParameters();
 
 	// A. prepare some variables
-	assert(m_polarizations.size() == 2);
+	if (m_polarizations.size() != 2)
+		throw EVENT::Exception("Unexpected number of input jets");
 
 	float Pem = m_polarizations[0];
 	float Pep = m_polarizations[1];
 
-	assert(abs(Pem) <= 1 && abs(Pep) <= 1);
+	if (!(abs(Pem) <= 1 && abs(Pep) <= 1))
+		throw EVENT::Exception("Unexpected number of input jets");
 
 	// A.2. prepare the matrix elements
 	m_lcmezhh = new LCMEZHH("LCMEZHH", "ZHH", 125., Pem, Pep);
@@ -813,7 +816,7 @@ void EventObservablesBase::processEvent( LCEvent* evt ){
 
 	// all channel specific processors require that at least acquiring the base values succeeds
 	if (m_statusCode == 0) {
-		streamlog_out(MESSAGE) << "START updateChannelValues... ";
+		streamlog_out(MESSAGE) << "START updateChannelValues" << std::endl;
 		updateChannelValues(evt);
 		streamlog_out(MESSAGE) << "END updateChannelValues" << std::endl;
 	} else
@@ -825,7 +828,7 @@ void EventObservablesBase::processEvent( LCEvent* evt ){
 	streamlog_out(MESSAGE) << "clearing values... ";
 	clearBaseValues();
 	clearChannelValues();
-	streamlog_out(MESSAGE) << " event " << m_nEvt << " finished " << std::endl;
+	streamlog_out(MESSAGE) << "done. event " << m_nEvt << " processed" << std::endl;
 };
 
 void EventObservablesBase::processRunHeader( LCRunHeader* run ){

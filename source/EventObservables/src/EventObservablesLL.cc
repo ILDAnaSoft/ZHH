@@ -24,6 +24,7 @@ void EventObservablesLL::prepareChannelTree() {
 		ttree->Branch("pz32", &m_pz32, "pz32/F");
 		ttree->Branch("e32", &m_e32, "e32/F");
 
+        ttree->Branch("mzll", &m_mzll, "mzll/F");
         ttree->Branch("mzll_pre_pairing", &m_mzll_pre_pairing, "mzll_pre_pairing/F");
         ttree->Branch("paired_lep_type", &m_paired_lep_type, "paired_lep_type/I");
     }
@@ -45,7 +46,7 @@ void EventObservablesLL::clearChannelValues() {
 
     m_paired_lep_type = 0;
 
-    // m_mzll = 0.;
+    m_mzll = 0.;
     // m_m_diff_z = 0.;
 	m_mzll_pre_pairing = 0.;
 
@@ -57,7 +58,7 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
     
     LCCollection *inputJetCollection = pLCEvent->getCollection( m_inputJetCollection );
     LCCollection *inputLepPairCollection = pLCEvent->getCollection( m_inputLepPairCollection );
-    // LCCollection *inputLeptonCollection = pLCEvent->getCollection( m_inputIsolatedleptonCollection );
+    LCCollection *inputLeptonCollection = pLCEvent->getCollection( m_inputIsolatedleptonCollection );
 
     if ( inputLepPairCollection->getNumberOfElements() == m_nAskedIsoLeps() && inputJetCollection->getNumberOfElements() == m_nAskedJets() ) {
         // NPFOS MIN/MAX
@@ -68,6 +69,9 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         //m_m_diff_z = fabs( m_mzll - 91.2 );
         m_mzll_pre_pairing = inputLepPairCollection->parameters().getFloatVal("IsoLepsInvMass");
         
+        IntVec pairedLeptonIDx;
+        inputLepPairCollection->parameters().getIntVals("PairedLeptonIDx", pairedLeptonIDx);
+        
         // ---------- SAVE TYPES OF PAIRED ISOLATED LEPTONS ----------
         ReconstructedParticle* paired_isolep1 = dynamic_cast<ReconstructedParticle*>( inputLepPairCollection->getElementAt(0));
         ReconstructedParticle* paired_isolep2 = dynamic_cast<ReconstructedParticle*>( inputLepPairCollection->getElementAt(1));
@@ -77,7 +81,7 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
             std::swap(paired_isolep1, paired_isolep2);
         }
 
-        m_paired_lep_type = abs(paired_isolep1->getType());
+        m_paired_lep_type = abs(((ReconstructedParticle*)inputLeptonCollection->getElementAt(pairedLeptonIDx[0]))->getType());
 
         TLorentzVector v4_paired_isolep1 = v4old(paired_isolep1);
         TLorentzVector v4_paired_isolep2 = v4old(paired_isolep2);
@@ -92,7 +96,12 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         m_pz32 = v4_paired_isolep2.Pz();
         m_e32 = v4_paired_isolep2.E();
 
-        assert(m_paired_lep_type == 11 || m_paired_lep_type == 13);
+        m_mzll = (v4_paired_isolep1 + v4_paired_isolep2).M();
+
+        if (m_paired_lep_type != 11 && m_paired_lep_type != 13)
+            throw EVENT::Exception("Invalid pairedLepType " + std::to_string( m_paired_lep_type));
+
+        std::cerr << "m_paired_lep_type: " << m_paired_lep_type;
 
         calculateMatrixElements(m_paired_lep_type, 5, v4_paired_isolep1, v4_paired_isolep2,
                                 v4old(inputJetCollection->getElementAt(0)), v4old(inputJetCollection->getElementAt(1)),

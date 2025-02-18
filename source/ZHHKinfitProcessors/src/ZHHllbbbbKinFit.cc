@@ -64,13 +64,9 @@ void ZHHllbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
   LCRelationNavigator* SLDNuNav = NULL;
   LCRelationNavigator* NuMCNav = NULL;
   try {
-    streamlog_out(DEBUG0) << "	getting jet collection: " << m_inputJetCollection << std::endl ;
     inputJetCollection = pLCEvent->getCollection( m_inputJetCollection );
-    streamlog_out(DEBUG0) << "	getting isolated lepton collection: " << m_inputIsolatedleptonCollection << std::endl ;
     inputLeptonCollection = pLCEvent->getCollection( m_inputIsolatedleptonCollection );
-    streamlog_out(DEBUG0) << "	getting semi-leptonic vertex collection: " << m_inputSLDVertexCollection << std::endl ;
     inputSLDecayCollection = pLCEvent->getCollection( m_inputSLDVertexCollection );
-    streamlog_out(DEBUG0) << "  getting mc particle collection: " << _MCParticleColllectionName << std::endl ;
     inputMCParticleCollection = pLCEvent->getCollection( _MCParticleColllectionName );
     JetSLDNav = new LCRelationNavigator( pLCEvent->getCollection( m_inputJetSLDLink ) );
     SLDNuNav = new LCRelationNavigator( pLCEvent->getCollection( m_inputSLDNuLink ) );
@@ -173,25 +169,25 @@ void ZHHllbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
     streamlog_out(MESSAGE) << "Fitter contains " << constraints->size() << " constraints : ";
     for (auto it = constraints->begin(); it != constraints->end(); ++it) {
       streamlog_out(MESSAGE) << (*it)->getName() << " ";
+
       if (strcmp((*it)->getName(), "z mass")==0) {
-	auto mc = dynamic_pointer_cast<MassConstraint>(*it);
-	m_ZMassAfterFit_woNu = mc->getMass();
-      }
-      if (strcmp((*it)->getName(), "h1 mass")==0) {
-	auto mc = dynamic_pointer_cast<MassConstraint>(*it);
-	m_H1MassAfterFit_woNu = mc->getMass();
-      }
-      if (strcmp((*it)->getName(), "h2 mass")==0) {
-	auto mc = dynamic_pointer_cast<MassConstraint>(*it);
-	m_H2MassAfterFit_woNu = mc->getMass();
-      }
-      if (strcmp((*it)->getName(), "hh mass")==0) {
-	auto mc = dynamic_pointer_cast<MassConstraint>(*it);
-	m_HHMassAfterFit_woNu = mc->getMass();
-      }
-      if (strcmp((*it)->getName(), "zhh mass")==0) {
-	auto mc = dynamic_pointer_cast<MassConstraint>(*it);
-	m_ZHHMassAfterFit_woNu = mc->getMass();
+        auto mc = dynamic_pointer_cast<MassConstraint>(*it);
+        m_ZMassAfterFit_woNu = mc->getMass();
+      } else if (strcmp((*it)->getName(), "z2 mass")==0) {
+        auto mc = dynamic_pointer_cast<MassConstraint>(*it);
+        m_Z2MassAfterFit_woNu = mc->getMass();
+      } else if (strcmp((*it)->getName(), "h1 mass")==0) {
+        auto mc = dynamic_pointer_cast<MassConstraint>(*it);
+        m_H1MassAfterFit_woNu = mc->getMass();
+      } else if (strcmp((*it)->getName(), "h2 mass")==0) {
+        auto mc = dynamic_pointer_cast<MassConstraint>(*it);
+        m_H2MassAfterFit_woNu = mc->getMass();
+      } else if (strcmp((*it)->getName(), "hh mass")==0) {
+        auto mc = dynamic_pointer_cast<MassConstraint>(*it);
+        m_HHMassAfterFit_woNu = mc->getMass();
+      } else if (strcmp((*it)->getName(), "zhh mass")==0) {
+        auto mc = dynamic_pointer_cast<MassConstraint>(*it);
+        m_ZHHMassAfterFit_woNu = mc->getMass();
       }
     }
     streamlog_out(MESSAGE) << endl;
@@ -208,12 +204,14 @@ void ZHHllbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
 
     vector<double> startmasses_woNu = calculateInitialMasses(Jets, Leptons, perm_woNu);
     m_ZMassBeforeFit_woNu  = startmasses_woNu[0];
-    m_H1MassBeforeFit_woNu = startmasses_woNu[1];
-    m_H2MassBeforeFit_woNu = startmasses_woNu[2];
-    m_HHMassBeforeFit_woNu = startmasses_woNu[3];
-    m_ZHHMassBeforeFit_woNu = startmasses_woNu[4];
+    m_Z2MassBeforeFit_woNu = startmasses_woNu[1];
+    m_H1MassBeforeFit_woNu = startmasses_woNu[2];
+    m_H2MassBeforeFit_woNu = startmasses_woNu[3];
+    m_HHMassBeforeFit_woNu = startmasses_woNu[4];
+    m_ZHHMassBeforeFit_woNu = startmasses_woNu[5];
 
     streamlog_out(MESSAGE1) << "Z mass prefit = " << m_ZMassBeforeFit_woNu << endl;
+    streamlog_out(MESSAGE1) << "Z2 mass prefit = " << m_Z2MassBeforeFit_woNu << endl;
     streamlog_out(MESSAGE1) << "H1 mass prefit = " << m_H1MassBeforeFit_woNu << endl;
     streamlog_out(MESSAGE1) << "H2 mass prefit = " << m_H2MassBeforeFit_woNu << endl;
     streamlog_out(MESSAGE1) << "HH mass prefit = " << m_HHMassBeforeFit_woNu << endl;
@@ -357,11 +355,12 @@ void ZHHllbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
     std::tie(startmasses, m_FitChi2_byMass, m_bestMatchingByMass) = calculateMassesFromSimpleChi2Pairing(Jets, Leptons);
 
     m_ZMassBeforeFit  = startmasses[0];
-    m_H1MassBeforeFit = startmasses[1];
-    m_H2MassBeforeFit = startmasses[2];
-    m_HHMassBeforeFit = startmasses[3];
-    m_ZHHMassBeforeFit = startmasses[4];
-    streamlog_out(MESSAGE) << "masses from simple chi2:" << m_ZMassBeforeFit << ", " << m_H1MassBeforeFit << ", " << m_H2MassBeforeFit << ", " << m_HHMassBeforeFit << ", " << m_ZHHMassBeforeFit << std::endl ; 
+    m_Z2MassBeforeFit  = startmasses[1];
+    m_H1MassBeforeFit = startmasses[2];
+    m_H2MassBeforeFit = startmasses[3];
+    m_HHMassBeforeFit = startmasses[4];
+    m_ZHHMassBeforeFit = startmasses[5];
+    streamlog_out(MESSAGE) << "masses from simple chi2:" << m_ZMassBeforeFit << ", " << m_Z2MassBeforeFit <<", " << m_H1MassBeforeFit << ", " << m_H2MassBeforeFit << ", " << m_HHMassBeforeFit << ", " << m_ZHHMassBeforeFit << std::endl ; 
 
     m_pTTree->Fill();
     attachBestPermutation(inputJetCollection, m_bestMatchingByMass, "ll", false);
@@ -387,20 +386,19 @@ void ZHHllbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
     if (strcmp((*it)->getName(), "z mass")==0) {
       auto mc = dynamic_pointer_cast<MassConstraint>(*it);
       m_ZMassAfterFit = mc->getMass();
-    }
-    if (strcmp((*it)->getName(), "h1 mass")==0) {
+    } else if (strcmp((*it)->getName(), "z2 mass")==0) {
+      auto mc = dynamic_pointer_cast<MassConstraint>(*it);
+      m_Z2MassAfterFit = mc->getMass();
+    } else if (strcmp((*it)->getName(), "h1 mass")==0) {
       auto mc = dynamic_pointer_cast<MassConstraint>(*it);
       m_H1MassAfterFit = mc->getMass();
-    }
-    if (strcmp((*it)->getName(), "h2 mass")==0) {
+    } else if (strcmp((*it)->getName(), "h2 mass")==0) {
       auto mc = dynamic_pointer_cast<MassConstraint>(*it);
       m_H2MassAfterFit = mc->getMass();
-    }
-    if (strcmp((*it)->getName(), "hh mass")==0) {
+    } else if (strcmp((*it)->getName(), "hh mass")==0) {
       auto mc = dynamic_pointer_cast<MassConstraint>(*it);
       m_HHMassAfterFit = mc->getMass();
-    }
-    if (strcmp((*it)->getName(), "zhh mass")==0) {
+    } else if (strcmp((*it)->getName(), "zhh mass")==0) {
       auto mc = dynamic_pointer_cast<MassConstraint>(*it);
       m_ZHHMassAfterFit = mc->getMass();
     }
@@ -423,12 +421,14 @@ void ZHHllbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
 
   vector<double> startmasses = calculateInitialMasses(bestJets, Leptons, perm);
   m_ZMassBeforeFit  = startmasses[0];
-  m_H1MassBeforeFit = startmasses[1];
-  m_H2MassBeforeFit = startmasses[2];
-  m_HHMassBeforeFit = startmasses[3];
-  m_ZHHMassBeforeFit = startmasses[4];
+  m_Z2MassBeforeFit = startmasses[1];
+  m_H1MassBeforeFit = startmasses[2];
+  m_H2MassBeforeFit = startmasses[3];
+  m_HHMassBeforeFit = startmasses[4];
+  m_ZHHMassBeforeFit = startmasses[5];
 
   streamlog_out(MESSAGE1) << "Z mass prefit = " << m_ZMassBeforeFit << endl;
+  streamlog_out(MESSAGE1) << "Z2 mass prefit = " << m_Z2MassBeforeFit << endl;
   streamlog_out(MESSAGE1) << "H1 mass prefit = " << m_H1MassBeforeFit << endl;
   streamlog_out(MESSAGE1) << "H2 mass prefit = " << m_H2MassBeforeFit << endl;
   streamlog_out(MESSAGE1) << "HH mass prefit = " << m_HHMassBeforeFit << endl;
@@ -517,8 +517,8 @@ void ZHHllbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
   //streamlog_out(DEBUG0) << " Output true and reco Nu collection added to event" << std::endl;
   m_pTTree->Fill();
 
-  attachBestPermutation(inputJetCollection, m_bestMatchingKinfit, "ll", true);
   fillOutputCollections(pLCEvent);
+  attachBestPermutation(pLCEvent->getCollection(m_outputJetCollection), m_bestMatchingKinfit, "ll", true);
 }
 
 ZHHllbbbbKinFit::FitResult ZHHllbbbbKinFit::performFIT( pfoVector jets, 
@@ -669,6 +669,10 @@ ZHHllbbbbKinFit::FitResult ZHHllbbbbKinFit::performFIT( pfoVector jets,
     zmsoft->addToFOList (*jfo_perm->at(2), 1);
     zmsoft->addToFOList (*jfo_perm->at(3), 1);
     zmsoft->setName("soft z mass");
+    shared_ptr<MassConstraint> z2m = make_shared<MassConstraint>(91.2);
+    z2m->addToFOList (*jfo_perm->at(0), 1);
+    z2m->addToFOList (*jfo_perm->at(1), 1);
+    z2m->setName("hard z2 mass");
     shared_ptr<MassConstraint> zm = make_shared<MassConstraint>(91.2);
     zm->addToFOList (*jfo_perm->at(2), 1);
     zm->addToFOList (*jfo_perm->at(3), 1);
@@ -692,6 +696,10 @@ ZHHllbbbbKinFit::FitResult ZHHllbbbbKinFit::performFIT( pfoVector jets,
     z->addToFOList(*lfo_perm->at(0), 1);
     z->addToFOList(*lfo_perm->at(1), 1);
     z->setName("z mass");
+    shared_ptr<MassConstraint> z2 = make_shared<MassConstraint>(91.2);
+    z2->addToFOList(*jfo_perm->at(0), 1);
+    z2->addToFOList(*jfo_perm->at(1), 1);
+    z2->setName("z2 mass");
     shared_ptr<MassConstraint> hh = make_shared<MassConstraint>(250.);
     hh->addToFOList (*jfo_perm->at(0), 1);
     hh->addToFOList (*jfo_perm->at(1), 1);
@@ -748,6 +756,9 @@ ZHHllbbbbKinFit::FitResult ZHHllbbbbKinFit::performFIT( pfoVector jets,
       fitter->addConstraint( h2m.get() );
     } else if (m_fithypothesis == "ZZH") {
       fitter->addConstraint( h1m.get() );
+      fitter->addConstraint( zm.get() );
+    } else if (m_fithypothesis == "ZZZ") {
+      fitter->addConstraint( z2m.get() );
       fitter->addConstraint( zm.get() );
     } else if (m_fithypothesis == "ZZHsoft") {
       fitter->addConstraint( h1m.get() );
@@ -876,6 +887,10 @@ std::vector<double> ZHHllbbbbKinFit::calculateInitialMasses(pfoVector jets, pfoV
     z->addToFOList(*lfo->at(0), 1);
     z->addToFOList(*lfo->at(1), 1);
     z->setName("z mass");  
+    shared_ptr<MassConstraint> z2 = make_shared<MassConstraint>(91.2);
+    z2->addToFOList(*jfo_perm->at(0), 1);
+    z2->addToFOList(*jfo_perm->at(1), 1);
+    z2->setName("z2 mass");  
     shared_ptr<MassConstraint> hh = make_shared<MassConstraint>(250.);
     hh->addToFOList (*jfo_perm->at(0), 1);
     hh->addToFOList (*jfo_perm->at(1), 1);
@@ -891,6 +906,7 @@ std::vector<double> ZHHllbbbbKinFit::calculateInitialMasses(pfoVector jets, pfoV
     zhh->addToFOList (*jfo_perm->at(3), 1);
     zhh->setName("zhh mass");
     masses.push_back(z->getMass(1));
+    masses.push_back(z2->getMass(1));
     masses.push_back(h1->getMass(1));
     masses.push_back(h2->getMass(1));
     masses.push_back(hh->getMass(1));
@@ -909,11 +925,15 @@ std::tuple<std::vector<double>, double, std::vector<unsigned int>>
   if (m_fithypothesis == "ZZH") {
     m1 = 125.;
     m2 = 91.2;
+  } else if (m_fithypothesis == "ZZZ") {
+    m1 = 91.2;
+    m2 = 91.2;
   } else {
     m1 = 125.; 
     m2 = 125.; 
   }
   double z = 0. ;
+  double z2 = 0. ;
   double h1 = 0. ;
   double h2 = 0. ;
   z = inv_mass(leptons.at(0),leptons.at(1));
@@ -945,11 +965,13 @@ std::tuple<std::vector<double>, double, std::vector<unsigned int>>
     if (chi2 < chi2min) {
       chi2min = chi2;
       h1 = temp1;
+      z2 = temp1;
       h2 = temp2;
       bestpermindex = iperm;
     }
   }
   masses.push_back(z);
+  masses.push_back(z2);
   masses.push_back(h1);
   masses.push_back(h2);
   masses.push_back(hh);

@@ -171,6 +171,8 @@ void LeptonPairing::processEvent( EVENT::LCEvent *pLCEvent ) {
   if (m_doPhotonRecovery) fCosFSRCut = 0.99;
   else fCosFSRCut = 99.;
 
+  IntVec paired_lep_idx(2, 0);
+
   if (InIsoLeps == 2) {
     ReconstructedParticle* lepton1 = static_cast<ReconstructedParticle*>( IsoLepCollection->getElementAt( 0 ) );
     ReconstructedParticle* lepton2 = static_cast<ReconstructedParticle*>( IsoLepCollection->getElementAt( 1 ) );
@@ -198,6 +200,8 @@ void LeptonPairing::processEvent( EVENT::LCEvent *pLCEvent ) {
 	  if (delta > mindelta) continue;
 	  mindelta = delta;  
 	  LeptonPair = {lepton1, lepton2};
+    paired_lep_idx[0] = i_lep1;
+    paired_lep_idx[1] = i_lep2;
 	  _lep_type = lepton1->getType();
 	} 
       }
@@ -223,6 +227,7 @@ void LeptonPairing::processEvent( EVENT::LCEvent *pLCEvent ) {
     m_LepPairCol->addElement(recoLepton1);
     m_LepPairCol->addElement(recoLepton2);
 
+    m_LepPairCol->parameters().setValues("PairedLeptonIDx", paired_lep_idx);
     m_LepPairCol->parameters().setValue("IsoLepsInvMass", m_IsoLepsInvMass[0]);
     m_LepPairCol->parameters().setValue("RecoLepsInvMass", m_RecoLepsInvMass[0]);
   }

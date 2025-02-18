@@ -54,10 +54,7 @@ class EventObservablesLL : public EventObservablesBase {
 		float m_pz32{};
 		float m_e32{};
 
-		
-
-		// dilepton mass; first two calculated by Kinfit processor
-		// float m_mzll{};
+		float m_mzll{};
 		// float m_m_diff_z{};
 		float m_mzll_pre_pairing{};
 		int m_paired_lep_type{};
