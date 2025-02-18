@@ -121,6 +121,7 @@ class EventObservablesBase: public Processor
 		std::string m_inputLepPairCollection{};
 		std::string m_inputJetCollection{};
 		std::string m_inputPfoCollection{};
+		std::string m_inputPfoRawCollection{};
 		std::string m_outputFile{};
 		std::string m_whichPreselection{};
 		std::string m_cutDefinitionsJSONFile{};
@@ -195,7 +196,7 @@ class EventObservablesBase: public Processor
 		// meta information and observables
 		int m_nRun;
 		int m_nEvt;
-		int m_errorCode;
+		int m_statusCode;
 
 		float m_todo{};
 

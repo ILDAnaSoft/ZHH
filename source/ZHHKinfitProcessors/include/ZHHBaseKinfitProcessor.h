@@ -47,15 +47,26 @@ using namespace std;
 typedef vector<EVENT::ReconstructedParticle*>	pfoVector;
 typedef vector<vector<EVENT::ReconstructedParticle*>>	pfoVectorVector;
 
-class ZHHBaseKinfitProcessor
+class ZHHBaseKinfitProcessor: public Processor
 {
 	public:
-		ZHHBaseKinfitProcessor() ;
+		ZHHBaseKinfitProcessor(const std::string& name) ;
 		virtual ~ZHHBaseKinfitProcessor() = default;
 		ZHHBaseKinfitProcessor(const ZHHBaseKinfitProcessor&) = delete;
 		ZHHBaseKinfitProcessor& operator=(const ZHHBaseKinfitProcessor&) = delete;
 
-		virtual void	end();
+		// must be defined in child
+		virtual void initChannelValues() = 0;
+		virtual void clearChannelValues() = 0;
+		virtual void updateChannelValues(EVENT::LCEvent *pLCEvent) = 0;
+
+		// these are defined by Base
+		virtual void init();
+		virtual void processEvent( LCEvent* evt );
+		virtual void processRunHeader( LCRunHeader* run );
+        virtual void check( LCEvent* evt );
+        virtual void end();
+
 		string get_recoMCTruthLink() {
 			return _recoMCTruthLink;
 		};
@@ -83,6 +94,13 @@ class ZHHBaseKinfitProcessor
 		};
 
     protected:
+		// control flow
+		void clearBaseValues();
+
+		
+		void fillOutputCollections(EVENT::LCEvent *pLCEvent);
+
+		// helper functions
 		pfoVectorVector combinations(pfoVectorVector collector,
 					     pfoVectorVector sets, 
 					     int n,
@@ -110,11 +128,8 @@ class ZHHBaseKinfitProcessor
 		std::vector<double> calculatePulls(std::shared_ptr<ParticleFitObject> fittedobject, ReconstructedParticle* startobject, int type);
 		double calcChi2(shared_ptr<vector<shared_ptr<BaseFitObject>>> fitobjects);
 
-		void fillOutputCollections(EVENT::LCEvent *pLCEvent);
 		std::vector<ROOT::Math::PxPyPzEVector> m_v4_postfit_jets{};
 		std::vector<ROOT::Math::PxPyPzEVector> m_v4_postfit_leptons{};
-
-		void baseClear();
 
 		std::string 		    m_ttreeName{};
         std::string				m_inputIsolatedleptonCollection{};

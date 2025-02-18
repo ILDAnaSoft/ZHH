@@ -53,6 +53,8 @@ void EventObservablesLL::clearChannelValues() {
 };
 
 void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
+    setJetMomenta();
+    
     LCCollection *inputJetCollection = pLCEvent->getCollection( m_inputJetCollection );
     LCCollection *inputLepPairCollection = pLCEvent->getCollection( m_inputLepPairCollection );
     // LCCollection *inputLeptonCollection = pLCEvent->getCollection( m_inputIsolatedleptonCollection );

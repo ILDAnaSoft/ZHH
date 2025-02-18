@@ -1,6 +1,6 @@
 #include "ZHHBaseKinfitProcessor.h"
 
-ZHHBaseKinfitProcessor::ZHHBaseKinfitProcessor() :
+ZHHBaseKinfitProcessor::ZHHBaseKinfitProcessor(const std::string& name) : Processor(name),
 m_pTFile(NULL),
 m_nRun(0),
 m_nEvt(0),
@@ -11,7 +11,195 @@ c(0.0),
 mm2m(0.0),
 eV2GeV(0.0),
 eB(0.0) {
+  //	register steering parameters: name, description, class-variable, default value
+  registerProcessorParameter(	"treeName",
+    "name of the output ROOT ttree. useful when multiple KinFitProcessors are used",
+    m_ttreeName,
+    name
+  );
 
+  registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
+					"isolatedleptonCollection" ,
+					"Name of the Isolated Lepton collection"  ,
+					m_inputIsolatedleptonCollection ,
+					std::string("LeptonPair")
+				);
+
+	registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
+					"JetCollectionName" ,
+					"Name of the Jet collection"  ,
+					m_inputJetCollection ,
+					std::string("Durham4Jets")
+				);
+
+	registerInputCollection(LCIO::VERTEX,
+					"SLDVertexCollection" ,
+					"Name of Semi-Leptonic Decay Vertices Collection"  ,
+					m_inputSLDVertexCollection ,
+					std::string("SemiLeptonicDecayVertex")
+				);
+
+	registerInputCollection(LCIO::LCRELATION,
+					"JetSLDRelationCollection",
+					"Name of the Jet-SemiLeptonicDecay Relation collection",
+					m_inputJetSLDLink,
+					std::string("JetSLDLinkName")
+				);
+
+	registerInputCollection(LCIO::LCRELATION,
+					"SLDNeutrinoRelationCollection",
+					"Name of the JetSemiLeptonicDecayVertex-Neutrinos Relation collection",
+					m_inputSLDNuLink,
+					std::string("SLDNuLinkName")
+				);
+
+	registerInputCollection(LCIO::LCRELATION,
+          "recoNumcNuLinkName",
+          "Name of the reconstructedNeutrino-trueNeutrino input Link collection",
+          m_recoNumcNuLinkName,
+          std::string("recoNumcNuLinkName")
+					);
+
+	registerInputCollection(LCIO::MCPARTICLE,
+					"MCParticleCollection" ,
+					"Name of the MCParticle collection"  ,
+					_MCParticleColllectionName ,
+					std::string("MCParticlesSkimmed")
+					);
+
+	registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
+					"RecoParticleCollection" ,
+					"Name of the ReconstructedParticles input collection"  ,
+					_recoParticleCollectionName ,
+					std::string("PandoraPFOs")
+				);
+
+	registerInputCollection(LCIO::LCRELATION,
+					"RecoMCTruthLink",
+					"Name of the RecoMCTruthLink input collection"  ,
+					_recoMCTruthLink,
+					std::string("RecoMCTruthLink")
+				);
+
+	registerProcessorParameter("ECM" ,
+					"Center-of-Mass Energy in GeV",
+					m_ECM,
+					float(500.f)
+				);
+
+	registerProcessorParameter("ISRPzMax" ,
+					"Maximum possible energy for a single ISR photon",
+					m_isrpzmax,
+					float(125.6f)
+				);
+
+	registerProcessorParameter("SigmaInvPtScaleFactor" ,
+          "Factor for scaling up inverse pT error",
+          m_SigmaInvPtScaleFactor,
+          float(1.0f));
+
+	registerProcessorParameter("SigmaEnergyScaleFactor" ,
+					"Factor for scaling up energy error",
+					m_SigmaEnergyScaleFactor,
+					float(1.0f)
+				);
+
+	registerProcessorParameter("SigmaAnglesScaleFactor" ,
+				        "Factor for scaling up angular errors",
+				        m_SigmaAnglesScaleFactor,
+				        float(1.0f));
+
+	registerProcessorParameter("includeISR",
+					"Include ISR in fit hypothesis; false: without ISR , true: with ISR",
+					m_fitISR,
+					bool(true)
+				);
+
+	registerProcessorParameter("fitter" ,
+					"0 = OPALFitter, 1 = NewFitter, 2 = NewtonFitter",
+					m_fitter,
+					int(0)
+				);
+
+	registerProcessorParameter("fithypothesis",
+                                        "name of the fit hypothesis",
+                                        m_fithypothesis,
+                                        std::string("")
+					);
+
+	registerProcessorParameter("outputFilename",
+					"name of output root file",
+					m_outputFile,
+					std::string("")
+				);
+
+	registerProcessorParameter("traceall" ,
+					"set true if every event should be traced",
+					m_traceall,
+					(bool)false
+				);
+
+	registerProcessorParameter("ievttrace" ,
+					"number of individual event to be traced",
+					m_ievttrace,
+					(int)0
+				);
+
+	// Outputs: Fitted jet and leptons and their prefit counterparts, the neutrino correction, and pulls
+	registerOutputCollection(LCIO::RECONSTRUCTEDPARTICLE,
+					"outputLeptonCollection" ,
+					"Name of output fitted lepton collection"  ,
+					m_outputLeptonCollection ,
+					std::string("ISOLeptons_KinFit")
+				);
+
+	registerOutputCollection(LCIO::RECONSTRUCTEDPARTICLE,
+					"outputJetCollection",
+					"Name of output fitted jet collection",
+					m_outputJetCollection,
+					std::string("Durham_4JetsKinFit")
+				);
+	
+	registerOutputCollection(LCIO::RECONSTRUCTEDPARTICLE,
+					"outputStartLeptonCollection" ,
+					"Name of output prefit lepton collection"  ,
+					m_outputStartLeptonCollection ,
+					std::string("ISOLeptons_PreFit")
+				);
+
+	registerOutputCollection(LCIO::RECONSTRUCTEDPARTICLE,
+					"outputStartJetCollection",
+					"Name of output prefit jet collection",
+					m_outputStartJetCollection,
+					std::string("Durham_4JetsPreFit")
+				);
+	/*
+	registerOutputCollection(	LCIO::RECONSTRUCTEDPARTICLE,
+					"outputNeutrinoCollection",
+					"Name of output neutrino collection",
+					m_outputNeutrinoCollection,
+					std::string("SLDCorrections")
+				);
+	*/
+	/*registerOutputCollection(       LCIO::LCFLOATVEC,
+				        "NuEnergyOutputCollection",
+				        "Output Nu Energy Collection" ,
+				        m_outputNuEnergyCollection,
+				        std::string("NuEnergy")
+				);
+	*/
+
+	registerOutputCollection(LCIO::LCFLOATVEC,
+				  "LeptonPullsOutputCollection",
+				  "Output LeptonPulls (invPt, theta, phi)  Collection" ,
+				  _OutLeptonPullsCol,
+				  std::string("LeptonPulls"));
+
+	registerOutputCollection(LCIO::LCFLOATVEC,
+				  "JetPullsOutputCollection",
+				  "Output JetPulls (E, theta, phi)  Collection" ,
+				  _OutJetPullsCol,
+				  std::string("JetPulls"));
 }
 
 std::pair<MCParticle*,ReconstructedParticle*> ZHHBaseKinfitProcessor::getMCNeutrino(LCRelationNavigator* NuMCNav,
@@ -361,14 +549,14 @@ void ZHHBaseKinfitProcessor::fillOutputCollections(
     newLep->setMomentum(momentum);
     newLep->setEnergy(m_v4_postfit_leptons[i].E());
 
-    outputJetCollection->addElement( newLep );
+    outputLeptonCollection->addElement( newLep );
   }
 
   pLCEvent->addCollection( outputJetCollection , m_outputJetCollection.c_str() );
-  pLCEvent->addCollection( outputJetCollection , m_outputLeptonCollection.c_str() );
+  pLCEvent->addCollection( outputLeptonCollection , m_outputLeptonCollection.c_str() );
 };
 
-void ZHHBaseKinfitProcessor::baseClear() {
+void ZHHBaseKinfitProcessor::clearBaseValues() {
   m_v4_postfit_jets.clear();
   m_v4_postfit_leptons.clear();
 
@@ -456,3 +644,150 @@ void ZHHBaseKinfitProcessor::baseClear() {
 	m_Sigma_PzE.clear();
 	m_Sigma_E2.clear();
 };
+
+void ZHHBaseKinfitProcessor::init() {
+  //	usually a good idea to
+	streamlog_out(DEBUG) << "   init called  " << std::endl;
+	this->clearBaseValues();
+
+	m_nRun = 0;
+	m_nEvt = 0;
+	m_nRunSum = 0;
+	m_nEvtSum = 0;
+	DDMarlinCED::init(this);
+
+	m_Bfield = MarlinUtil::getBzAtOrigin();
+	streamlog_out(DEBUG0) << " BField =  "<< m_Bfield << " Tesla" << std::endl ;
+	c = 2.99792458e8;
+	mm2m = 1e-3;
+	eV2GeV = 1e-9;
+	eB = m_Bfield * c * mm2m * eV2GeV;
+
+	b = (double) 0.00464564 * ( std::log( m_ECM * m_ECM * 3814714. ) - 1. );
+//	  = 2*alpha/pi*( ln(s/m_e^2)-1 )
+	ISRPzMaxB = std::pow((double)m_isrpzmax,b);
+
+	printParameters();
+
+  m_pTTree = new TTree(m_ttreeName.c_str(), m_ttreeName.c_str());
+
+	if (m_outputFile.size()) {
+	  m_pTFile = new TFile(m_outputFile.c_str(),"recreate");
+    m_pTTree->SetDirectory(m_pTFile);
+  }
+
+  m_pTTree->Branch("run", &m_nRun, "run/I");
+	m_pTTree->Branch("event", &m_nEvt, "event/I");
+	m_pTTree->Branch("nJets",&m_nJets,"nJets/I") ;
+	m_pTTree->Branch("nIsoLeptons",&m_nIsoLeps,"nIsoLeptons/I") ;
+	m_pTTree->Branch("nSLDecayBHadron",&m_nSLDecayBHadron,"nSLDecayBHadron/I") ;
+	m_pTTree->Branch("nSLDecayCHadron",&m_nSLDecayCHadron,"nSLDecayCHadron/I") ;
+	m_pTTree->Branch("nSLDecayTauLepton",&m_nSLDecayTauLepton,"nSLDecayTauLepton/I") ;
+	m_pTTree->Branch("nSLDecayTotal",&m_nSLDecayTotal,"nSLDecayTotal/I") ;
+	m_pTTree->Branch("nCorrectedSLD",&m_nCorrectedSLD,"nCorrectedSLD/I") ;
+	m_pTTree->Branch("ISREnergyTrue",&m_ISREnergyTrue,"ISREnergyTrue/F") ;
+	m_pTTree->Branch("BSEnergyTrue",&m_BSEnergyTrue,"BSEnergyTrue/F") ;
+	m_pTTree->Branch("HHMassHardProcess",&m_HHMassHardProcess,"HHMassHardProcess/F") ;
+	m_pTTree->Branch("FitErrorCode_woNu" , &m_FitErrorCode_woNu , "FitErrorCode_woNu/I" );
+	m_pTTree->Branch("ZMassBeforeFit_woNu" , &m_ZMassBeforeFit_woNu , "ZMassBeforeFit_woNu/F" );
+	m_pTTree->Branch("H1MassBeforeFit_woNu" , &m_H1MassBeforeFit_woNu , "H1MassBeforeFit_woNu/F" );
+	m_pTTree->Branch("H2MassBeforeFit_woNu" , &m_H2MassBeforeFit_woNu , "H2MassBeforeFit_woNu/F" );
+	m_pTTree->Branch("HHMassBeforeFit_woNu" , &m_HHMassBeforeFit_woNu , "HHMassBeforeFit_woNu/F" );
+	m_pTTree->Branch("ZHHMassBeforeFit_woNu" , &m_ZHHMassBeforeFit_woNu , "ZHHMassBeforeFit_woNu/F" );
+	m_pTTree->Branch("ISREnergyBeforeFit_woNu" , &m_ISREnergyBeforeFit_woNu , "ISREnergyBeforeFit_woNu/F" );
+	m_pTTree->Branch("ZMassAfterFit_woNu" , &m_ZMassAfterFit_woNu , "ZMassAfterFit_woNu/F" );
+	m_pTTree->Branch("H1MassAfterFit_woNu" , &m_H1MassAfterFit_woNu , "H1MassAfterFit_woNu/F" );
+	m_pTTree->Branch("H2MassAfterFit_woNu" , &m_H2MassAfterFit_woNu , "H2MassAfterFit_woNu/F" );
+	m_pTTree->Branch("HHMassAfterFit_woNu" , &m_HHMassAfterFit_woNu , "HHMassAfterFit_woNu/F" );
+	m_pTTree->Branch("ZHHMassAfterFit_woNu" , &m_ZHHMassAfterFit_woNu , "ZHHMassAfterFit_woNu/F" );
+	m_pTTree->Branch("ISREnergyAfterFit_woNu" , &m_ISREnergyAfterFit_woNu , "ISREnergyAfterFit_woNu/F" );
+	m_pTTree->Branch("FitProbability_woNu" , &m_FitProbability_woNu , "FitProbability_woNu/F" );
+	m_pTTree->Branch("FitChi2_woNu" , &m_FitChi2_woNu , "FitChi2_woNu/F" );
+  m_pTTree->Branch("FitChi2_byMass" , &m_FitChi2_byMass , "FitChi2_byMass/F" );
+  m_pTTree->Branch("BestMatchingKinfit" , &m_bestMatchingKinfit );
+  m_pTTree->Branch("BestMatchingByMass" , &m_bestMatchingByMass );
+	m_pTTree->Branch("pullJetEnergy_woNu" , &m_pullJetEnergy_woNu );
+	m_pTTree->Branch("pullJetTheta_woNu" , &m_pullJetTheta_woNu );
+	m_pTTree->Branch("pullJetPhi_woNu" , &m_pullJetPhi_woNu );
+	m_pTTree->Branch("pullLeptonInvPt_woNu" , &m_pullLeptonInvPt_woNu );
+	m_pTTree->Branch("pullLeptonTheta_woNu" , &m_pullLeptonTheta_woNu );
+	m_pTTree->Branch("pullLeptonPhi_woNu" , &m_pullLeptonPhi_woNu );
+	/*	m_pTTree->Branch("FitErrorCode_wNu" , &m_FitErrorCode_wNu , "FitErrorCode_wNu/I" );
+	m_pTTree->Branch("ZMassBeforeFit_wNu" , &m_ZMassBeforeFit_wNu , "ZMassBeforeFit_wNu/F" );
+	m_pTTree->Branch("H1MassBeforeFit_wNu" , &m_H1MassBeforeFit_wNu , "H1MassBeforeFit_wNu/F" );
+	m_pTTree->Branch("H2MassBeforeFit_wNu" , &m_H2MassBeforeFit_wNu , "H2MassBeforeFit_wNu/F" );
+	m_pTTree->Branch("ZMassAfterFit_wNu" , &m_ZMassAfterFit_wNu , "ZMassAfterFit_wNu/F" );
+	m_pTTree->Branch("H1MassAfterFit_wNu" , &m_H1MassAfterFit_wNu , "H1MassAfterFit_wNu/F" );
+	m_pTTree->Branch("H2MassAfterFit_wNu" , &m_H2MassAfterFit_wNu , "H2MassAfterFit_wNu/F" );
+	m_pTTree->Branch("FitProbability_wNu" , &m_FitProbability_wNu , "FitProbability_wNu/F" );
+	m_pTTree->Branch("FitChi2_wNu" , &m_FitChi2_wNu , "FitChi2_wNu/F" );
+	m_pTTree->Branch("pullJetEnergy_wNu" , &m_pullJetEnergy_wNu );
+	m_pTTree->Branch("pullJetTheta_wNu" , &m_pullJetTheta_wNu );
+	m_pTTree->Branch("pullJetPhi_wNu" , &m_pullJetPhi_wNu );
+	m_pTTree->Branch("pullLeptonInvPt_wNu" , &m_pullLeptonInvPt_wNu );
+	m_pTTree->Branch("pullLeptonTheta_wNu" , &m_pullLeptonTheta_wNu );
+	m_pTTree->Branch("pullLeptonPhi_wNu" , &m_pullLeptonPhi_wNu );*/
+	m_pTTree->Branch("FitErrorCode" , &m_FitErrorCode , "FitErrorCode/I" );
+	m_pTTree->Branch("ZMassBeforeFit" , &m_ZMassBeforeFit , "ZMassBeforeFit/F" );
+	m_pTTree->Branch("H1MassBeforeFit" , &m_H1MassBeforeFit , "H1MassBeforeFit/F" );
+	m_pTTree->Branch("H2MassBeforeFit" , &m_H2MassBeforeFit , "H2MassBeforeFit/F" );
+	m_pTTree->Branch("HHMassBeforeFit" , &m_HHMassBeforeFit , "HHMassBeforeFit/F" );
+	m_pTTree->Branch("ZHHMassBeforeFit" , &m_ZHHMassBeforeFit , "ZHHMassBeforeFit/F" );
+	m_pTTree->Branch("ISREnergyBeforeFit" , &m_ISREnergyBeforeFit , "ISREnergyBeforeFit/F" );
+	m_pTTree->Branch("ZMassAfterFit" , &m_ZMassAfterFit , "ZMassAfterFit/F" );
+	m_pTTree->Branch("H1MassAfterFit" , &m_H1MassAfterFit , "H1MassAfterFit/F" );
+	m_pTTree->Branch("H2MassAfterFit" , &m_H2MassAfterFit , "H2MassAfterFit/F" );
+	m_pTTree->Branch("HHMassAfterFit" , &m_HHMassAfterFit , "HHMassAfterFit/F" );
+	m_pTTree->Branch("ZHHMassAfterFit" , &m_ZHHMassAfterFit , "ZHHMassAfterFit/F" );
+	m_pTTree->Branch("ISREnergyAfterFit" , &m_ISREnergyAfterFit , "ISREnergyAfterFit/F" );
+	m_pTTree->Branch("FitProbability" , &m_FitProbability , "FitProbability/F" );
+	m_pTTree->Branch("FitChi2" , &m_FitChi2 , "FitChi2/F" );
+	m_pTTree->Branch("pullJetEnergy" , &m_pullJetEnergy );
+	m_pTTree->Branch("pullJetTheta" , &m_pullJetTheta );
+	m_pTTree->Branch("pullJetPhi" , &m_pullJetPhi );
+	m_pTTree->Branch("pullLeptonInvPt" , &m_pullLeptonInvPt );
+	m_pTTree->Branch("pullLeptonTheta" , &m_pullLeptonTheta );
+	m_pTTree->Branch("pullLeptonPhi" , &m_pullLeptonPhi );
+  m_pTTree->Branch("TrueNeutrinoEnergy", &m_TrueNeutrinoEnergy );
+  m_pTTree->Branch("RecoNeutrinoEnergy", &m_RecoNeutrinoEnergy );
+  m_pTTree->Branch("RecoNeutrinoEnergyKinfit", &m_RecoNeutrinoEnergyKinfit );
+	m_pTTree->Branch("Sigma_Px2",&m_Sigma_Px2);
+	m_pTTree->Branch("Sigma_PxPy",&m_Sigma_PxPy);
+	m_pTTree->Branch("Sigma_Py2",&m_Sigma_Py2);
+	m_pTTree->Branch("Sigma_PxPz",&m_Sigma_PxPz);
+	m_pTTree->Branch("Sigma_PyPz",&m_Sigma_PyPz);
+	m_pTTree->Branch("Sigma_Pz2",&m_Sigma_Pz2);
+	m_pTTree->Branch("Sigma_PxE",&m_Sigma_PxE);
+	m_pTTree->Branch("Sigma_PyE",&m_Sigma_PyE);
+	m_pTTree->Branch("Sigma_PzE",&m_Sigma_PzE);
+	m_pTTree->Branch("Sigma_E2",&m_Sigma_E2);
+
+  initChannelValues();
+
+  clearChannelValues();
+  clearBaseValues();
+};
+
+void ZHHBaseKinfitProcessor::processEvent( LCEvent* pLCEvent ) {
+  m_nRun = pLCEvent->getRunNumber();
+  m_nEvt = pLCEvent->getEventNumber();
+  streamlog_out(MESSAGE1) << "	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
+  streamlog_out(MESSAGE1) << "	////////////////////////////////// processing event " << m_nEvt << " in run " << m_nRun << " /////////////////////////////////////////////////" << std::endl;
+  streamlog_out(MESSAGE1) << "	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
+
+  updateChannelValues(pLCEvent);
+  
+  clearChannelValues();
+  clearBaseValues();
+};
+
+void ZHHBaseKinfitProcessor::processRunHeader(LCRunHeader* run)
+{
+  (void) run;
+	m_nRun++ ;
+}
+
+void ZHHBaseKinfitProcessor::check( LCEvent* event )
+{
+  (void) event;
+}

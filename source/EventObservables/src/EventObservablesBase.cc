@@ -50,7 +50,7 @@ EventObservablesBase::EventObservablesBase(const std::string &name) : Processor(
   m_pTFile(NULL),
   m_nRun(0),
   m_nEvt(0),
-  m_errorCode(0)
+  m_statusCode(0)
 {
 	registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
             "isolatedleptonCollection" ,
@@ -79,6 +79,13 @@ EventObservablesBase::EventObservablesBase(const std::string &name) : Processor(
             m_inputPfoCollection,
             std::string("PandoraPFOs")
             );
+
+	registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
+			"inputPfoRawCollection",
+			"Name of input pfo collection",
+			m_inputPfoRawCollection,
+			std::string("PandoraPFOsWithoutOverlay")
+			);
 
 	registerProcessorParameter("whichPreselection",
             "Which set of cuts to use in the preselection. This will overwrite any input preselection values.",
@@ -225,7 +232,7 @@ void EventObservablesBase::prepareBaseTree()
 	if (m_write_ttree) {
 		ttree->Branch("run", &m_nRun, "run/I");
 		ttree->Branch("event", &m_nEvt, "event/I");
-		ttree->Branch("errorCode", &m_errorCode, "errorCode/I");
+		ttree->Branch("errorCode", &m_statusCode, "errorCode/I");
 
 		ttree->Branch("evis", &m_Evis, "evis/F");
 		ttree->Branch("m_miss", &m_missingMass, "m_miss/F");
@@ -322,10 +329,10 @@ void EventObservablesBase::prepareBaseTree()
 		ttree->Branch("ej4", &m_ej4, "ej4/F");
 
 		// jet matching
-		ttree->Branch("jet_matching", &m_jet_matching);
-		ttree->Branch("jet_matching_source", &m_jet_matching_source, "jet_matching_source/I");
-		ttree->Branch("using_kinfit", &m_using_kinfit, "using_kinfit/B");
-		ttree->Branch("using_mass_chi2", &m_using_mass_chi2, "using_mass_chi2/B");
+		//ttree->Branch("jet_matching", &m_jet_matching);
+		//ttree->Branch("jet_matching_source", &m_jet_matching_source, "jet_matching_source/I");
+		//ttree->Branch("using_kinfit", &m_using_kinfit, "using_kinfit/B");
+		//ttree->Branch("using_mass_chi2", &m_using_mass_chi2, "using_mass_chi2/B");
 
 		// matrix elements
 		if (m_use_matrix_elements()) {
@@ -418,7 +425,7 @@ void EventObservablesBase::clearBaseValues()
 {
 	streamlog_out(DEBUG) << "   Clear called  " << std::endl;
 
-	m_errorCode = 0;
+	m_statusCode = 0;
 	
 	m_missingPT = -999.;
 	m_missingE = -999.;
@@ -504,10 +511,10 @@ void EventObservablesBase::clearBaseValues()
 	m_cmax32 = 0.;
 	m_cmax42 = 0.;
 
-	m_jet_matching.clear();
-	m_jet_matching_source = 0;
-	m_using_kinfit = false;
-	m_using_mass_chi2 = false;
+	//m_jet_matching.clear();
+	//m_jet_matching_source = 0;
+	//m_using_kinfit = false;
+	//m_using_mass_chi2 = false;
 
 	m_jets.clear();
 	
@@ -529,8 +536,6 @@ void EventObservablesBase::clearBaseValues()
 }
 
 void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
-	this->clearBaseValues();
-
 	m_nRun = pLCEvent->getRunNumber();
 	m_nEvt = pLCEvent->getEventNumber();
 
@@ -541,6 +546,7 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 		LCCollection *inputLeptonCollection = pLCEvent->getCollection( m_inputIsolatedleptonCollection );
 		LCCollection *inputLepPairCollection = pLCEvent->getCollection( m_inputLepPairCollection );
 		LCCollection *inputPfoCollection = pLCEvent->getCollection( m_inputPfoCollection );
+		LCCollection *inputPfoRawCollection = pLCEvent->getCollection( m_inputPfoRawCollection );
 
 		m_nJets = inputJetCollection->getNumberOfElements();
 		assert(m_nJets == m_nAskedJets());
@@ -578,15 +584,20 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 		m_Evis = pfosum.E();
 
 		// ---------- THRUST ----------
-		const EVENT::LCParameters& pfo_params = inputPfoCollection->getParameters();
-		m_thrust = pfo_params.getFloatVal("principleThrustValue");
-		m_thrustMajor = pfo_params.getFloatVal("majorThrustValue");
-		m_thrustMinor = pfo_params.getFloatVal("minorThrustValue");
+		const EVENT::LCParameters& raw_pfo_params = inputPfoRawCollection->getParameters();
+
+		m_thrust = raw_pfo_params.getFloatVal("principleThrustValue");
+		m_thrustMajor = raw_pfo_params.getFloatVal("majorThrustValue");
+		m_thrustMinor = raw_pfo_params.getFloatVal("minorThrustValue");
 		
-		FloatVec tAxis;
-		FloatVec thrustAxis = pfo_params.getFloatVals("principleThrustAxis", tAxis);
-		TVector3 principleAxis = TVector3(thrustAxis[0],thrustAxis[1],thrustAxis[2]);
-		m_thrustAxisCos = principleAxis.CosTheta();
+		FloatVec thrustAxis;
+		raw_pfo_params.getFloatVals("principleThrustAxis", thrustAxis);
+		
+		if (thrustAxis.size() >= 3) {
+			TVector3 principleAxis = TVector3(thrustAxis[0], thrustAxis[1], thrustAxis[2]);
+			m_thrustAxisCos = principleAxis.CosTheta();
+		} else
+			m_statusCode = 40;
 
 		// ---------- SAVE TYPES OF ALL ISOLATED LEPTONS ----------
 		for (int j = 0; j < inputLeptonCollection->getNumberOfElements(); j++) {
@@ -596,10 +607,11 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 
 		// continue only if the number of jets and isolated leptons match the preselection
 		// and the numbers in the Kinfit processors
-		if ( m_nJets == m_nAskedJets() && inputLepPairCollection->getNumberOfElements() == m_nAskedIsoLeps() ) {
+		if ( m_nJets == m_nAskedJets() ) {
 			streamlog_out(MESSAGE) << "Continue with "<< m_nJets << " jets and "<< inputLepPairCollection->getNumberOfElements() << " ISOLeptons" << std::endl;
 
 			// ---------- JET MATCHING ----------
+			/*
 			(void) inputJetCollection->getParameters().getIntVals(m_jetMatchingParameter().c_str(), m_jet_matching);
 			m_jet_matching_source = inputJetCollection->getParameters().getIntVal(m_jetMatchingSourceParameter());
 
@@ -610,6 +622,7 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 			m_using_mass_chi2 = m_jet_matching_source == 1;
 
 			streamlog_out(MESSAGE) << "Jet matching from source " << m_jet_matching_source << " : (" << m_jet_matching[0] << "," << m_jet_matching[1] << ") + (" << m_jet_matching[2] << "," << m_jet_matching[3] << ")" << std::endl;
+			*/
 
 			// ---------- JET PROPERTIES AND FLAVOUR TAGGING ----------
 			for (int i=0; i < m_nJets; ++i) {
@@ -637,11 +650,12 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 			int CTagID2 = m_use_tags2 ? jetPIDh.getParameterIndex(_FTAlgoID2, m_JetTaggingPIDParameterC2) : -1;
 			//int OTagID = jetPIDh.getParameterIndex(_FTAlgoID, "OTag");
 
+			streamlog_out(MESSAGE) << "--- FLAVOR TAG ---" << std::endl;
 			for (int i=0; i<m_nJets; ++i) {
 				const ParticleIDImpl& FTImpl = dynamic_cast<const ParticleIDImpl&>(jetPIDh.getParticleID(m_jets[i], _FTAlgoID));
 				const FloatVec& FTPara = FTImpl.getParameters();
 
-				streamlog_out(MESSAGE) << "Reading parameters " << BTagID << " " << CTagID << " of vector with " << FTPara.size() << " elements" << std::endl;
+				streamlog_out(MESSAGE) << "Jet " << i << std::endl << " > Algo1 - B,C = " << FTPara[BTagID] << "," << FTPara[CTagID] << std::endl;
 				//double oTagValue = FTPara[OTagID];
 
 				m_bTagValues[i] = FTPara[BTagID];
@@ -651,11 +665,11 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 					const ParticleIDImpl& FTImpl2 = dynamic_cast<const ParticleIDImpl&>(jetPIDh.getParticleID(m_jets[i], _FTAlgoID2));
 					const FloatVec& FTPara2 = FTImpl2.getParameters();
 
-					streamlog_out(MESSAGE) << "Reading parameters2 " << BTagID2 << " " << CTagID2 << " of vector with " << FTPara2.size() << " elements" << std::endl;
-					//double oTagValue = FTPara[OTagID];
-
 					m_bTagValues2[i] = FTPara2[BTagID2];
 					m_cTagValues2[i] = FTPara2[CTagID2];
+
+					streamlog_out(MESSAGE) << " > Algo2 - B,C = " << FTPara2[BTagID2] << "," << FTPara2[CTagID2] << std::endl;
+					//double oTagValue = FTPara[OTagID];
 				}
 			}
 
@@ -708,7 +722,12 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 			FloatVec params_y = ythID.getParameters();
 			m_yMinus = params_y[jetPIDh.getParameterIndex(algo_y, m_yMinusParameter())];
 			m_yPlus = params_y[jetPIDh.getParameterIndex(algo_y, m_yPlusParameter())];
-		}
+
+			if ( inputLepPairCollection->getNumberOfElements() != m_nAskedIsoLeps() ) {
+				m_statusCode = 2;
+			}
+		} else
+			m_statusCode = 1;
 
 		// JET-MATCHING
 		//const EVENT::LCParameters& pfo_params = inputPfoCollection->getParameters();
@@ -748,11 +767,11 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 
 	} catch(DataNotAvailableException &e) {
 		streamlog_out(MESSAGE) << "processEvent : Input collections not found in event " << m_nEvt << std::endl;
-		m_errorCode = 1;
+		m_statusCode = 20;
 	} catch (const std::exception &exc) {
 		// remove for production
     	streamlog_out(MESSAGE) << exc.what();
-		m_errorCode = 2;
+		m_statusCode = 30;
 	}
 };
 
@@ -788,14 +807,25 @@ void EventObservablesBase::init(){
 };
 
 void EventObservablesBase::processEvent( LCEvent* evt ){
+	streamlog_out(MESSAGE) << "START updateBaseValues";
 	updateBaseValues(evt);
-	updateChannelValues(evt);
+	streamlog_out(MESSAGE) << "END updateBaseValues -> status code " << m_statusCode << std::endl;
+
+	// all channel specific processors require that at least acquiring the base values succeeds
+	if (m_statusCode == 0) {
+		streamlog_out(MESSAGE) << "START updateChannelValues... ";
+		updateChannelValues(evt);
+		streamlog_out(MESSAGE) << "END updateChannelValues" << std::endl;
+	} else
+		streamlog_out(MESSAGE) << "skipping updateChannelValues due to non-zero state " << m_statusCode << std::endl;
 
 	if (m_write_ttree)
 		getTTree()->Fill();
 
+	streamlog_out(MESSAGE) << "clearing values... ";
 	clearBaseValues();
 	clearChannelValues();
+	streamlog_out(MESSAGE) << " event " << m_nEvt << " finished " << std::endl;
 };
 
 void EventObservablesBase::processRunHeader( LCRunHeader* run ){

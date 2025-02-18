@@ -106,6 +106,8 @@ void EventObservablesQQ::clearChannelValues() {
 };
 
 void EventObservablesQQ::updateChannelValues(EVENT::LCEvent *pLCEvent) {
+    setJetMomenta();
+    
     LCCollection *inputJetCollection = pLCEvent->getCollection( m_inputJetCollection ); // -> m_jets
     LCCollection *input4JetCollection = pLCEvent->getCollection( m_input4JetCollection ); // -> m_4jets
     
@@ -225,12 +227,17 @@ void EventObservablesQQ::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         TLorentzVector v4_jet_from_z1 = v4old(m_jets[jet_matching_by_mass[0]]);
         TLorentzVector v4_jet_from_z2 = v4old(m_jets[jet_matching_by_mass[1]]);
 
-        // assume charm (background), per default
-        unsigned int z1_decay_pdg = 4;
-        if ((m_bTagValues[jet_matching_by_mass[0]] + m_bTagValues[jet_matching_by_mass[1]]) > 
-            (m_cTagValues[jet_matching_by_mass[0]] + m_cTagValues[jet_matching_by_mass[1]]))
-            // assume bottom
-            z1_decay_pdg = 5;
+        // assume s per default
+        unsigned int z1_decay_pdg = 3;
+
+        float bTagSum = m_bTagValues[jet_matching_by_mass[0]] +  m_bTagValues[jet_matching_by_mass[1]];
+        float cTagSum = m_cTagValues[jet_matching_by_mass[0]] +  m_cTagValues[jet_matching_by_mass[1]];
+        float oTagSum = 1 - bTagSum - cTagSum;
+
+        if (bTagSum > oTagSum && bTagSum > cTagSum)
+            z1_decay_pdg = 5; // b
+        else if (cTagSum > oTagSum && cTagSum > bTagSum)
+            z1_decay_pdg = 4; // c
 
         // assume remaining jets to be b-jets
         calculateMatrixElements(z1_decay_pdg, 5, v4_jet_from_z1, v4_jet_from_z2,
