@@ -570,6 +570,7 @@ void ZHHBaseKinfitProcessor::clearBaseValues() {
 	m_ISREnergyTrue = 0.0;
 	m_BSEnergyTrue = 0.0;
 	m_HHMassHardProcess = 0.0;
+
 	m_FitErrorCode_woNu = 1;
 	m_ZMassBeforeFit_woNu = 0.0;
 	m_Z2MassBeforeFit_woNu = 0.0;
@@ -578,6 +579,9 @@ void ZHHBaseKinfitProcessor::clearBaseValues() {
 	m_HHMassBeforeFit_woNu = 0.0;
 	m_ZHHMassBeforeFit_woNu = 0.0;
 	m_ISREnergyBeforeFit_woNu = 0.0;
+	m_p1stBeforeFit_woNu = 0.0;
+	m_cos1stBeforeFit_woNu = 0.0;
+
 	m_ZMassAfterFit_woNu = 0.0;
 	m_Z2MassAfterFit_woNu = 0.0;
 	m_H1MassAfterFit_woNu = 0.0;
@@ -585,9 +589,12 @@ void ZHHBaseKinfitProcessor::clearBaseValues() {
 	m_HHMassAfterFit_woNu = 0.0;
 	m_ZHHMassAfterFit_woNu = 0.0;
 	m_ISREnergyAfterFit_woNu = 0.0;
+	m_p1stAfterFit_woNu = 0.0;
+	m_cos1stAfterFit_woNu = 0.0;
 	m_FitProbability_woNu = 0.0;
 	m_FitChi2_woNu = 0.0;
 	m_FitChi2_byMass = 0.0;
+
 	m_bestMatchingKinfit.clear();
 	m_bestMatchingByMass.clear();
 	m_pullJetEnergy_woNu.clear();
@@ -611,6 +618,7 @@ void ZHHBaseKinfitProcessor::clearBaseValues() {
 	m_pullLeptonInvPt_wNu.clear();
 	m_pullLeptonTheta_wNu.clear();
 	m_pullLeptonPhi_wNu.clear();*/
+
 	m_FitErrorCode = 1;
 	m_ZMassBeforeFit = 0.0;
 	m_Z2MassBeforeFit = 0.0;
@@ -619,6 +627,9 @@ void ZHHBaseKinfitProcessor::clearBaseValues() {
 	m_HHMassBeforeFit = 0.0;
 	m_ZHHMassBeforeFit = 0.0;
 	m_ISREnergyBeforeFit = 0.0;
+	m_p1stBeforeFit = 0.0;
+	m_cos1stBeforeFit = 0.0;
+
 	m_ZMassAfterFit = 0.0;
 	m_Z2MassAfterFit = 0.0;
 	m_H1MassAfterFit = 0.0;
@@ -626,8 +637,11 @@ void ZHHBaseKinfitProcessor::clearBaseValues() {
 	m_HHMassAfterFit = 0.0;
 	m_ZHHMassAfterFit = 0.0;
 	m_ISREnergyAfterFit = 0.0;
+	m_p1stAfterFit = 0.0;
+	m_cos1stAfterFit = 0.0;
 	m_FitProbability = 0.0;
 	m_FitChi2 = 0.0;
+
 	m_pullJetEnergy.clear();
 	m_pullJetTheta.clear();
 	m_pullJetPhi.clear();
@@ -691,32 +705,37 @@ void ZHHBaseKinfitProcessor::init() {
 	m_pTTree->Branch("ISREnergyTrue",&m_ISREnergyTrue,"ISREnergyTrue/F") ;
 	m_pTTree->Branch("BSEnergyTrue",&m_BSEnergyTrue,"BSEnergyTrue/F") ;
 	m_pTTree->Branch("HHMassHardProcess",&m_HHMassHardProcess,"HHMassHardProcess/F") ;
+
 	m_pTTree->Branch("FitErrorCode_woNu" , &m_FitErrorCode_woNu , "FitErrorCode_woNu/I" );
 	m_pTTree->Branch("ZMassBeforeFit_woNu" , &m_ZMassBeforeFit_woNu , "ZMassBeforeFit_woNu/F" );
-	m_pTTree->Branch("Z2MassBeforeFit_woNu" , &m_Z2MassBeforeFit_woNu , "Z2MassBeforeFit_woNu/F" );
 	m_pTTree->Branch("H1MassBeforeFit_woNu" , &m_H1MassBeforeFit_woNu , "H1MassBeforeFit_woNu/F" );
 	m_pTTree->Branch("H2MassBeforeFit_woNu" , &m_H2MassBeforeFit_woNu , "H2MassBeforeFit_woNu/F" );
 	m_pTTree->Branch("HHMassBeforeFit_woNu" , &m_HHMassBeforeFit_woNu , "HHMassBeforeFit_woNu/F" );
 	m_pTTree->Branch("ZHHMassBeforeFit_woNu" , &m_ZHHMassBeforeFit_woNu , "ZHHMassBeforeFit_woNu/F" );
 	m_pTTree->Branch("ISREnergyBeforeFit_woNu" , &m_ISREnergyBeforeFit_woNu , "ISREnergyBeforeFit_woNu/F" );
+
 	m_pTTree->Branch("ZMassAfterFit_woNu" , &m_ZMassAfterFit_woNu , "ZMassAfterFit_woNu/F" );
-	m_pTTree->Branch("Z2MassAfterFit_woNu" , &m_Z2MassAfterFit_woNu , "Z2MassAfterFit_woNu/F" );
 	m_pTTree->Branch("H1MassAfterFit_woNu" , &m_H1MassAfterFit_woNu , "H1MassAfterFit_woNu/F" );
 	m_pTTree->Branch("H2MassAfterFit_woNu" , &m_H2MassAfterFit_woNu , "H2MassAfterFit_woNu/F" );
 	m_pTTree->Branch("HHMassAfterFit_woNu" , &m_HHMassAfterFit_woNu , "HHMassAfterFit_woNu/F" );
 	m_pTTree->Branch("ZHHMassAfterFit_woNu" , &m_ZHHMassAfterFit_woNu , "ZHHMassAfterFit_woNu/F" );
 	m_pTTree->Branch("ISREnergyAfterFit_woNu" , &m_ISREnergyAfterFit_woNu , "ISREnergyAfterFit_woNu/F" );
+	m_pTTree->Branch("p1stAfterFit_woNu" , &m_p1stAfterFit_woNu , "p1stAfterFit_woNu/F" );
+	m_pTTree->Branch("cos1stAfterFit_woNu" , &m_cos1stAfterFit_woNu , "cos1stAfterFit_woNu/F" );
 	m_pTTree->Branch("FitProbability_woNu" , &m_FitProbability_woNu , "FitProbability_woNu/F" );
 	m_pTTree->Branch("FitChi2_woNu" , &m_FitChi2_woNu , "FitChi2_woNu/F" );
 	m_pTTree->Branch("FitChi2_byMass" , &m_FitChi2_byMass , "FitChi2_byMass/F" );
+
 	m_pTTree->Branch("BestMatchingKinfit" , &m_bestMatchingKinfit );
 	m_pTTree->Branch("BestMatchingByMass" , &m_bestMatchingByMass );
+
 	m_pTTree->Branch("pullJetEnergy_woNu" , &m_pullJetEnergy_woNu );
 	m_pTTree->Branch("pullJetTheta_woNu" , &m_pullJetTheta_woNu );
 	m_pTTree->Branch("pullJetPhi_woNu" , &m_pullJetPhi_woNu );
 	m_pTTree->Branch("pullLeptonInvPt_woNu" , &m_pullLeptonInvPt_woNu );
 	m_pTTree->Branch("pullLeptonTheta_woNu" , &m_pullLeptonTheta_woNu );
 	m_pTTree->Branch("pullLeptonPhi_woNu" , &m_pullLeptonPhi_woNu );
+
 	/*	m_pTTree->Branch("FitErrorCode_wNu" , &m_FitErrorCode_wNu , "FitErrorCode_wNu/I" );
 	m_pTTree->Branch("ZMassBeforeFit_wNu" , &m_ZMassBeforeFit_wNu , "ZMassBeforeFit_wNu/F" );
 	m_pTTree->Branch("H1MassBeforeFit_wNu" , &m_H1MassBeforeFit_wNu , "H1MassBeforeFit_wNu/F" );
@@ -732,23 +751,26 @@ void ZHHBaseKinfitProcessor::init() {
 	m_pTTree->Branch("pullLeptonInvPt_wNu" , &m_pullLeptonInvPt_wNu );
 	m_pTTree->Branch("pullLeptonTheta_wNu" , &m_pullLeptonTheta_wNu );
 	m_pTTree->Branch("pullLeptonPhi_wNu" , &m_pullLeptonPhi_wNu );*/
+
 	m_pTTree->Branch("FitErrorCode" , &m_FitErrorCode , "FitErrorCode/I" );
 	m_pTTree->Branch("ZMassBeforeFit" , &m_ZMassBeforeFit , "ZMassBeforeFit/F" );
-	m_pTTree->Branch("Z2MassBeforeFit" , &m_Z2MassBeforeFit , "Z2MassBeforeFit/F" );
 	m_pTTree->Branch("H1MassBeforeFit" , &m_H1MassBeforeFit , "H1MassBeforeFit/F" );
 	m_pTTree->Branch("H2MassBeforeFit" , &m_H2MassBeforeFit , "H2MassBeforeFit/F" );
 	m_pTTree->Branch("HHMassBeforeFit" , &m_HHMassBeforeFit , "HHMassBeforeFit/F" );
 	m_pTTree->Branch("ZHHMassBeforeFit" , &m_ZHHMassBeforeFit , "ZHHMassBeforeFit/F" );
 	m_pTTree->Branch("ISREnergyBeforeFit" , &m_ISREnergyBeforeFit , "ISREnergyBeforeFit/F" );
+
 	m_pTTree->Branch("ZMassAfterFit" , &m_ZMassAfterFit , "ZMassAfterFit/F" );
-	m_pTTree->Branch("Z2MassAfterFit" , &m_Z2MassAfterFit , "Z2MassAfterFit/F" );
 	m_pTTree->Branch("H1MassAfterFit" , &m_H1MassAfterFit , "H1MassAfterFit/F" );
 	m_pTTree->Branch("H2MassAfterFit" , &m_H2MassAfterFit , "H2MassAfterFit/F" );
 	m_pTTree->Branch("HHMassAfterFit" , &m_HHMassAfterFit , "HHMassAfterFit/F" );
 	m_pTTree->Branch("ZHHMassAfterFit" , &m_ZHHMassAfterFit , "ZHHMassAfterFit/F" );
 	m_pTTree->Branch("ISREnergyAfterFit" , &m_ISREnergyAfterFit , "ISREnergyAfterFit/F" );
+	m_pTTree->Branch("p1stAfterFit" , &m_p1stAfterFit , "p1stAfterFit/F" );
+	m_pTTree->Branch("cos1stAfterFit" , &m_cos1stAfterFit , "cos1stAfterFit/F" );
 	m_pTTree->Branch("FitProbability" , &m_FitProbability , "FitProbability/F" );
 	m_pTTree->Branch("FitChi2" , &m_FitChi2 , "FitChi2/F" );
+
 	m_pTTree->Branch("pullJetEnergy" , &m_pullJetEnergy );
 	m_pTTree->Branch("pullJetTheta" , &m_pullJetTheta );
 	m_pTTree->Branch("pullJetPhi" , &m_pullJetPhi );

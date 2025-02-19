@@ -153,6 +153,48 @@ class Config_5x0_ft_fast(AnalysisConfiguration):
         return {
             'CMSEnergy': 550
         }
+        
+class Config_550_ll_fast(AnalysisConfiguration):
+    """Leptonic channel
+    """
+    tag = '550-ll-fast'
+    
+    def sgv_inputs(self):
+        input_files:list[str] = []
+        input_options:list[dict] = []
+        
+        for cms_energy, sgv_input_format, source_glob, file_ending in [
+            (550, 'LCIO', '/pnfs/desy.de/ilc/prod/ilc/mc-2020/generated/550-Test/6f-test/*Pe1e1*.slcio', 'slcio'),
+            (550, 'LCIO', '/pnfs/desy.de/ilc/prod/ilc/mc-2020/generated/550-Test/6f-test/*Pe2e2*.slcio', 'slcio'),
+            (550, 'LCIO', '/pnfs/desy.de/ilc/prod/ilc/mc-2020/generated/550-Test/6f-test/*Pe3e3*.slcio', 'slcio'),
+            (550, 'LCIO', '/pnfs/desy.de/ilc/prod/ilc/mc-2020/generated/550-Test/hh/*Pe1e1*.slcio', 'slcio'),
+            (550, 'LCIO', '/pnfs/desy.de/ilc/prod/ilc/mc-2020/generated/550-Test/hh/*Pe2e2*.slcio', 'slcio'),
+            (550, 'LCIO', '/pnfs/desy.de/ilc/prod/ilc/mc-2020/generated/550-Test/hh/*Pe3e3*.slcio', 'slcio')
+        ]:
+            sgv_options:SGVOptions = {
+                'global_steering.MAXEV': 999999,
+                'global_generation_steering.CMS_ENE': cms_energy,
+                'external_read_generation_steering.GENERATOR_INPUT_TYPE': sgv_input_format,
+                'external_read_generation_steering.INPUT_FILENAMES': f'input.{file_ending}'
+            }
+            files = glob(source_glob)
+            files.sort()
+            
+            for file in files:
+                input_files.append(file)
+                input_options.append(sgv_options)
+        
+        return input_files, input_options
+    
+    # Retrieve the paths to the output files of the SGV runs
+    def slcio_files(self, raw_index_task: 'RawIndex'):
+        input_targets = raw_index_task.input()[0]['collection'].targets.values()
+
+        return [f.path for f in input_targets]
+    
+    statistics = 1.
+    marlin_globals = {  }
+    marlin_constants = { 'CMSEnergy': 550 }
 
 # Add them to the registry
 zhh_configs.add(Config_500_all_full())
@@ -160,3 +202,4 @@ zhh_configs.add(Config_550_hh_fast())
 zhh_configs.add(Config_550_hh_full())
 zhh_configs.add(Config_5x0_ft_fast())
 zhh_configs.add(Config_550_test_fast())
+zhh_configs.add(Config_550_ll_fast())

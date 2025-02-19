@@ -37,6 +37,11 @@ void ZHHllbbbbKinFit::initChannelValues()
 {
   assignPermutations(4, m_fithypothesis);
 
+  m_pTTree->Branch("Z2MassBeforeFit_woNu" , &m_Z2MassBeforeFit_woNu , "Z2MassBeforeFit_woNu/F" );
+  m_pTTree->Branch("Z2MassAfterFit_woNu" , &m_Z2MassAfterFit_woNu , "Z2MassAfterFit_woNu/F" );
+  m_pTTree->Branch("Z2MassBeforeFit" , &m_Z2MassBeforeFit , "Z2MassBeforeFit/F" );
+  m_pTTree->Branch("Z2MassAfterFit" , &m_Z2MassAfterFit , "Z2MassAfterFit/F" );
+
 	streamlog_out(DEBUG) << "   init finished  " << std::endl;
 }
 
