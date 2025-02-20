@@ -5,6 +5,13 @@ export ZHH_K4H_RELEASE="<ZHH_K4H_RELEASE>"
 
 source $REPO_ROOT/shell/common.sh
 
+# Force cmake to use custom dependency versions instead of those in key4hep
+# must match CMakeLists.txt in source directory
+export Physsim_PATH="$Physsim"
+export MarlinKinfit_ROOT="$MarlinKinfit"
+export LD_LIBRARY_PATH="$Physsim/lib64:$LD_LIBRARY_PATH"
+export CPATH=$(echo $CPATH | sed -e "s|/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/physsim/0.5-433xdn/include/physsim|$Physsim/include|g")
+
 function zhh_attach_marlin_dlls() {
     # TODO: no need for loop
     local libs=(
@@ -25,8 +32,9 @@ function zhh_attach_marlin_dlls() {
     local libs_old=(
         "/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/lcfiplus/0.10.1-3azs6t/lib/libLCFIPlus.so"
         "/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/marlinreco/1.36.1-ywnmqe/lib/libMarlinReco.so"
-        "/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/marlinmlflavortagging/0.1.0-2cepkq/lib/libMarlinMLFlavorTagging.so")
-    local libs_new=("$LCFIPlus/build/lib/libLCFIPlus.so" "$MarlinReco/lib/libMarlinReco.so" "$MarlinMLFlavorTagging/lib/libMarlinMLFlavorTagging.so")
+        "/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/marlinmlflavortagging/0.1.0-2cepkq/lib/libMarlinMLFlavorTagging.so"
+        "/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/marlinkinfit/0.6.1-myr4kp/lib/libMarlinKinfit.so")
+    local libs_new=("$LCFIPlus/build/lib/libLCFIPlus.so" "$MarlinReco/lib/libMarlinReco.so" "$MarlinMLFlavorTagging/lib/libMarlinMLFlavorTagging.so" "$MarlinKinfit/lib/libMarlinKinfit.so")
 
     for i in "${!libs_new[@]}"; do
         local lib="${libs_new[$i]}"
@@ -54,11 +62,6 @@ fi
 if [[ $MARLIN_DLL != *"libZHHProcessors"* ]]; then
     zhh_attach_marlin_dlls
 fi
-
-# Fix wrong Physsim include paths in key4hep
-export CMAKE_PREFIX_PATH=$(echo $CMAKE_PREFIX_PATH | sed -e "s|/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/physsim/0.5-433xdn:|$REPO_ROOT/dependencies/Physsim:|g")
-export LD_LIBRARY_PATH="$REPO_ROOT/dependencies/Physsim/lib64:$LD_LIBRARY_PATH"
-export CPATH=$(echo $CPATH | sed -e "s|/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/physsim/0.5-433xdn/include/physsim|$REPO_ROOT/dependencies/Physsim/include|g")
 
 function MarlinZHH() {
     local steering_file

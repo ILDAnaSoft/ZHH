@@ -7,5 +7,8 @@
 inline ROOT::Math::PxPyPzEVector v4(EVENT::ReconstructedParticle* p){
 	return ROOT::Math::PxPyPzEVector( p->getMomentum()[0], p->getMomentum()[1], p->getMomentum()[2], p->getEnergy() );
 }
+inline ROOT::Math::PxPyPzEVector v4(EVENT::LCObject* p){
+	return v4((ReconstructedParticle*)p);
+}
 
 #endif

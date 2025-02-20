@@ -35,6 +35,9 @@ void EventObservablesQQ::prepareChannelTree() {
 		ttree->Branch("pzj6", &m_pzj6, "pzj6/F");
 		ttree->Branch("ej6", &m_ej6, "ej6/F");
 
+        ttree->Branch("bmax5", &m_bmax5, "bmax5/F");
+        ttree->Branch("bmax6", &m_bmax6, "bmax6/F");
+
         ttree->Branch("me_jet_matching_chi2", &m_lcme_jet_matching_chi2, "me_jet_matching_chi2/F");
         ttree->Branch("me_jet_matching_mz", &m_lcme_jet_matching_mz, "me_jet_matching_chi2/F");
         ttree->Branch("me_jet_matching_mh1", &m_lcme_jet_matching_mh1, "me_jet_matching_mh1/F");
@@ -83,6 +86,9 @@ void EventObservablesQQ::clearChannelValues() {
     m_pzj6 = 0.;
     m_ej6 = 0.;
 
+    m_bmax5 = 0.;
+    m_bmax6 = 0.;
+
     // ttbar
     m_tt_mw1 = 0.;
     m_tt_mw2 = 0.;
@@ -113,7 +119,7 @@ void EventObservablesQQ::updateChannelValues(EVENT::LCEvent *pLCEvent) {
     
     if ( m_jets.size() == m_nAskedJets() ) {
         // NPFOS MIN/MAX
-        std::tie(m_npfosmin6j, m_npfosmax6j) = nPFOsMinMax(inputJetCollection);
+        std::tie(m_npfosmin6j, m_npfosmax6j, std::ignore) = nPFOsMinMax(inputJetCollection);
 
         // TREAT 4 JET COLLECTION
         for (int i=0; i < 4; ++i) {
@@ -145,6 +151,9 @@ void EventObservablesQQ::updateChannelValues(EVENT::LCEvent *pLCEvent) {
             v4(m_jets[m_bTagsSorted[1].first]), // A
             v4(m_jets[m_bTagsSorted[0].first])  // B
         };
+
+        m_bmax5 = m_bTagsSorted[4].second;
+        m_bmax6 = m_bTagsSorted[5].second;
 
         // B. TTBAR CHI2        
         std::vector<unsigned short> tt_jet_matching;

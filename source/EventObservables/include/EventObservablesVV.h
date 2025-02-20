@@ -45,18 +45,25 @@ class EventObservablesVV : public EventObservablesBase, public EventObservablesF
 
 		// data members
 		std::vector<ReconstructedParticle*> m_5jets;
-		std::vector<ReconstructedParticle*> m_6jets;
-
-		float m_npfosmin5j{};
-		float m_npfosmax5j{};
-
-		//float m_ptjmax5{};
-		//float m_pjmax5{};
+		//std::vector<ReconstructedParticle*> m_6jets;
+		
 		float m_ptjmax6{};
 		float m_pjmax6{};
 
-		// ttbar
-		float m_cosBmax12{};
+		// ttbar 5j
+		float m_npfosmin5j{};
+		float m_npfosmax5j{};
+		float m_ptjmax5{};
+		float m_pjmax5{};
+
+		float m_yMinus5j{};
+		float m_yPlus5j{};
+		
+		float m_massWtt5j{};
+		float m_massT1tt5j{};
+		float m_massT2tt5j{};
+
+		// ttbar 4j
 		float m_massWtt4j{};
 		float m_massT1tt4j{};
 		float m_massT2tt4j{};

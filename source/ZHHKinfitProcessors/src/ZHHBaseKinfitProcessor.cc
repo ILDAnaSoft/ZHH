@@ -2,6 +2,13 @@
 
 ZHHBaseKinfitProcessor::ZHHBaseKinfitProcessor(const std::string& name) : Processor(name),
 m_pTFile(NULL),
+MODE_IS_NMC(false),
+MODE_IS_ZHH(false),
+MODE_IS_ZZH(false),
+MODE_IS_ZZZ(false),
+MODE_IS_ZZHsoft(false),
+MODE_IS_MH(false),
+MODE_IS_EQM(false),
 m_nRun(0),
 m_nEvt(0),
 m_nRunSum(0),
@@ -681,10 +688,20 @@ void ZHHBaseKinfitProcessor::init() {
 	eB = m_Bfield * c * mm2m * eV2GeV;
 
 	b = (double) 0.00464564 * ( std::log( m_ECM * m_ECM * 3814714. ) - 1. );
-//	  = 2*alpha/pi*( ln(s/m_e^2)-1 )
+	// = 2*alpha/pi*( ln(s/m_e^2)-1 )
 	ISRPzMaxB = std::pow((double)m_isrpzmax,b);
 
 	printParameters();
+
+	// setting the mode, and the names of constraints to calculate the associated boson momenta (for pmax and cos theta)
+	if (m_fithypothesis == "NMC")    { MODE = MODE_NMC    ; MODE_IS_NMC     = true; m_readContraints = {"", "", ""}; } else
+	if (m_fithypothesis == "ZHH")    { MODE = MODE_ZHH    ; MODE_IS_ZHH     = true; m_readContraints = {"z mass", "h2 mass", "h1 mass"}; } else
+	if (m_fithypothesis == "ZZH")    { MODE = MODE_ZZH    ; MODE_IS_ZZH     = true; m_readContraints = {"z mass", "z3 mass", "h1 mass"}; } else
+	if (m_fithypothesis == "ZZZ")    { MODE = MODE_ZZZ    ; MODE_IS_ZZZ     = true; m_readContraints = {"z mass", "z3 mass", "z2 mass"}; } else
+	if (m_fithypothesis == "ZZHsoft"){ MODE = MODE_ZZHsoft; MODE_IS_ZZHsoft = true; m_readContraints = {"z mass", "z3 mass", "h1 mass"}; } else
+	if (m_fithypothesis == "MH")     { MODE = MODE_MH     ; MODE_IS_MH      = true; } else
+	if (m_fithypothesis == "EQM")    { MODE = MODE_EQM    ; MODE_IS_EQM     = true; } else
+		throw EVENT::Exception("Unimplemented fithypothesis");
 
   	m_pTTree = new TTree(m_ttreeName.c_str(), m_ttreeName.c_str());
 
@@ -720,8 +737,6 @@ void ZHHBaseKinfitProcessor::init() {
 	m_pTTree->Branch("HHMassAfterFit_woNu" , &m_HHMassAfterFit_woNu , "HHMassAfterFit_woNu/F" );
 	m_pTTree->Branch("ZHHMassAfterFit_woNu" , &m_ZHHMassAfterFit_woNu , "ZHHMassAfterFit_woNu/F" );
 	m_pTTree->Branch("ISREnergyAfterFit_woNu" , &m_ISREnergyAfterFit_woNu , "ISREnergyAfterFit_woNu/F" );
-	m_pTTree->Branch("p1stAfterFit_woNu" , &m_p1stAfterFit_woNu , "p1stAfterFit_woNu/F" );
-	m_pTTree->Branch("cos1stAfterFit_woNu" , &m_cos1stAfterFit_woNu , "cos1stAfterFit_woNu/F" );
 	m_pTTree->Branch("FitProbability_woNu" , &m_FitProbability_woNu , "FitProbability_woNu/F" );
 	m_pTTree->Branch("FitChi2_woNu" , &m_FitChi2_woNu , "FitChi2_woNu/F" );
 	m_pTTree->Branch("FitChi2_byMass" , &m_FitChi2_byMass , "FitChi2_byMass/F" );
@@ -766,8 +781,6 @@ void ZHHBaseKinfitProcessor::init() {
 	m_pTTree->Branch("HHMassAfterFit" , &m_HHMassAfterFit , "HHMassAfterFit/F" );
 	m_pTTree->Branch("ZHHMassAfterFit" , &m_ZHHMassAfterFit , "ZHHMassAfterFit/F" );
 	m_pTTree->Branch("ISREnergyAfterFit" , &m_ISREnergyAfterFit , "ISREnergyAfterFit/F" );
-	m_pTTree->Branch("p1stAfterFit" , &m_p1stAfterFit , "p1stAfterFit/F" );
-	m_pTTree->Branch("cos1stAfterFit" , &m_cos1stAfterFit , "cos1stAfterFit/F" );
 	m_pTTree->Branch("FitProbability" , &m_FitProbability , "FitProbability/F" );
 	m_pTTree->Branch("FitChi2" , &m_FitChi2 , "FitChi2/F" );
 
@@ -800,6 +813,7 @@ void ZHHBaseKinfitProcessor::init() {
 void ZHHBaseKinfitProcessor::processEvent( LCEvent* pLCEvent ) {
   m_nRun = pLCEvent->getRunNumber();
   m_nEvt = pLCEvent->getEventNumber();
+
   streamlog_out(MESSAGE1) << "	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
   streamlog_out(MESSAGE1) << "	////////////////////////////////// processing event " << m_nEvt << " in run " << m_nRun << " /////////////////////////////////////////////////" << std::endl;
   streamlog_out(MESSAGE1) << "	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
@@ -814,6 +828,84 @@ void ZHHBaseKinfitProcessor::processRunHeader(LCRunHeader* run)
 {
   (void) run;
 	m_nRun++ ;
+}
+
+void ZHHBaseKinfitProcessor::assignPostFitMasses(FitResult fitResult, bool woNu) {
+	streamlog_out(MESSAGE1) << "error code = " << fitResult.fitter->getError() << endl;
+	streamlog_out(MESSAGE1) << "fit prob = " << fitResult.fitter->getProbability() << endl;
+	streamlog_out(MESSAGE1) << "fit chi2 = " << fitResult.fitter->getChi2()<< endl;
+
+	streamlog_out(MESSAGE) << "Getting constraints now... ";
+	auto constraints = fitResult.constraints;
+	streamlog_out(MESSAGE) << "Fitter contains " << constraints.size() << " constraints" << std::endl;
+	
+	for (auto [key, val] : constraints) {
+		streamlog_out(MESSAGE) << "KEY: '" << key << "' - Counts : ";
+		streamlog_out(MESSAGE) << constraints.count(key) << std::endl;
+	}
+
+	shared_ptr<MassConstraint> mc_z = dynamic_pointer_cast<MassConstraint>(constraints["z mass"]);
+	shared_ptr<MassConstraint> mc_h1 = dynamic_pointer_cast<MassConstraint>(constraints["h1 mass"]);
+	shared_ptr<MassConstraint> mc_h2 = dynamic_pointer_cast<MassConstraint>(constraints["h2 mass"]);
+	shared_ptr<MassConstraint> mc_hh = dynamic_pointer_cast<MassConstraint>(constraints["hh mass"]);
+	shared_ptr<MassConstraint> mc_zhh = dynamic_pointer_cast<MassConstraint>(constraints["zhh mass"]);
+	shared_ptr<MassConstraint> mc_z2 = NULL;
+
+	if (channel() == CHANNEL_LL)
+		mc_z2 = dynamic_pointer_cast<MassConstraint>(constraints["z2 mass"]);
+
+	// find p1st and cos1st
+	float p1st = 0.0;
+	float cos1st = 0.0;
+
+	ROOT::Math::PxPyPzEVector p1stvec (0., 0., 0., 0.);
+	ROOT::Math::PxPyPzEVector tempvec (0., 0., 0., 0.);
+
+	for (auto it = constraints.begin(); it != constraints.end(); ++it) {
+		auto mc = dynamic_pointer_cast<ParticleConstraint>(it->second);
+		double *temp = mc->getFourMomentum(1);
+
+		cerr << temp[0] << " " << temp[1] << " " << temp[2] << " " << temp[3] << std::endl;
+
+		tempvec.SetPxPyPzE(temp[1], temp[2], temp[3], temp[0]);
+		cerr << "CURRENT MOMENTUM : '" << tempvec.P() << std::endl;
+
+		if (tempvec.P() > p1stvec.P()) {
+			p1st = tempvec.P();
+			cos1st = cos(tempvec.Theta());
+			p1stvec = tempvec;
+		}
+
+		delete temp;
+	}
+
+	if (woNu) {
+		m_ZMassAfterFit_woNu = mc_z->getMass();
+		m_H1MassAfterFit_woNu = mc_h1->getMass();
+		m_H2MassAfterFit_woNu = mc_h2->getMass();
+		m_HHMassAfterFit_woNu = mc_hh->getMass();
+		m_ZHHMassAfterFit_woNu = mc_zhh->getMass();
+		m_p1stAfterFit_woNu = p1st;
+		m_cos1stAfterFit_woNu = cos1st;
+
+		if (channel() == CHANNEL_LL)
+			m_Z2MassAfterFit_woNu = mc_z2->getMass();
+	} else {
+		m_ZMassAfterFit = mc_z->getMass();
+		m_H1MassAfterFit = mc_h1->getMass();
+		m_H2MassAfterFit = mc_h2->getMass();
+		m_HHMassAfterFit = mc_hh->getMass();
+		m_ZHHMassAfterFit = mc_zhh->getMass();
+		m_p1stAfterFit = p1st;
+		m_cos1stAfterFit = cos1st;
+
+		if (channel() == CHANNEL_LL)
+			m_Z2MassAfterFit = mc_z2->getMass();
+	}
+
+	
+
+	streamlog_out(MESSAGE) << endl;
 }
 
 void ZHHBaseKinfitProcessor::check( LCEvent* event )

@@ -85,7 +85,7 @@ function zhh_install_deps() {
         fi
     fi
 
-    if [[ ! -d $MarlinMLFlavorTagging || ! -d $MarlinMLFlavorTagging || ! -d $FlavorTagging_ML || ! -d $ILD_CONFIG_DIR || ! -d $MarlinReco || ! -d $LCFIPlusConfig || ! -d $LCFIPlus || ! -d $Physsim ]]; then
+    if [[ ! -d $MarlinMLFlavorTagging || ! -d $MarlinMLFlavorTagging || ! -d $FlavorTagging_ML || ! -d $ILD_CONFIG_DIR || ! -d $MarlinReco || ! -d $MarlinKinfit || ! -d $LCFIPlusConfig || ! -d $LCFIPlus || ! -d $Physsim ]]; then
         echo "At least one of the dependencies could not be found. Retrieving them..."
 
         local ind="$( [ -z "${ZSH_VERSION}" ] && echo "0" || echo "1" )" # ZSH arrays are 1-indexed
@@ -94,13 +94,14 @@ function zhh_install_deps() {
             https://gitlab.desy.de/bryan.bliewert/FlavorTagging_ML.git
             https://github.com/iLCSoft/ILDConfig.git
             https://github.com/nVentis/MarlinReco.git
+            https://github.com/nVentis/MarlinKinfit.git
             https://github.com/suehara/LCFIPlusConfig
             https://github.com/nVentis/LCFIPlus
             https://github.com/nVentis/Physsim.git)
-        local varnames=(MarlinMLFlavorTagging FlavorTagging_ML ILD_CONFIG_DIR MarlinReco LCFIPlusConfig LCFIPlus Physsim)
-        local dirnames=(MarlinMLFlavorTagging FlavorTagging_ML ILDConfig MarlinReco LCFIPlusConfig LCFIPlus Physsim)
-        local commits=(latest latest latest latest latest latest latest)
-        local branchnames=(main main master master master onnx master)
+        local varnames=(MarlinMLFlavorTagging FlavorTagging_ML ILD_CONFIG_DIR MarlinReco MarlinKinfit LCFIPlusConfig LCFIPlus Physsim)
+        local dirnames=(MarlinMLFlavorTagging FlavorTagging_ML ILDConfig MarlinReco MarlinKinfit LCFIPlusConfig LCFIPlus Physsim)
+        local commits=(latest latest latest latest latest latest latest latest)
+        local branchnames=(main main master master master master onnx master)
         local cwd=$(pwd)
 
         mkdir -p $INSTALL_DIR
@@ -199,6 +200,7 @@ LCFIPlusConfig="$LCFIPlusConfig"
 LCFIPlus="$LCFIPlus"
 ILD_CONFIG_DIR="$ILD_CONFIG_DIR"
 MarlinReco="$MarlinReco"
+MarlinKinfit="$MarlinKinfit"
 LCIO="$LCIO"
 TORCH_PATH="$TORCH_PATH"
 ZHH_VENV_NAME="$ZHH_VENV_NAME"

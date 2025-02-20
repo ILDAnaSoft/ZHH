@@ -260,13 +260,6 @@ void EventObservablesBase::prepareBaseTree()
 		//ttree->Branch("mh2", &m_mh2, "mh2/F");
 		//ttree->Branch("mhh", &m_mhh, "mhh/F");
 
-		ttree->Branch("pz", &m_pz, "pz/F");
-		ttree->Branch("ph1", &m_ph1, "ph1/F");
-		ttree->Branch("ph2", &m_ph2, "ph2/F");
-		ttree->Branch("cosz", &m_cosz, "cosz/F");
-		ttree->Branch("cosh1", &m_cosh1, "cosh1/F");
-		ttree->Branch("cosh2", &m_cosh2, "cosh2/F");
-
 		ttree->Branch("yminus", &m_yMinus, "yminus/F");
 		ttree->Branch("yplus", &m_yPlus, "yplus/F");
 
@@ -450,16 +443,8 @@ void EventObservablesBase::clearBaseValues()
 	m_Evis  = -999.;
 	m_missingMass = -999.;
 
-	m_pz = 0.;
-	m_ph1 = 0.;
-	m_ph2 = 0.;
-	m_cosz = 0.;
-	m_cosh1 = 0.;
-	m_cosh2 = 0.;
 	m_yMinus = 0.;
 	m_yPlus = 0.;
-
-	
 	
 	// flavor tagging
 	m_bTagsSorted.clear();
@@ -685,35 +670,35 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 			TVector3 pjbmaxA2 (m_jets[m_bTagsSorted[1].first]->getMomentum());
 			m_cosbmax = pjbmaxA1.Dot(pjbmaxA2)/pjbmaxA1.Mag()/pjbmaxA2.Mag();
 
-			m_bmax1 = m_bTagsSorted.rbegin()[0].second;
-			m_bmax2 = m_bTagsSorted.rbegin()[1].second;
-			m_bmax3 = m_bTagsSorted.rbegin()[2].second;
-			m_bmax4 = m_bTagsSorted.rbegin()[3].second;
+			m_bmax1 = m_bTagsSorted[0].second;
+			m_bmax2 = m_bTagsSorted[1].second;
+			m_bmax3 = m_bTagsSorted[2].second;
+			m_bmax4 = m_bTagsSorted[3].second;
 
 			std::vector<double> cTagsSorted(m_cTagValues.begin(), m_cTagValues.end());
 			std::sort (cTagsSorted.begin(), cTagsSorted.end());
 
-			m_cmax1 = cTagsSorted.rbegin()[0];
-			m_cmax2 = cTagsSorted.rbegin()[1];
-			m_cmax3 = cTagsSorted.rbegin()[2];
-			m_cmax4 = cTagsSorted.rbegin()[3];
+			m_cmax1 = cTagsSorted[0];
+			m_cmax2 = cTagsSorted[1];
+			m_cmax3 = cTagsSorted[2];
+			m_cmax4 = cTagsSorted[3];
 
 			if (m_use_tags2) {
 				std::vector<double> bTagsSorted2(m_bTagValues2.begin(), m_bTagValues2.end());
 				std::sort (bTagsSorted2.begin(), bTagsSorted2.end());
 
-				m_bmax12 = bTagsSorted2.rbegin()[0];
-				m_bmax22 = bTagsSorted2.rbegin()[1];
-				m_bmax32 = bTagsSorted2.rbegin()[2];
-				m_bmax42 = bTagsSorted2.rbegin()[3];
+				m_bmax12 = bTagsSorted2[0];
+				m_bmax22 = bTagsSorted2[1];
+				m_bmax32 = bTagsSorted2[2];
+				m_bmax42 = bTagsSorted2[3];
 
 				std::vector<double> cTagsSorted2(m_cTagValues2.begin(), m_cTagValues2.end());
 				std::sort (cTagsSorted2.begin(), cTagsSorted2.end());
 
-				m_cmax12 = cTagsSorted2.rbegin()[0];
-				m_cmax22 = cTagsSorted2.rbegin()[1];
-				m_cmax32 = cTagsSorted2.rbegin()[2];
-				m_cmax42 = cTagsSorted2.rbegin()[3];
+				m_cmax12 = cTagsSorted2[0];
+				m_cmax22 = cTagsSorted2[1];
+				m_cmax32 = cTagsSorted2[2];
+				m_cmax42 = cTagsSorted2[3];
 			}
 
 			// ---------- YMINUS, YPLUS ----------        
@@ -1024,18 +1009,25 @@ void EventObservablesBase::calculateMatrixElements(
 	streamlog_out(MESSAGE) << " log(LCMEZZH)=" << m_lcme_zzh_log << std::endl;
 };
 
-std::pair<int, int> EventObservablesBase::nPFOsMinMax(LCCollection *collection) {
-	size_t min_res = 999;
-	size_t max_res = 0;
-	
+std::tuple<int, int, int> EventObservablesBase::nPFOsMinMax(LCCollection *collection) {
+	int min_res = 999;
+	int max_res = 0;
+	int min_idx = -1;
+	int n_current;
+
 	for (int i=0; i < collection->getNumberOfElements(); i++) {
 		ReconstructedParticle* jet = dynamic_cast<ReconstructedParticle*>(collection->getElementAt(i));
+		n_current = jet->getParticles().size();
 
-		min_res = std::min(min_res, jet->getParticles().size());
-		max_res = std::max(max_res, jet->getParticles().size());
+		if (n_current < min_res) {
+			min_res = n_current;
+			min_idx = i;
+		}
+
+		max_res = std::max(max_res, n_current);
 	}
 
-	return std::make_pair(min_res, max_res);
+	return std::make_tuple(min_res, max_res, min_idx);
 };
 
 void EventObservablesBase::setJetMomenta() {
@@ -1068,4 +1060,33 @@ float EventObservablesBase::leadingMomentum(ReconstructedParticleVec jets) {
 	}
 
 	return result;
+};
+
+std::vector<std::pair<int, float>> EventObservablesBase::sortedTagging(std::vector<float> tags_by_jet_order) {
+	std::vector<std::pair<int, float>> result;
+
+	for (size_t i = 0; i < tags_by_jet_order.size(); i++) {
+		result.push_back(std::make_pair(i, tags_by_jet_order[i]));
+	}
+
+	std::sort(result.begin(), result.end(), jetTaggingComparator);
+
+	return result;
+};
+
+std::vector<std::pair<int, float>> EventObservablesBase::sortedTagging(LCCollection* collection, std::string pid_algorithm, std::string pid_parameter_b) {
+	PIDHandler pidh(collection);
+	int algo_id = pidh.getAlgorithmID(pid_algorithm);
+	int btag_id = pidh.getParameterIndex(algo_id, pid_parameter_b);
+
+	std::vector<float> tags_by_jet_order;
+
+	for (int i=0; i < collection->getNumberOfElements(); i++) {
+		const ParticleIDImpl& FTImpl = dynamic_cast<const ParticleIDImpl&>(pidh.getParticleID((ReconstructedParticle*)collection->getElementAt(i), algo_id));
+		const FloatVec& FTPara = FTImpl.getParameters();
+
+		tags_by_jet_order.push_back(FTPara[btag_id]);
+	}
+
+	return sortedTagging(tags_by_jet_order);
 };

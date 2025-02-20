@@ -163,40 +163,13 @@ void ZHHqqbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
   if (!woNuFitResult.fitter) {
     streamlog_out(MESSAGE) << "Did not find a functioning fit" << endl;
   } else {
-  //Fill root branches
+    //Fill root branches
     m_FitErrorCode_woNu = woNuFitResult.fitter->getError();
     m_FitProbability_woNu = woNuFitResult.fitter->getProbability();
     m_FitChi2_woNu = woNuFitResult.fitter->getChi2();
-    streamlog_out(MESSAGE) << "error code = " << woNuFitResult.fitter->getError() << endl;
-    streamlog_out(MESSAGE) << "fit prob = " << woNuFitResult.fitter->getProbability() << endl;
-    streamlog_out(MESSAGE) << "fit chi2 = " << woNuFitResult.fitter->getChi2()<< endl;
-    streamlog_out(MESSAGE) << "Getting constraints now... ";
-    auto constraints = woNuFitResult.constraints;
-    streamlog_out(MESSAGE) << "Fitter contains " << constraints->size() << " constraints : ";
-    for (auto it = constraints->begin(); it != constraints->end(); ++it) {
-      streamlog_out(MESSAGE) << (*it)->getName() << " ";
-      if (strcmp((*it)->getName(), "z mass")==0) {
-	auto mc = dynamic_pointer_cast<MassConstraint>(*it);
-	m_ZMassAfterFit_woNu = mc->getMass();
-      }
-      if (strcmp((*it)->getName(), "h1 mass")==0) {
-	auto mc = dynamic_pointer_cast<MassConstraint>(*it);
-	m_H1MassAfterFit_woNu = mc->getMass();
-      }
-      if (strcmp((*it)->getName(), "h2 mass")==0) {
-	auto mc = dynamic_pointer_cast<MassConstraint>(*it);
-	m_H2MassAfterFit_woNu = mc->getMass();
-      }
-      if (strcmp((*it)->getName(), "hh mass")==0) {
-	auto mc = dynamic_pointer_cast<MassConstraint>(*it);
-	m_HHMassAfterFit_woNu = mc->getMass();
-      }
-      if (strcmp((*it)->getName(), "zhh mass")==0) {
-	auto mc = dynamic_pointer_cast<MassConstraint>(*it);
-	m_ZHHMassAfterFit_woNu = mc->getMass();
-      }
-    }
-    streamlog_out(MESSAGE) << endl;
+    
+    assignPostFitMasses(woNuFitResult, false);
+
     streamlog_out(MESSAGE) << "Getting fitobjects now... ";
     auto fitobjects_woNu = woNuFitResult.fitobjects;
     vector<unsigned int> perm_woNu;
@@ -389,36 +362,7 @@ void ZHHqqbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
   m_FitChi2 = bestFitResult.fitter->getChi2();
   m_bestMatchingKinfit = bestFitResult.permutation;
 
-  streamlog_out(MESSAGE1) << "error code = " << bestFitResult.fitter->getError() << endl;
-  streamlog_out(MESSAGE1) << "fit prob = " << bestFitResult.fitter->getProbability() << endl;
-  streamlog_out(MESSAGE1) << "fit chi2 = " << bestFitResult.fitter->getChi2()<< endl;
-  streamlog_out(MESSAGE) << "Getting constraints now... ";
-  auto constraints = bestFitResult.constraints;
-  streamlog_out(MESSAGE) << "Fitter contains " << constraints->size() << " constraints : ";
-  for (auto it = constraints->begin(); it != constraints->end(); ++it) {
-    streamlog_out(MESSAGE) << (*it)->getName() << " ";
-    if (strcmp((*it)->getName(), "z mass")==0) {
-      auto mc = dynamic_pointer_cast<MassConstraint>(*it);
-      m_ZMassAfterFit = mc->getMass();
-    }
-    if (strcmp((*it)->getName(), "h1 mass")==0) {
-      auto mc = dynamic_pointer_cast<MassConstraint>(*it);
-      m_H1MassAfterFit = mc->getMass();
-    }
-    if (strcmp((*it)->getName(), "h2 mass")==0) {
-      auto mc = dynamic_pointer_cast<MassConstraint>(*it);
-      m_H2MassAfterFit = mc->getMass();
-    }
-    if (strcmp((*it)->getName(), "hh mass")==0) {
-      auto mc = dynamic_pointer_cast<MassConstraint>(*it);
-      m_HHMassAfterFit = mc->getMass();
-    }
-    if (strcmp((*it)->getName(), "zhh mass")==0) {
-      auto mc = dynamic_pointer_cast<MassConstraint>(*it);
-      m_ZHHMassAfterFit = mc->getMass();
-    }
-  }
-  streamlog_out(MESSAGE) << endl;
+  assignPostFitMasses(bestFitResult, false);
 
   streamlog_out(MESSAGE) << "Getting fitobjects now... ";
   auto fitobjects = bestFitResult.fitobjects;
@@ -725,18 +669,18 @@ ZHHqqbbbbKinFit::FitResult ZHHqqbbbbKinFit::performFIT( pfoVector jets,
     fitter->addConstraint( pyc.get() );
     fitter->addConstraint( pzc.get() );
     fitter->addConstraint( ec.get() );
-    if (m_fithypothesis == "MH") {
+    if (MODE_IS_MH) {
       fitter->addConstraint( h1m.get() );
-    } else if (m_fithypothesis == "ZHH") {
+    } else if (MODE_IS_ZHH) {
       fitter->addConstraint( h1m.get() );
       fitter->addConstraint( h2m.get() );
-    } else if (m_fithypothesis == "ZZH") {
+    } else if (MODE_IS_ZZH) {
       fitter->addConstraint( h1m.get() );
       fitter->addConstraint( zm.get() );
-    } else if (m_fithypothesis == "ZZHsoft") {
+    } else if (MODE_IS_ZZHsoft) {
       fitter->addConstraint( h1m.get() );
       fitter->addConstraint( zmsoft.get() );
-    } else if (m_fithypothesis == "EQM") {
+    } else if (MODE_IS_EQM) {
       fitter->addConstraint( eqm.get() );
     }
 
@@ -763,16 +707,8 @@ ZHHqqbbbbKinFit::FitResult ZHHqqbbbbKinFit::performFIT( pfoVector jets,
     fitter->addConstraint( hh.get() );
     fitter->addConstraint( zhh.get() );
     //streamlog_out(MESSAGE) << "chi2 after adding helper constraints" << fitter->getChi2() << endl; 
-    shared_ptr<vector<shared_ptr<BaseHardConstraint>>> constraints = make_shared<vector<shared_ptr<BaseHardConstraint>>>();
-    constraints->push_back(z);
-    constraints->push_back(pxc);
-    constraints->push_back(pyc);
-    constraints->push_back(pzc);
-    constraints->push_back(ec);
-    constraints->push_back(h1);
-    constraints->push_back(h2);
-    constraints->push_back(hh);
-    constraints->push_back(zhh);
+    map<string, shared_ptr<BaseHardConstraint>> constraints;
+    constraints.insert({{ z->getName(), z }, { pxc->getName(), pxc }, { pyc->getName(), pyc }, { pzc->getName(), pzc }, { ec->getName(), ec }, { h1->getName(), h1 }, { h2->getName(), h2 }, { hh->getName(), hh }, { zhh->getName(), zhh }});
     //constraints->push_back(h);
 
     streamlog_out(MESSAGE8) << "helper constraints added"  << std::endl ; //changed from debug level 
@@ -886,21 +822,25 @@ std::tuple<std::vector<double>, double, std::vector<unsigned int>>
 {
   (void) leptons;
 
-  std::vector<double> masses;
+  std::vector<double> masses (4, 0);
   std::vector<unsigned int> bestperm;
 
+  if (MODE_IS_NMC || MODE_IS_EQM)
+
+  double m0;
   double m1;
   double m2;
-  if (m_fithypothesis == "ZZH") {
+  if (MODE_IS_ZZH) {
+    m0 = 91.2;
     m1 = 125.;
     m2 = 91.2;
-  } else {
+  } if (MODE_IS_ZHH) else {
     m1 = 125.; 
     m2 = 125.; 
   }
-  double z = 0;
-  double h1 = 0. ;
-  double h2 = 0. ;
+  double mz = 0;
+  double mh1 = 0. ;
+  double mh2 = 0. ;
   //z = inv_mass(leptons.at(0),leptons.at(1));
   ROOT::Math::PxPyPzEVector zhhFourMomentum(0.,0.,0.,0.);
   for (auto jet : jets) {
@@ -918,24 +858,24 @@ std::tuple<std::vector<double>, double, std::vector<unsigned int>>
     double temp1 = inv_mass(jets.at(perm[0]),jets.at(perm[1]));
     double temp2 = inv_mass(jets.at(perm[2]),jets.at(perm[3]));
     double chi2;
-    if (m_fithypothesis == "MH") {
+    if (MODE_IS_MH) {
       chi2 = (temp1-m1)*(temp1-m1);
     } else {      
       chi2 = (temp1-m1)*(temp1-m1)+(temp2-m2)*(temp2-m2);
     }
     if (chi2 < chi2min) {
       chi2min = chi2;
-      h1 = temp1;
-      h2 = temp2;
+      mh1 = temp1;
+      mh2 = temp2;
       bestpermindex = iperm;
     }
   }
-  masses.push_back(z);
-  masses.push_back(h1);
-  masses.push_back(h2);
+  masses.push_back(mz);
+  masses.push_back(mh1);
+  masses.push_back(mh2);
   masses.push_back(zhh);
 
-  streamlog_out(MESSAGE) << "masses from simple chi2:" << z << ", " << h1 << ", " << h2 << ", " << zhh << std::endl ;
+  streamlog_out(MESSAGE) << "masses from simple chi2:" << mz << ", " << mh1 << ", " << mh2 << ", " << zhh << std::endl ;
 
   for (size_t i = 0; i < perms[bestpermindex].size(); i++) 
     bestperm.push_back(perms[bestpermindex][i]);

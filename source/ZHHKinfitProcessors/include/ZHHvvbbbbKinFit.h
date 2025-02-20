@@ -24,6 +24,7 @@ class ZHHvvbbbbKinFit : public ZHHBaseKinfitProcessor
 		virtual void initChannelValues();
 		virtual void clearChannelValues();
 		virtual void updateChannelValues( EVENT::LCEvent *pLCEvent );
+		virtual unsigned short channel() { return CHANNEL_QQ; };
 
 		FitResult performFIT( pfoVector jets,pfoVector leptons,bool traceEvent);
 		std::vector<double> calculateInitialMasses(pfoVector jets, pfoVector leptons, vector<unsigned int> perm);

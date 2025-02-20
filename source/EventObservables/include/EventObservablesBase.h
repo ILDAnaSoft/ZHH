@@ -56,7 +56,10 @@ class EventObservablesBase: public Processor
 
 		// helper functions
 		static ReconstructedParticleVec getElements(LCCollection *collection, std::vector<int> elements);
-		static std::pair<int, int> nPFOsMinMax(LCCollection *collection); // smallest and largest number of PFOs of jets
+
+		// return (smallest, largest number of PFOs, index of jet with least PFOs)
+		static std::tuple<int, int, int> nPFOsMinMax(LCCollection *collection);
+
 		static float leadingMomentum(ReconstructedParticleVec jets);
 		static std::vector<ROOT::Math::PxPyPzEVector> toFourVectors(ReconstructedParticleVec jets) {
 			std::vector<ROOT::Math::PxPyPzEVector> result;
@@ -198,8 +201,6 @@ class EventObservablesBase: public Processor
 		int m_nEvt;
 		int m_statusCode;
 
-		float m_todo{};
-
 		float m_Evis{};
 		float m_missingMass{};
 		float m_missingPT{};
@@ -222,21 +223,19 @@ class EventObservablesBase: public Processor
 		int m_npfos{};
 		std::vector<int> m_lep_types{};
 
-		//float m_mh1{};
-		//float m_mh2{};
-		//float m_mhh{};
-		float m_pz{};
-		float m_ph1{};
-		float m_ph2{};
-		float m_cosz{};
-		float m_cosh1{};
-		float m_cosh2{};
 		float m_yMinus{};
 		float m_yPlus{};
 		
 		std::vector<ReconstructedParticle*> m_jets;
 
 		typedef std::pair<unsigned short, double> JetTaggingPair;
+
+		// returns a vector of pairs (jet idx, tag value) sorted ASCENDING by btags given a collection
+		static std::vector<std::pair<int, float>> sortedTagging(LCCollection* collection, std::string pid_algorithm, std::string pid_parameter_b);
+
+		// returns a vector of pairs (jet idx, tag value) sorted ASCENDING by btags
+		static std::vector<std::pair<int, float>> sortedTagging(std::vector<float> tags_by_jet_order);
+
 		static bool jetTaggingComparator ( const JetTaggingPair& l, const JetTaggingPair& r) { return l.first < r.first; };
 		std::vector<JetTaggingPair> m_bTagsSorted{}; // (jet index, btag1value) sorted; first highest, last lowest
 		std::vector<double> m_bTagValues{};

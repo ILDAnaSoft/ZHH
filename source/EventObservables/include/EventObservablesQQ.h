@@ -69,6 +69,9 @@ class EventObservablesQQ : public EventObservablesBase, public EventObservablesF
 		float m_pzj6{};
 		float m_ej6{};
 
+		float m_bmax5{};
+		float m_bmax6{};
+
 		// ttbar
 		std::vector<float> m_tt_target_masses{};
 		std::vector<float> m_tt_target_resolutions{};

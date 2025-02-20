@@ -39,6 +39,7 @@
 #include "TTree.h"
 #include <Math/Vector4D.h>
 #include "BaseHardConstraint.h"
+#include "EventObservablesBase.h"
 
 using namespace lcio ;
 using namespace marlin ;
@@ -59,6 +60,11 @@ class ZHHBaseKinfitProcessor: public Processor
 		virtual void initChannelValues() = 0;
 		virtual void clearChannelValues() = 0;
 		virtual void updateChannelValues(EVENT::LCEvent *pLCEvent) = 0;
+		virtual unsigned short channel() = 0;
+
+		static const unsigned short CHANNEL_LL = 1;
+		static const unsigned short CHANNEL_VV = 2;
+		static const unsigned short CHANNEL_QQ = 3;
 
 		// these are defined by Base
 		virtual void init();
@@ -77,45 +83,60 @@ class ZHHBaseKinfitProcessor: public Processor
 		struct FitResult {
 		  FitResult():
 		  	fitter(shared_ptr<BaseFitter>()),
-		    constraints(shared_ptr<vector<shared_ptr<BaseHardConstraint>>>()),
+		    constraints(map<string, shared_ptr<BaseHardConstraint>>()),
 		    fitobjects(shared_ptr<vector<shared_ptr<BaseFitObject>>>()),
 			permutation({}) {};
 
 		  FitResult(shared_ptr<BaseFitter> _fitter, 
-			    shared_ptr<vector<shared_ptr<BaseHardConstraint>>> _constraints, 
+			    map<string, shared_ptr<BaseHardConstraint>> _constraints, 
 			    shared_ptr<vector<shared_ptr<BaseFitObject>>> _fitobjects,
 				vector<unsigned int> _permutation) : 
 		  		fitter(_fitter), constraints(_constraints), fitobjects(_fitobjects), permutation(_permutation) {};
 
 		  shared_ptr<BaseFitter> fitter;
-		  shared_ptr<vector<shared_ptr<BaseHardConstraint>>> constraints;
+		  map<string, shared_ptr<BaseHardConstraint>> constraints;
 		  shared_ptr<vector<shared_ptr<BaseFitObject>>> fitobjects;
 		  vector<unsigned int> permutation;
 		};
 
+		// operation mode flag by fit hypothesis
+		static const unsigned short MODE_NMC = 0;
+		static const unsigned short MODE_ZHH = 1;
+		static const unsigned short MODE_ZZH = 2;
+		static const unsigned short MODE_ZZZ = 3;
+		static const unsigned short MODE_ZZHsoft = 4;
+		static const unsigned short MODE_MH = 5;
+		static const unsigned short MODE_EQM = 6;
+
+		// currently set operation mode
+		unsigned short MODE{};
+		bool MODE_IS_NMC{};
+		bool MODE_IS_ZHH{};
+		bool MODE_IS_ZZH{};
+		bool MODE_IS_ZZZ{};
+		bool MODE_IS_ZZHsoft{};
+		bool MODE_IS_MH{};
+		bool MODE_IS_EQM{};
+
+		std::vector<std::string> m_readContraints{};
+
     protected:
 		// control flow
 		void clearBaseValues();
-
-		
 		void fillOutputCollections(EVENT::LCEvent *pLCEvent);
+		void assignPostFitMasses(FitResult fitResult, bool woNu);
+
+		static std::tuple<std::vector<double>, double, std::vector<unsigned int>> calculateMassesFromSimpleChi2Pairing(pfoVector jets, pfoVector leptons, const unsigned short MODE);
 
 		// helper functions
-		pfoVectorVector combinations(pfoVectorVector collector,
-					     pfoVectorVector sets, 
-					     int n,
-					     pfoVector combo);
-						 
-		ReconstructedParticle* addNeutrinoCorrection(ReconstructedParticle* jet,
-									pfoVector neutrinos);
+		static pfoVectorVector combinations(pfoVectorVector collector, pfoVectorVector sets, int n, pfoVector combo);
+		static ReconstructedParticle* addNeutrinoCorrection(ReconstructedParticle* jet, pfoVector neutrinos);
 
-		std::pair<MCParticle*,ReconstructedParticle*> getMCNeutrino(LCRelationNavigator* NuMCNav,
+		static std::pair<MCParticle*,ReconstructedParticle*> getMCNeutrino(LCRelationNavigator* NuMCNav,
 											LCRelationNavigator* SLDNuNav,
 											EVENT::ReconstructedParticle* neutrino);
 
-		pfoVectorVector getNeutrinosInJet( LCRelationNavigator* JetSLDNav , 
-						   LCRelationNavigator* SLDNuNav , 
-						   EVENT::ReconstructedParticle* jet);
+		static pfoVectorVector getNeutrinosInJet( LCRelationNavigator* JetSLDNav, LCRelationNavigator* SLDNuNav,  EVENT::ReconstructedParticle* jet);
 
 		virtual void	getJetParameters( ReconstructedParticle* jet , float (&parameters)[ 3 ] , float (&errors)[ 3 ] );
 		virtual void	getLeptonParameters( ReconstructedParticle* lepton , float (&parameters)[ 3 ] , float (&errors)[ 3 ] );

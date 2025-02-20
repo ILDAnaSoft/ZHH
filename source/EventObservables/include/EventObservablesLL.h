@@ -36,6 +36,9 @@ class EventObservablesLL : public EventObservablesBase {
 		std::string m_yPlusParameter () { return "y45"; };
 
 	protected:
+		// meta parameters
+		std::string m_input2JetCollection{};
+
 		std::string m_JMP{};
 		std::string m_JMSP{};
 
@@ -54,10 +57,28 @@ class EventObservablesLL : public EventObservablesBase {
 		float m_pz32{};
 		float m_e32{};
 
+		float m_plmin{};
+		float m_plmax{};
+		float m_mvalepminus{};
+		float m_mvalepplus{};
 		float m_mzll{};
 		// float m_m_diff_z{};
 		float m_mzll_pre_pairing{};
 		int m_paired_lep_type{};
+
+		// 2 jet
+		float m_ptjmax2{};
+		float m_pjmax2{};
+
+		float m_cosJ1_2Jets{};
+		float m_cosJ2_2Jets{};
+        float m_cosJ12_2Jets{};
+        float m_cosJ1Z_2Jets{};
+        float m_cosJ2Z_2Jets{};
+
+		// 4 jet
+		float m_mbmax12{};
+		float m_mbmax34{};
 
 };
 

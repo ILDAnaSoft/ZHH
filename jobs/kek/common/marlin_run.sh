@@ -23,6 +23,7 @@ function marlin_run() {
 
     if [[ -f "${OUT_BASE_NAME}_AIDA.root" ]];
     then
+        rootrm "${OUT_BASE_NAME}_AIDA.root":hEvtProcessingTime
         return 0
     else
         return 1
