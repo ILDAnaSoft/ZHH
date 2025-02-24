@@ -28,7 +28,7 @@ class ZHHvvbbbbKinFit : public ZHHBaseKinfitProcessor
 
 		FitResult performFIT( pfoVector jets,pfoVector leptons,bool traceEvent);
 		std::vector<double> calculateInitialMasses(pfoVector jets, pfoVector leptons, vector<unsigned int> perm);
-		std::tuple<std::vector<double>, double, std::vector<unsigned int>> calculateMassesFromSimpleChi2Pairing(pfoVector jets, pfoVector leptons);
+		std::tuple<std::vector<double>, double, std::vector<unsigned short>> calculateMassesFromSimpleChi2Pairing(pfoVector jets, pfoVector leptons);
 };
 
 #endif

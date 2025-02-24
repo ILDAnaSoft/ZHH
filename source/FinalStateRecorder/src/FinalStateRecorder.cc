@@ -208,6 +208,7 @@ void FinalStateRecorder::init()
 		m_pTTree->Branch("final_state_counts", &m_final_state_counts);
 
 		m_pTTree->Branch("process", &m_process);
+		m_pTTree->Branch("polarization_code", &m_polarization_code);
 		m_pTTree->Branch("event_category", &m_event_category);
 		m_pTTree->Branch("event_category_zhh", &m_event_category_zhh);
 		m_pTTree->Branch("n_fermion", &m_n_fermion);
@@ -453,6 +454,11 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 		m_event_weight = pLCEvent->getWeight();
 		m_process_id = pLCEvent->getParameters().getIntVal("ProcessID");
 		m_process_name = pLCEvent->getParameters().getStringVal("processName");
+
+		if (m_beam_pol1 == -1 && m_beam_pol1 == -1) m_polarization_code = POLARIZATION_CODES::EL_PL; else
+		if (m_beam_pol1 == -1 && m_beam_pol1 ==  1) m_polarization_code = POLARIZATION_CODES::EL_PR; else
+		if (m_beam_pol1 ==  1 && m_beam_pol1 == -1) m_polarization_code = POLARIZATION_CODES::ER_PL; else
+		if (m_beam_pol1 ==  1 && m_beam_pol1 ==  1) m_polarization_code = POLARIZATION_CODES::ER_PR;
 	}
 
 	this->clear();

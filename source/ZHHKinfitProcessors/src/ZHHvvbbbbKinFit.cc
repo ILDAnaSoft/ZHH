@@ -116,7 +116,7 @@ void ZHHvvbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
     MCParticle *mcp = dynamic_cast<EVENT::MCParticle*>(inputMCParticleCollection->getElementAt(i));
     if (mcp->getPDG() == 25) mchiggs.push_back(mcp);
   }
-  if (mchiggs.size() == 2) m_HHMassHardProcess = inv_mass(mchiggs.at(0), mchiggs.at(1));
+  if (mchiggs.size() == 2) m_System23MassHardProcess = inv_mass(mchiggs.at(0), mchiggs.at(1));
   else streamlog_out(WARNING) << "////////////////////////////////////////////////// MC Higgs pair not found //////////////////////////////////////////////////" << endl;
 
   if ( m_nJets != m_nAskedJets || m_nIsoLeps != m_nAskedIsoLeps ) {
@@ -180,22 +180,22 @@ void ZHHvvbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
     streamlog_out(MESSAGE) << endl;
 
     vector<double> startmasses_woNu = calculateInitialMasses(Jets, Leptons, perm_woNu);
-    m_ZMassBeforeFit_woNu  = startmasses_woNu[0];
-    m_H1MassBeforeFit_woNu = startmasses_woNu[1];
-    m_H2MassBeforeFit_woNu = startmasses_woNu[2];
-    m_HHMassBeforeFit_woNu = startmasses_woNu[3];
-    m_ZHHMassBeforeFit_woNu = startmasses_woNu[4];
+    m_Boson1BeforeFit_woNu  = startmasses_woNu[0];
+    m_Boson2BeforeFit_woNu = startmasses_woNu[1];
+    m_Boson3BeforeFit_woNu = startmasses_woNu[2];
+    m_System23MassBeforeFit_woNu = startmasses_woNu[3];
+    m_System123MassBeforeFit_woNu = startmasses_woNu[4];
 
-    streamlog_out(MESSAGE1) << "Z mass prefit = " << m_ZMassBeforeFit_woNu << endl;
-    streamlog_out(MESSAGE1) << "H1 mass prefit = " << m_H1MassBeforeFit_woNu << endl;
-    streamlog_out(MESSAGE1) << "H2 mass prefit = " << m_H2MassBeforeFit_woNu << endl;
-    streamlog_out(MESSAGE1) << "HH mass prefit = " << m_HHMassBeforeFit_woNu << endl;
-    streamlog_out(MESSAGE1) << "ZHH mass prefit = " << m_ZHHMassBeforeFit_woNu << endl;
-    streamlog_out(MESSAGE) << "Z mass postfit = " << m_ZMassAfterFit_woNu << endl;
-    streamlog_out(MESSAGE) << "H1 mass postfit = " << m_H1MassAfterFit_woNu << endl;
-    streamlog_out(MESSAGE) << "H2 mass postfit = " << m_H2MassAfterFit_woNu << endl;
-    streamlog_out(MESSAGE) << "HH mass postfit = " << m_HHMassAfterFit_woNu << endl;
-    streamlog_out(MESSAGE) << "ZHH mass postfit = " << m_ZHHMassAfterFit_woNu << endl;
+    streamlog_out(MESSAGE1) << "Z mass prefit = " << m_Boson1BeforeFit_woNu << endl;
+    streamlog_out(MESSAGE1) << "H1 mass prefit = " << m_Boson2BeforeFit_woNu << endl;
+    streamlog_out(MESSAGE1) << "H2 mass prefit = " << m_Boson3BeforeFit_woNu << endl;
+    streamlog_out(MESSAGE1) << "HH mass prefit = " << m_System23MassBeforeFit_woNu << endl;
+    streamlog_out(MESSAGE1) << "ZHH mass prefit = " << m_System123MassBeforeFit_woNu << endl;
+    streamlog_out(MESSAGE) << "Z mass postfit = " << m_Boson1AfterFit_woNu << endl;
+    streamlog_out(MESSAGE) << "H1 mass postfit = " << m_Boson2AfterFit_woNu << endl;
+    streamlog_out(MESSAGE) << "H2 mass postfit = " << m_Boson3AfterFit_woNu << endl;
+    streamlog_out(MESSAGE) << "HH mass postfit = " << m_System23MassAfterFit_woNu << endl;
+    streamlog_out(MESSAGE) << "ZHH mass postfit = " << m_System123MassAfterFit_woNu << endl;
     
     for (int i = 0; i < m_nJets; ++i) {   
       string fitname = "jet"+to_string(i);
@@ -329,12 +329,12 @@ void ZHHvvbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
     vector<double> startmasses;
     std::tie(startmasses, m_FitChi2_byMass, m_bestMatchingByMass) = calculateMassesFromSimpleChi2Pairing(Jets, Leptons);
     
-    m_ZMassBeforeFit  = startmasses[0];
-    m_H1MassBeforeFit = startmasses[1];
-    m_H2MassBeforeFit = startmasses[2];
-    m_HHMassBeforeFit = startmasses[3];
-    m_ZHHMassBeforeFit = startmasses[4];
-    streamlog_out(MESSAGE) << "masses from simple chi2:" << m_ZMassBeforeFit << ", " << m_H1MassBeforeFit << ", " << m_H2MassBeforeFit << ", " << m_HHMassBeforeFit << std::endl ; 
+    m_Boson1BeforeFit  = startmasses[0];
+    m_Boson2BeforeFit = startmasses[1];
+    m_Boson3BeforeFit = startmasses[2];
+    m_System23MassBeforeFit = startmasses[3];
+    m_System123MassBeforeFit = startmasses[4];
+    streamlog_out(MESSAGE) << "masses from simple chi2:" << m_Boson1BeforeFit << ", " << m_Boson2BeforeFit << ", " << m_Boson3BeforeFit << ", " << m_System23MassBeforeFit << std::endl ; 
 
     m_pTTree->Fill();
     attachBestPermutation(inputJetCollection, m_bestMatchingByMass, "vv", false);
@@ -366,22 +366,22 @@ void ZHHvvbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
   streamlog_out(MESSAGE1) << endl;
 
   vector<double> startmasses = calculateInitialMasses(bestJets, Leptons, perm);
-  m_ZMassBeforeFit  = startmasses[0];
-  m_H1MassBeforeFit = startmasses[1];
-  m_H2MassBeforeFit = startmasses[2];
-  m_HHMassBeforeFit = startmasses[3];
-  m_ZHHMassBeforeFit = startmasses[4];
+  m_Boson1BeforeFit  = startmasses[0];
+  m_Boson2BeforeFit = startmasses[1];
+  m_Boson3BeforeFit = startmasses[2];
+  m_System23MassBeforeFit = startmasses[3];
+  m_System123MassBeforeFit = startmasses[4];
 
-  streamlog_out(MESSAGE1) << "Z mass prefit = " << m_ZMassBeforeFit << endl;
-  streamlog_out(MESSAGE1) << "H1 mass prefit = " << m_H1MassBeforeFit << endl;
-  streamlog_out(MESSAGE1) << "H2 mass prefit = " << m_H2MassBeforeFit << endl;
-  streamlog_out(MESSAGE1) << "HH mass prefit = " << m_HHMassBeforeFit << endl;
-  streamlog_out(MESSAGE1) << "ZHH mass prefit = " << m_ZHHMassBeforeFit << endl;
-  streamlog_out(MESSAGE1) << "Z mass postfit = " << m_ZMassAfterFit << endl;
-  streamlog_out(MESSAGE1) << "H1 mass postfit = " << m_H1MassAfterFit << endl;
-  streamlog_out(MESSAGE1) << "H2 mass postfit = " << m_H2MassAfterFit << endl;
-  streamlog_out(MESSAGE1) << "HH mass postfit = " << m_HHMassAfterFit << endl;
-  streamlog_out(MESSAGE1) << "ZHH mass postfit = " << m_ZHHMassAfterFit << endl;
+  streamlog_out(MESSAGE1) << "Z mass prefit = " << m_Boson1BeforeFit << endl;
+  streamlog_out(MESSAGE1) << "H1 mass prefit = " << m_Boson2BeforeFit << endl;
+  streamlog_out(MESSAGE1) << "H2 mass prefit = " << m_Boson3BeforeFit << endl;
+  streamlog_out(MESSAGE1) << "HH mass prefit = " << m_System23MassBeforeFit << endl;
+  streamlog_out(MESSAGE1) << "ZHH mass prefit = " << m_System123MassBeforeFit << endl;
+  streamlog_out(MESSAGE1) << "Z mass postfit = " << m_Boson1AfterFit << endl;
+  streamlog_out(MESSAGE1) << "H1 mass postfit = " << m_Boson2AfterFit << endl;
+  streamlog_out(MESSAGE1) << "H2 mass postfit = " << m_Boson3AfterFit << endl;
+  streamlog_out(MESSAGE1) << "HH mass postfit = " << m_System23MassAfterFit << endl;
+  streamlog_out(MESSAGE1) << "ZHH mass postfit = " << m_System123MassAfterFit << endl;
 
   const char * photonname = "photon";
   auto fitphoton = find_if(fitobjects->begin(), fitobjects->end(), [&photonname](const std::shared_ptr<BaseFitObject> obj) {return obj->getName() == photonname;});
@@ -427,9 +427,9 @@ void ZHHvvbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
   }
   
   /*
-    m_ZMassBeforeFit // "ZMassBeforeFit/F" );
-    m_H1MassBeforeFit // "H1MassBeforeFit/F" );
-    m_H2MassBeforeFit // "H2MassBeforeFit/F" );
+    m_Boson1BeforeFit // "Boson1BeforeFit/F" );
+    m_Boson2BeforeFit // "Boson2BeforeFit/F" );
+    m_Boson3BeforeFit // "Boson3BeforeFit/F" );
   */
   streamlog_out(DEBUG) << "Pulls have been calculated" << std::endl;
   //Fill output collections
@@ -838,72 +838,45 @@ std::vector<double> ZHHvvbbbbKinFit::calculateInitialMasses(pfoVector jets, pfoV
   return masses;
 }
 
-std::tuple<std::vector<double>, double, std::vector<unsigned int>>
+std::tuple<std::vector<double>, double, std::vector<unsigned short>>
   ZHHvvbbbbKinFit::calculateMassesFromSimpleChi2Pairing(pfoVector jets, pfoVector leptons) 
 {
   (void) leptons;
 
-  std::vector<double> masses;
-  std::vector<unsigned int> bestperm;
+  std::vector<double> masses (5, 0.);
+  std::vector<unsigned short> bestperm;
 
-  double m1;
-  double m2;
-  if (MODE_IS_ZZH) {
-    m1 = 125.;
-    m2 = 91.2;
-  } else {
-    m1 = 125.; 
-    m2 = 125.; 
-  }
-  double z = 91.1880 ;
-  double h1 = 0. ;
-  double h2 = 0. ;
   //calculate 4-momentum of Z->invisible
+  std::vector<ROOT::Math::PxPyPzEVector> fourVecs = v4(jets);
   ROOT::Math::PxPyPzEVector seenFourMomentum(0.,0.,0.,0.);
-  std::vector<ReconstructedParticle*> Jets{};
-  for (int i_jet = 0; i_jet < m_nJets; i_jet++) {
-    seenFourMomentum += ROOT::Math::PxPyPzEVector(jets[ i_jet ]->getMomentum()[0],jets[ i_jet ]->getMomentum()[1],jets[ i_jet ]->getMomentum()[2], jets[ i_jet ]->getEnergy());
-  }
-  ROOT::Math::PxPyPzMVector ZinvFourMomentum(-seenFourMomentum.Px(), -seenFourMomentum.Pz(), -seenFourMomentum.Pz(),91.1880); // M_Z PDG average in 2024 review
-  ROOT::Math::PxPyPzEVector hhFourMomentum(0.,0.,0.,0.);
   ROOT::Math::PxPyPzEVector zhhFourMomentum(0.,0.,0.,0.);
-  for (auto jet : jets) {
-    hhFourMomentum +=  ROOT::Math::PxPyPzEVector( jet->getMomentum()[0], jet->getMomentum()[1], jet->getMomentum()[2] , jet->getEnergy() );
-  }
+
+  for (auto jet_v4 : fourVecs)
+    seenFourMomentum += jet_v4;
+
+  ROOT::Math::PxPyPzEVector hhFourMomentum(seenFourMomentum);
+  ROOT::Math::PxPyPzMVector ZinvFourMomentum(-seenFourMomentum.Px(), -seenFourMomentum.Pz(), -seenFourMomentum.Pz(), 91.1880); // M_Z PDG average in 2024 review
+
   zhhFourMomentum = hhFourMomentum + ZinvFourMomentum;
   double hh = hhFourMomentum.M();
   double zhh = zhhFourMomentum.M();
-  double chi2min = 99999. ;
-  
-  int bestpermindex = 0;
-  for (size_t iperm = 0; iperm < perms.size(); iperm++) {
-    vector<unsigned int> perm = perms[iperm];
 
-    double temp1 = inv_mass(jets.at(perm[0]),jets.at(perm[1]));
-    double temp2 = inv_mass(jets.at(perm[2]),jets.at(perm[3]));
-    double chi2;
-    if (MODE_IS_MH) {
-      chi2 = (temp1-m1)*(temp1-m1);
-    } else {      
-      chi2 = (temp1-m1)*(temp1-m1)+(temp2-m2)*(temp2-m2);
-    }
-    if (chi2 < chi2min) {
-      chi2min = chi2;
-      h1 = temp1;
-      h2 = temp2;
-      bestpermindex = iperm;
-    }
+  float chi2min = 99999.;
+  std::vector<float> dijet_masses;
+
+  masses[0] = kMassZ;
+
+  if (m_nDijets == 2) {
+    std::tie(dijet_masses, chi2min, bestperm) = simpleChi2Pairing(jets);
+
+    masses[1] = dijet_masses[0];
+    masses[2] = dijet_masses[1];
   }
-  masses.push_back(z);
-  masses.push_back(h1);
-  masses.push_back(h2);
-  masses.push_back(hh);
-  masses.push_back(zhh);
+  
+  masses[3] = hh;
+  masses[4] = zhh;
 
-  streamlog_out(MESSAGE) << "masses from simple chi2:" << z << ", " << h1 << ", " << h2 << ", " << hh << std::endl ; 
-
-  for (size_t i = 0; i < perms[bestpermindex].size(); i++) 
-    bestperm.push_back(perms[bestpermindex][i]);
+  streamlog_out(MESSAGE) << "masses from simple chi2:" << masses[0] << ", " << masses[1] << ", " << masses[1] << ", " << hh << std::endl ; 
 
   return std::make_tuple(masses, chi2min, bestperm);
 }

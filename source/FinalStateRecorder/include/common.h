@@ -6,7 +6,7 @@
 #include <map>
 #include <algorithm>
 #include <utility>
-#include <EventCategory.h>
+#include "EventCategory.h"
 
 // If the final state is a ZHH (with H -> bbar), the channel is given by the decay channel of the Z boson (else OTHER)
 // NONE is for initialization only and should not occur in practice

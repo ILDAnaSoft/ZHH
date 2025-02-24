@@ -45,8 +45,9 @@ using namespace lcio ;
 using namespace marlin ;
 using namespace std;
 
-typedef vector<EVENT::ReconstructedParticle*>	pfoVector;
-typedef vector<vector<EVENT::ReconstructedParticle*>>	pfoVectorVector;
+typedef vector<EVENT::ReconstructedParticle*> pfoVector;
+typedef vector<vector<EVENT::ReconstructedParticle*>> pfoVectorVector;
+typedef tuple<vector<float>, float, vector<unsigned short>> SimpleChi2Result;
 
 class ZHHBaseKinfitProcessor: public Processor
 {
@@ -90,13 +91,13 @@ class ZHHBaseKinfitProcessor: public Processor
 		  FitResult(shared_ptr<BaseFitter> _fitter, 
 			    map<string, shared_ptr<BaseHardConstraint>> _constraints, 
 			    shared_ptr<vector<shared_ptr<BaseFitObject>>> _fitobjects,
-				vector<unsigned int> _permutation) : 
+				vector<unsigned short> _permutation) : 
 		  		fitter(_fitter), constraints(_constraints), fitobjects(_fitobjects), permutation(_permutation) {};
 
 		  shared_ptr<BaseFitter> fitter;
 		  map<string, shared_ptr<BaseHardConstraint>> constraints;
 		  shared_ptr<vector<shared_ptr<BaseFitObject>>> fitobjects;
-		  vector<unsigned int> permutation;
+		  vector<unsigned short> permutation;
 		};
 
 		// operation mode flag by fit hypothesis
@@ -119,14 +120,21 @@ class ZHHBaseKinfitProcessor: public Processor
 		bool MODE_IS_EQM{};
 
 		std::vector<std::string> m_readContraints{};
+		unsigned short m_nDijets{};
+		std::vector<unsigned short> m_dijetTargets{};
+		SimpleChi2Result simpleChi2Pairing(pfoVector jets);
 
     protected:
+		// values from EventObservablesBase class
+		float kMassTop{}; // = 173.76;
+		float kMassZ{}; //   = 91.1876;
+		float kMassW{}; //   = 80.377;
+		float kMassH{}; //   = 125.;
+
 		// control flow
 		void clearBaseValues();
 		void fillOutputCollections(EVENT::LCEvent *pLCEvent);
 		void assignPostFitMasses(FitResult fitResult, bool woNu);
-
-		static std::tuple<std::vector<double>, double, std::vector<unsigned int>> calculateMassesFromSimpleChi2Pairing(pfoVector jets, pfoVector leptons, const unsigned short MODE);
 
 		// helper functions
 		static pfoVectorVector combinations(pfoVectorVector collector, pfoVectorVector sets, int n, pfoVector combo);
@@ -141,10 +149,10 @@ class ZHHBaseKinfitProcessor: public Processor
 		virtual void	getJetParameters( ReconstructedParticle* jet , float (&parameters)[ 3 ] , float (&errors)[ 3 ] );
 		virtual void	getLeptonParameters( ReconstructedParticle* lepton , float (&parameters)[ 3 ] , float (&errors)[ 3 ] );
 
-		void attachBestPermutation(LCCollection *jets, vector<unsigned int> bestperm, string parameterSuffix, bool fromKinfit);
+		void attachBestPermutation(LCCollection *jets, vector<unsigned short> bestperm, string parameterSuffix, bool fromKinfit);
 
 		void assignPermutations(size_t njets, string fithypothesis);
-		vector<vector<unsigned int>> perms{};
+		vector<vector<unsigned short>> perms{};
 
 		std::vector<double> calculatePulls(std::shared_ptr<ParticleFitObject> fittedobject, ReconstructedParticle* startobject, int type);
 		double calcChi2(shared_ptr<vector<shared_ptr<BaseFitObject>>> fitobjects);
@@ -206,25 +214,25 @@ class ZHHBaseKinfitProcessor: public Processor
 		int						m_nCorrectedSLD{};
         float                   m_ISREnergyTrue{};
         float                   m_BSEnergyTrue{};
-        float                   m_HHMassHardProcess{};
+        float                   m_System23MassHardProcess{};
 
         int						m_FitErrorCode_woNu{};
-		float					m_ZMassBeforeFit_woNu{};
+		float					m_Boson1BeforeFit_woNu{};
 		float					m_Z2MassBeforeFit_woNu{};
-		float					m_H1MassBeforeFit_woNu{};
-        float					m_H2MassBeforeFit_woNu{};
-        float                   m_HHMassBeforeFit_woNu{};
-        float                   m_ZHHMassBeforeFit_woNu{};
+		float					m_Boson2BeforeFit_woNu{};
+        float					m_Boson3BeforeFit_woNu{};
+        float                   m_System23MassBeforeFit_woNu{};
+        float                   m_System123MassBeforeFit_woNu{};
         float                   m_ISREnergyBeforeFit_woNu{};
 		float					m_p1stBeforeFit_woNu{};
 		float					m_cos1stBeforeFit_woNu{};
 
-		float					m_ZMassAfterFit_woNu{};
+		float					m_Boson1AfterFit_woNu{};
 		float					m_Z2MassAfterFit_woNu{};
-		float					m_H1MassAfterFit_woNu{};
-		float					m_H2MassAfterFit_woNu{};
-        float                   m_HHMassAfterFit_woNu{};
-        float                   m_ZHHMassAfterFit_woNu{};
+		float					m_Boson2AfterFit_woNu{};
+		float					m_Boson3AfterFit_woNu{};
+        float                   m_System23MassAfterFit_woNu{};
+        float                   m_System123MassAfterFit_woNu{};
         float                   m_ISREnergyAfterFit_woNu{};
 		float					m_p1stAfterFit_woNu{};
 		float					m_cos1stAfterFit_woNu{};
@@ -232,8 +240,8 @@ class ZHHBaseKinfitProcessor: public Processor
 		float					m_FitChi2_woNu{};
 		float 					m_FitChi2_byMass{};
 		
-		std::vector<unsigned int>   m_bestMatchingKinfit{};
-		std::vector<unsigned int>   m_bestMatchingByMass{};
+		std::vector<unsigned short> m_bestMatchingKinfit{};
+		std::vector<unsigned short> m_bestMatchingByMass{};
 		std::vector<float>			m_pullJetEnergy_woNu{};
 		std::vector<float>			m_pullJetTheta_woNu{};
 		std::vector<float>			m_pullJetPhi_woNu{};
@@ -242,22 +250,22 @@ class ZHHBaseKinfitProcessor: public Processor
 		std::vector<float>			m_pullLeptonPhi_woNu{};
 
 		int						m_FitErrorCode{};
-		float					m_ZMassBeforeFit{};
+		float					m_Boson1BeforeFit{};
 		float					m_Z2MassBeforeFit{};
-		float					m_H1MassBeforeFit{};
-		float					m_H2MassBeforeFit{};
-		float                   m_HHMassBeforeFit{};
-		float                   m_ZHHMassBeforeFit{};
+		float					m_Boson2BeforeFit{};
+		float					m_Boson3BeforeFit{};
+		float                   m_System23MassBeforeFit{};
+		float                   m_System123MassBeforeFit{};
 		float                   m_ISREnergyBeforeFit{};
 		float					m_p1stBeforeFit{};
 		float					m_cos1stBeforeFit{};
 
-		float					m_ZMassAfterFit{};
+		float					m_Boson1AfterFit{};
 		float 					m_Z2MassAfterFit{};
-		float					m_H1MassAfterFit{};
-		float					m_H2MassAfterFit{};
-		float                   m_HHMassAfterFit{};
-		float                   m_ZHHMassAfterFit{};
+		float					m_Boson2AfterFit{};
+		float					m_Boson3AfterFit{};
+		float                   m_System23MassAfterFit{};
+		float                   m_System123MassAfterFit{};
 		float                   m_ISREnergyAfterFit{};
 		float					m_p1stAfterFit{};
 		float					m_cos1stAfterFit{};

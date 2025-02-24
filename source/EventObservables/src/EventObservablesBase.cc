@@ -19,30 +19,30 @@ TLorentzVector v4old(ReconstructedParticle* p){
 TLorentzVector v4old(LCObject* lcobj){ ReconstructedParticle* p = dynamic_cast<ReconstructedParticle*>(lcobj); return v4old(p); }
 
 const std::vector<std::vector<unsigned short>> EventObservablesBase::dijetPerms4 {
-	{0,1,2,3},
-	{0,2,1,3},
-	{0,3,1,2},
-	{1,2,0,3},
-	{1,3,0,2},
-	{2,3,0,1}
+	{0, 1, 2, 3},
+	{0, 2, 1, 3},
+	{0, 3, 1, 2},
+	{1, 2, 0, 3},
+	{1, 3, 0, 2},
+	{2, 3, 0, 1}
 };
 
 const std::vector<std::vector<unsigned short>> EventObservablesBase::dijetPerms6 {
-	{0,1,2,3,4,5},
-	{0,2,1,3,4,5},
-	{0,3,1,2,4,5},
-	{0,4,1,2,3,5},
-	{0,5,1,2,3,4},
-	{1,2,0,3,4,5},
-	{1,3,0,2,4,5},
-	{1,4,0,2,3,5},
-	{1,5,0,2,3,4},
-	{2,3,0,1,4,5},
-	{2,4,0,1,3,5},
-	{2,5,0,1,3,4},
-	{3,4,0,1,2,5},
-	{3,5,0,1,2,4},
-	{4,5,0,1,2,3}
+	{0, 1, 2, 3, 4, 5}, {1, 2, 0, 3, 4, 5}, {2, 4, 0, 1, 3, 5},
+    {0, 1, 2, 4, 3, 5}, {1, 2, 0, 4, 3, 5}, {2, 4, 0, 3, 1, 5},
+    {0, 1, 2, 5, 3, 4}, {1, 2, 0, 5, 3, 4}, {2, 4, 0, 5, 1, 3},
+    {0, 2, 1, 3, 4, 5}, {1, 3, 0, 2, 4, 5}, {2, 5, 0, 1, 3, 4},
+    {0, 2, 1, 4, 3, 5}, {1, 3, 0, 4, 2, 5}, {2, 5, 0, 3, 1, 4},
+    {0, 2, 1, 5, 3, 4}, {1, 3, 0, 5, 2, 4}, {2, 5, 0, 4, 1, 3},
+    {0, 3, 1, 2, 4, 5}, {1, 4, 0, 2, 3, 5}, {3, 4, 0, 1, 2, 5},
+    {0, 3, 1, 4, 2, 5}, {1, 4, 0, 3, 2, 5}, {3, 4, 0, 2, 1, 5},
+    {0, 3, 1, 5, 2, 4}, {1, 4, 0, 5, 2, 3}, {3, 4, 0, 5, 1, 2},
+    {0, 4, 1, 2, 3, 5}, {1, 5, 0, 2, 3, 4}, {3, 5, 0, 1, 2, 4},
+	{0, 4, 1, 3, 2, 5}, {1, 5, 0, 3, 2, 4}, {3, 5, 0, 2, 1, 4},
+    {0, 4, 1, 5, 2, 3}, {1, 5, 0, 4, 2, 3}, {3, 5, 0, 4, 1, 2},
+    {0, 5, 1, 2, 3, 4}, {2, 3, 0, 1, 4, 5}, {4, 5, 0, 1, 2, 3},
+    {0, 5, 1, 3, 2, 4}, {2, 3, 0, 4, 1, 5}, {4, 5, 0, 2, 1, 3},
+    {0, 5, 1, 4, 2, 3}, {2, 3, 0, 5, 1, 4}, {4, 5, 0, 3, 1, 2},
 };
 
 EventObservablesBase::EventObservablesBase(const std::string &name) : Processor(name),
@@ -885,7 +885,7 @@ std::tuple<std::vector<unsigned short>, vector<float>, float> EventObservablesBa
 	std::vector<unsigned short> dijet_targets
 ) {
 	assert(dijet_targets.size() *2 == jets.size());
-
+""
 	std::vector<float> target_masses (dijet_targets.size(), -999);
 	std::vector<float> target_resolutions (dijet_targets.size(), -999);
 

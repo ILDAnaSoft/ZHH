@@ -127,8 +127,8 @@ void EventObservablesVV::updateChannelValues(EVENT::LCEvent *pLCEvent) {
     const ParticleID & ythID = jet5PIDh.getParticleID(m_jets[0], algo_y); // same arguments for all jets
 
     FloatVec params_y = ythID.getParameters();
-    m_yMinus5j = params_y[jet5PIDh.getParameterIndex(algo_y, "45")];
-    m_yPlus5j = params_y[jet5PIDh.getParameterIndex(algo_y, "56")];
+    m_yMinus5j = params_y[jet5PIDh.getParameterIndex(algo_y, "y45")];
+    m_yPlus5j = params_y[jet5PIDh.getParameterIndex(algo_y, "y56")];
 
     // TREAT 6 JET COLLECTION
     for (int i=0; i < 6; ++i) {

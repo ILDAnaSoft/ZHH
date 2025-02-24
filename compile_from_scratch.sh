@@ -10,6 +10,7 @@ action(){
     local delete_existing=$( [[ "$1" == "keep" || "$2" == "keep" ]] && echo "False" || echo "True" )
     local isdebug=$( [[ "$1" == "debug" || "$2" == "debug" ]] && echo "True" || echo "False" )
     local startdir=$(pwd)
+    local offline=$( [[ "$1" == "offline" || "$2" == "offline" ]] && echo "True" || echo "False" )
 
     compile_pkg ()
     {        
@@ -20,7 +21,10 @@ action(){
                 rm -rf build
             fi
 
-            git pull
+            if [[ $offline != "True" ]]; then
+                git pull
+            fi
+
             mkdir -p build
             cd build
 

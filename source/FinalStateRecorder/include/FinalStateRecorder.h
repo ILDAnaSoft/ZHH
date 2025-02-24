@@ -21,6 +21,15 @@ using namespace lcio;
 using namespace marlin;
 using jsonf = nlohmann::json;
 
+struct POLARIZATION_CODES {
+	enum Values: unsigned short {
+		EL_PL = 0,
+		EL_PR = 1,
+		ER_PL = 2,
+		ER_PR = 3
+	};
+};
+
 struct ERROR_CODES {
 	enum Values: int {
 		UNINITIALIZED = -1,
@@ -116,6 +125,7 @@ class FinalStateRecorder : public Processor
 		};
 
 		int m_process{};
+		unsigned short m_polarization_code{};
 		int m_event_category{};
 		int m_event_category_zhh{};
 		int m_n_fermion{};

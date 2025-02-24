@@ -517,7 +517,7 @@ void ZHHBaseKinfitProcessor::assignPermutations(size_t njets, string fithypothes
 };
 
 
-void ZHHBaseKinfitProcessor::attachBestPermutation(LCCollection *jets, vector<unsigned int> bestperm, string parameterSuffix, bool fromKinfit) {
+void ZHHBaseKinfitProcessor::attachBestPermutation(LCCollection *jets, vector<unsigned short> bestperm, string parameterSuffix, bool fromKinfit) {
   const EVENT::IntVec intvec(bestperm.begin(), bestperm.end());
 
   jets->parameters().setValues(std::string("best_perm_").append(parameterSuffix), intvec);
@@ -576,25 +576,25 @@ void ZHHBaseKinfitProcessor::clearBaseValues() {
 	m_nCorrectedSLD = 0;
 	m_ISREnergyTrue = 0.0;
 	m_BSEnergyTrue = 0.0;
-	m_HHMassHardProcess = 0.0;
+	m_System23MassHardProcess = 0.0;
 
 	m_FitErrorCode_woNu = 1;
-	m_ZMassBeforeFit_woNu = 0.0;
+	m_Boson1BeforeFit_woNu = 0.0;
 	m_Z2MassBeforeFit_woNu = 0.0;
-	m_H1MassBeforeFit_woNu = 0.0;
-	m_H2MassBeforeFit_woNu = 0.0;
-	m_HHMassBeforeFit_woNu = 0.0;
-	m_ZHHMassBeforeFit_woNu = 0.0;
+	m_Boson2BeforeFit_woNu = 0.0;
+	m_Boson3BeforeFit_woNu = 0.0;
+	m_System23MassBeforeFit_woNu = 0.0;
+	m_System123MassBeforeFit_woNu = 0.0;
 	m_ISREnergyBeforeFit_woNu = 0.0;
 	m_p1stBeforeFit_woNu = 0.0;
 	m_cos1stBeforeFit_woNu = 0.0;
 
-	m_ZMassAfterFit_woNu = 0.0;
+	m_Boson1AfterFit_woNu = 0.0;
 	m_Z2MassAfterFit_woNu = 0.0;
-	m_H1MassAfterFit_woNu = 0.0;
-	m_H2MassAfterFit_woNu = 0.0;
-	m_HHMassAfterFit_woNu = 0.0;
-	m_ZHHMassAfterFit_woNu = 0.0;
+	m_Boson2AfterFit_woNu = 0.0;
+	m_Boson3AfterFit_woNu = 0.0;
+	m_System23MassAfterFit_woNu = 0.0;
+	m_System123MassAfterFit_woNu = 0.0;
 	m_ISREnergyAfterFit_woNu = 0.0;
 	m_p1stAfterFit_woNu = 0.0;
 	m_cos1stAfterFit_woNu = 0.0;
@@ -611,12 +611,12 @@ void ZHHBaseKinfitProcessor::clearBaseValues() {
 	m_pullLeptonTheta_woNu.clear();
 	m_pullLeptonPhi_woNu.clear();
 	/*m_FitErrorCode_wNu = 1;
-	m_ZMassBeforeFit_wNu = 0.0;
-	m_H1MassBeforeFit_wNu = 0.0;
-	m_H2MassBeforeFit_wNu = 0.0;
-	m_ZMassAfterFit_wNu = 0.0;
-	m_H1MassAfterFit_wNu = 0.0;
-	m_H2MassAfterFit_wNu = 0.0;
+	m_Boson1BeforeFit_wNu = 0.0;
+	m_Boson2BeforeFit_wNu = 0.0;
+	m_Boson3BeforeFit_wNu = 0.0;
+	m_Boson1AfterFit_wNu = 0.0;
+	m_Boson2AfterFit_wNu = 0.0;
+	m_Boson3AfterFit_wNu = 0.0;
 	m_FitProbability_wNu = 0.0;
 	m_FitChi2_wNu = 0.0;
 	m_pullJetEnergy_wNu.clear();
@@ -627,22 +627,22 @@ void ZHHBaseKinfitProcessor::clearBaseValues() {
 	m_pullLeptonPhi_wNu.clear();*/
 
 	m_FitErrorCode = 1;
-	m_ZMassBeforeFit = 0.0;
+	m_Boson1BeforeFit = 0.0;
 	m_Z2MassBeforeFit = 0.0;
-	m_H1MassBeforeFit = 0.0;
-	m_H2MassBeforeFit = 0.0;
-	m_HHMassBeforeFit = 0.0;
-	m_ZHHMassBeforeFit = 0.0;
+	m_Boson2BeforeFit = 0.0;
+	m_Boson3BeforeFit = 0.0;
+	m_System23MassBeforeFit = 0.0;
+	m_System123MassBeforeFit = 0.0;
 	m_ISREnergyBeforeFit = 0.0;
 	m_p1stBeforeFit = 0.0;
 	m_cos1stBeforeFit = 0.0;
 
-	m_ZMassAfterFit = 0.0;
+	m_Boson1AfterFit = 0.0;
 	m_Z2MassAfterFit = 0.0;
-	m_H1MassAfterFit = 0.0;
-	m_H2MassAfterFit = 0.0;
-	m_HHMassAfterFit = 0.0;
-	m_ZHHMassAfterFit = 0.0;
+	m_Boson2AfterFit = 0.0;
+	m_Boson3AfterFit = 0.0;
+	m_System23MassAfterFit = 0.0;
+	m_System123MassAfterFit = 0.0;
 	m_ISREnergyAfterFit = 0.0;
 	m_p1stAfterFit = 0.0;
 	m_cos1stAfterFit = 0.0;
@@ -694,7 +694,7 @@ void ZHHBaseKinfitProcessor::init() {
 	printParameters();
 
 	// setting the mode, and the names of constraints to calculate the associated boson momenta (for pmax and cos theta)
-	if (m_fithypothesis == "NMC")    { MODE = MODE_NMC    ; MODE_IS_NMC     = true; m_readContraints = {"", "", ""}; } else
+	if (m_fithypothesis == "NMC")    { MODE = MODE_NMC    ; MODE_IS_NMC     = true; } else
 	if (m_fithypothesis == "ZHH")    { MODE = MODE_ZHH    ; MODE_IS_ZHH     = true; m_readContraints = {"z mass", "h2 mass", "h1 mass"}; } else
 	if (m_fithypothesis == "ZZH")    { MODE = MODE_ZZH    ; MODE_IS_ZZH     = true; m_readContraints = {"z mass", "z3 mass", "h1 mass"}; } else
 	if (m_fithypothesis == "ZZZ")    { MODE = MODE_ZZZ    ; MODE_IS_ZZZ     = true; m_readContraints = {"z mass", "z3 mass", "z2 mass"}; } else
@@ -702,6 +702,26 @@ void ZHHBaseKinfitProcessor::init() {
 	if (m_fithypothesis == "MH")     { MODE = MODE_MH     ; MODE_IS_MH      = true; } else
 	if (m_fithypothesis == "EQM")    { MODE = MODE_EQM    ; MODE_IS_EQM     = true; } else
 		throw EVENT::Exception("Unimplemented fithypothesis");
+
+	// assign m_dijetTargets for simple chi square calculation
+	m_nDijets = 0; // MH not implemented for simpleChi2 (considered not needed)
+	if (m_fithypothesis == "MH") m_dijetTargets = { 25 };
+
+	if (m_nAskedJets == 4) {
+		if (m_fithypothesis == "ZHH") { m_nDijets = 2; m_dijetTargets = { 25, 25 }; } else 
+		if (m_fithypothesis == "ZZH") { m_nDijets = 2; m_dijetTargets = { 23, 25 }; } else
+		if (m_fithypothesis == "ZZZ") { m_nDijets = 2; m_dijetTargets = { 23, 23 }; }
+	} else if (m_nAskedJets == 6) {
+		if (m_fithypothesis == "ZHH") { m_nDijets = 3; m_dijetTargets = { 23, 25, 25 }; } else 
+		if (m_fithypothesis == "ZZH") { m_nDijets = 3; m_dijetTargets = { 23, 23, 25 }; } else
+		if (m_fithypothesis == "ZZZ") { m_nDijets = 3; m_dijetTargets = { 23, 23, 23 }; }
+	}
+
+	// get masses from EventObservablesBase
+	kMassTop = EventObservablesBase::kMassTop;
+	kMassZ = EventObservablesBase::kMassZ;
+	kMassW = EventObservablesBase::kMassW;
+	kMassH = EventObservablesBase::kMassH;
 
   	m_pTTree = new TTree(m_ttreeName.c_str(), m_ttreeName.c_str());
 
@@ -721,21 +741,21 @@ void ZHHBaseKinfitProcessor::init() {
 	m_pTTree->Branch("nCorrectedSLD",&m_nCorrectedSLD,"nCorrectedSLD/I") ;
 	m_pTTree->Branch("ISREnergyTrue",&m_ISREnergyTrue,"ISREnergyTrue/F") ;
 	m_pTTree->Branch("BSEnergyTrue",&m_BSEnergyTrue,"BSEnergyTrue/F") ;
-	m_pTTree->Branch("HHMassHardProcess",&m_HHMassHardProcess,"HHMassHardProcess/F") ;
+	m_pTTree->Branch("System23MassHardProcess",&m_System23MassHardProcess,"System23MassHardProcess/F") ;
 
 	m_pTTree->Branch("FitErrorCode_woNu" , &m_FitErrorCode_woNu , "FitErrorCode_woNu/I" );
-	m_pTTree->Branch("ZMassBeforeFit_woNu" , &m_ZMassBeforeFit_woNu , "ZMassBeforeFit_woNu/F" );
-	m_pTTree->Branch("H1MassBeforeFit_woNu" , &m_H1MassBeforeFit_woNu , "H1MassBeforeFit_woNu/F" );
-	m_pTTree->Branch("H2MassBeforeFit_woNu" , &m_H2MassBeforeFit_woNu , "H2MassBeforeFit_woNu/F" );
-	m_pTTree->Branch("HHMassBeforeFit_woNu" , &m_HHMassBeforeFit_woNu , "HHMassBeforeFit_woNu/F" );
-	m_pTTree->Branch("ZHHMassBeforeFit_woNu" , &m_ZHHMassBeforeFit_woNu , "ZHHMassBeforeFit_woNu/F" );
+	m_pTTree->Branch("Boson1BeforeFit_woNu" , &m_Boson1BeforeFit_woNu , "Boson1BeforeFit_woNu/F" );
+	m_pTTree->Branch("Boson2BeforeFit_woNu" , &m_Boson2BeforeFit_woNu , "Boson2BeforeFit_woNu/F" );
+	m_pTTree->Branch("Boson3BeforeFit_woNu" , &m_Boson3BeforeFit_woNu , "Boson3BeforeFit_woNu/F" );
+	m_pTTree->Branch("System23MassBeforeFit_woNu" , &m_System23MassBeforeFit_woNu , "System23MassBeforeFit_woNu/F" );
+	m_pTTree->Branch("System123MassBeforeFit_woNu" , &m_System123MassBeforeFit_woNu , "System123MassBeforeFit_woNu/F" );
 	m_pTTree->Branch("ISREnergyBeforeFit_woNu" , &m_ISREnergyBeforeFit_woNu , "ISREnergyBeforeFit_woNu/F" );
 
-	m_pTTree->Branch("ZMassAfterFit_woNu" , &m_ZMassAfterFit_woNu , "ZMassAfterFit_woNu/F" );
-	m_pTTree->Branch("H1MassAfterFit_woNu" , &m_H1MassAfterFit_woNu , "H1MassAfterFit_woNu/F" );
-	m_pTTree->Branch("H2MassAfterFit_woNu" , &m_H2MassAfterFit_woNu , "H2MassAfterFit_woNu/F" );
-	m_pTTree->Branch("HHMassAfterFit_woNu" , &m_HHMassAfterFit_woNu , "HHMassAfterFit_woNu/F" );
-	m_pTTree->Branch("ZHHMassAfterFit_woNu" , &m_ZHHMassAfterFit_woNu , "ZHHMassAfterFit_woNu/F" );
+	m_pTTree->Branch("Boson1AfterFit_woNu" , &m_Boson1AfterFit_woNu , "Boson1AfterFit_woNu/F" );
+	m_pTTree->Branch("Boson2AfterFit_woNu" , &m_Boson2AfterFit_woNu , "Boson2AfterFit_woNu/F" );
+	m_pTTree->Branch("Boson3AfterFit_woNu" , &m_Boson3AfterFit_woNu , "Boson3AfterFit_woNu/F" );
+	m_pTTree->Branch("System23MassAfterFit_woNu" , &m_System23MassAfterFit_woNu , "System23MassAfterFit_woNu/F" );
+	m_pTTree->Branch("System123MassAfterFit_woNu" , &m_System123MassAfterFit_woNu , "System123MassAfterFit_woNu/F" );
 	m_pTTree->Branch("ISREnergyAfterFit_woNu" , &m_ISREnergyAfterFit_woNu , "ISREnergyAfterFit_woNu/F" );
 	m_pTTree->Branch("FitProbability_woNu" , &m_FitProbability_woNu , "FitProbability_woNu/F" );
 	m_pTTree->Branch("FitChi2_woNu" , &m_FitChi2_woNu , "FitChi2_woNu/F" );
@@ -752,12 +772,12 @@ void ZHHBaseKinfitProcessor::init() {
 	m_pTTree->Branch("pullLeptonPhi_woNu" , &m_pullLeptonPhi_woNu );
 
 	/*	m_pTTree->Branch("FitErrorCode_wNu" , &m_FitErrorCode_wNu , "FitErrorCode_wNu/I" );
-	m_pTTree->Branch("ZMassBeforeFit_wNu" , &m_ZMassBeforeFit_wNu , "ZMassBeforeFit_wNu/F" );
-	m_pTTree->Branch("H1MassBeforeFit_wNu" , &m_H1MassBeforeFit_wNu , "H1MassBeforeFit_wNu/F" );
-	m_pTTree->Branch("H2MassBeforeFit_wNu" , &m_H2MassBeforeFit_wNu , "H2MassBeforeFit_wNu/F" );
-	m_pTTree->Branch("ZMassAfterFit_wNu" , &m_ZMassAfterFit_wNu , "ZMassAfterFit_wNu/F" );
-	m_pTTree->Branch("H1MassAfterFit_wNu" , &m_H1MassAfterFit_wNu , "H1MassAfterFit_wNu/F" );
-	m_pTTree->Branch("H2MassAfterFit_wNu" , &m_H2MassAfterFit_wNu , "H2MassAfterFit_wNu/F" );
+	m_pTTree->Branch("Boson1BeforeFit_wNu" , &m_Boson1BeforeFit_wNu , "Boson1BeforeFit_wNu/F" );
+	m_pTTree->Branch("Boson2BeforeFit_wNu" , &m_Boson2BeforeFit_wNu , "Boson2BeforeFit_wNu/F" );
+	m_pTTree->Branch("Boson3BeforeFit_wNu" , &m_Boson3BeforeFit_wNu , "Boson3BeforeFit_wNu/F" );
+	m_pTTree->Branch("Boson1AfterFit_wNu" , &m_Boson1AfterFit_wNu , "Boson1AfterFit_wNu/F" );
+	m_pTTree->Branch("Boson2AfterFit_wNu" , &m_Boson2AfterFit_wNu , "Boson2AfterFit_wNu/F" );
+	m_pTTree->Branch("Boson3AfterFit_wNu" , &m_Boson3AfterFit_wNu , "Boson3AfterFit_wNu/F" );
 	m_pTTree->Branch("FitProbability_wNu" , &m_FitProbability_wNu , "FitProbability_wNu/F" );
 	m_pTTree->Branch("FitChi2_wNu" , &m_FitChi2_wNu , "FitChi2_wNu/F" );
 	m_pTTree->Branch("pullJetEnergy_wNu" , &m_pullJetEnergy_wNu );
@@ -768,18 +788,18 @@ void ZHHBaseKinfitProcessor::init() {
 	m_pTTree->Branch("pullLeptonPhi_wNu" , &m_pullLeptonPhi_wNu );*/
 
 	m_pTTree->Branch("FitErrorCode" , &m_FitErrorCode , "FitErrorCode/I" );
-	m_pTTree->Branch("ZMassBeforeFit" , &m_ZMassBeforeFit , "ZMassBeforeFit/F" );
-	m_pTTree->Branch("H1MassBeforeFit" , &m_H1MassBeforeFit , "H1MassBeforeFit/F" );
-	m_pTTree->Branch("H2MassBeforeFit" , &m_H2MassBeforeFit , "H2MassBeforeFit/F" );
-	m_pTTree->Branch("HHMassBeforeFit" , &m_HHMassBeforeFit , "HHMassBeforeFit/F" );
-	m_pTTree->Branch("ZHHMassBeforeFit" , &m_ZHHMassBeforeFit , "ZHHMassBeforeFit/F" );
+	m_pTTree->Branch("Boson1BeforeFit" , &m_Boson1BeforeFit , "Boson1BeforeFit/F" );
+	m_pTTree->Branch("Boson2BeforeFit" , &m_Boson2BeforeFit , "Boson2BeforeFit/F" );
+	m_pTTree->Branch("Boson3BeforeFit" , &m_Boson3BeforeFit , "Boson3BeforeFit/F" );
+	m_pTTree->Branch("System23MassBeforeFit" , &m_System23MassBeforeFit , "System23MassBeforeFit/F" );
+	m_pTTree->Branch("System123MassBeforeFit" , &m_System123MassBeforeFit , "System123MassBeforeFit/F" );
 	m_pTTree->Branch("ISREnergyBeforeFit" , &m_ISREnergyBeforeFit , "ISREnergyBeforeFit/F" );
 
-	m_pTTree->Branch("ZMassAfterFit" , &m_ZMassAfterFit , "ZMassAfterFit/F" );
-	m_pTTree->Branch("H1MassAfterFit" , &m_H1MassAfterFit , "H1MassAfterFit/F" );
-	m_pTTree->Branch("H2MassAfterFit" , &m_H2MassAfterFit , "H2MassAfterFit/F" );
-	m_pTTree->Branch("HHMassAfterFit" , &m_HHMassAfterFit , "HHMassAfterFit/F" );
-	m_pTTree->Branch("ZHHMassAfterFit" , &m_ZHHMassAfterFit , "ZHHMassAfterFit/F" );
+	m_pTTree->Branch("Boson1AfterFit" , &m_Boson1AfterFit , "Boson1AfterFit/F" );
+	m_pTTree->Branch("Boson2AfterFit" , &m_Boson2AfterFit , "Boson2AfterFit/F" );
+	m_pTTree->Branch("Boson3AfterFit" , &m_Boson3AfterFit , "Boson3AfterFit/F" );
+	m_pTTree->Branch("System23MassAfterFit" , &m_System23MassAfterFit , "System23MassAfterFit/F" );
+	m_pTTree->Branch("System123MassAfterFit" , &m_System123MassAfterFit , "System123MassAfterFit/F" );
 	m_pTTree->Branch("ISREnergyAfterFit" , &m_ISREnergyAfterFit , "ISREnergyAfterFit/F" );
 	m_pTTree->Branch("FitProbability" , &m_FitProbability , "FitProbability/F" );
 	m_pTTree->Branch("FitChi2" , &m_FitChi2 , "FitChi2/F" );
@@ -880,22 +900,22 @@ void ZHHBaseKinfitProcessor::assignPostFitMasses(FitResult fitResult, bool woNu)
 	}
 
 	if (woNu) {
-		m_ZMassAfterFit_woNu = mc_z->getMass();
-		m_H1MassAfterFit_woNu = mc_h1->getMass();
-		m_H2MassAfterFit_woNu = mc_h2->getMass();
-		m_HHMassAfterFit_woNu = mc_hh->getMass();
-		m_ZHHMassAfterFit_woNu = mc_zhh->getMass();
+		m_Boson1AfterFit_woNu = mc_z->getMass();
+		m_Boson2AfterFit_woNu = mc_h1->getMass();
+		m_Boson3AfterFit_woNu = mc_h2->getMass();
+		m_System23MassAfterFit_woNu = mc_hh->getMass();
+		m_System123MassAfterFit_woNu = mc_zhh->getMass();
 		m_p1stAfterFit_woNu = p1st;
 		m_cos1stAfterFit_woNu = cos1st;
 
 		if (channel() == CHANNEL_LL)
 			m_Z2MassAfterFit_woNu = mc_z2->getMass();
 	} else {
-		m_ZMassAfterFit = mc_z->getMass();
-		m_H1MassAfterFit = mc_h1->getMass();
-		m_H2MassAfterFit = mc_h2->getMass();
-		m_HHMassAfterFit = mc_hh->getMass();
-		m_ZHHMassAfterFit = mc_zhh->getMass();
+		m_Boson1AfterFit = mc_z->getMass();
+		m_Boson2AfterFit = mc_h1->getMass();
+		m_Boson3AfterFit = mc_h2->getMass();
+		m_System23MassAfterFit = mc_hh->getMass();
+		m_System123MassAfterFit = mc_zhh->getMass();
 		m_p1stAfterFit = p1st;
 		m_cos1stAfterFit = cos1st;
 
@@ -912,3 +932,15 @@ void ZHHBaseKinfitProcessor::check( LCEvent* event )
 {
   (void) event;
 }
+
+SimpleChi2Result ZHHBaseKinfitProcessor::simpleChi2Pairing(pfoVector jets) {
+	std::vector<unsigned short> jet_matching;
+	std::vector<float> dijet_masses;
+	float chi2min;
+
+	if (!(MODE_IS_NMC || MODE_IS_EQM || MODE_IS_ZZHsoft)) {	
+		std::tie(jet_matching, dijet_masses, chi2min) = EventObservablesBase::pairJetsByMass(jets, m_dijetTargets);
+	}
+
+	return std::make_tuple(dijet_masses, chi2min, jet_matching);
+};
