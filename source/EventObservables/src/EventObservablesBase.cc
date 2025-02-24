@@ -885,7 +885,7 @@ std::tuple<std::vector<unsigned short>, vector<float>, float> EventObservablesBa
 	std::vector<unsigned short> dijet_targets
 ) {
 	assert(dijet_targets.size() *2 == jets.size());
-""
+	
 	std::vector<float> target_masses (dijet_targets.size(), -999);
 	std::vector<float> target_resolutions (dijet_targets.size(), -999);
 

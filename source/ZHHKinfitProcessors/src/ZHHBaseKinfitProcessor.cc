@@ -885,10 +885,10 @@ void ZHHBaseKinfitProcessor::assignPostFitMasses(FitResult fitResult, bool woNu)
 		auto mc = dynamic_pointer_cast<ParticleConstraint>(it->second);
 		double *temp = mc->getFourMomentum(1);
 
-		cerr << temp[0] << " " << temp[1] << " " << temp[2] << " " << temp[3] << std::endl;
+		//cerr << temp[0] << " " << temp[1] << " " << temp[2] << " " << temp[3] << std::endl;
 
 		tempvec.SetPxPyPzE(temp[1], temp[2], temp[3], temp[0]);
-		cerr << "CURRENT MOMENTUM : '" << tempvec.P() << std::endl;
+		//cerr << "CURRENT MOMENTUM : '" << tempvec.P() << std::endl;
 
 		if (tempvec.P() > p1stvec.P()) {
 			p1st = tempvec.P();

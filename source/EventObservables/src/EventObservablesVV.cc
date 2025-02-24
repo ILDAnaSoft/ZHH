@@ -124,7 +124,7 @@ void EventObservablesVV::updateChannelValues(EVENT::LCEvent *pLCEvent) {
     // get yMinus and yPlus
     PIDHandler jet5PIDh(input5JetCollection);
     int algo_y = jet5PIDh.getAlgorithmID("yth");
-    const ParticleID & ythID = jet5PIDh.getParticleID(m_jets[0], algo_y); // same arguments for all jets
+    const ParticleID & ythID = jet5PIDh.getParticleID(m_5jets[0], algo_y); // same arguments for all jets
 
     FloatVec params_y = ythID.getParameters();
     m_yMinus5j = params_y[jet5PIDh.getParameterIndex(algo_y, "y45")];
