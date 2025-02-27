@@ -97,14 +97,7 @@
     "C_Cpp.intelliSenseEngine": "default",
     "cmake.buildDirectory": "${sourceDirectory}/build",
     "cmake.sourceDirectory": [
-        "${workspaceFolder}/source/LeptonPairing",
-        "${workspaceFolder}/source/Misclustering",
-        "${workspaceFolder}/source/PreSelection",
-        "${workspaceFolder}/source/ZHHKinfitProcessors",
-        "${workspaceFolder}/source/JetTaggingComparison",
-        "${workspaceFolder}/source/FinalStateRecorder",
-        "${workspaceFolder}/source/TruthKinematicsRecorder",
-        "${workspaceFolder}/source/CheatedMCOverlayRemoval",
+        "${workspaceFolder}/source",
         "${workspaceFolder}/dependencies/MarlinMLFlavorTagging",
     ],
     "terminal.integrated.profiles.linux": {

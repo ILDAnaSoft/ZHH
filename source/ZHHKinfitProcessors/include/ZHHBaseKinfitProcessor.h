@@ -40,6 +40,7 @@
 #include <Math/Vector4D.h>
 #include "BaseHardConstraint.h"
 #include "EventObservablesBase.h"
+#include "v4.h"
 
 using namespace lcio ;
 using namespace marlin ;
@@ -84,18 +85,18 @@ class ZHHBaseKinfitProcessor: public Processor
 		struct FitResult {
 		  FitResult():
 		  	fitter(shared_ptr<BaseFitter>()),
-		    constraints(map<string, shared_ptr<BaseHardConstraint>>()),
+		    constraints(vector<shared_ptr<BaseHardConstraint>>()),
 		    fitobjects(shared_ptr<vector<shared_ptr<BaseFitObject>>>()),
 			permutation({}) {};
 
 		  FitResult(shared_ptr<BaseFitter> _fitter, 
-			    map<string, shared_ptr<BaseHardConstraint>> _constraints, 
+				vector<shared_ptr<BaseHardConstraint>> _constraints, 
 			    shared_ptr<vector<shared_ptr<BaseFitObject>>> _fitobjects,
 				vector<unsigned short> _permutation) : 
 		  		fitter(_fitter), constraints(_constraints), fitobjects(_fitobjects), permutation(_permutation) {};
 
 		  shared_ptr<BaseFitter> fitter;
-		  map<string, shared_ptr<BaseHardConstraint>> constraints;
+		  vector<shared_ptr<BaseHardConstraint>> constraints;
 		  shared_ptr<vector<shared_ptr<BaseFitObject>>> fitobjects;
 		  vector<unsigned short> permutation;
 		};
@@ -122,6 +123,10 @@ class ZHHBaseKinfitProcessor: public Processor
 		std::vector<std::string> m_readContraints{};
 		unsigned short m_nDijets{};
 		std::vector<unsigned short> m_dijetTargets{};
+		std::vector<unsigned short> m_constraintTypes{}; // type 0: hard constraint, type 1: Z soft constraint (2.4952/2, 91.2), type 2: EQM
+		std::vector<float> m_dijetMasses{};
+		float m_dijet23MassSum{};
+		float m_dijet123MassSum{};
 		SimpleChi2Result simpleChi2Pairing(pfoVector jets);
 
     protected:
@@ -135,6 +140,8 @@ class ZHHBaseKinfitProcessor: public Processor
 		void clearBaseValues();
 		void fillOutputCollections(EVENT::LCEvent *pLCEvent);
 		void assignPostFitMasses(FitResult fitResult, bool woNu);
+		std::vector<double> calculateInitialMasses(pfoVector jets, pfoVector leptons, vector<unsigned int> perm);
+		FitResult performFIT(pfoVector jets, pfoVector leptons, bool traceEvent, bool woNu);
 
 		// helper functions
 		static pfoVectorVector combinations(pfoVectorVector collector, pfoVectorVector sets, int n, pfoVector combo);
@@ -218,7 +225,6 @@ class ZHHBaseKinfitProcessor: public Processor
 
         int						m_FitErrorCode_woNu{};
 		float					m_Boson1BeforeFit_woNu{};
-		float					m_Z2MassBeforeFit_woNu{};
 		float					m_Boson2BeforeFit_woNu{};
         float					m_Boson3BeforeFit_woNu{};
         float                   m_System23MassBeforeFit_woNu{};
@@ -228,7 +234,6 @@ class ZHHBaseKinfitProcessor: public Processor
 		float					m_cos1stBeforeFit_woNu{};
 
 		float					m_Boson1AfterFit_woNu{};
-		float					m_Z2MassAfterFit_woNu{};
 		float					m_Boson2AfterFit_woNu{};
 		float					m_Boson3AfterFit_woNu{};
         float                   m_System23MassAfterFit_woNu{};
@@ -251,7 +256,6 @@ class ZHHBaseKinfitProcessor: public Processor
 
 		int						m_FitErrorCode{};
 		float					m_Boson1BeforeFit{};
-		float					m_Z2MassBeforeFit{};
 		float					m_Boson2BeforeFit{};
 		float					m_Boson3BeforeFit{};
 		float                   m_System23MassBeforeFit{};
@@ -261,7 +265,6 @@ class ZHHBaseKinfitProcessor: public Processor
 		float					m_cos1stBeforeFit{};
 
 		float					m_Boson1AfterFit{};
-		float 					m_Z2MassAfterFit{};
 		float					m_Boson2AfterFit{};
 		float					m_Boson3AfterFit{};
 		float                   m_System23MassAfterFit{};

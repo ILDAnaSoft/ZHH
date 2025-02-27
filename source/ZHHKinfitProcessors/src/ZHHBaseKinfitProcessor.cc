@@ -1,4 +1,5 @@
 #include "ZHHBaseKinfitProcessor.h"
+#include "ZinvisibleFitObject.h"
 
 ZHHBaseKinfitProcessor::ZHHBaseKinfitProcessor(const std::string& name) : Processor(name),
 m_pTFile(NULL),
@@ -580,7 +581,6 @@ void ZHHBaseKinfitProcessor::clearBaseValues() {
 
 	m_FitErrorCode_woNu = 1;
 	m_Boson1BeforeFit_woNu = 0.0;
-	m_Z2MassBeforeFit_woNu = 0.0;
 	m_Boson2BeforeFit_woNu = 0.0;
 	m_Boson3BeforeFit_woNu = 0.0;
 	m_System23MassBeforeFit_woNu = 0.0;
@@ -590,7 +590,6 @@ void ZHHBaseKinfitProcessor::clearBaseValues() {
 	m_cos1stBeforeFit_woNu = 0.0;
 
 	m_Boson1AfterFit_woNu = 0.0;
-	m_Z2MassAfterFit_woNu = 0.0;
 	m_Boson2AfterFit_woNu = 0.0;
 	m_Boson3AfterFit_woNu = 0.0;
 	m_System23MassAfterFit_woNu = 0.0;
@@ -628,7 +627,6 @@ void ZHHBaseKinfitProcessor::clearBaseValues() {
 
 	m_FitErrorCode = 1;
 	m_Boson1BeforeFit = 0.0;
-	m_Z2MassBeforeFit = 0.0;
 	m_Boson2BeforeFit = 0.0;
 	m_Boson3BeforeFit = 0.0;
 	m_System23MassBeforeFit = 0.0;
@@ -638,7 +636,6 @@ void ZHHBaseKinfitProcessor::clearBaseValues() {
 	m_cos1stBeforeFit = 0.0;
 
 	m_Boson1AfterFit = 0.0;
-	m_Z2MassAfterFit = 0.0;
 	m_Boson2AfterFit = 0.0;
 	m_Boson3AfterFit = 0.0;
 	m_System23MassAfterFit = 0.0;
@@ -691,37 +688,58 @@ void ZHHBaseKinfitProcessor::init() {
 	// = 2*alpha/pi*( ln(s/m_e^2)-1 )
 	ISRPzMaxB = std::pow((double)m_isrpzmax,b);
 
+	// get masses from EventObservablesBase
+	kMassTop = EventObservablesBase::kMassTop;
+	kMassZ = EventObservablesBase::kMassZ;
+	kMassW = EventObservablesBase::kMassW;
+	kMassH = EventObservablesBase::kMassH;
+
 	printParameters();
 
 	// setting the mode, and the names of constraints to calculate the associated boson momenta (for pmax and cos theta)
 	if (m_fithypothesis == "NMC")    { MODE = MODE_NMC    ; MODE_IS_NMC     = true; } else
-	if (m_fithypothesis == "ZHH")    { MODE = MODE_ZHH    ; MODE_IS_ZHH     = true; m_readContraints = {"z mass", "h2 mass", "h1 mass"}; } else
-	if (m_fithypothesis == "ZZH")    { MODE = MODE_ZZH    ; MODE_IS_ZZH     = true; m_readContraints = {"z mass", "z3 mass", "h1 mass"}; } else
-	if (m_fithypothesis == "ZZZ")    { MODE = MODE_ZZZ    ; MODE_IS_ZZZ     = true; m_readContraints = {"z mass", "z3 mass", "z2 mass"}; } else
-	if (m_fithypothesis == "ZZHsoft"){ MODE = MODE_ZZHsoft; MODE_IS_ZZHsoft = true; m_readContraints = {"z mass", "z3 mass", "h1 mass"}; } else
+	if (m_fithypothesis == "ZHH")    { MODE = MODE_ZHH    ; MODE_IS_ZHH     = true; m_readContraints = {"z1 mass", "h2 mass", "h1 mass"}; } else
+	if (m_fithypothesis == "ZZH")    { MODE = MODE_ZZH    ; MODE_IS_ZZH     = true; m_readContraints = {"z1 mass", "z3 mass", "h1 mass"}; } else
+	if (m_fithypothesis == "ZZZ")    { MODE = MODE_ZZZ    ; MODE_IS_ZZZ     = true; m_readContraints = {"z1 mass", "z3 mass", "z2 mass"}; } else
+	if (m_fithypothesis == "ZZHsoft"){ MODE = MODE_ZZHsoft; MODE_IS_ZZHsoft = true; m_readContraints = {"z1 mass", "z3 mass", "h1 mass"}; } else
 	if (m_fithypothesis == "MH")     { MODE = MODE_MH     ; MODE_IS_MH      = true; } else
 	if (m_fithypothesis == "EQM")    { MODE = MODE_EQM    ; MODE_IS_EQM     = true; } else
 		throw EVENT::Exception("Unimplemented fithypothesis");
 
 	// assign m_dijetTargets for simple chi square calculation
 	m_nDijets = 0; // MH not implemented for simpleChi2 (considered not needed)
-	if (m_fithypothesis == "MH") m_dijetTargets = { 25 };
+	if (m_fithypothesis == "MH")  { m_nDijets = 1; m_dijetTargets = { 25 }; m_constraintTypes = {0}; };
+	if (m_fithypothesis == "EQM") { m_constraintTypes = {2}; };
 
 	if (m_nAskedJets == 4) {
-		if (m_fithypothesis == "ZHH") { m_nDijets = 2; m_dijetTargets = { 25, 25 }; } else 
-		if (m_fithypothesis == "ZZH") { m_nDijets = 2; m_dijetTargets = { 23, 25 }; } else
-		if (m_fithypothesis == "ZZZ") { m_nDijets = 2; m_dijetTargets = { 23, 23 }; }
+		if (m_fithypothesis == "ZHH")     { m_nDijets = 2; m_dijetTargets = { 25, 25 }; m_constraintTypes = {0, 0}; } else 
+		if (m_fithypothesis == "ZZH")     { m_nDijets = 2; m_dijetTargets = { 23, 25 }; m_constraintTypes = {0, 0}; } else
+		if (m_fithypothesis == "ZZZ")     { m_nDijets = 2; m_dijetTargets = { 23, 23 }; m_constraintTypes = {0, 0}; }
+		if (m_fithypothesis == "ZZHsoft") { m_nDijets = 2; m_dijetTargets = { 23, 23 }; m_constraintTypes = {1, 0}; }
 	} else if (m_nAskedJets == 6) {
-		if (m_fithypothesis == "ZHH") { m_nDijets = 3; m_dijetTargets = { 23, 25, 25 }; } else 
-		if (m_fithypothesis == "ZZH") { m_nDijets = 3; m_dijetTargets = { 23, 23, 25 }; } else
-		if (m_fithypothesis == "ZZZ") { m_nDijets = 3; m_dijetTargets = { 23, 23, 23 }; }
+		if (m_fithypothesis == "ZHH")     { m_nDijets = 3; m_dijetTargets = { 23, 25, 25 }; m_constraintTypes = {0, 0, 0}; } else 
+		if (m_fithypothesis == "ZZH")     { m_nDijets = 3; m_dijetTargets = { 23, 23, 25 }; m_constraintTypes = {0, 0, 0}; } else
+		if (m_fithypothesis == "ZZZ")     { m_nDijets = 3; m_dijetTargets = { 23, 23, 23 }; m_constraintTypes = {0, 0, 0}; }
+		if (m_fithypothesis == "ZZHsoft") { m_nDijets = 3; m_dijetTargets = { 23, 23, 25 }; m_constraintTypes = {0, 1, 0}; }
 	}
 
-	// get masses from EventObservablesBase
-	kMassTop = EventObservablesBase::kMassTop;
-	kMassZ = EventObservablesBase::kMassZ;
-	kMassW = EventObservablesBase::kMassW;
-	kMassH = EventObservablesBase::kMassH;
+	float bosonMass;
+	m_dijet23MassSum = 0; // inv mass of last two dijets
+	m_dijet123MassSum = 0; // inv mass of all dijets
+	for (unsigned short i = 0; i < m_nDijets; i++) {
+		switch (m_dijetTargets[i]) {
+			case 25: bosonMass = kMassH; break;
+			case 23: bosonMass = kMassZ; break;
+			case 24: bosonMass = kMassW; break;
+			case 6: bosonMass = kMassTop; break;
+			default: throw EVENT::Exception("Unimplemented dijet target");
+		}
+
+		m_dijetMasses.push_back(bosonMass);
+
+		if (i >= m_nDijets - 2) m_dijet23MassSum += bosonMass;
+		if (i < 3) m_dijet123MassSum += bosonMass;
+	}
 
   	m_pTTree = new TTree(m_ttreeName.c_str(), m_ttreeName.c_str());
 
@@ -760,6 +778,12 @@ void ZHHBaseKinfitProcessor::init() {
 	m_pTTree->Branch("FitProbability_woNu" , &m_FitProbability_woNu , "FitProbability_woNu/F" );
 	m_pTTree->Branch("FitChi2_woNu" , &m_FitChi2_woNu , "FitChi2_woNu/F" );
 	m_pTTree->Branch("FitChi2_byMass" , &m_FitChi2_byMass , "FitChi2_byMass/F" );
+
+	m_pTTree->Branch("p1stAfterFit_woNu" , &m_p1stAfterFit_woNu , "p1stAfterFit_woNu/F" );
+	m_pTTree->Branch("cos1stAfterFit_woNu" , &m_cos1stAfterFit_woNu , "cos1stAfterFit_woNu/F" );
+
+  	m_pTTree->Branch("p1stAfterFit" , &m_p1stAfterFit , "p1stAfterFit/F" );
+	m_pTTree->Branch("cos1stAfterFit" , &m_cos1stAfterFit , "cos1stAfterFit/F" );
 
 	m_pTTree->Branch("BestMatchingKinfit" , &m_bestMatchingKinfit );
 	m_pTTree->Branch("BestMatchingByMass" , &m_bestMatchingByMass );
@@ -824,24 +848,22 @@ void ZHHBaseKinfitProcessor::init() {
 	m_pTTree->Branch("Sigma_PzE",&m_Sigma_PzE);
 	m_pTTree->Branch("Sigma_E2",&m_Sigma_E2);
 
-  initChannelValues();
+	initChannelValues();
 
-  clearChannelValues();
-  clearBaseValues();
+	clearChannelValues();
+	clearBaseValues();
 };
 
 void ZHHBaseKinfitProcessor::processEvent( LCEvent* pLCEvent ) {
-  m_nRun = pLCEvent->getRunNumber();
-  m_nEvt = pLCEvent->getEventNumber();
+	streamlog_out(MESSAGE1) << "processing event " << m_nEvt << " in run " << m_nRun << std::endl;
 
-  streamlog_out(MESSAGE1) << "	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
-  streamlog_out(MESSAGE1) << "	////////////////////////////////// processing event " << m_nEvt << " in run " << m_nRun << " /////////////////////////////////////////////////" << std::endl;
-  streamlog_out(MESSAGE1) << "	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
+	m_nRun = pLCEvent->getRunNumber();
+	m_nEvt = pLCEvent->getEventNumber();
 
-  updateChannelValues(pLCEvent);
-  
-  clearChannelValues();
-  clearBaseValues();
+	updateChannelValues(pLCEvent);
+
+	clearChannelValues();
+	clearBaseValues();
 };
 
 void ZHHBaseKinfitProcessor::processRunHeader(LCRunHeader* run)
@@ -859,72 +881,75 @@ void ZHHBaseKinfitProcessor::assignPostFitMasses(FitResult fitResult, bool woNu)
 	auto constraints = fitResult.constraints;
 	streamlog_out(MESSAGE) << "Fitter contains " << constraints.size() << " constraints" << std::endl;
 	
-	for (auto [key, val] : constraints) {
-		streamlog_out(MESSAGE) << "KEY: '" << key << "' - Counts : ";
-		streamlog_out(MESSAGE) << constraints.count(key) << std::endl;
+	for (auto constraint : constraints) {
+		streamlog_out(MESSAGE) << constraint->getName() << std::endl;
 	}
 
-	shared_ptr<MassConstraint> mc_z = dynamic_pointer_cast<MassConstraint>(constraints["z mass"]);
-	shared_ptr<MassConstraint> mc_h1 = dynamic_pointer_cast<MassConstraint>(constraints["h1 mass"]);
-	shared_ptr<MassConstraint> mc_h2 = dynamic_pointer_cast<MassConstraint>(constraints["h2 mass"]);
-	shared_ptr<MassConstraint> mc_hh = dynamic_pointer_cast<MassConstraint>(constraints["hh mass"]);
-	shared_ptr<MassConstraint> mc_zhh = dynamic_pointer_cast<MassConstraint>(constraints["zhh mass"]);
-	shared_ptr<MassConstraint> mc_z2 = NULL;
+	shared_ptr<MassConstraint> mc_boson1 = dynamic_pointer_cast<MassConstraint>(constraints[0]);
+	shared_ptr<MassConstraint> mc_boson2;
+	shared_ptr<MassConstraint> mc_boson3;
+	shared_ptr<MassConstraint> mc_system23 = dynamic_pointer_cast<MassConstraint>(constraints[3]);
+	shared_ptr<MassConstraint> mc_system123 = dynamic_pointer_cast<MassConstraint>(constraints[4]);
 
-	if (channel() == CHANNEL_LL)
-		mc_z2 = dynamic_pointer_cast<MassConstraint>(constraints["z2 mass"]);
+	if (constraints[1] != nullptr) 
+		mc_boson2 = dynamic_pointer_cast<MassConstraint>(constraints[1]);
+
+	if (constraints[2] != nullptr) 
+		mc_boson3 = dynamic_pointer_cast<MassConstraint>(constraints[2]);
 
 	// find p1st and cos1st
 	float p1st = 0.0;
 	float cos1st = 0.0;
 
-	ROOT::Math::PxPyPzEVector p1stvec (0., 0., 0., 0.);
 	ROOT::Math::PxPyPzEVector tempvec (0., 0., 0., 0.);
 
-	for (auto it = constraints.begin(); it != constraints.end(); ++it) {
-		auto mc = dynamic_pointer_cast<ParticleConstraint>(it->second);
-		double *temp = mc->getFourMomentum(1);
+	for (unsigned short i = 0; i < 3; i++) {
+		if (constraints[i] != nullptr) {
+			shared_ptr<ParticleConstraint> mc = dynamic_pointer_cast<ParticleConstraint>(constraints[i]);
+			double *temp = mc->getFourMomentum(1);
 
-		//cerr << temp[0] << " " << temp[1] << " " << temp[2] << " " << temp[3] << std::endl;
+			streamlog_out(MESSAGE) << "PRINTING " << mc->getName() << std::endl;
 
-		tempvec.SetPxPyPzE(temp[1], temp[2], temp[3], temp[0]);
-		//cerr << "CURRENT MOMENTUM : '" << tempvec.P() << std::endl;
+			tempvec.SetPxPyPzE(temp[1], temp[2], temp[3], temp[0]);
+			//streamlog_out(MESSAGE) << "CURRENT MOMENTUM : '" << tempvec.P() << std::endl;
 
-		if (tempvec.P() > p1stvec.P()) {
-			p1st = tempvec.P();
-			cos1st = cos(tempvec.Theta());
-			p1stvec = tempvec;
+			if (tempvec.P() > p1st) {
+				p1st = tempvec.P();
+				cos1st = cos(tempvec.Theta());
+			}
+
+			delete temp;
 		}
-
-		delete temp;
 	}
+
+	m_bestMatchingKinfit = fitResult.permutation;
 
 	if (woNu) {
-		m_Boson1AfterFit_woNu = mc_z->getMass();
-		m_Boson2AfterFit_woNu = mc_h1->getMass();
-		m_Boson3AfterFit_woNu = mc_h2->getMass();
-		m_System23MassAfterFit_woNu = mc_hh->getMass();
-		m_System123MassAfterFit_woNu = mc_zhh->getMass();
+		m_FitErrorCode_woNu = fitResult.fitter->getError();
+		m_FitProbability_woNu = fitResult.fitter->getProbability();
+		m_FitChi2_woNu = fitResult.fitter->getChi2();
+
+		m_Boson1AfterFit_woNu = mc_boson1->getMass();
+		m_Boson2AfterFit_woNu = mc_boson2 != nullptr ? mc_boson2->getMass() : 0;
+		m_Boson3AfterFit_woNu = mc_boson3 != nullptr ? mc_boson3->getMass() : 0;
+		m_System23MassAfterFit_woNu = mc_system23->getMass();
+		m_System123MassAfterFit_woNu = mc_system123->getMass();
 		m_p1stAfterFit_woNu = p1st;
 		m_cos1stAfterFit_woNu = cos1st;
-
-		if (channel() == CHANNEL_LL)
-			m_Z2MassAfterFit_woNu = mc_z2->getMass();
 	} else {
-		m_Boson1AfterFit = mc_z->getMass();
-		m_Boson2AfterFit = mc_h1->getMass();
-		m_Boson3AfterFit = mc_h2->getMass();
-		m_System23MassAfterFit = mc_hh->getMass();
-		m_System123MassAfterFit = mc_zhh->getMass();
+		m_FitErrorCode = fitResult.fitter->getError();
+		m_FitProbability = fitResult.fitter->getProbability();
+		m_FitChi2 = fitResult.fitter->getChi2();
+
+		m_Boson1AfterFit = mc_boson1->getMass();
+		m_Boson2AfterFit = mc_boson2 != nullptr ? mc_boson2->getMass() : 0;
+		m_Boson3AfterFit = mc_boson3 != nullptr ? mc_boson3->getMass() : 0;
+		m_System23MassAfterFit = mc_system23->getMass();
+		m_System123MassAfterFit = mc_system123->getMass();
 		m_p1stAfterFit = p1st;
 		m_cos1stAfterFit = cos1st;
-
-		if (channel() == CHANNEL_LL)
-			m_Z2MassAfterFit = mc_z2->getMass();
 	}
-
 	
-
 	streamlog_out(MESSAGE) << endl;
 }
 
@@ -944,3 +969,454 @@ SimpleChi2Result ZHHBaseKinfitProcessor::simpleChi2Pairing(pfoVector jets) {
 
 	return std::make_tuple(dijet_masses, chi2min, jet_matching);
 };
+
+std::vector<double> ZHHBaseKinfitProcessor::calculateInitialMasses(pfoVector jets, pfoVector leptons, vector<unsigned int> perm)
+{
+	std::vector<double> masses(5, 0.);
+	std::vector<shared_ptr<MassConstraint>> mass_constraints;
+	shared_ptr<vector<shared_ptr<JetFitObject>>> jfo = make_shared<vector<shared_ptr<JetFitObject>>>();
+	shared_ptr<vector<shared_ptr<JetFitObject>>> jfo_perm = make_shared<vector<shared_ptr<JetFitObject>>>();
+  
+	//Set JetFitObjects
+	for (unsigned int i_jet =0; i_jet < jets.size(); i_jet++) {
+		float parameters[ 3 ]{ 0.0 } , errors[ 3 ]{ 0.0 };
+		getJetParameters( jets[ i_jet ] , parameters , errors );
+		auto j = make_shared<JetFitObject> ( parameters[ 0 ] , parameters[ 1 ] , parameters[ 2 ] , errors[ 0 ] , errors[ 1 ] , errors[ 2 ] , jets[ i_jet ]->getMass() );
+		jfo->push_back(j);
+		const string name = "jet"+to_string(i_jet);
+		j->setName(name.c_str());
+	}
+  
+	for (auto i = perm.begin(); i != perm.begin()+m_nJets ; ++i) {
+		//for(auto i : perm) {
+		streamlog_out(MESSAGE) << " Picking jet for start masses " << *i << std::endl ;
+		auto jsp = make_shared<JetFitObject>(*jfo->at(*i));
+		jfo_perm->push_back(jsp);
+	}
+
+	shared_ptr<MassConstraint> z1 = make_shared<MassConstraint>(kMassZ);
+	z1->setName("z1 mass");
+
+	shared_ptr<MassConstraint> system23 = make_shared<MassConstraint>(m_dijet23MassSum);
+	system23->setName("system23 mass");
+
+	shared_ptr<MassConstraint> system123 = make_shared<MassConstraint>(m_dijet123MassSum);
+	system123->setName("system123 mass");
+  
+	if (channel() == CHANNEL_LL) {
+		//Set LeptonFitObjects
+
+		shared_ptr<vector<shared_ptr<LeptonFitObject>>> lfo= make_shared<vector<shared_ptr<LeptonFitObject>>>();
+		for (unsigned int i_lep =0; i_lep < leptons.size(); i_lep++) {
+			float parameters[ 3 ]{ 0.0 } , errors[ 3 ]{ 0.0 };
+			getLeptonParameters( leptons[ i_lep ] , parameters , errors );
+			auto l = make_shared<LeptonFitObject> ( parameters[ 0 ] , parameters[ 1 ] , parameters[ 2 ] , errors[ 0 ] , errors[ 1 ] , errors[ 2 ] , leptons[ i_lep ]->getMass() );
+			lfo->push_back(l);
+			const string name = "lepton"+to_string(i_lep);
+			l->setName(name.c_str());
+		}
+
+		z1->addToFOList(*lfo->at(0), 1);
+		z1->addToFOList(*lfo->at(1), 1);
+
+		system123->addToFOList(*lfo->at(0), 1);
+		system123->addToFOList(*lfo->at(1), 1);
+	} else if (channel() == CHANNEL_VV) {
+		ROOT::Math::PxPyPzEVector seenFourMomentum(0.,0.,0.,0.);
+
+		for (int i_jet = 0; i_jet < m_nJets; i_jet++)
+			seenFourMomentum += v4(jets[i_jet]);
+
+		ROOT::Math::PxPyPzMVector ZinvFourMomentum(-seenFourMomentum.Px(), -seenFourMomentum.Pz(), -seenFourMomentum.Pz(), kMassZ); // M_Z PDG average in 2024 review    
+		shared_ptr<ZinvisibleFitObject> zfo = make_shared<ZinvisibleFitObject> (ZinvFourMomentum.E(), ZinvFourMomentum.Theta(), ZinvFourMomentum.Phi(), 1.0, 0.1, 0.1, kMassZ);
+		zfo->setName("Zinvisible");
+
+		z1->addToFOList(*zfo, 1);
+		system123->addToFOList(*zfo, 1);
+	} else if (channel() == CHANNEL_QQ) {
+		z1->addToFOList (*jfo_perm->at(4), 1);
+		z1->addToFOList (*jfo_perm->at(5), 1);
+	}
+
+	unsigned short dijet_idx = 0;
+	cerr << "Hello " << m_dijetTargets[0] << endl;
+	if (m_dijetTargets[0] == 23) {
+		streamlog_out(MESSAGE) << "Adding mass constraint for boson z1 with mass " << z1->getMass() << " GeV" << std::endl ;
+		mass_constraints.push_back(z1);
+		dijet_idx = 1;
+	}
+
+	unsigned short jet_idx = 0;
+	for (; dijet_idx < m_nDijets; dijet_idx++) {
+		shared_ptr<MassConstraint> mc = make_shared<MassConstraint>(m_dijetMasses[dijet_idx]);
+		mc->setName((std::string("boson") + std::to_string(dijet_idx) + " mass").c_str());
+		mc->addToFOList(*jfo_perm->at(jet_idx), 1);
+		mc->addToFOList(*jfo_perm->at(jet_idx + 1), 1);
+
+		streamlog_out(MESSAGE) << "Adding mass constraint for boson " << dijet_idx << " (m=" << m_dijetMasses[dijet_idx] << " GeV) and jets (" << jet_idx << "," << (jet_idx + 1) << ")" << std::endl ;
+		
+		mass_constraints.push_back(mc);
+		jet_idx += 2;
+	}
+
+	for (unsigned short i = 0; i < jets.size(); i++) {
+		system123->addToFOList (*jfo_perm->at(i), 1);
+
+		if (i < 4)
+			system23->addToFOList (*jfo_perm->at(i), 1); 
+	}
+
+    for (unsigned short i = 0; i < mass_constraints.size(); i++)
+		masses[i] = mass_constraints[i]->getMass();
+
+    masses[3] = system23->getMass(1);
+    masses[4] = system123->getMass(1);
+
+    return masses;
+}
+
+ZHHBaseKinfitProcessor::FitResult ZHHBaseKinfitProcessor::performFIT(pfoVector jets, pfoVector leptons, bool traceEvent, bool woNu) {
+	shared_ptr<vector<shared_ptr<JetFitObject>>> jfo = make_shared<vector<shared_ptr<JetFitObject>>>();
+	vector<shared_ptr<BaseConstraint>> target_constraints;
+	vector<shared_ptr<BaseHardConstraint>> mass_constraints(5, nullptr);
+
+	double bestProb = -1;
+	double bestChi2 = 9999999999999.;
+	FitResult bestFitResult;
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//////												  //////
+	//////					Set JetFitObjects					  //////
+	//////												  //////
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	for (size_t i_jet =0; i_jet < jets.size(); i_jet++) {
+		streamlog_out(MESSAGE6) << "get jet"<< i_jet+1 <<" parameters"  << std::endl ; //changed from debug level
+		float parameters[ 3 ]{ 0.0 } , errors[ 3 ]{ 0.0 };
+		getJetParameters( jets[ i_jet ] , parameters , errors );
+		auto j = make_shared<JetFitObject> ( parameters[ 0 ] , parameters[ 1 ] , parameters[ 2 ] , errors[ 0 ] , errors[ 1 ] , errors[ 2 ] , jets[ i_jet ]->getMass() );
+		jfo->push_back(j);
+		const string name = "jet"+to_string(i_jet);
+		j->setName(name.c_str());
+		//streamlog_out(MESSAGE)  << " start four-vector of jet"<< i_jet+1 <<": " << *j  << std::endl ;
+		streamlog_out(MESSAGE)  << " start four-vector of jet"<< i_jet+1 <<": " << "[" << jets[ i_jet ]->getMomentum()[0] << ", " << jets[ i_jet ]->getMomentum()[1] << ", " << jets[ i_jet ]->getMomentum()[2] << ", " << jets[ i_jet ]->getEnergy() << "]" << std::endl ;
+	}
+
+	assert(m_nJets == m_nAskedJets);
+
+	for (unsigned int iperm = 0; iperm < perms.size(); iperm++) {
+		target_constraints.clear();
+		mass_constraints.clear();
+
+		streamlog_out(MESSAGE) << " ================================================= " << std::endl ;
+		streamlog_out(MESSAGE) << " iperm = " << iperm << std::endl ;
+
+		shared_ptr<vector<shared_ptr<JetFitObject>>> jfo_perm = make_shared<vector<shared_ptr<JetFitObject>>>();
+		
+		// important: (re-)set fitjets array!
+		// keep track of newly created heap particles
+		shared_ptr<vector<shared_ptr<BaseFitObject>>> fos = make_shared<vector<shared_ptr<BaseFitObject>>>();
+		streamlog_out(MESSAGE) << " Picking jets ";
+		for(auto i : perms[iperm]) {
+			streamlog_out(MESSAGE) << i << " ";
+			auto jsp = make_shared<JetFitObject>(*jfo->at(i));
+			jfo_perm->push_back(jsp);
+		}
+		streamlog_out(MESSAGE) << std::endl ;
+
+		//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		//////												    //////
+		//////					Set Constraints Before Fit				    //////
+		//////												    //////
+		//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			
+		float target_p_due_crossing_angle = m_ECM * 0.007; // crossing angle = 14 mrad
+		shared_ptr<MomentumConstraint> pxc = make_shared<MomentumConstraint>( 0 , 1 , 0 , 0 , target_p_due_crossing_angle);//Factor for: (energy sum, px sum, py sum,pz sum,target value of sum)    
+		pxc->setName("sum(p_x)");
+			
+		shared_ptr<MomentumConstraint> pyc = make_shared<MomentumConstraint>(0, 0, 1, 0, 0);
+		pyc->setName("sum(p_y)");
+			
+		shared_ptr<MomentumConstraint> pzc = make_shared<MomentumConstraint>(0, 0, 0, 1, 0);
+		pzc->setName("sum(p_z)");
+			
+		double E_lab = 2 * sqrt( std::pow( 0.548579909e-3 , 2 ) + std::pow( m_ECM / 2 , 2 ) + std::pow( target_p_due_crossing_angle , 2 ) + 0. + 0.); //TODO: check equation
+		shared_ptr<MomentumConstraint> ec = make_shared<MomentumConstraint>(1, 0, 0, 0, E_lab);
+		ec->setName("sum(E)");
+
+		target_constraints.push_back(pxc);
+		target_constraints.push_back(pyc);
+		target_constraints.push_back(pzc);
+		target_constraints.push_back(ec);
+
+		// create fitter
+		shared_ptr<BaseFitter> fitter = nullptr;
+		if ( m_fitter == 1 ) {
+			fitter = shared_ptr<BaseFitter>(new NewFitterGSL());
+			if ( traceEvent ) (dynamic_pointer_cast<NewFitterGSL>(fitter))->setDebug( 4 );    
+			streamlog_out(MESSAGE6) << "fit using GSL Fitter"  << std::endl ; //changed from debug level 
+		} else if ( m_fitter == 2 ) {
+			fitter = shared_ptr<BaseFitter>(new NewtonFitterGSL());
+			if ( traceEvent ) (dynamic_pointer_cast<NewtonFitterGSL>(fitter))->setDebug( 4 );
+			streamlog_out(MESSAGE6) << "fit using Newton GSL Fitter"  << std::endl ; //changed from debug level 
+		} else {
+			////		OPALFitter has no method setDebug !
+			fitter = shared_ptr<BaseFitter>(new OPALFitterGSL());
+			if ( traceEvent ) (dynamic_pointer_cast<OPALFitterGSL>(fitter))->setDebug( 4 );
+			streamlog_out(MESSAGE6) << "fit using OPAL GSL Fitter"  << std::endl ; //changed from debug level 
+		}
+
+		streamlog_out(MESSAGE)  << "Start four-vector of" << std::endl;
+		for (auto j : *jfo_perm) {
+			streamlog_out(MESSAGE)  << " jet " << j->getName() << ": " << *j  << std::endl ;  //changed from debug level 
+
+			fos->push_back(j);
+			pxc->addToFOList(*j);
+			pyc->addToFOList(*j);
+			pzc->addToFOList(*j); 
+			ec->addToFOList(*j);
+			fitter->addFitObject(*j);
+		}
+
+		shared_ptr<ISRPhotonFitObject> photon;
+		if( m_fitISR ) {
+			photon = make_shared<ISRPhotonFitObject>(0., 0., -pzc->getValue(), b, ISRPzMaxB);
+			photon->setName("photon");
+			if( m_fitISR ) {
+				streamlog_out(MESSAGE)  << " ISR photon: " << *(photon) << std::endl ; //changed from debug level 
+				fos->push_back(photon);
+				pxc->addToFOList(*(photon));
+				pyc->addToFOList(*(photon));
+				pzc->addToFOList(*(photon));
+				ec->addToFOList(*(photon));
+			}
+
+			fitter->addFitObject( *(photon) );
+			streamlog_out(MESSAGE8) << "ISR added to fit"  << std::endl ; //changed from debug level 
+		}
+
+		// conservation of four momenta
+		fitter->addConstraint( pxc.get() );
+		fitter->addConstraint( pyc.get() );
+		fitter->addConstraint( pzc.get() );
+		fitter->addConstraint( ec.get() );
+
+		// for extraction of results
+		shared_ptr<MassConstraint> z1 = make_shared<MassConstraint>(kMassZ);
+		z1->setName("z1 mass");
+
+		shared_ptr<MassConstraint> system23 = make_shared<MassConstraint>(m_dijet23MassSum);
+		system23->setName("system23 mass");
+
+		shared_ptr<MassConstraint> system123 = make_shared<MassConstraint>(m_dijet123MassSum);
+		system123->setName("system123 mass");
+		
+		if (channel() == CHANNEL_VV) {
+			shared_ptr<vector<shared_ptr<ZinvisibleFitObject>>> zfo_perm = make_shared<vector<shared_ptr<ZinvisibleFitObject>>>();
+
+			ROOT::Math::PxPyPzEVector seenFourMomentum(0.,0.,0.,0.);
+			for (int i_jet = 0; i_jet < m_nJets; i_jet++)
+				seenFourMomentum += v4(jets[ i_jet ]);
+			
+			ROOT::Math::PxPyPzMVector ZinvFourMomentum(-seenFourMomentum.Px(), -seenFourMomentum.Pz(), -seenFourMomentum.Pz(), kMassZ); // M_Z PDG average in 2024 review
+			shared_ptr<ZinvisibleFitObject> zfo = make_shared<ZinvisibleFitObject> (ZinvFourMomentum.E(), ZinvFourMomentum.Theta(), ZinvFourMomentum.Phi(), 1.0, 0.1, 0.1,91.1880);
+			zfo->setName("Zinvisible");
+
+			zfo_perm->push_back(make_shared<ZinvisibleFitObject>(*zfo)); // only one ZFO, no loop needed
+
+			for(auto z : *zfo_perm) {
+				fos->push_back(z);
+				pxc->addToFOList(*z);
+				pyc->addToFOList(*z);
+				pzc->addToFOList(*z);
+				ec->addToFOList(*z);
+				fitter->addFitObject(*z);
+			}
+
+			z1->addToFOList(*zfo_perm->at(0), 1);
+		} else if (channel() == CHANNEL_LL) {
+			shared_ptr<vector<shared_ptr<LeptonFitObject>>> lfo_perm = make_shared<vector<shared_ptr<LeptonFitObject>>>();
+			shared_ptr<vector<shared_ptr<LeptonFitObject>>> lfo = make_shared<vector<shared_ptr<LeptonFitObject>>>();
+
+			for (size_t i_lep =0; i_lep < leptons.size(); i_lep++) {
+				streamlog_out(MESSAGE6) << "get lepton"<< i_lep+1 <<" parameters"  << std::endl ; //changed from debug level 
+				float parameters[ 3 ]{ 0.0 } , errors[ 3 ]{ 0.0 };
+				getLeptonParameters( leptons[ i_lep ] , parameters , errors );
+				auto l = make_shared<LeptonFitObject> ( parameters[ 0 ] , parameters[ 1 ] , parameters[ 2 ] , errors[ 0 ] , errors[ 1 ] , errors[ 2 ] , leptons[ i_lep ]->getMass() );
+				lfo->push_back(l);
+				const string name = "lepton"+to_string(i_lep);
+				l->setName(name.c_str());
+				//streamlog_out(MESSAGE)  << " start four-vector of lepton"<< i_lep+1 <<": " << *l  << std::endl ;
+				streamlog_out(MESSAGE)  << " start four-vector of lepton"<< i_lep+1 <<": " << "[" << leptons[ i_lep ]->getMomentum()[0] << ", " << leptons[ i_lep ]->getMomentum()[1] << ", " << leptons[ i_lep ]->getMomentum()[2] << ", " << leptons[ i_lep ]->getEnergy() << "]"  << std::endl ;
+			}
+
+			for(size_t i = 0; i < leptons.size(); ++i) {
+				auto lsp = make_shared<LeptonFitObject>(*lfo->at(i));
+				lfo_perm->push_back(lsp);
+			}
+
+			for(auto l : *lfo_perm) {
+				fos->push_back(l);
+				pxc->addToFOList(*l);
+				pyc->addToFOList(*l);
+				pzc->addToFOList(*l);
+				ec->addToFOList(*l);
+				fitter->addFitObject(*l);
+			}
+
+			z1->addToFOList (*lfo_perm->at(0), 1);
+    		z1->addToFOList (*lfo_perm->at(1), 1);
+		}  else if (channel() == CHANNEL_QQ) {
+			streamlog_out(MESSAGE8) << "QQ " << *jfo_perm->at(4) << " " << *jfo_perm->at(5) << endl;
+			z1->addToFOList (*jfo_perm->at(4), 1);
+			z1->addToFOList (*jfo_perm->at(5), 1);
+		}
+			
+		streamlog_out(MESSAGE8)  << "	Value of E_lab before adding ISR: " << E_lab << std::endl ;  //changed from debug level 
+		streamlog_out(MESSAGE8)  << "	Value of target_p_due_crossing_angle before adding ISR: " << target_p_due_crossing_angle << std::endl ; //changed from debug level 
+		streamlog_out(MESSAGE8)  << "	Value of pxc before adding ISR: " << pxc->getValue() << std::endl ; //changed from debug level 
+		streamlog_out(MESSAGE8)  << "	Value of pyc before adding ISR: " << pyc->getValue() << std::endl ; //changed from debug level 
+		streamlog_out(MESSAGE8)  << "	Value of pzc before adding ISR: " << pzc->getValue() << std::endl ; //changed from debug level 
+		streamlog_out(MESSAGE8)  << "	Value of ec before adding ISR: " << ec->getValue() << std::endl ; //changed from debug level 
+
+		streamlog_out(MESSAGE8)  << "	Value of E_lab before fit: " << E_lab << std::endl ; //changed from debug level 
+		streamlog_out(MESSAGE8)  << "	Value of target_p_due_crossing_angle before fit: " << target_p_due_crossing_angle << std::endl ; //changed from debug level 
+		streamlog_out(MESSAGE8)  << "	Value of pxc after adding ISR before fit: " << pxc->getValue() << std::endl ; //changed from debug level 
+		streamlog_out(MESSAGE8)  << "	Value of pyc after adding ISR before fit: " << pyc->getValue() << std::endl ; //changed from debug level 
+		streamlog_out(MESSAGE8)  << "	Value of pzc after adding ISR before fit: " << pzc->getValue() << std::endl ; //changed from debug level 
+		streamlog_out(MESSAGE8)  << "	Value of ec after adding ISR before fit: " << ec->getValue() << std::endl ; //changed from debug level 
+
+		//To be added to fit, depending on fit hypothesis
+		unsigned short constraint_idx = m_constraintTypes.size() < 3 ? 0 : (m_constraintTypes.size() - 2);
+		unsigned short dijet_idx = 0;
+		for (; constraint_idx < m_constraintTypes.size(); constraint_idx++) {
+			if (m_constraintTypes[constraint_idx] == 0) {
+				// MassConstraint
+				float dijet_mass = m_dijetMasses[constraint_idx];
+				shared_ptr<MassConstraint> mc = make_shared<MassConstraint>(dijet_mass);
+				mc->setName((std::string("boson ") + std::to_string(dijet_idx) + " mass").c_str());
+				mc->addToFOList(*jfo_perm->at(dijet_idx * 2), 1);
+				mc->addToFOList(*jfo_perm->at(dijet_idx * 2 + 1), 1);
+
+				streamlog_out(MESSAGE) << "Adding mass constraint "<< mc->getName() <<" for boson " << dijet_idx << " (m=" << dijet_mass << " GeV) and jets (" << (dijet_idx * 2) << "," << (dijet_idx * 2 + 1) << ")" << std::endl ;
+				
+				target_constraints.push_back( mc );
+				fitter->addConstraint( mc.get() );
+			} else if (m_constraintTypes[constraint_idx] == 1) {
+				shared_ptr<SoftGaussMassConstraint> zmsoft = make_shared<SoftGaussMassConstraint>(2.4952/2, kMassZ); 
+				zmsoft->setName("soft z mass");
+
+				streamlog_out(MESSAGE) << "Adding ZMsoft constraint "<< zmsoft->getName() <<" for jets (" <<  (dijet_idx * 2) << "," << (dijet_idx * 2 + 1) << ")" << std::endl ;
+
+				zmsoft->addToFOList (*jfo_perm->at(dijet_idx * 2), 1);
+				zmsoft->addToFOList (*jfo_perm->at(dijet_idx * 2 + 1), 1);
+
+				target_constraints.push_back( zmsoft );
+				fitter->addConstraint( zmsoft.get() );
+			} else if (m_constraintTypes[constraint_idx] == 2) {
+				shared_ptr<MassConstraint> eqm = make_shared<MassConstraint>(0.);
+				eqm->setName("equal mass");
+
+				streamlog_out(MESSAGE) << "Adding EQM constraint "<< eqm->getName() <<" for jets (0,1,2,3)" << std::endl ;
+
+				eqm->addToFOList (*jfo_perm->at(0), 1);
+				eqm->addToFOList (*jfo_perm->at(1), 1);
+				eqm->addToFOList (*jfo_perm->at(2), 2);
+				eqm->addToFOList (*jfo_perm->at(3), 2);
+
+				target_constraints.push_back( eqm );				
+				fitter->addConstraint( eqm.get() );
+			}
+
+			dijet_idx += 1;			
+		}
+
+		// do the fit
+		streamlog_out(MESSAGE8) << "constraints added to fit:" << std::endl ; //changed from debug level 
+		auto fitconstraints = fitter->getConstraints();
+		auto fitsoftconstraints = fitter->getSoftConstraints();
+		streamlog_out(MESSAGE8) << "HELLO WORLD nConstraints=" << fitconstraints->size() << std::endl ; //changed from debug level 
+		for (auto constraint: *fitconstraints) {
+			streamlog_out(MESSAGE8) << "A" << std::endl ; //changed from debug level 
+			streamlog_out(MESSAGE8) << constraint->getName() << " constraint value = " << (constraint)->getValue() << std::endl; //changed from debug level 
+			streamlog_out(MESSAGE8) << "B" << std::endl ; //changed from debug level 
+		}
+
+		for (auto it = fitsoftconstraints->begin(); it != fitsoftconstraints->end(); ++it)
+			streamlog_out(MESSAGE8) << (*it)->getName() << " constraint value = " << (*it)->getValue() << std::endl; //changed from debug level 
+
+		streamlog_out(MESSAGE8) << "DO FIT" << std::endl ; //changed from debug level 
+		float fitProbability = fitter->fit();
+		streamlog_out(MESSAGE8) << "DIT FIT" << std::endl ; //changed from debug level 
+
+		// evaluate the outputs
+		if(fitter->getError() == 0) {
+			if (fitter->getChi2() < bestChi2) {
+				//if(fitProbability > bestProb) {
+				streamlog_out(MESSAGE) << "fit probability: " << fitProbability << " is better than " << bestProb << " use that one" << std::endl;
+				streamlog_out(MESSAGE) << "fit chi2 = " << fitter->getChi2() << std::endl;
+				streamlog_out(MESSAGE) << "error code: " << fitter->getError() << std::endl;
+				bestProb = fitProbability;
+				bestChi2 = fitter->getChi2();
+
+				if( m_fitISR ) {
+					streamlog_out(MESSAGE)  << "After fit four-vector of ISR photon: " << *(photon) << std::endl ; //changed from debug level
+					streamlog_out(MESSAGE)  << "After fit ISR energy" << photon->getE() << std::endl;
+				}
+
+				mass_constraints = {nullptr, nullptr, nullptr, nullptr, nullptr};
+				unsigned short dijet_idx = 0;
+				cerr << "Hello " << m_dijetTargets[0] << endl;
+				if (m_dijetTargets[0] == 23) {
+					streamlog_out(MESSAGE) << "Adding helper mass constraint for boson z1 with mass " << z1->getMass() << " GeV" << std::endl ;
+					mass_constraints[0] = z1;
+					dijet_idx = 1;
+				}
+
+				unsigned short jet_idx = 0;
+				for (; dijet_idx < m_nDijets; dijet_idx++) {
+					shared_ptr<MassConstraint> mc = make_shared<MassConstraint>(m_dijetMasses[dijet_idx]);
+					mc->setName((std::string("boson") + std::to_string(dijet_idx) + " mass").c_str());
+					mc->addToFOList(*jfo_perm->at(jet_idx), 1);
+					mc->addToFOList(*jfo_perm->at(jet_idx + 1), 1);
+
+					streamlog_out(MESSAGE) << "Adding helper mass constraint for boson " << dijet_idx << " (m=" << m_dijetMasses[dijet_idx] << " GeV) and jets (" << jet_idx << "," << (jet_idx + 1) << ")" << std::endl ;
+					
+					mass_constraints[dijet_idx] = mc;
+					jet_idx += 2;
+				}
+
+				for (unsigned short i = 0; i < jets.size(); i++) {
+					system123->addToFOList (*jfo_perm->at(i), 1);
+
+					if (i < 4)
+						system23->addToFOList (*jfo_perm->at(i), 1); 
+				}
+
+				mass_constraints[3] = system23;
+				mass_constraints[4] = system123;
+		  
+				FitResult fitresult = FitResult(fitter, mass_constraints, fos, perms[iperm]);
+		  		bestFitResult = fitresult;
+
+				m_FitErrorCode = bestFitResult.fitter->getError();
+				m_FitProbability = bestFitResult.fitter->getProbability();
+				m_FitChi2 = bestFitResult.fitter->getChi2();
+				m_bestMatchingKinfit = bestFitResult.permutation;
+			} else {
+				streamlog_out(MESSAGE) << "fit probability: " << fitProbability << " not better than " << bestProb << endl;
+				streamlog_out(MESSAGE) << "fit chi2 = " << fitter->getChi2() << endl;
+				streamlog_out(MESSAGE) << "error code: " << fitter->getError() << endl;
+			}
+		} else {
+			streamlog_out(MESSAGE) << "fit failed with error code " << fitter->getError() << endl;
+			streamlog_out(MESSAGE) << "fit probability: " << fitProbability << endl;
+			streamlog_out(MESSAGE) << "fit chi2 = " << fitter->getChi2() << endl;
+		}
+	}
+
+	if (bestFitResult.fitter != nullptr) {
+		assignPostFitMasses(bestFitResult, false);
+	}
+
+	return bestFitResult;
+}
