@@ -707,7 +707,8 @@ void ZHHBaseKinfitProcessor::init() {
 		throw EVENT::Exception("Unimplemented fithypothesis");
 
 	// assign m_dijetTargets for simple chi square calculation
-	m_nDijets = 0; // MH not implemented for simpleChi2 (considered not needed)
+	m_dijetTargets = {};
+
 	if (m_fithypothesis == "MH")  { m_nDijets = 1; m_dijetTargets = { 25 }; m_constraintTypes = {0}; };
 	if (m_fithypothesis == "EQM") { m_constraintTypes = {2}; };
 
@@ -722,6 +723,8 @@ void ZHHBaseKinfitProcessor::init() {
 		if (m_fithypothesis == "ZZZ")     { m_nDijets = 3; m_dijetTargets = { 23, 23, 23 }; m_constraintTypes = {0, 0, 0}; }
 		if (m_fithypothesis == "ZZHsoft") { m_nDijets = 3; m_dijetTargets = { 23, 23, 25 }; m_constraintTypes = {0, 1, 0}; }
 	}
+
+	m_nDijets = m_dijetTargets.size(); // MH not implemented for simpleChi2 (considered not needed)
 
 	float bosonMass;
 	m_dijet23MassSum = 0; // inv mass of last two dijets
@@ -882,14 +885,18 @@ void ZHHBaseKinfitProcessor::assignPostFitMasses(FitResult fitResult, bool woNu)
 	streamlog_out(MESSAGE) << "Fitter contains " << constraints.size() << " constraints" << std::endl;
 	
 	for (auto constraint : constraints) {
-		streamlog_out(MESSAGE) << constraint->getName() << std::endl;
+		if (constraint != nullptr)
+			streamlog_out(MESSAGE) << constraint->getName() << std::endl;
 	}
 
-	shared_ptr<MassConstraint> mc_boson1 = dynamic_pointer_cast<MassConstraint>(constraints[0]);
+	shared_ptr<MassConstraint> mc_boson1;
 	shared_ptr<MassConstraint> mc_boson2;
 	shared_ptr<MassConstraint> mc_boson3;
 	shared_ptr<MassConstraint> mc_system23 = dynamic_pointer_cast<MassConstraint>(constraints[3]);
 	shared_ptr<MassConstraint> mc_system123 = dynamic_pointer_cast<MassConstraint>(constraints[4]);
+
+	if (constraints[0] != nullptr)
+		mc_boson1 = dynamic_pointer_cast<MassConstraint>(constraints[0]);
 
 	if (constraints[1] != nullptr) 
 		mc_boson2 = dynamic_pointer_cast<MassConstraint>(constraints[1]);
@@ -929,7 +936,7 @@ void ZHHBaseKinfitProcessor::assignPostFitMasses(FitResult fitResult, bool woNu)
 		m_FitProbability_woNu = fitResult.fitter->getProbability();
 		m_FitChi2_woNu = fitResult.fitter->getChi2();
 
-		m_Boson1AfterFit_woNu = mc_boson1->getMass();
+		m_Boson1AfterFit_woNu = mc_boson1 != nullptr ? mc_boson1->getMass() : 0;
 		m_Boson2AfterFit_woNu = mc_boson2 != nullptr ? mc_boson2->getMass() : 0;
 		m_Boson3AfterFit_woNu = mc_boson3 != nullptr ? mc_boson3->getMass() : 0;
 		m_System23MassAfterFit_woNu = mc_system23->getMass();
@@ -941,7 +948,7 @@ void ZHHBaseKinfitProcessor::assignPostFitMasses(FitResult fitResult, bool woNu)
 		m_FitProbability = fitResult.fitter->getProbability();
 		m_FitChi2 = fitResult.fitter->getChi2();
 
-		m_Boson1AfterFit = mc_boson1->getMass();
+		m_Boson1AfterFit = mc_boson1 != nullptr ? mc_boson1->getMass() : 0;
 		m_Boson2AfterFit = mc_boson2 != nullptr ? mc_boson2->getMass() : 0;
 		m_Boson3AfterFit = mc_boson3 != nullptr ? mc_boson3->getMass() : 0;
 		m_System23MassAfterFit = mc_system23->getMass();
@@ -960,11 +967,25 @@ void ZHHBaseKinfitProcessor::check( LCEvent* event )
 
 SimpleChi2Result ZHHBaseKinfitProcessor::simpleChi2Pairing(pfoVector jets) {
 	std::vector<unsigned short> jet_matching;
-	std::vector<float> dijet_masses;
+	std::vector<float> dijet_masses(m_nDijets, 0.);
+	std::vector<unsigned short> dijetTargets = m_dijetTargets;
 	float chi2min;
 
+	if (m_nDijets == 3 && m_nAskedJets == 4) {
+		// Z mass is calculated in the channel specific processors
+		if (m_dijetTargets[0] == 23) {
+			dijetTargets = {m_dijetTargets[1], m_dijetTargets[2]};
+		} else
+			throw EVENT::Exception("Unimplemented dijet target");
+	}
+
 	if (!(MODE_IS_NMC || MODE_IS_EQM || MODE_IS_ZZHsoft)) {	
-		std::tie(jet_matching, dijet_masses, chi2min) = EventObservablesBase::pairJetsByMass(jets, m_dijetTargets);
+		streamlog_out(MESSAGE) << "dijetTargets.size() = " << dijetTargets.size() << std::endl;
+		std::tie(jet_matching, dijet_masses, chi2min) = EventObservablesBase::pairJetsByMass(jets, dijetTargets);
+	}
+
+	for (auto mass: dijet_masses) {
+		streamlog_out(MESSAGE) << "Dijet mass: " << mass << std::endl;
 	}
 
 	return std::make_tuple(dijet_masses, chi2min, jet_matching);
@@ -976,6 +997,12 @@ std::vector<double> ZHHBaseKinfitProcessor::calculateInitialMasses(pfoVector jet
 	std::vector<shared_ptr<MassConstraint>> mass_constraints;
 	shared_ptr<vector<shared_ptr<JetFitObject>>> jfo = make_shared<vector<shared_ptr<JetFitObject>>>();
 	shared_ptr<vector<shared_ptr<JetFitObject>>> jfo_perm = make_shared<vector<shared_ptr<JetFitObject>>>();
+	shared_ptr<vector<shared_ptr<LeptonFitObject>>> lfo = make_shared<vector<shared_ptr<LeptonFitObject>>>();
+	
+	shared_ptr<MassConstraint> z1;
+	shared_ptr<ZinvisibleFitObject> zfo;
+	shared_ptr<MassConstraint> system23;
+	shared_ptr<MassConstraint> system123;
   
 	//Set JetFitObjects
 	for (unsigned int i_jet =0; i_jet < jets.size(); i_jet++) {
@@ -994,19 +1021,17 @@ std::vector<double> ZHHBaseKinfitProcessor::calculateInitialMasses(pfoVector jet
 		jfo_perm->push_back(jsp);
 	}
 
-	shared_ptr<MassConstraint> z1 = make_shared<MassConstraint>(kMassZ);
+	z1 = make_shared<MassConstraint>(kMassZ);
 	z1->setName("z1 mass");
 
-	shared_ptr<MassConstraint> system23 = make_shared<MassConstraint>(m_dijet23MassSum);
+	system23 = make_shared<MassConstraint>(m_dijet23MassSum);
 	system23->setName("system23 mass");
 
-	shared_ptr<MassConstraint> system123 = make_shared<MassConstraint>(m_dijet123MassSum);
+	system123 = make_shared<MassConstraint>(m_dijet123MassSum);
 	system123->setName("system123 mass");
   
 	if (channel() == CHANNEL_LL) {
 		//Set LeptonFitObjects
-
-		shared_ptr<vector<shared_ptr<LeptonFitObject>>> lfo= make_shared<vector<shared_ptr<LeptonFitObject>>>();
 		for (unsigned int i_lep =0; i_lep < leptons.size(); i_lep++) {
 			float parameters[ 3 ]{ 0.0 } , errors[ 3 ]{ 0.0 };
 			getLeptonParameters( leptons[ i_lep ] , parameters , errors );
@@ -1028,7 +1053,7 @@ std::vector<double> ZHHBaseKinfitProcessor::calculateInitialMasses(pfoVector jet
 			seenFourMomentum += v4(jets[i_jet]);
 
 		ROOT::Math::PxPyPzMVector ZinvFourMomentum(-seenFourMomentum.Px(), -seenFourMomentum.Pz(), -seenFourMomentum.Pz(), kMassZ); // M_Z PDG average in 2024 review    
-		shared_ptr<ZinvisibleFitObject> zfo = make_shared<ZinvisibleFitObject> (ZinvFourMomentum.E(), ZinvFourMomentum.Theta(), ZinvFourMomentum.Phi(), 1.0, 0.1, 0.1, kMassZ);
+		zfo = make_shared<ZinvisibleFitObject> (ZinvFourMomentum.E(), ZinvFourMomentum.Theta(), ZinvFourMomentum.Phi(), 1.0, 0.1, 0.1, kMassZ);
 		zfo->setName("Zinvisible");
 
 		z1->addToFOList(*zfo, 1);
@@ -1039,8 +1064,7 @@ std::vector<double> ZHHBaseKinfitProcessor::calculateInitialMasses(pfoVector jet
 	}
 
 	unsigned short dijet_idx = 0;
-	cerr << "Hello " << m_dijetTargets[0] << endl;
-	if (m_dijetTargets[0] == 23) {
+	if (m_nDijets && m_dijetTargets[0] == 23) {
 		streamlog_out(MESSAGE) << "Adding mass constraint for boson z1 with mass " << z1->getMass() << " GeV" << std::endl ;
 		mass_constraints.push_back(z1);
 		dijet_idx = 1;
@@ -1062,13 +1086,17 @@ std::vector<double> ZHHBaseKinfitProcessor::calculateInitialMasses(pfoVector jet
 	for (unsigned short i = 0; i < jets.size(); i++) {
 		system123->addToFOList (*jfo_perm->at(i), 1);
 
-		if (i < 4)
+		if (i < 4) {
 			system23->addToFOList (*jfo_perm->at(i), 1); 
+		}
 	}
 
+	streamlog_out(MESSAGE) << "mass_constraints.size() = " << mass_constraints.size() << std::endl ;
     for (unsigned short i = 0; i < mass_constraints.size(); i++)
 		masses[i] = mass_constraints[i]->getMass();
 
+	streamlog_out(MESSAGE) << "system123->getName() = " << system123->getName() << std::endl ;
+	
     masses[3] = system23->getMass(1);
     masses[4] = system123->getMass(1);
 
@@ -1077,18 +1105,27 @@ std::vector<double> ZHHBaseKinfitProcessor::calculateInitialMasses(pfoVector jet
 
 ZHHBaseKinfitProcessor::FitResult ZHHBaseKinfitProcessor::performFIT(pfoVector jets, pfoVector leptons, bool traceEvent, bool woNu) {
 	shared_ptr<vector<shared_ptr<JetFitObject>>> jfo = make_shared<vector<shared_ptr<JetFitObject>>>();
+	shared_ptr<vector<shared_ptr<LeptonFitObject>>> lfo = make_shared<vector<shared_ptr<LeptonFitObject>>>();
+
 	vector<shared_ptr<BaseConstraint>> target_constraints;
 	vector<shared_ptr<BaseHardConstraint>> mass_constraints(5, nullptr);
+	shared_ptr<ISRPhotonFitObject> photon;
+	shared_ptr<BaseFitter> fitter;
+
+	shared_ptr<MassConstraint> z1;
+	shared_ptr<ZinvisibleFitObject> zfo;
+	shared_ptr<MassConstraint> system23;
+	shared_ptr<MassConstraint> system123;
 
 	double bestProb = -1;
 	double bestChi2 = 9999999999999.;
 	FitResult bestFitResult;
 
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	//////												  //////
-	//////					Set JetFitObjects					  //////
-	//////												  //////
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////
+	//////												  							//////
+	//////					Set JetFitObjects and LeptonFitObjects					//////
+	//////												  							//////
+	//////////////////////////////////////////////////////////////////////////////////////
 	for (size_t i_jet =0; i_jet < jets.size(); i_jet++) {
 		streamlog_out(MESSAGE6) << "get jet"<< i_jet+1 <<" parameters"  << std::endl ; //changed from debug level
 		float parameters[ 3 ]{ 0.0 } , errors[ 3 ]{ 0.0 };
@@ -1101,20 +1138,36 @@ ZHHBaseKinfitProcessor::FitResult ZHHBaseKinfitProcessor::performFIT(pfoVector j
 		streamlog_out(MESSAGE)  << " start four-vector of jet"<< i_jet+1 <<": " << "[" << jets[ i_jet ]->getMomentum()[0] << ", " << jets[ i_jet ]->getMomentum()[1] << ", " << jets[ i_jet ]->getMomentum()[2] << ", " << jets[ i_jet ]->getEnergy() << "]" << std::endl ;
 	}
 
+	for (size_t i_lep =0; i_lep < leptons.size(); i_lep++) {
+		streamlog_out(MESSAGE6) << "get lepton"<< i_lep+1 <<" parameters"  << std::endl ; //changed from debug level 
+		float parameters[ 3 ]{ 0.0 } , errors[ 3 ]{ 0.0 };
+		getLeptonParameters( leptons[ i_lep ] , parameters , errors );
+		auto l = make_shared<LeptonFitObject> ( parameters[ 0 ] , parameters[ 1 ] , parameters[ 2 ] , errors[ 0 ] , errors[ 1 ] , errors[ 2 ] , leptons[ i_lep ]->getMass() );
+		lfo->push_back(l);
+		const string name = "lepton"+to_string(i_lep);
+		l->setName(name.c_str());
+		//streamlog_out(MESSAGE)  << " start four-vector of lepton"<< i_lep+1 <<": " << *l  << std::endl ;
+		streamlog_out(MESSAGE)  << " start four-vector of lepton"<< i_lep+1 <<": " << "[" << leptons[ i_lep ]->getMomentum()[0] << ", " << leptons[ i_lep ]->getMomentum()[1] << ", " << leptons[ i_lep ]->getMomentum()[2] << ", " << leptons[ i_lep ]->getEnergy() << "]"  << std::endl ;
+	}
+
 	assert(m_nJets == m_nAskedJets);
 
 	for (unsigned int iperm = 0; iperm < perms.size(); iperm++) {
 		target_constraints.clear();
 		mass_constraints.clear();
+		photon.reset();
+		fitter.reset();
+		z1.reset();
+		zfo.reset();
+		system23.reset();
+		system123.reset();
 
 		streamlog_out(MESSAGE) << " ================================================= " << std::endl ;
 		streamlog_out(MESSAGE) << " iperm = " << iperm << std::endl ;
 
 		shared_ptr<vector<shared_ptr<JetFitObject>>> jfo_perm = make_shared<vector<shared_ptr<JetFitObject>>>();
-		
-		// important: (re-)set fitjets array!
-		// keep track of newly created heap particles
 		shared_ptr<vector<shared_ptr<BaseFitObject>>> fos = make_shared<vector<shared_ptr<BaseFitObject>>>();
+
 		streamlog_out(MESSAGE) << " Picking jets ";
 		for(auto i : perms[iperm]) {
 			streamlog_out(MESSAGE) << i << " ";
@@ -1149,7 +1202,6 @@ ZHHBaseKinfitProcessor::FitResult ZHHBaseKinfitProcessor::performFIT(pfoVector j
 		target_constraints.push_back(ec);
 
 		// create fitter
-		shared_ptr<BaseFitter> fitter = nullptr;
 		if ( m_fitter == 1 ) {
 			fitter = shared_ptr<BaseFitter>(new NewFitterGSL());
 			if ( traceEvent ) (dynamic_pointer_cast<NewFitterGSL>(fitter))->setDebug( 4 );    
@@ -1177,7 +1229,6 @@ ZHHBaseKinfitProcessor::FitResult ZHHBaseKinfitProcessor::performFIT(pfoVector j
 			fitter->addFitObject(*j);
 		}
 
-		shared_ptr<ISRPhotonFitObject> photon;
 		if( m_fitISR ) {
 			photon = make_shared<ISRPhotonFitObject>(0., 0., -pzc->getValue(), b, ISRPzMaxB);
 			photon->setName("photon");
@@ -1201,13 +1252,13 @@ ZHHBaseKinfitProcessor::FitResult ZHHBaseKinfitProcessor::performFIT(pfoVector j
 		fitter->addConstraint( ec.get() );
 
 		// for extraction of results
-		shared_ptr<MassConstraint> z1 = make_shared<MassConstraint>(kMassZ);
+		z1 = make_shared<MassConstraint>(kMassZ);
 		z1->setName("z1 mass");
 
-		shared_ptr<MassConstraint> system23 = make_shared<MassConstraint>(m_dijet23MassSum);
+		system23 = make_shared<MassConstraint>(m_dijet23MassSum);
 		system23->setName("system23 mass");
 
-		shared_ptr<MassConstraint> system123 = make_shared<MassConstraint>(m_dijet123MassSum);
+		system123 = make_shared<MassConstraint>(m_dijet123MassSum);
 		system123->setName("system123 mass");
 		
 		if (channel() == CHANNEL_VV) {
@@ -1218,7 +1269,7 @@ ZHHBaseKinfitProcessor::FitResult ZHHBaseKinfitProcessor::performFIT(pfoVector j
 				seenFourMomentum += v4(jets[ i_jet ]);
 			
 			ROOT::Math::PxPyPzMVector ZinvFourMomentum(-seenFourMomentum.Px(), -seenFourMomentum.Pz(), -seenFourMomentum.Pz(), kMassZ); // M_Z PDG average in 2024 review
-			shared_ptr<ZinvisibleFitObject> zfo = make_shared<ZinvisibleFitObject> (ZinvFourMomentum.E(), ZinvFourMomentum.Theta(), ZinvFourMomentum.Phi(), 1.0, 0.1, 0.1,91.1880);
+			zfo = make_shared<ZinvisibleFitObject> (ZinvFourMomentum.E(), ZinvFourMomentum.Theta(), ZinvFourMomentum.Phi(), 1.0, 0.1, 0.1, kMassZ);
 			zfo->setName("Zinvisible");
 
 			zfo_perm->push_back(make_shared<ZinvisibleFitObject>(*zfo)); // only one ZFO, no loop needed
@@ -1235,19 +1286,6 @@ ZHHBaseKinfitProcessor::FitResult ZHHBaseKinfitProcessor::performFIT(pfoVector j
 			z1->addToFOList(*zfo_perm->at(0), 1);
 		} else if (channel() == CHANNEL_LL) {
 			shared_ptr<vector<shared_ptr<LeptonFitObject>>> lfo_perm = make_shared<vector<shared_ptr<LeptonFitObject>>>();
-			shared_ptr<vector<shared_ptr<LeptonFitObject>>> lfo = make_shared<vector<shared_ptr<LeptonFitObject>>>();
-
-			for (size_t i_lep =0; i_lep < leptons.size(); i_lep++) {
-				streamlog_out(MESSAGE6) << "get lepton"<< i_lep+1 <<" parameters"  << std::endl ; //changed from debug level 
-				float parameters[ 3 ]{ 0.0 } , errors[ 3 ]{ 0.0 };
-				getLeptonParameters( leptons[ i_lep ] , parameters , errors );
-				auto l = make_shared<LeptonFitObject> ( parameters[ 0 ] , parameters[ 1 ] , parameters[ 2 ] , errors[ 0 ] , errors[ 1 ] , errors[ 2 ] , leptons[ i_lep ]->getMass() );
-				lfo->push_back(l);
-				const string name = "lepton"+to_string(i_lep);
-				l->setName(name.c_str());
-				//streamlog_out(MESSAGE)  << " start four-vector of lepton"<< i_lep+1 <<": " << *l  << std::endl ;
-				streamlog_out(MESSAGE)  << " start four-vector of lepton"<< i_lep+1 <<": " << "[" << leptons[ i_lep ]->getMomentum()[0] << ", " << leptons[ i_lep ]->getMomentum()[1] << ", " << leptons[ i_lep ]->getMomentum()[2] << ", " << leptons[ i_lep ]->getEnergy() << "]"  << std::endl ;
-			}
 
 			for(size_t i = 0; i < leptons.size(); ++i) {
 				auto lsp = make_shared<LeptonFitObject>(*lfo->at(i));
@@ -1360,13 +1398,12 @@ ZHHBaseKinfitProcessor::FitResult ZHHBaseKinfitProcessor::performFIT(pfoVector j
 
 				if( m_fitISR ) {
 					streamlog_out(MESSAGE)  << "After fit four-vector of ISR photon: " << *(photon) << std::endl ; //changed from debug level
-					streamlog_out(MESSAGE)  << "After fit ISR energy" << photon->getE() << std::endl;
+					streamlog_out(MESSAGE)  << "After fit ISR energy = " << photon->getE() << std::endl;
 				}
 
 				mass_constraints = {nullptr, nullptr, nullptr, nullptr, nullptr};
 				unsigned short dijet_idx = 0;
-				cerr << "Hello " << m_dijetTargets[0] << endl;
-				if (m_dijetTargets[0] == 23) {
+				if (m_nDijets && m_dijetTargets[0] == 23) {
 					streamlog_out(MESSAGE) << "Adding helper mass constraint for boson z1 with mass " << z1->getMass() << " GeV" << std::endl ;
 					mass_constraints[0] = z1;
 					dijet_idx = 1;

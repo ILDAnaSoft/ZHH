@@ -470,13 +470,19 @@ std::tuple<std::vector<double>, double, std::vector<unsigned short>>
   float chi2min = 99999.;
   std::vector<float> dijet_masses;
 
-  masses[0] = kMassZ;
-
-  if (m_nDijets == 2) {
+  unsigned short output_idx = 0;
+  if (m_nDijets) {
+    if (m_dijetTargets[output_idx] == 23) {
+      masses[0] = kMassZ;
+      output_idx++;
+    }
+    
     std::tie(dijet_masses, chi2min, bestperm) = simpleChi2Pairing(jets);
 
-    masses[1] = dijet_masses[0];
-    masses[2] = dijet_masses[1];
+    for (unsigned short dijet_idx = 0; dijet_idx < m_nDijets; dijet_idx++) {
+      masses[output_idx] = dijet_masses[dijet_idx];
+      output_idx++;
+    }
   }
   
   masses[3] = hh;

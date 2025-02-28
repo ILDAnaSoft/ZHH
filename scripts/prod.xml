@@ -31,7 +31,7 @@
         <constant name="MCParticleCollectionName" value="MCParticlesSkimmed" />
         <constant name="CMSEnergy" value="550." />
 	    <constant name="ISRPzMax" value="125.6" />
-        <constant name="Verbosity" value="MESSAGE" />
+        <constant name="Verbosity" value="SILENT" />
     </constants>
 
     <execute>
@@ -78,6 +78,15 @@
         <if condition="${Runllbbbb}">
             <processor name="MyZHHKinFitLL_NMC" />
             <processor name="MyZHHKinFitLL_ZHH" />
+            <processor name="MyZHHKinFitLL_ZZH" />
+            <processor name="MyZHHKinFitLL_ZZZ" />
+            <processor name="MyEventObservablesLL" />
+        </if>
+
+        <!-- neutrino channel -->
+        <if condition="${Runvvbbbb}">
+            <processor name="MyZHHKinFitVV_NMC" />
+            <processor name="MyEventObservablesVV" />
         </if>
 
         <!-- hadron channel -->

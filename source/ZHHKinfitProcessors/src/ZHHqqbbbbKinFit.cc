@@ -470,20 +470,38 @@ std::tuple<std::vector<double>, double, std::vector<unsigned short>>
   ROOT::Math::PxPyPzEVector zhhFourMomentum(0.,0.,0.,0.);
   for (auto jet_v4 : fourVecs)
     zhhFourMomentum += jet_v4;
+  
+  double hh;
   double zhh = zhhFourMomentum.M();
 
   // TODO: use b-tagging information; e.g. use only 4 out of 6 jets with highest b-tag
   float chi2min = 99999.;
   std::vector<float> dijet_masses;
 
-  if (m_nDijets == 3) {
+  unsigned short output_idx = 0;
+  if (m_nDijets) {
+    if (m_dijetTargets[output_idx] == 23) {
+      masses[0] = kMassZ;
+      output_idx++;
+    }
+
+    streamlog_out(MESSAGE) << "m_nDijets = " << m_nDijets << std::endl;
+    streamlog_out(MESSAGE) << "jets.size() = " << jets.size() << std::endl;
+
+    unsigned short nJets = m_nDijets*2;
     std::tie(dijet_masses, chi2min, bestperm) = simpleChi2Pairing(jets);
 
-    masses[0] = dijet_masses[0];
-    masses[1] = dijet_masses[1];
-    masses[2] = dijet_masses[2];
-    masses[3] = (fourVecs[bestperm[0]] + fourVecs[bestperm[1]] + fourVecs[bestperm[2]] + fourVecs[bestperm[3]]).M();
+    streamlog_out(MESSAGE) << "dijet_masses.size() = " << dijet_masses.size() << std::endl;
+    
+    for (unsigned short dijet_idx = 0; dijet_idx < m_nDijets; dijet_idx++) {
+      masses[output_idx] = dijet_masses[dijet_idx];
+      output_idx++;
+    }
+
+    hh = (fourVecs[bestperm[nJets-1]] + fourVecs[bestperm[nJets-2]] + fourVecs[bestperm[nJets-3]] + fourVecs[bestperm[nJets-4]] ).M();
   }
+  
+  masses[3] = hh;
   masses[4] = zhh;
 
   streamlog_out(MESSAGE) << "masses from simple chi2:" << masses[0] << ", " << masses[1] << ", " << masses[2] << ", " << zhh << std::endl ;
