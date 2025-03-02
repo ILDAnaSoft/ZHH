@@ -994,7 +994,6 @@ SimpleChi2Result ZHHBaseKinfitProcessor::simpleChi2Pairing(pfoVector jets) {
 std::vector<double> ZHHBaseKinfitProcessor::calculateInitialMasses(pfoVector jets, pfoVector leptons, vector<unsigned int> perm)
 {
 	std::vector<double> masses(5, 0.);
-	std::vector<shared_ptr<MassConstraint>> mass_constraints;
 	shared_ptr<vector<shared_ptr<JetFitObject>>> jfo = make_shared<vector<shared_ptr<JetFitObject>>>();
 	shared_ptr<vector<shared_ptr<JetFitObject>>> jfo_perm = make_shared<vector<shared_ptr<JetFitObject>>>();
 	shared_ptr<vector<shared_ptr<LeptonFitObject>>> lfo = make_shared<vector<shared_ptr<LeptonFitObject>>>();
@@ -1022,7 +1021,7 @@ std::vector<double> ZHHBaseKinfitProcessor::calculateInitialMasses(pfoVector jet
 	}
 
 	z1 = make_shared<MassConstraint>(kMassZ);
-	z1->setName("z1 mass");
+	z1->setName("boson0 (z) mass");
 
 	system23 = make_shared<MassConstraint>(m_dijet23MassSum);
 	system23->setName("system23 mass");
@@ -1066,7 +1065,7 @@ std::vector<double> ZHHBaseKinfitProcessor::calculateInitialMasses(pfoVector jet
 	unsigned short dijet_idx = 0;
 	if (m_nDijets && m_dijetTargets[0] == 23) {
 		streamlog_out(MESSAGE) << "Adding mass constraint for boson z1 with mass " << z1->getMass() << " GeV" << std::endl ;
-		mass_constraints.push_back(z1);
+		masses[0] = z1->getMass();
 		dijet_idx = 1;
 	}
 
@@ -1079,7 +1078,7 @@ std::vector<double> ZHHBaseKinfitProcessor::calculateInitialMasses(pfoVector jet
 
 		streamlog_out(MESSAGE) << "Adding mass constraint for boson " << dijet_idx << " (m=" << m_dijetMasses[dijet_idx] << " GeV) and jets (" << jet_idx << "," << (jet_idx + 1) << ")" << std::endl ;
 		
-		mass_constraints.push_back(mc);
+		masses[dijet_idx] = mc->getMass();
 		jet_idx += 2;
 	}
 
@@ -1090,10 +1089,6 @@ std::vector<double> ZHHBaseKinfitProcessor::calculateInitialMasses(pfoVector jet
 			system23->addToFOList (*jfo_perm->at(i), 1); 
 		}
 	}
-
-	streamlog_out(MESSAGE) << "mass_constraints.size() = " << mass_constraints.size() << std::endl ;
-    for (unsigned short i = 0; i < mass_constraints.size(); i++)
-		masses[i] = mass_constraints[i]->getMass();
 
 	streamlog_out(MESSAGE) << "system123->getName() = " << system123->getName() << std::endl ;
 	

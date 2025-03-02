@@ -312,11 +312,11 @@ void ZHHllbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
     vector<double> startmasses;
     std::tie(startmasses, m_FitChi2_byMass, m_bestMatchingByMass) = calculateMassesFromSimpleChi2Pairing(Jets, Leptons);
 
-    m_Boson1BeforeFit  = startmasses[0];
-    m_Boson2BeforeFit = startmasses[2];
-    m_Boson3BeforeFit = startmasses[3];
-    m_System23MassBeforeFit = startmasses[4];
-    m_System123MassBeforeFit = startmasses[5];
+    m_Boson1BeforeFit = startmasses[0];
+    m_Boson2BeforeFit = startmasses[1];
+    m_Boson3BeforeFit = startmasses[2];
+    m_System23MassBeforeFit = startmasses[3];
+    m_System123MassBeforeFit = startmasses[4];
     streamlog_out(MESSAGE) << "masses from simple chi2:" << m_Boson1BeforeFit << ", " << m_Boson2BeforeFit << ", " << m_Boson3BeforeFit << ", " << m_System23MassBeforeFit << ", " << m_System123MassBeforeFit << std::endl ; 
 
     m_pTTree->Fill();
@@ -452,7 +452,7 @@ std::tuple<std::vector<double>, double, std::vector<unsigned short>>
   for (auto jet_v4 : fourVecs)
     hhFourMomentum += jet_v4;
 
-  ROOT::Math::PxPyPzEVector Z_v4 = v4(leptons.at(0)) + v4(leptons.at(1));
+  ROOT::Math::PxPyPzEVector Z_v4 = v4(leptons[0]) + v4(leptons[1]);
 
   ROOT::Math::PxPyPzEVector zhhFourMomentum = hhFourMomentum + Z_v4;
 
@@ -463,15 +463,18 @@ std::tuple<std::vector<double>, double, std::vector<unsigned short>>
   std::vector<float> dijet_masses;
 
   unsigned short output_idx = 0;
+  unsigned short nDijets = m_nDijets;
   if (m_nDijets) {
     if (m_dijetTargets[output_idx] == 23) {
       masses[0] = Z_v4.M();
+      nDijets--;
       output_idx++;
     }
     
     std::tie(dijet_masses, chi2min, bestperm) = simpleChi2Pairing(jets);
     
-    for (unsigned short dijet_idx = 0; dijet_idx < m_nDijets; dijet_idx++) {
+    for (unsigned short dijet_idx = 0; dijet_idx < nDijets; dijet_idx++) {
+      std::cerr << "DiJet Mass " << dijet_idx << " = " << dijet_masses[dijet_idx] << std::endl;
       masses[output_idx] = dijet_masses[dijet_idx];
       output_idx++;
     }
