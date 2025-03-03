@@ -120,7 +120,6 @@ class ZHHBaseKinfitProcessor: public Processor
 		bool MODE_IS_MH{};
 		bool MODE_IS_EQM{};
 
-		std::vector<std::string> m_readContraints{};
 		unsigned short m_nDijets{};
 		std::vector<unsigned short> m_dijetTargets{};
 		std::vector<unsigned short> m_constraintTypes{}; // type 0: hard constraint, type 1: Z soft constraint (2.4952/2, 91.2), type 2: EQM

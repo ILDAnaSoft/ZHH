@@ -349,9 +349,9 @@ void ZHHqqbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
   auto fitobjects = bestFitResult.fitobjects;
   vector<unsigned int> perm;
   streamlog_out(MESSAGE1) << "Fitter contains " << fitobjects->size() << " fitobjects : ";
-  for (auto it = fitobjects->begin(); it != fitobjects->end(); ++it) {
-    streamlog_out(MESSAGE1) << (*it)->getName() << " ";
-    perm.push_back((unsigned int)((string)(*it)->getName()).back()-48);
+  for (unsigned short i = 0; i < m_nJets; i++) {
+    streamlog_out(MESSAGE1) << i << " = " << fitobjects->at(i)->getName() << endl;
+    perm.push_back(i);
   }
   streamlog_out(MESSAGE1) << endl;
 

@@ -668,7 +668,7 @@ void ZHHBaseKinfitProcessor::clearBaseValues() {
 };
 
 void ZHHBaseKinfitProcessor::init() {
-	streamlog_out(DEBUG) << "   init called  " << std::endl;
+	streamlog_out(MESSAGE) << "init called" << std::endl;
 	this->clearBaseValues();
 
 	m_nRun = 0;
@@ -698,10 +698,10 @@ void ZHHBaseKinfitProcessor::init() {
 
 	// setting the mode, and the names of constraints to calculate the associated boson momenta (for pmax and cos theta)
 	if (m_fithypothesis == "NMC")    { MODE = MODE_NMC    ; MODE_IS_NMC     = true; } else
-	if (m_fithypothesis == "ZHH")    { MODE = MODE_ZHH    ; MODE_IS_ZHH     = true; m_readContraints = {"z1 mass", "h2 mass", "h1 mass"}; } else
-	if (m_fithypothesis == "ZZH")    { MODE = MODE_ZZH    ; MODE_IS_ZZH     = true; m_readContraints = {"z1 mass", "z3 mass", "h1 mass"}; } else
-	if (m_fithypothesis == "ZZZ")    { MODE = MODE_ZZZ    ; MODE_IS_ZZZ     = true; m_readContraints = {"z1 mass", "z3 mass", "z2 mass"}; } else
-	if (m_fithypothesis == "ZZHsoft"){ MODE = MODE_ZZHsoft; MODE_IS_ZZHsoft = true; m_readContraints = {"z1 mass", "z3 mass", "h1 mass"}; } else
+	if (m_fithypothesis == "ZHH")    { MODE = MODE_ZHH    ; MODE_IS_ZHH     = true; } else
+	if (m_fithypothesis == "ZZH")    { MODE = MODE_ZZH    ; MODE_IS_ZZH     = true; } else
+	if (m_fithypothesis == "ZZZ")    { MODE = MODE_ZZZ    ; MODE_IS_ZZZ     = true; } else
+	if (m_fithypothesis == "ZZHsoft"){ MODE = MODE_ZZHsoft; MODE_IS_ZZHsoft = true; } else
 	if (m_fithypothesis == "MH")     { MODE = MODE_MH     ; MODE_IS_MH      = true; } else
 	if (m_fithypothesis == "EQM")    { MODE = MODE_EQM    ; MODE_IS_EQM     = true; } else
 		throw EVENT::Exception("Unimplemented fithypothesis");

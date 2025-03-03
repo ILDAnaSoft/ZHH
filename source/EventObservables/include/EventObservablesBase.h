@@ -116,7 +116,6 @@ class EventObservablesBase: public Processor
 		virtual std::string m_jetMatchingSourceParameter() = 0; // e.g. best_perm_ll_from_kinfit ; 1 for "from mass chi2", 2 for "from kinfit"
 		virtual std::string m_yMinusParameter() = 0;
 		virtual std::string m_yPlusParameter() = 0;
-
 		virtual bool m_use_matrix_elements() = 0;
 
 		// names of input collections

@@ -209,6 +209,7 @@ void FinalStateRecorder::init()
 
 		m_pTTree->Branch("process", &m_process);
 		m_pTTree->Branch("polarization_code", &m_polarization_code);
+		m_pTTree->Branch("cross_section", &m_cross_section);
 		m_pTTree->Branch("event_category", &m_event_category);
 		m_pTTree->Branch("event_category_zhh", &m_event_category_zhh);
 		m_pTTree->Branch("n_fermion", &m_n_fermion);
@@ -570,6 +571,7 @@ void FinalStateRecorder::end()
 		m_jsonFile["nEvtSum"] = m_n_evt_sum;
 		m_jsonFile["polElectron"] = m_beam_pol1;
 		m_jsonFile["polPositron"] = m_beam_pol2;
+		m_jsonFile["polCode"] = m_polarization_code;
 		m_jsonFile["crossSection"] = m_cross_section;
 		m_jsonFile["crossSectionError"] = m_cross_section_err;
 		m_jsonFile["eventWeight"] = m_event_weight;

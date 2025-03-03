@@ -30,8 +30,7 @@ class EventObservablesQQ : public EventObservablesBase, public EventObservablesF
 		std::string m_jetMatchingParameter() { return m_JMP; };
 		std::string m_jetMatchingSourceParameter() { return m_JMSP; };
 
-		// PRELIMINARY!!!
-		bool m_use_matrix_elements() { return true; };
+		virtual bool m_use_matrix_elements() { return true; };
 
 		std::string m_yMinusParameter () { return "y56"; };
 		std::string m_yPlusParameter () { return "y67"; };
