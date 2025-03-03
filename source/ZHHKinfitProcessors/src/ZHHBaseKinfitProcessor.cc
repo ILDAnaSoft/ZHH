@@ -707,22 +707,15 @@ void ZHHBaseKinfitProcessor::init() {
 		throw EVENT::Exception("Unimplemented fithypothesis");
 
 	// assign m_dijetTargets for simple chi square calculation
-	m_dijetTargets = {};
+	m_dijetTargets = { 23, 25, 25 }; // dummy values, obly used for readout. getMass() does not actually use the mass given when constructing the MassConstraint
 
-	if (m_fithypothesis == "MH")  { m_nDijets = 1; m_dijetTargets = { 25 }; m_constraintTypes = {0}; };
-	if (m_fithypothesis == "EQM") { m_constraintTypes = {2}; };
+	if (MODE_IS_MH)  { m_nDijets = 1; m_dijetTargets = { 25 }; m_constraintTypes = {0}; };
+	if (MODE_IS_EQM) { m_constraintTypes = {2}; };
 
-	if (m_nAskedJets == 4) {
-		if (m_fithypothesis == "ZHH")     { m_nDijets = 2; m_dijetTargets = { 25, 25 }; m_constraintTypes = {0, 0}; } else 
-		if (m_fithypothesis == "ZZH")     { m_nDijets = 2; m_dijetTargets = { 23, 25 }; m_constraintTypes = {0, 0}; } else
-		if (m_fithypothesis == "ZZZ")     { m_nDijets = 2; m_dijetTargets = { 23, 23 }; m_constraintTypes = {0, 0}; }
-		if (m_fithypothesis == "ZZHsoft") { m_nDijets = 2; m_dijetTargets = { 23, 23 }; m_constraintTypes = {1, 0}; }
-	} else if (m_nAskedJets == 6) {
-		if (m_fithypothesis == "ZHH")     { m_nDijets = 3; m_dijetTargets = { 23, 25, 25 }; m_constraintTypes = {0, 0, 0}; } else 
-		if (m_fithypothesis == "ZZH")     { m_nDijets = 3; m_dijetTargets = { 23, 23, 25 }; m_constraintTypes = {0, 0, 0}; } else
-		if (m_fithypothesis == "ZZZ")     { m_nDijets = 3; m_dijetTargets = { 23, 23, 23 }; m_constraintTypes = {0, 0, 0}; }
-		if (m_fithypothesis == "ZZHsoft") { m_nDijets = 3; m_dijetTargets = { 23, 23, 25 }; m_constraintTypes = {0, 1, 0}; }
-	}
+	if (MODE_IS_ZHH)     { m_nDijets = 3; m_dijetTargets = { 23, 25, 25 }; m_constraintTypes = {0, 0, 0}; } else 
+	if (MODE_IS_ZZH)     { m_nDijets = 3; m_dijetTargets = { 23, 23, 25 }; m_constraintTypes = {0, 0, 0}; } else
+	if (MODE_IS_ZZZ)     { m_nDijets = 3; m_dijetTargets = { 23, 23, 23 }; m_constraintTypes = {0, 0, 0}; }
+	if (MODE_IS_ZZHsoft) { m_nDijets = 3; m_dijetTargets = { 23, 23, 25 }; m_constraintTypes = {0, 1, 0}; }
 
 	m_nDijets = m_dijetTargets.size(); // MH not implemented for simpleChi2 (considered not needed)
 
@@ -876,17 +869,19 @@ void ZHHBaseKinfitProcessor::processRunHeader(LCRunHeader* run)
 }
 
 void ZHHBaseKinfitProcessor::assignPostFitMasses(FitResult fitResult, bool woNu) {
-	streamlog_out(MESSAGE1) << "error code = " << fitResult.fitter->getError() << endl;
-	streamlog_out(MESSAGE1) << "fit prob = " << fitResult.fitter->getProbability() << endl;
-	streamlog_out(MESSAGE1) << "fit chi2 = " << fitResult.fitter->getChi2()<< endl;
+	streamlog_out(MESSAGE1) << "AssignPostFitMasses " << (woNu ? "WITHOUT" : "WITH") << " neutrino correction" << std::endl;
+	streamlog_out(MESSAGE1) << "(error code, fit prob, chi2) = (" << fitResult.fitter->getError() << ", " << fitResult.fitter->getProbability() << ", " << fitResult.fitter->getChi2() << ")" << endl;
 
-	streamlog_out(MESSAGE) << "Getting constraints now... ";
 	auto constraints = fitResult.constraints;
-	streamlog_out(MESSAGE) << "Fitter contains " << constraints.size() << " constraints" << std::endl;
+	streamlog_out(MESSAGE) << constraints.size() << " constraints set:" << std::endl;
 	
-	for (auto constraint : constraints) {
-		if (constraint != nullptr)
-			streamlog_out(MESSAGE) << constraint->getName() << std::endl;
+	for (unsigned short constraint_idx = 0; constraint_idx < constraints.size(); constraint_idx++) {
+		streamlog_out(MESSAGE) << " Constraint [" << constraint_idx << "]: ";
+		if (constraints[constraint_idx] != nullptr) {
+			streamlog_out(MESSAGE) << constraints[constraint_idx]->getName() << " M=" << (dynamic_pointer_cast<MassConstraint>(constraints[constraint_idx])->getMass()) << std::endl;
+		} else {
+			streamlog_out(MESSAGE) << "Not set" << std::endl;
+		}
 	}
 
 	shared_ptr<MassConstraint> mc_boson1;
@@ -907,6 +902,7 @@ void ZHHBaseKinfitProcessor::assignPostFitMasses(FitResult fitResult, bool woNu)
 	// find p1st and cos1st
 	float p1st = 0.0;
 	float cos1st = 0.0;
+	unsigned short highest_idx = -1;
 
 	ROOT::Math::PxPyPzEVector tempvec (0., 0., 0., 0.);
 
@@ -915,19 +911,21 @@ void ZHHBaseKinfitProcessor::assignPostFitMasses(FitResult fitResult, bool woNu)
 			shared_ptr<ParticleConstraint> mc = dynamic_pointer_cast<ParticleConstraint>(constraints[i]);
 			double *temp = mc->getFourMomentum(1);
 
-			streamlog_out(MESSAGE) << "PRINTING " << mc->getName() << std::endl;
-
 			tempvec.SetPxPyPzE(temp[1], temp[2], temp[3], temp[0]);
 			//streamlog_out(MESSAGE) << "CURRENT MOMENTUM : '" << tempvec.P() << std::endl;
 
 			if (tempvec.P() > p1st) {
 				p1st = tempvec.P();
 				cos1st = cos(tempvec.Theta());
+				highest_idx = i;
 			}
 
 			delete temp;
 		}
 	}
+
+	if (p1st > 0)
+		streamlog_out(MESSAGE) << "Found p1st from constraint " << highest_idx << " ("<< constraints[highest_idx]->getName() <<") with p1st=" << p1st << std::endl;
 
 	m_bestMatchingKinfit = fitResult.permutation;
 
@@ -973,6 +971,7 @@ SimpleChi2Result ZHHBaseKinfitProcessor::simpleChi2Pairing(pfoVector jets) {
 
 	if (m_nDijets == 3 && m_nAskedJets == 4) {
 		// Z mass is calculated in the channel specific processors
+		// this is only needed for vv; for qq the below works "as is"
 		if (m_dijetTargets[0] == 23) {
 			dijetTargets = {m_dijetTargets[1], m_dijetTargets[2]};
 		} else
@@ -1099,6 +1098,8 @@ std::vector<double> ZHHBaseKinfitProcessor::calculateInitialMasses(pfoVector jet
 }
 
 ZHHBaseKinfitProcessor::FitResult ZHHBaseKinfitProcessor::performFIT(pfoVector jets, pfoVector leptons, bool traceEvent, bool woNu) {
+	streamlog_out(MESSAGE6) << "performFIT " << (woNu ? "WITHOUT" : "WITH") <<" neutrino correction"  << std::endl ; //changed from debug level
+
 	shared_ptr<vector<shared_ptr<JetFitObject>>> jfo = make_shared<vector<shared_ptr<JetFitObject>>>();
 	shared_ptr<vector<shared_ptr<LeptonFitObject>>> lfo = make_shared<vector<shared_ptr<LeptonFitObject>>>();
 
@@ -1130,7 +1131,7 @@ ZHHBaseKinfitProcessor::FitResult ZHHBaseKinfitProcessor::performFIT(pfoVector j
 		const string name = "jet"+to_string(i_jet);
 		j->setName(name.c_str());
 		//streamlog_out(MESSAGE)  << " start four-vector of jet"<< i_jet+1 <<": " << *j  << std::endl ;
-		streamlog_out(MESSAGE)  << " start four-vector of jet"<< i_jet+1 <<": " << "[" << jets[ i_jet ]->getMomentum()[0] << ", " << jets[ i_jet ]->getMomentum()[1] << ", " << jets[ i_jet ]->getMomentum()[2] << ", " << jets[ i_jet ]->getEnergy() << "]" << std::endl ;
+		streamlog_out(DEBUG)  << " start four-vector of jet"<< i_jet+1 <<": " << "[" << jets[ i_jet ]->getMomentum()[0] << ", " << jets[ i_jet ]->getMomentum()[1] << ", " << jets[ i_jet ]->getMomentum()[2] << ", " << jets[ i_jet ]->getEnergy() << "]" << std::endl ;
 	}
 
 	for (size_t i_lep =0; i_lep < leptons.size(); i_lep++) {
@@ -1142,7 +1143,7 @@ ZHHBaseKinfitProcessor::FitResult ZHHBaseKinfitProcessor::performFIT(pfoVector j
 		const string name = "lepton"+to_string(i_lep);
 		l->setName(name.c_str());
 		//streamlog_out(MESSAGE)  << " start four-vector of lepton"<< i_lep+1 <<": " << *l  << std::endl ;
-		streamlog_out(MESSAGE)  << " start four-vector of lepton"<< i_lep+1 <<": " << "[" << leptons[ i_lep ]->getMomentum()[0] << ", " << leptons[ i_lep ]->getMomentum()[1] << ", " << leptons[ i_lep ]->getMomentum()[2] << ", " << leptons[ i_lep ]->getEnergy() << "]"  << std::endl ;
+		streamlog_out(DEBUG)  << " start four-vector of lepton"<< i_lep+1 <<": " << "[" << leptons[ i_lep ]->getMomentum()[0] << ", " << leptons[ i_lep ]->getMomentum()[1] << ", " << leptons[ i_lep ]->getMomentum()[2] << ", " << leptons[ i_lep ]->getEnergy() << "]"  << std::endl ;
 	}
 
 	assert(m_nJets == m_nAskedJets);
@@ -1212,9 +1213,9 @@ ZHHBaseKinfitProcessor::FitResult ZHHBaseKinfitProcessor::performFIT(pfoVector j
 			streamlog_out(MESSAGE6) << "fit using OPAL GSL Fitter"  << std::endl ; //changed from debug level 
 		}
 
-		streamlog_out(MESSAGE)  << "Start four-vector of" << std::endl;
+		streamlog_out(DEBUG)  << "Start four-vector of" << std::endl;
 		for (auto j : *jfo_perm) {
-			streamlog_out(MESSAGE)  << " jet " << j->getName() << ": " << *j  << std::endl ;  //changed from debug level 
+			streamlog_out(DEBUG)  << " jet " << j->getName() << ": " << *j  << std::endl ;  //changed from debug level 
 
 			fos->push_back(j);
 			pxc->addToFOList(*j);
@@ -1228,7 +1229,7 @@ ZHHBaseKinfitProcessor::FitResult ZHHBaseKinfitProcessor::performFIT(pfoVector j
 			photon = make_shared<ISRPhotonFitObject>(0., 0., -pzc->getValue(), b, ISRPzMaxB);
 			photon->setName("photon");
 			if( m_fitISR ) {
-				streamlog_out(MESSAGE)  << " ISR photon: " << *(photon) << std::endl ; //changed from debug level 
+				streamlog_out(DEBUG)  << " ISR photon: " << *(photon) << std::endl ; //changed from debug level 
 				fos->push_back(photon);
 				pxc->addToFOList(*(photon));
 				pyc->addToFOList(*(photon));
@@ -1364,22 +1365,17 @@ ZHHBaseKinfitProcessor::FitResult ZHHBaseKinfitProcessor::performFIT(pfoVector j
 		}
 
 		// do the fit
-		streamlog_out(MESSAGE8) << "constraints added to fit:" << std::endl ; //changed from debug level 
 		auto fitconstraints = fitter->getConstraints();
 		auto fitsoftconstraints = fitter->getSoftConstraints();
-		streamlog_out(MESSAGE8) << "HELLO WORLD nConstraints=" << fitconstraints->size() << std::endl ; //changed from debug level 
-		for (auto constraint: *fitconstraints) {
-			streamlog_out(MESSAGE8) << "A" << std::endl ; //changed from debug level 
-			streamlog_out(MESSAGE8) << constraint->getName() << " constraint value = " << (constraint)->getValue() << std::endl; //changed from debug level 
-			streamlog_out(MESSAGE8) << "B" << std::endl ; //changed from debug level 
-		}
+
+		streamlog_out(MESSAGE8) << "(" << fitconstraints->size() << ", " << fitsoftconstraints->size() << ")=(nHard, nSoft) constraints added to fit:" << std::endl ; //changed from debug level 
+		for (auto constraint: *fitconstraints)
+			streamlog_out(MESSAGE8) << "HARD " << constraint->getName() << " constr value = " << (constraint)->getValue() << std::endl; //changed from debug level 
 
 		for (auto it = fitsoftconstraints->begin(); it != fitsoftconstraints->end(); ++it)
-			streamlog_out(MESSAGE8) << (*it)->getName() << " constraint value = " << (*it)->getValue() << std::endl; //changed from debug level 
+			streamlog_out(MESSAGE8) << "SOFT " << (*it)->getName() << " constr value = " << (*it)->getValue() << std::endl; //changed from debug level 
 
-		streamlog_out(MESSAGE8) << "DO FIT" << std::endl ; //changed from debug level 
 		float fitProbability = fitter->fit();
-		streamlog_out(MESSAGE8) << "DIT FIT" << std::endl ; //changed from debug level 
 
 		// evaluate the outputs
 		if(fitter->getError() == 0) {
@@ -1447,7 +1443,7 @@ ZHHBaseKinfitProcessor::FitResult ZHHBaseKinfitProcessor::performFIT(pfoVector j
 	}
 
 	if (bestFitResult.fitter != nullptr) {
-		assignPostFitMasses(bestFitResult, false);
+		assignPostFitMasses(bestFitResult, woNu);
 	}
 
 	return bestFitResult;

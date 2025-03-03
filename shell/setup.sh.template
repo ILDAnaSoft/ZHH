@@ -7,7 +7,7 @@ source $REPO_ROOT/shell/common.sh
 
 # Force cmake to use custom dependency versions instead of those in key4hep
 # must match CMakeLists.txt in source directory
-export Physsim_PATH="$Physsim"
+export Physsim_ROOT="$Physsim"
 export MarlinKinfit_ROOT="$MarlinKinfit"
 export LD_LIBRARY_PATH="$Physsim/lib64:$LD_LIBRARY_PATH"
 export CPATH=$(echo $CPATH | sed -e "s|/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/physsim/0.5-433xdn/include/physsim|$Physsim/include|g")

@@ -193,7 +193,7 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         if (m_paired_lep_type != 11 && m_paired_lep_type != 13)
             throw EVENT::Exception("Invalid pairedLepType " + std::to_string( m_paired_lep_type));
 
-        std::cerr << "m_paired_lep_type: " << m_paired_lep_type;
+        streamlog_out(DEBUG) << "PairedLeptons of type " << m_paired_lep_type << " to M=" << m_mzll << std::endl;
 
         calculateMatrixElements(m_paired_lep_type, 5, v4_paired_isolep1, v4_paired_isolep2,
                                 v4old(inputJetCollection->getElementAt(0)), v4old(inputJetCollection->getElementAt(1)),

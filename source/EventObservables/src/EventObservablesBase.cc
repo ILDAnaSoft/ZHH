@@ -982,6 +982,7 @@ void EventObservablesBase::calculateMatrixElements(
 	double lcme_zhh = 0.;
 	double lcme_zzh = 0.;
 
+	streamlog_out(DEBUG) << "ME^2 (ZHH; ZZH) =" << std::endl;
 	for (auto perm_from_z: perms_from_z) {
 		do {
 			TLorentzVector zhh_inputs [4] = { vecs_from_z[perm_from_z[0]], vecs_from_z[perm_from_z[1]], vecs_jet[idx[0]] + vecs_jet[idx[1]], vecs_jet[idx[2]] + vecs_jet[idx[3]] };
@@ -993,7 +994,7 @@ void EventObservablesBase::calculateMatrixElements(
 			lcme_zhh = m_lcmezhh->GetMatrixElement2();
 			lcme_zzh = m_lcmezzh->GetMatrixElement2();
 			
-			streamlog_out(DEBUG) << "Perm " << nperm << "/" <<nperms  << ": MatrixElement2 (ZHH; ZZH)=(" << lcme_zhh << "; " << lcme_zzh << ") | Weight " << weights[nperm] << std::endl;
+			streamlog_out(DEBUG) << " Perm " << (nperm+1) << "/" <<nperms  << ": (" << lcme_zhh << "; " << lcme_zzh << ") | wt=" << weights[nperm] << std::endl;
 
 			result_zhh += lcme_zhh * weights[nperm];
 			result_zzh += lcme_zzh * weights[nperm];

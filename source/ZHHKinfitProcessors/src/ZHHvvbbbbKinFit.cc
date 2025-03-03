@@ -158,7 +158,7 @@ void ZHHvvbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
   FitResult woNuFitResult = performFIT( Jets, Leptons, traceEvent, true );
   BaseFitter* woNuFitter = woNuFitResult.fitter.get();
  
- streamlog_out(MESSAGE) << "Performed fit without neutrino correction" << endl;
+ streamlog_out(MESSAGE) << "Performed fit WITHOUT neutrino correction" << endl;
   if (!woNuFitResult.fitter) {
     streamlog_out(MESSAGE) << "Did not find a functioning fit" << endl;
   } else {
@@ -461,11 +461,11 @@ std::tuple<std::vector<double>, double, std::vector<unsigned short>>
     seenFourMomentum += jet_v4;
 
   ROOT::Math::PxPyPzEVector hhFourMomentum(seenFourMomentum);
-  ROOT::Math::PxPyPzMVector ZinvFourMomentum(-seenFourMomentum.Px(), -seenFourMomentum.Pz(), -seenFourMomentum.Pz(), 91.1880); // M_Z PDG average in 2024 review
+  ROOT::Math::PxPyPzMVector ZinvFourMomentum(-seenFourMomentum.Px(), -seenFourMomentum.Pz(), -seenFourMomentum.Pz(), kMassZ); // system1; M_Z PDG average in 2024 review
 
   zhhFourMomentum = hhFourMomentum + ZinvFourMomentum;
-  double hh = hhFourMomentum.M();
-  double zhh = zhhFourMomentum.M();
+  double hh = hhFourMomentum.M(); // system23
+  double zhh = zhhFourMomentum.M(); // system123
 
   float chi2min = 99999.;
   std::vector<float> dijet_masses;
@@ -473,7 +473,7 @@ std::tuple<std::vector<double>, double, std::vector<unsigned short>>
   unsigned short output_idx = 0;
   if (m_nDijets) {
     if (m_dijetTargets[output_idx] == 23) {
-      masses[0] = kMassZ;
+      masses[0] = kMassZ; // system1; dummy value
       output_idx++;
     }
     

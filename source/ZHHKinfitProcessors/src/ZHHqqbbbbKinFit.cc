@@ -159,7 +159,7 @@ void ZHHqqbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
   FitResult woNuFitResult = performFIT( Jets, Leptons, traceEvent, true );
   BaseFitter* woNuFitter = woNuFitResult.fitter.get();
  
- streamlog_out(MESSAGE) << "Performed fit without neutrino correction" << endl;
+ streamlog_out(MESSAGE) << "Performed fit WITHOUT neutrino correction" << endl;
   if (!woNuFitResult.fitter) {
     streamlog_out(MESSAGE) << "Did not find a functioning fit" << endl;
   } else {
@@ -471,8 +471,8 @@ std::tuple<std::vector<double>, double, std::vector<unsigned short>>
   for (auto jet_v4 : fourVecs)
     zhhFourMomentum += jet_v4;
   
-  double hh;
-  double zhh = zhhFourMomentum.M();
+  double hh; // system23
+  double zhh = zhhFourMomentum.M(); // system123
 
   // TODO: use b-tagging information; e.g. use only 4 out of 6 jets with highest b-tag
   float chi2min = 99999.;
@@ -480,11 +480,6 @@ std::tuple<std::vector<double>, double, std::vector<unsigned short>>
 
   unsigned short output_idx = 0;
   if (m_nDijets) {
-    if (m_dijetTargets[output_idx] == 23) {
-      masses[0] = kMassZ;
-      output_idx++;
-    }
-
     streamlog_out(MESSAGE) << "m_nDijets = " << m_nDijets << std::endl;
     streamlog_out(MESSAGE) << "jets.size() = " << jets.size() << std::endl;
 

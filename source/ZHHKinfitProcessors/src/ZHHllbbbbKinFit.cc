@@ -153,7 +153,7 @@ void ZHHllbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
   FitResult woNuFitResult = performFIT( Jets, Leptons, traceEvent, true );
   BaseFitter* woNuFitter = woNuFitResult.fitter.get();
  
- streamlog_out(MESSAGE) << "Performed fit without neutrino correction" << endl;
+ streamlog_out(MESSAGE) << "Performed fit WITHOUT neutrino correction" << endl;
   if (!woNuFitResult.fitter) {
     streamlog_out(MESSAGE) << "Did not find a functioning fit" << endl;
   } else {
@@ -452,12 +452,12 @@ std::tuple<std::vector<double>, double, std::vector<unsigned short>>
   for (auto jet_v4 : fourVecs)
     hhFourMomentum += jet_v4;
 
-  ROOT::Math::PxPyPzEVector Z_v4 = v4(leptons[0]) + v4(leptons[1]);
+  ROOT::Math::PxPyPzEVector Z_v4 = v4(leptons[0]) + v4(leptons[1]); // system1
 
   ROOT::Math::PxPyPzEVector zhhFourMomentum = hhFourMomentum + Z_v4;
 
-  double hh = hhFourMomentum.M();
-  double zhh = zhhFourMomentum.M();
+  double hh = hhFourMomentum.M(); // system23
+  double zhh = zhhFourMomentum.M(); // system123
 
   float chi2min = 99999.;
   std::vector<float> dijet_masses;
