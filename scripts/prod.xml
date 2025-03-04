@@ -31,7 +31,7 @@
         <constant name="MCParticleCollectionName" value="MCParticlesSkimmed" />
         <constant name="CMSEnergy" value="550." />
 	    <constant name="ISRPzMax" value="125.6" />
-        <constant name="Verbosity" value="MESSAGE" />
+        <constant name="Verbosity" value="SILENT" />
     </constants>
 
     <execute>

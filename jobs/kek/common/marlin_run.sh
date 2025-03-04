@@ -10,6 +10,7 @@ function marlin_run() {
     echo "OUT_BASE_NAME: $OUT_BASE_NAME"
     echo "EVENTS_SKIP: $EVENTS_SKIP"
     echo "EVENTS_MAX: $EVENTS_MAX"
+    echo "System info: $(uname -a)"
 
     if [[ -z $INPUT_FILE || -z $OUT_BASE_NAME || -z $EVENTS_SKIP || -z $EVENTS_MAX ]];
     then
