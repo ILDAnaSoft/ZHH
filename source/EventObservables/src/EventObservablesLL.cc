@@ -161,6 +161,29 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
 
         // TREAT 4 JET COLELCTION
 
+        // VANILLA JET MATCHING
+        std::vector<float> zhh_masses;
+        std::vector<ROOT::Math::PxPyPzEVector> jet_v4 = v4(m_jets);
+
+        std::tie(m_zhh_jet_matching, zhh_masses, m_zhh_chi2) = pairJetsByMass(jet_v4, { 25, 25 });
+
+        m_zhh_mh1 = zhh_masses[0];
+        m_zhh_mh2 = zhh_masses[1];
+        m_zhh_mhh = (jet_v4[0] + jet_v4[1] + jet_v4[2] + jet_v4[3]).M();
+
+        std::vector<ROOT::Math::PxPyPzEVector> dijets = {
+            v4(paired_isolep1) + v4(paired_isolep2),
+            jet_v4[m_zhh_jet_matching[0]] + jet_v4[m_zhh_jet_matching[1]],
+            jet_v4[m_zhh_jet_matching[2]] + jet_v4[m_zhh_jet_matching[3]]
+        };
+    
+        for (ROOT::Math::PxPyPzEVector dijet: dijets) {
+            if (dijet.P() > m_zhh_p1st) {
+                m_zhh_p1st = dijet.P();
+                m_zhh_cosTh1st = cos(dijet.Theta());
+            }
+        }
+
         // mb12 and mb34
         m_mbmax12 = (
             v4(inputJetCollection->getElementAt(m_bTagsSorted[0].first)) +
@@ -203,3 +226,7 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         // TODO: try calculating with kinfit outputs
     }
 };
+
+void EventObservablesLL::calculateSimpleZHHChi2() {
+	// do it in the above loop instead
+}

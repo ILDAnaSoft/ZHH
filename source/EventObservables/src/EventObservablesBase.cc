@@ -222,6 +222,12 @@ EventObservablesBase::EventObservablesBase(const std::string &name) : Processor(
 
 void EventObservablesBase::prepareBaseTree()
 {
+	// PREPARE PROCESSOR ARGUMENTS
+	float target_p_due_crossing_angle = m_ECM * 0.007; // crossing angle = 14 mrad
+	double E_lab = 2 * sqrt( std::pow( 0.548579909e-3 , 2 ) + std::pow( m_ECM / 2 , 2 ) + std::pow( target_p_due_crossing_angle , 2 ) + 0. + 0.);
+
+	m_ecms = ROOT::Math::PxPyPzEVector(target_p_due_crossing_angle, 0., 0., E_lab) ;
+
 	TTree* ttree = getTTree();
 
 	if (m_outputFile.size()) {
@@ -424,6 +430,8 @@ void EventObservablesBase::clearBaseValues()
 	streamlog_out(DEBUG) << "   Clear called  " << std::endl;
 
 	m_statusCode = 0;
+
+	m_pmis.SetPxPyPzE(0.,0.,0.,0.);
 	
 	m_missingPT = -999.;
 	m_missingE = -999.;
@@ -511,6 +519,8 @@ void EventObservablesBase::clearBaseValues()
     m_zhh_mh2 = 0.;
 	m_zhh_mhh = 0.;
     m_zhh_chi2 = 0.;
+	m_zhh_p1st = 0.;
+	m_zhh_cosTh1st = 0.;
 	
 	/*
 	m_dileptonMassPrePairing = -999.;
@@ -552,10 +562,6 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 
 		// ---------- MISSING PT ----------
 		// corrected for crossing angle
-		float target_p_due_crossing_angle = m_ECM * 0.007; // crossing angle = 14 mrad
-		double E_lab = 2 * sqrt( std::pow( 0.548579909e-3 , 2 ) + std::pow( m_ECM / 2 , 2 ) + std::pow( target_p_due_crossing_angle , 2 ) + 0. + 0.);
-
-		ROOT::Math::PxPyPzEVector ecms(target_p_due_crossing_angle,0.,0.,E_lab) ;
 		ROOT::Math::PxPyPzEVector pfosum(0.,0.,0.,0.);
 		for (int i=0; i < m_npfos; i++) {
 			ReconstructedParticle* pfo = (ReconstructedParticle*) inputPfoCollection->getElementAt(i);
@@ -569,11 +575,11 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 				m_ppfochargedmax = std::max(m_ppfochargedmax, (float)pfo_v4.P());
 			}
 		}
-		ROOT::Math::PxPyPzEVector pmis = ecms - pfosum;
+		m_pmis = m_ecms - pfosum;
 		
-		m_missingPT = pmis.Pt();
-		m_missingMass = pmis.M();
-		m_missingE = pmis.E();
+		m_missingPT = m_pmis.Pt();
+		m_missingMass = m_pmis.M();
+		m_missingE = m_pmis.E();
 		
 		// ---------- VISIBLE ENERGY ----------
 		m_Evis = pfosum.E();
@@ -950,13 +956,13 @@ void EventObservablesBase::calculateMatrixElements(
 	double result_zhh = 0.;
 	double result_zzh = 0.;
 
-	streamlog_out(MESSAGE) << "LCME Debug: E, Px, Py, Pz " << std::endl;
-	streamlog_out(MESSAGE) << "  Z_1: " << from_z_1.E() << " " << from_z_1.Px() << " " << from_z_1.Py() << " " << from_z_1.Pz() << std::endl;
-	streamlog_out(MESSAGE) << "  Z_2: " << from_z_2.E() << " " << from_z_2.Px() << " " << from_z_2.Py() << " " << from_z_2.Pz() << std::endl;
-	streamlog_out(MESSAGE) << "  J_1: " << vecs_jet[idx[0]].E() << " " << vecs_jet[idx[0]].Px() << " " << vecs_jet[idx[0]].Py() << " " << vecs_jet[idx[0]].Pz() << std::endl;
-	streamlog_out(MESSAGE) << "  J_2: " << vecs_jet[idx[1]].E() << " " << vecs_jet[idx[1]].Px() << " " << vecs_jet[idx[1]].Py() << " " << vecs_jet[idx[1]].Pz() << std::endl;
-	streamlog_out(MESSAGE) << "  J_3: " << vecs_jet[idx[2]].E() << " " << vecs_jet[idx[2]].Px() << " " << vecs_jet[idx[2]].Py() << " " << vecs_jet[idx[2]].Pz() << std::endl;
-	streamlog_out(MESSAGE) << "  J_4: " << vecs_jet[idx[3]].E() << " " << vecs_jet[idx[3]].Px() << " " << vecs_jet[idx[3]].Py() << " " << vecs_jet[idx[3]].Pz() << std::endl;
+	streamlog_out(DEBUG) << "LCME Debug: E, Px, Py, Pz " << std::endl;
+	streamlog_out(DEBUG) << "  Z_1: " << from_z_1.E() << " " << from_z_1.Px() << " " << from_z_1.Py() << " " << from_z_1.Pz() << std::endl;
+	streamlog_out(DEBUG) << "  Z_2: " << from_z_2.E() << " " << from_z_2.Px() << " " << from_z_2.Py() << " " << from_z_2.Pz() << std::endl;
+	streamlog_out(DEBUG) << "  J_1: " << vecs_jet[idx[0]].E() << " " << vecs_jet[idx[0]].Px() << " " << vecs_jet[idx[0]].Py() << " " << vecs_jet[idx[0]].Pz() << std::endl;
+	streamlog_out(DEBUG) << "  J_2: " << vecs_jet[idx[1]].E() << " " << vecs_jet[idx[1]].Px() << " " << vecs_jet[idx[1]].Py() << " " << vecs_jet[idx[1]].Pz() << std::endl;
+	streamlog_out(DEBUG) << "  J_3: " << vecs_jet[idx[2]].E() << " " << vecs_jet[idx[2]].Px() << " " << vecs_jet[idx[2]].Py() << " " << vecs_jet[idx[2]].Pz() << std::endl;
+	streamlog_out(DEBUG) << "  J_4: " << vecs_jet[idx[3]].E() << " " << vecs_jet[idx[3]].Px() << " " << vecs_jet[idx[3]].Py() << " " << vecs_jet[idx[3]].Pz() << std::endl;
 
 	/*
 	std::cout << "  TOT: " << from_z_1.E() + from_z_2.E() + vecs_jet[idx[0]].E() + vecs_jet[idx[1]].E() + vecs_jet[idx[2]].E() + vecs_jet[idx[3]].E() << " "

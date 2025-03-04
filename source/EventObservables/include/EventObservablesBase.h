@@ -206,6 +206,9 @@ class EventObservablesBase: public Processor
 		int m_nEvt;
 		int m_statusCode;
 
+		ROOT::Math::PxPyPzEVector m_pmis{};
+		ROOT::Math::PxPyPzEVector m_ecms{};
+		
 		float m_Evis{};
 		float m_missingMass{};
 		float m_invJetMass{};
@@ -241,6 +244,8 @@ class EventObservablesBase: public Processor
 		float m_zhh_mh2{};
 		float m_zhh_mhh{};
 		float m_zhh_chi2{};
+		float m_zhh_p1st{};
+		float m_zhh_cosTh1st{};
 
 		typedef std::pair<unsigned short, double> JetTaggingPair;
 

@@ -35,6 +35,9 @@ class EventObservablesVV : public EventObservablesBase, public EventObservablesF
 		std::string m_yMinusParameter () { return "y34"; };
 		std::string m_yPlusParameter () { return "y45"; };
 
+		// helper functions
+		void calculateSimpleZHHChi2();
+
 	protected:
 		// meta parameters
 		std::string m_input5JetCollection{};

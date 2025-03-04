@@ -249,7 +249,26 @@ void EventObservablesQQ::calculateSimpleZHHChi2() {
         jet_v4[m_bTagsSorted[3].first]
     }, { 25, 25 });
 
-    m_zhh_mz = (jet_v4[m_bTagsSorted[4].first] + jet_v4[m_bTagsSorted[5].first]).M();
+    const unsigned short idx_translation [4] = {
+        m_bTagsSorted[0].first,
+        m_bTagsSorted[1].first,
+        m_bTagsSorted[2].first,
+        m_bTagsSorted[3].first};
+
+    std::vector<ROOT::Math::PxPyPzEVector> dijets = {
+        jet_v4[m_bTagsSorted[4].first] + jet_v4[m_bTagsSorted[5].first], // Z
+        jet_v4[idx_translation[m_zhh_jet_matching[0]]] + jet_v4[idx_translation[m_zhh_jet_matching[1]]], // H
+        jet_v4[idx_translation[m_zhh_jet_matching[2]]] + jet_v4[idx_translation[m_zhh_jet_matching[3]]] // H
+    };
+
+    for (ROOT::Math::PxPyPzEVector dijet: dijets) {
+        if (dijet.P() > m_zhh_p1st) {
+            m_zhh_p1st = dijet.P();
+            m_zhh_cosTh1st = cos(dijet.Theta());
+        }
+    }
+
+    m_zhh_mz = dijets[0].M();
     m_zhh_mh1 = zhh_masses[0];
     m_zhh_mh2 = zhh_masses[1];
     m_zhh_mhh = (jet_v4[m_bTagsSorted[0].first] + jet_v4[m_bTagsSorted[1].first] + jet_v4[m_bTagsSorted[2].first] + jet_v4[m_bTagsSorted[3].first]).M();
