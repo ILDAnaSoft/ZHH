@@ -236,6 +236,7 @@ void EventObservablesBase::prepareBaseTree()
 
 		ttree->Branch("evis", &m_Evis, "evis/F");
 		ttree->Branch("m_miss", &m_missingMass, "m_miss/F");
+		ttree->Branch("m_invjet", &m_invJetMass, "m_invjet/F");
 		ttree->Branch("ptmiss", &m_missingPT, "ptmiss/F");
 		ttree->Branch("emiss", &m_missingE, "emiss/F");
 		ttree->Branch("thrust", &m_thrust, "thrust/F");
@@ -263,10 +264,14 @@ void EventObservablesBase::prepareBaseTree()
 		ttree->Branch("yminus", &m_yMinus, "yminus/F");
 		ttree->Branch("yplus", &m_yPlus, "yplus/F");
 
-		// nhbb:njet:chi2:mpt:prob11:prob12:prob21:prob22
-		
-		
+		ttree->Branch("zhh_jet_matching", &m_zhh_jet_matching);
+		ttree->Branch("zhh_mz", &m_zhh_mz, "zhh_mz/F");
+		ttree->Branch("zhh_mh1", &m_zhh_mh1, "zhh_mh1/F");
+		ttree->Branch("zhh_mh2", &m_zhh_mh2, "zhh_mh2/F");
+		ttree->Branch("zhh_mhh", &m_zhh_mhh, "zhh_mhh/F");
+		ttree->Branch("zhh_chi2", &m_zhh_chi2, "zhh_chi2/F");
 
+		// nhbb:njet:chi2:mpt:prob11:prob12:prob21:prob22
 
 		ttree->Branch("bTags", &m_bTagValues);
 		ttree->Branch("cTags", &m_cTagValues);
@@ -442,6 +447,7 @@ void EventObservablesBase::clearBaseValues()
 
 	m_Evis  = -999.;
 	m_missingMass = -999.;
+	m_invJetMass = 0.;
 
 	m_yMinus = 0.;
 	m_yPlus = 0.;
@@ -496,12 +502,15 @@ void EventObservablesBase::clearBaseValues()
 	m_cmax32 = 0.;
 	m_cmax42 = 0.;
 
-	//m_jet_matching.clear();
-	//m_jet_matching_source = 0;
-	//m_using_kinfit = false;
-	//m_using_mass_chi2 = false;
-
 	m_jets.clear();
+
+	// ZHH
+	m_zhh_jet_matching.clear();
+    m_zhh_mz = 0.;
+    m_zhh_mh1 = 0.;
+    m_zhh_mh2 = 0.;
+	m_zhh_mhh = 0.;
+    m_zhh_chi2 = 0.;
 	
 	/*
 	m_dileptonMassPrePairing = -999.;
@@ -566,8 +575,9 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 		m_missingMass = pmis.M();
 		m_missingE = pmis.E();
 		
-		// ---------- VISIBLE ENERGY ----------                                          
+		// ---------- VISIBLE ENERGY ----------
 		m_Evis = pfosum.E();
+		m_invJetMass = pfosum.M();
 
 		// ---------- THRUST ----------
 		const EVENT::LCParameters& raw_pfo_params = inputPfoRawCollection->getParameters();
@@ -595,20 +605,6 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 		// and the numbers in the Kinfit processors
 		if ( m_nJets == m_nAskedJets() ) {
 			streamlog_out(MESSAGE) << "Continue with "<< m_nJets << " jets and "<< inputLepPairCollection->getNumberOfElements() << " ISOLeptons" << std::endl;
-
-			// ---------- JET MATCHING ----------
-			/*
-			(void) inputJetCollection->getParameters().getIntVals(m_jetMatchingParameter().c_str(), m_jet_matching);
-			m_jet_matching_source = inputJetCollection->getParameters().getIntVal(m_jetMatchingSourceParameter());
-
-			assert(m_jet_matching.size() == m_nJets);
-			assert(m_jet_matching_source == 1 || m_jet_matching_source == 2);
-
-			m_using_kinfit = m_jet_matching_source == 2;
-			m_using_mass_chi2 = m_jet_matching_source == 1;
-
-			streamlog_out(MESSAGE) << "Jet matching from source " << m_jet_matching_source << " : (" << m_jet_matching[0] << "," << m_jet_matching[1] << ") + (" << m_jet_matching[2] << "," << m_jet_matching[3] << ")" << std::endl;
-			*/
 
 			// ---------- JET PROPERTIES AND FLAVOUR TAGGING ----------
 			for (int i=0; i < m_nJets; ++i) {
@@ -795,25 +791,25 @@ void EventObservablesBase::init(){
 };
 
 void EventObservablesBase::processEvent( LCEvent* evt ){
-	streamlog_out(MESSAGE) << "START updateBaseValues";
+	streamlog_out(DEBUG) << "START updateBaseValues";
 	updateBaseValues(evt);
-	streamlog_out(MESSAGE) << "END updateBaseValues -> status code " << m_statusCode << std::endl;
+	streamlog_out(DEBUG) << "END updateBaseValues -> status code " << m_statusCode << std::endl;
 
 	// all channel specific processors require that at least acquiring the base values succeeds
 	if (m_statusCode == 0) {
-		streamlog_out(MESSAGE) << "START updateChannelValues" << std::endl;
+		streamlog_out(DEBUG) << "START updateChannelValues" << std::endl;
+		calculateSimpleZHHChi2();
 		updateChannelValues(evt);
-		streamlog_out(MESSAGE) << "END updateChannelValues" << std::endl;
+		streamlog_out(DEBUG) << "END updateChannelValues" << std::endl;
 	} else
 		streamlog_out(MESSAGE) << "skipping updateChannelValues due to non-zero state " << m_statusCode << std::endl;
 
 	if (m_write_ttree)
 		getTTree()->Fill();
 
-	streamlog_out(MESSAGE) << "clearing values... ";
 	clearBaseValues();
 	clearChannelValues();
-	streamlog_out(MESSAGE) << "done. event " << m_nEvt << " processed" << std::endl;
+	streamlog_out(MESSAGE) << "cleared. event " << m_nEvt << " processed" << std::endl;
 };
 
 void EventObservablesBase::processRunHeader( LCRunHeader* run ){
@@ -884,6 +880,13 @@ std::tuple<std::vector<unsigned short>, vector<float>, float> EventObservablesBa
 	std::vector<ReconstructedParticle*> jets,
 	std::vector<unsigned short> dijet_targets
 ) {
+	return EventObservablesBase::pairJetsByMass(v4(jets), dijet_targets);
+}
+
+std::tuple<std::vector<unsigned short>, vector<float>, float> EventObservablesBase::pairJetsByMass(
+	std::vector<ROOT::Math::PxPyPzEVector> jets,
+	std::vector<unsigned short> dijet_targets
+) {
 	assert(dijet_targets.size() *2 == jets.size());
 	
 	std::vector<float> target_masses (dijet_targets.size(), -999);
@@ -900,7 +903,7 @@ std::tuple<std::vector<unsigned short>, vector<float>, float> EventObservablesBa
 		}
 	}
 
-	return pairJetsByMass(toFourVectors(jets), target_masses, target_resolutions, [](
+	return pairJetsByMass(jets, target_masses, target_resolutions, [](
 		const std::vector<ROOT::Math::PxPyPzEVector> jets,
 		const std::vector<unsigned short> perm,
 		std::vector<float> &masses,
@@ -1091,3 +1094,14 @@ std::vector<std::pair<int, float>> EventObservablesBase::sortedTagging(LCCollect
 
 	return sortedTagging(tags_by_jet_order);
 };
+
+void EventObservablesBase::calculateSimpleZHHChi2() {
+	std::vector<float> zhh_masses;
+	std::vector<ROOT::Math::PxPyPzEVector> jet_v4 = v4(m_jets);
+
+	std::tie(m_zhh_jet_matching, zhh_masses, m_zhh_chi2) = pairJetsByMass(jet_v4, { 25, 25 });
+
+    m_zhh_mh1 = zhh_masses[0];
+    m_zhh_mh2 = zhh_masses[1];
+    m_zhh_mhh = (jet_v4[0] + jet_v4[1] + jet_v4[2] + jet_v4[3]).M();
+}

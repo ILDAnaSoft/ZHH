@@ -306,7 +306,7 @@ void ZHHllbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
 
   streamlog_out(MESSAGE) << "Performed fit" << endl;
 
-  if (!bestFitResult.fitter) {
+  if (!bestFitResult.fitter || bestFitResult.fitter.get()->getError()) {
     streamlog_out(MESSAGE) << "Did not find a functioning fit" << endl;
 
     vector<double> startmasses;
@@ -316,8 +316,7 @@ void ZHHllbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
     m_Boson2BeforeFit = startmasses[1];
     m_Boson3BeforeFit = startmasses[2];
     m_System23MassBeforeFit = startmasses[3];
-    m_System123MassBeforeFit = startmasses[4];
-    streamlog_out(MESSAGE) << "masses from simple chi2:" << m_Boson1BeforeFit << ", " << m_Boson2BeforeFit << ", " << m_Boson3BeforeFit << ", " << m_System23MassBeforeFit << ", " << m_System123MassBeforeFit << std::endl ; 
+    m_System123MassBeforeFit = startmasses[4]; 
 
     m_pTTree->Fill();
     attachBestPermutation(inputJetCollection, m_bestMatchingByMass, "ll", false);
@@ -483,7 +482,7 @@ std::tuple<std::vector<double>, double, std::vector<unsigned short>>
   masses[3] = hh;
   masses[4] = zhh;
 
-  streamlog_out(MESSAGE) << "masses from simple chi2:" << masses[0] << ", " << masses[1] << ", " << masses[2] << ", " << hh << ", " << zhh << std::endl ; 
+  streamlog_out(MESSAGE) << "masses from simple chi2: " << masses[0] << ", " << masses[1] << ", " << masses[2] << ", " << hh << ", " << zhh << std::endl ; 
 
   return std::make_tuple(masses, chi2min, bestperm);
 }

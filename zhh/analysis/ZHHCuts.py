@@ -6,7 +6,7 @@ def zhh_cuts(hypothesis:str,
              mH:float=125.,
              mZ:float=91.2,):
     
-    if hypothesis == 'llbbbb':
+    if hypothesis[:2].lower() == 'll':
         cuts = [GreaterThanEqualCut('xx_nisoleps', 2, label='nisoleps'),
                 WindowCut('ll_mz', mZ, 40, center=True, label=r'm_{Z}')]
         
@@ -16,7 +16,7 @@ def zhh_cuts(hypothesis:str,
                      LessThanEqualCut('xx_pt_miss', 70., label=r'p_{t}^{miss}'),
                      LessThanEqualCut('xx_thrust', 0.9, label='thrust'),]
         
-    elif hypothesis == 'vvbbbb':
+    elif hypothesis[:2].lower() == 'vv':
         cuts = [EqualCut('xx_nisoleps', 0, label='nisoleps'),
                 WindowCut('vv_mh1', 60., 180., label=r'm_{H1}'),
                 WindowCut('vv_mh2', 60., 180., label=r'm_{H2}'),
@@ -28,7 +28,7 @@ def zhh_cuts(hypothesis:str,
         if b_tagging:
             cuts += [GreaterThanEqualCut('vv_bmax3', 0.2)]
         
-    elif hypothesis == 'qqbbbb':
+    elif hypothesis[:2].lower() == 'qq':
         cuts = [EqualCut('xx_nisoleps', 0)]
         
         if b_tagging:

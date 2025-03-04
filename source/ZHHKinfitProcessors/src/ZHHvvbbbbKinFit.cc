@@ -310,7 +310,7 @@ void ZHHvvbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
 
   streamlog_out(MESSAGE) << "Performed fit" << endl;
 
-  if (!bestFitResult.fitter) {
+  if (!bestFitResult.fitter || bestFitResult.fitter.get()->getError() != 0) {
     streamlog_out(MESSAGE) << "Did not find a functioning fit" << endl;
 
     vector<double> startmasses;
@@ -321,7 +321,6 @@ void ZHHvvbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
     m_Boson3BeforeFit = startmasses[2];
     m_System23MassBeforeFit = startmasses[3];
     m_System123MassBeforeFit = startmasses[4];
-    streamlog_out(MESSAGE) << "masses from simple chi2:" << m_Boson1BeforeFit << ", " << m_Boson2BeforeFit << ", " << m_Boson3BeforeFit << ", " << m_System23MassBeforeFit << std::endl ; 
 
     m_pTTree->Fill();
     attachBestPermutation(inputJetCollection, m_bestMatchingByMass, "vv", false);
@@ -440,8 +439,9 @@ void ZHHvvbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
   //pLCEvent->addCollection( outputNuEnergyCollection, m_outputNuEnergyCollection.c_str() );
   //streamlog_out(DEBUG0) << " Output true and reco Nu collection added to event" << std::endl;
   m_pTTree->Fill();
-  attachBestPermutation(inputJetCollection, m_bestMatchingKinfit, "vv", true);
+
   fillOutputCollections(pLCEvent);
+  attachBestPermutation(pLCEvent->getCollection(m_outputJetCollection), m_bestMatchingKinfit, "vv", true);
 }
 
 std::tuple<std::vector<double>, double, std::vector<unsigned short>>
@@ -488,7 +488,7 @@ std::tuple<std::vector<double>, double, std::vector<unsigned short>>
   masses[3] = hh;
   masses[4] = zhh;
 
-  streamlog_out(MESSAGE) << "masses from simple chi2:" << masses[0] << ", " << masses[1] << ", " << masses[1] << ", " << hh << std::endl ; 
+  streamlog_out(MESSAGE) << "masses from simple chi2: " << masses[0] << ", " << masses[1] << ", " << masses[2] << ", " << hh << ", " << zhh << std::endl ; 
 
   return std::make_tuple(masses, chi2min, bestperm);
 }

@@ -84,6 +84,9 @@ class EventObservablesBase: public Processor
 		static constexpr float kSigmaMassH   = 7.2;
 
 		static std::tuple<std::vector<unsigned short>, std::vector<float>, float> pairJetsByMass(
+			std::vector<ROOT::Math::PxPyPzEVector> jets, std::vector<unsigned short> dijet_targets);
+
+		static std::tuple<std::vector<unsigned short>, std::vector<float>, float> pairJetsByMass(
 			std::vector<ReconstructedParticle*> jets, std::vector<unsigned short> dijet_targets);
 		static std::tuple<std::vector<unsigned short>, std::vector<float>, float> pairJetsByMass(
 			const std::vector<ROOT::Math::PxPyPzEVector> jets,
@@ -117,6 +120,9 @@ class EventObservablesBase: public Processor
 		virtual std::string m_yMinusParameter() = 0;
 		virtual std::string m_yPlusParameter() = 0;
 		virtual bool m_use_matrix_elements() = 0;
+
+		// can be channel specific, but default implementations exist
+		virtual void calculateSimpleZHHChi2();
 
 		// names of input collections
 		std::string m_inputIsolatedleptonCollection{};
@@ -202,6 +208,7 @@ class EventObservablesBase: public Processor
 
 		float m_Evis{};
 		float m_missingMass{};
+		float m_invJetMass{};
 		float m_missingPT{};
 		float m_missingE{};
 		float m_thrust{}; // principal thrust value
@@ -225,7 +232,15 @@ class EventObservablesBase: public Processor
 		float m_yMinus{};
 		float m_yPlus{};
 		
+		// jets and jet matching to ZHH hypothesis
 		std::vector<ReconstructedParticle*> m_jets;
+
+		std::vector<unsigned short> m_zhh_jet_matching{};
+		float m_zhh_mz{};
+		float m_zhh_mh1{};
+		float m_zhh_mh2{};
+		float m_zhh_mhh{};
+		float m_zhh_chi2{};
 
 		typedef std::pair<unsigned short, double> JetTaggingPair;
 
@@ -235,8 +250,8 @@ class EventObservablesBase: public Processor
 		// returns a vector of pairs (jet idx, tag value) sorted ASCENDING by btags
 		static std::vector<std::pair<int, float>> sortedTagging(std::vector<float> tags_by_jet_order);
 
-		static bool jetTaggingComparator ( const JetTaggingPair& l, const JetTaggingPair& r) { return l.first < r.first; };
-		std::vector<JetTaggingPair> m_bTagsSorted{}; // (jet index, btag1value) sorted; first highest, last lowest
+		static bool jetTaggingComparator ( const JetTaggingPair& l, const JetTaggingPair& r) { return l.first < r.first || std::isnan(l.first); };
+		std::vector<JetTaggingPair> m_bTagsSorted{}; // (jet index, btag1value) sorted DESC; first highest, last lowest
 		std::vector<double> m_bTagValues{};
 		std::vector<double> m_cTagValues{};
 
@@ -287,12 +302,6 @@ class EventObservablesBase: public Processor
 		float m_ej4{};
 
 		void setJetMomenta();
-
-		// jet matching
-		std::vector<int> m_jet_matching{};
-		int m_jet_matching_source{}; // 1 for "from mass chi2", 2 for "from kinfit"
-		bool m_using_kinfit{}; // 1 if m_jet_matching_source == 2
-		bool m_using_mass_chi2{}; // 1 if m_jet_matching_source == 1
 
 		/*  old variables for preselection (to be done in post)
 		most are now calculated by the Kinfit processors

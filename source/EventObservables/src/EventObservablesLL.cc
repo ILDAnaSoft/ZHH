@@ -188,7 +188,8 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         m_pz32 = v4_paired_isolep2.Pz();
         m_e32 = v4_paired_isolep2.E();
 
-        m_mzll = (v4_paired_isolep1 + v4_paired_isolep2).M();
+        m_mzll = momentumZv4.M();
+        m_zhh_mz = m_mzll;
 
         if (m_paired_lep_type != 11 && m_paired_lep_type != 13)
             throw EVENT::Exception("Invalid pairedLepType " + std::to_string( m_paired_lep_type));

@@ -78,6 +78,7 @@
         <if condition="${Runllbbbb}">
             <processor name="MyZHHKinFitLL_NMC" />
             <processor name="MyZHHKinFitLL_ZHH" />
+            <!-- <processor name="MyZHHKinFitLL_ZHHv1" /> -->
             <processor name="MyZHHKinFitLL_ZZH" />
             <processor name="MyZHHKinFitLL_ZZZ" />
             <processor name="MyEventObservablesLL" />
@@ -89,7 +90,7 @@
             <processor name="MyZHHKinFitVV_ZHH" />
             <processor name="MyZHHKinFitVV_ZZH" />
             <processor name="MyZHHKinFitVV_ZZZ" />
-            <processor name="MyEventObservablesVV" />
+            <processor name="MyEventObservablesVV" /> 
         </if>
 
         <!-- hadron channel -->
@@ -1321,7 +1322,7 @@
 
     <!-- ANALYSIS -->
 
-    <processor name="MyZHHKinFitLL_NMC" type="ZHHllbbbbKinFit">
+    <processor name="MyZHHKinFitLL_NMC" type="ZHHllbbbbKinFitv1">
         <!--ZHHKinFit does a 5C fit on 4 jet events and 2 leptons (Px, Py, Pz, E, M12 = M34 (for all three permutations)) -->
         <!--Name of the input collections: isolated leptons, jets, SLD vertices, Jet-SLDvertex relations, and SLDvertex-neutrino relations -->
         <parameter name="InputIsoLeptonsCollection" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
@@ -1366,7 +1367,7 @@
         <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> ${Verbosity} </parameter>
     </processor>
 
-    <processor name="MyZHHKinFitLL_ZHH" type="ZHHllbbbbKinFit">
+    <processor name="MyZHHKinFitLL_ZHH" type="ZHHllbbbbKinFitv1">
         <!--ZHHKinFit does a 5C fit on 4 jet events and 2 leptons (Px, Py, Pz, E, M12 = M34 (for all three permutations)) -->
         <!--Name of the input collections: isolated leptons, jets, SLD vertices, Jet-SLDvertex relations, and SLDvertex-neutrino relations -->
         <parameter name="InputIsoLeptonsCollection" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
@@ -1411,7 +1412,7 @@
         <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> ${Verbosity} </parameter>
     </processor>
 
-    <processor name="MyZHHKinFitLL_ZZH" type="ZHHllbbbbKinFit">
+    <processor name="MyZHHKinFitLL_ZZH" type="ZHHllbbbbKinFitv1">
         <!--ZHHKinFit does a 5C fit on 4 jet events and 2 leptons (Px, Py, Pz, E, M12 = M34 (for all three permutations)) -->
         <!--Name of the input collections: isolated leptons, jets, SLD vertices, Jet-SLDvertex relations, and SLDvertex-neutrino relations -->
         <parameter name="InputIsoLeptonsCollection" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
@@ -1456,7 +1457,7 @@
         <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> ${Verbosity} </parameter>
     </processor>
 
-    <processor name="MyZHHKinFitLL_ZZZ" type="ZHHllbbbbKinFit">
+    <processor name="MyZHHKinFitLL_ZZZ" type="ZHHllbbbbKinFitv1">
         <!--ZHHKinFit does a 5C fit on 4 jet events and 2 leptons (Px, Py, Pz, E, M12 = M34 (for all three permutations)) -->
         <!--Name of the input collections: isolated leptons, jets, SLD vertices, Jet-SLDvertex relations, and SLDvertex-neutrino relations -->
         <parameter name="InputIsoLeptonsCollection" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
@@ -1534,7 +1535,7 @@
         <parameter name="Verbosity" type="string">${Verbosity}</parameter>
     </processor>
 
-    <processor name="MyZHHKinFitVV_NMC" type="ZHHvvbbbbKinFit">
+    <processor name="MyZHHKinFitVV_NMC" type="ZHHvvbbbbKinFitv1">
         <!--ZHHKinFit does a 5C fit on 4 jet events and 2 leptons (Px, Py, Pz, E, M12 = M34 (for all three permutations)) -->
         <!--Name of the input collections: isolated leptons, jets, SLD vertices, Jet-SLDvertex relations, and SLDvertex-neutrino relations -->
         <parameter name="InputIsoLeptonsCollection" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
@@ -1579,7 +1580,7 @@
         <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> ${Verbosity} </parameter>
     </processor>
 
-    <processor name="MyZHHKinFitVV_ZHH" type="ZHHvvbbbbKinFit">
+    <processor name="MyZHHKinFitVV_ZHH" type="ZHHvvbbbbKinFitv1">
         <!--ZHHKinFit does a 5C fit on 4 jet events and 2 leptons (Px, Py, Pz, E, M12 = M34 (for all three permutations)) -->
         <!--Name of the input collections: isolated leptons, jets, SLD vertices, Jet-SLDvertex relations, and SLDvertex-neutrino relations -->
         <parameter name="InputIsoLeptonsCollection" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
@@ -1624,7 +1625,7 @@
         <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> ${Verbosity} </parameter>
     </processor>
 
-    <processor name="MyZHHKinFitVV_ZZH" type="ZHHvvbbbbKinFit">
+    <processor name="MyZHHKinFitVV_ZZH" type="ZHHvvbbbbKinFitv1">
         <!--ZHHKinFit does a 5C fit on 4 jet events and 2 leptons (Px, Py, Pz, E, M12 = M34 (for all three permutations)) -->
         <!--Name of the input collections: isolated leptons, jets, SLD vertices, Jet-SLDvertex relations, and SLDvertex-neutrino relations -->
         <parameter name="InputIsoLeptonsCollection" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
@@ -1669,7 +1670,7 @@
         <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> ${Verbosity} </parameter>
     </processor>
 
-    <processor name="MyZHHKinFitVV_ZZZ" type="ZHHvvbbbbKinFit">
+    <processor name="MyZHHKinFitVV_ZZZ" type="ZHHvvbbbbKinFitv1">
         <!--ZHHKinFit does a 5C fit on 4 jet events and 2 leptons (Px, Py, Pz, E, M12 = M34 (for all three permutations)) -->
         <!--Name of the input collections: isolated leptons, jets, SLD vertices, Jet-SLDvertex relations, and SLDvertex-neutrino relations -->
         <parameter name="InputIsoLeptonsCollection" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
@@ -1738,7 +1739,7 @@
         <parameter name="Verbosity" type="string">${Verbosity}</parameter>
     </processor>
 
-    <processor name="MyZHHKinFitQQ_NMC" type="ZHHqqbbbbKinFit">
+    <processor name="MyZHHKinFitQQ_NMC" type="ZHHqqbbbbKinFitv1">
         <!--ZHHKinFit does a 5C fit on 4 jet events and 2 leptons (Px, Py, Pz, E, M12 = M34 (for all three permutations)) -->
         <!--Name of the input collections: isolated leptons, jets, SLD vertices, Jet-SLDvertex relations, and SLDvertex-neutrino relations -->
         <parameter name="InputIsoLeptonsCollection" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
@@ -1783,7 +1784,7 @@
         <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> ${Verbosity} </parameter>
     </processor>
     
-    <processor name="MyZHHKinFitQQ_ZHH" type="ZHHqqbbbbKinFit">
+    <processor name="MyZHHKinFitQQ_ZHH" type="ZHHqqbbbbKinFitv1">
         <!--ZHHKinFit does a 5C fit on 4 jet events and 2 leptons (Px, Py, Pz, E, M12 = M34 (for all three permutations)) -->
         <!--Name of the input collections: isolated leptons, jets, SLD vertices, Jet-SLDvertex relations, and SLDvertex-neutrino relations -->
         <parameter name="InputIsoLeptonsCollection" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
@@ -1828,7 +1829,7 @@
         <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> ${Verbosity} </parameter>
     </processor>
 
-    <processor name="MyZHHKinFitQQ_ZZH" type="ZHHqqbbbbKinFit">
+    <processor name="MyZHHKinFitQQ_ZZH" type="ZHHqqbbbbKinFitv1">
         <!--ZHHKinFit does a 5C fit on 4 jet events and 2 leptons (Px, Py, Pz, E, M12 = M34 (for all three permutations)) -->
         <!--Name of the input collections: isolated leptons, jets, SLD vertices, Jet-SLDvertex relations, and SLDvertex-neutrino relations -->
         <parameter name="InputIsoLeptonsCollection" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
@@ -1873,7 +1874,7 @@
         <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> ${Verbosity} </parameter>
     </processor>
 
-    <processor name="MyZHHKinFitQQ_ZZZ" type="ZHHqqbbbbKinFit">
+    <processor name="MyZHHKinFitQQ_ZZZ" type="ZHHqqbbbbKinFitv1">
         <!--ZHHKinFit does a 5C fit on 4 jet events and 2 leptons (Px, Py, Pz, E, M12 = M34 (for all three permutations)) -->
         <!--Name of the input collections: isolated leptons, jets, SLD vertices, Jet-SLDvertex relations, and SLDvertex-neutrino relations -->
         <parameter name="InputIsoLeptonsCollection" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>

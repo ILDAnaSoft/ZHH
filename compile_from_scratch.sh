@@ -7,11 +7,11 @@ action(){
     local BLUE='\033[0;34m'
     local NC='\033[0m'
     local module_to_compile    
-    local delete_existing=$( [[ "$1" == "keep" || "$2" == "keep" || "$3" == "keep" ]] && echo "False" || echo "True" )
-    local isdebug=$( [[ "$1" == "debug" || "$2" == "debug" || "$3" == "debug" ]] && echo "True" || echo "False" )
+    local delete_existing=$( [[ "$1" == "keep" || "$2" == "keep" || "$3" == "keep" || "$4" == "keep" ]] && echo "False" || echo "True" )
+    local isdebug=$( [[ "$1" == "debug" || "$2" == "debug" || "$3" == "debug" || "$4" == "debug" ]] && echo "True" || echo "False" )
     local startdir=$(pwd)
-    local offline=$( [[ "$1" == "offline" || "$2" == "offline" || "$3" == "offline" ]] && echo "True" || echo "False" )
-    local skipdeps=$( [[ "$1" == "skipdeps" || "$2" == "skipdeps" || "$3" == "skipdeps" ]] && echo "True" || echo "False" )
+    local offline=$( [[ "$1" == "offline" || "$2" == "offline" || "$3" == "offline" || "$4" == "offline" ]] && echo "True" || echo "False" )
+    local skipdeps=$( [[ "$1" == "skipdeps" || "$2" == "skipdeps" || "$3" == "skipdeps" || "$4" == "skipdeps" ]] && echo "True" || echo "False" )
     local modules
 
     if [[ $skipdeps == "True" ]]; then

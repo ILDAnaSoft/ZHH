@@ -12,6 +12,13 @@ m_JMP("best_perm_qq") {
         m_input4JetCollection ,
         std::string("Refined4Jets")
         );
+
+    registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
+        "ZHHKinfitJetCollection" ,
+        "Name of the input ZHH jet kinfit collection. jet pairing used for bTagZ"  ,
+        m_zhhKinfitJetCollection ,
+        std::string("JetsKinFitQQ_ZHH")
+        );
 }
 
 void EventObservablesQQ::prepareChannelTree() {
@@ -37,11 +44,7 @@ void EventObservablesQQ::prepareChannelTree() {
 
         ttree->Branch("bmax5", &m_bmax5, "bmax5/F");
         ttree->Branch("bmax6", &m_bmax6, "bmax6/F");
-
-        ttree->Branch("me_jet_matching_chi2", &m_lcme_jet_matching_chi2, "me_jet_matching_chi2/F");
-        ttree->Branch("me_jet_matching_mz", &m_lcme_jet_matching_mz, "me_jet_matching_chi2/F");
-        ttree->Branch("me_jet_matching_mh1", &m_lcme_jet_matching_mh1, "me_jet_matching_mh1/F");
-        ttree->Branch("me_jet_matching_mh2", &m_lcme_jet_matching_mh2, "me_jet_matching_mh2/F");
+        ttree->Branch("btagz", &m_bTagZ, "btagz/F");
 
         zz_init(ttree);
 
@@ -61,9 +64,6 @@ void EventObservablesQQ::prepareChannelTree() {
 
     m_tt_target_masses = { kMassW, kMassW, kMassTop, kMassTop };
     m_tt_target_resolutions = { kSigmaMassW, kSigmaMassW, kSigmaMassTop, kSigmaMassTop };
-
-    m_zhh_target_masses = { kMassZ, kMassH, kMassH };
-    m_zhh_target_resolutions = { kSigmaMassZ, kSigmaMassH, kSigmaMassH };
 };
 
 void EventObservablesQQ::clearChannelValues() {
@@ -88,6 +88,7 @@ void EventObservablesQQ::clearChannelValues() {
 
     m_bmax5 = 0.;
     m_bmax6 = 0.;
+    m_bTagZ = 0.;
 
     // ttbar
     m_tt_mw1 = 0.;
@@ -95,18 +96,6 @@ void EventObservablesQQ::clearChannelValues() {
     m_tt_mt1 = 0.;
     m_tt_mt2 = 0.;
     m_tt_chi2 = 0.;
-
-    // ZHH
-    m_zhh_mz = 0.;
-    m_zhh_mh1 = 0.;
-    m_zhh_mh2 = 0.;
-    m_zhh_chi2 = 0.;
-
-    // matrix elements
-    m_lcme_jet_matching_chi2 = 0.;
-    m_lcme_jet_matching_mz = 0.;
-    m_lcme_jet_matching_mh1 = 0.;
-    m_lcme_jet_matching_mh2 = 0.;
 
     zz_clear();
 };
@@ -155,6 +144,25 @@ void EventObservablesQQ::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         m_bmax5 = m_bTagsSorted[4].second;
         m_bmax6 = m_bTagsSorted[5].second;
 
+        // use jet matching of Kinfit processors to find btags from jets used to form Z boson
+        /*
+        try {
+            std::vector<int> jet_matching{};
+
+            LCCollection *zhhKinfitCollection = pLCEvent->getCollection( m_zhhKinfitJetCollection ); // -> m_jets
+
+            zhhKinfitCollection->getParameters().getIntVals(m_jetMatchingParameter().c_str(), jet_matching);
+
+			assert(jet_matching.size() == m_nJets);
+
+            m_bTagZ = m_bTagValues[jet_matching[0]] + m_bTagValues[jet_matching[1]];
+        } catch (DataNotAvailableException &e) {
+            streamlog_out(MESSAGE) << "ZHHKinfitJetCollection not found in event. bTagZ will be 0" << std::endl;
+        }*/
+
+        // assume Z consists of two jets with least b tag
+        m_bTagZ = m_bmax5 + m_bmax6;
+
         // B. TTBAR CHI2        
         std::vector<unsigned short> tt_jet_matching;
         std::vector<float> tt_masses;
@@ -189,58 +197,19 @@ void EventObservablesQQ::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         m_tt_mt2 = tt_masses[3];
 
         // C. ZHH
-        std::vector<unsigned short> zhh_jet_matching;
-        std::vector<float> zhh_masses;
-
-        std::tie(zhh_jet_matching, zhh_masses, m_zhh_chi2) = pairJetsByMass(v4_6jets_sorted, m_zhh_target_masses, m_zhh_target_resolutions,
-            []( const std::vector<ROOT::Math::PxPyPzEVector> v4j,
-                const std::vector<unsigned short> perm,
-                std::vector<float> &masses,
-                const std::vector<float> targets,
-                const std::vector<float> resolutions) {    
-
-                if ((perm[4] == 4 || perm[4] == 5) && (perm[5] == 4 || perm[5] == 5)) {
-                    masses[0] = inv_mass(v4j[perm[0]], v4j[perm[1]]); // Z
-                    masses[1] = inv_mass(v4j[perm[2]], v4j[perm[3]]); // H
-                    // masses[2] always the same, sufficient to calculate after chi2
-
-                    return std::pow(((masses[0] - targets[0])/resolutions[0]), 2)
-                         + std::pow(((masses[1] - targets[1])/resolutions[1]), 2);
-                } else {
-                    // skip permutations where entries 4,5 are not the b jets
-                    return 999999.;
-                }
-            }
-        );
-        zhh_masses[2] = inv_mass(v4_6jets_sorted[4], v4_6jets_sorted[5]);
-
-        m_zhh_mz = zhh_masses[0];
-        m_zhh_mh1 = zhh_masses[1];
-        m_zhh_mh2 = zhh_masses[2];
+        
 
         // B.1. CHI2
         
-        // B.2. MATRIX ELEMENTS
-        // find best matching to Z boson to eliminate some combinatorics
-        std::vector<unsigned short> jet_matching_by_mass;
-        std::vector<float> dijetmasses;
-
-        // reconstruct Z and H boson using jets with lowest b tag values
-        std::tie(jet_matching_by_mass, dijetmasses, m_lcme_jet_matching_chi2) = pairJetsByMass(getElements(inputJetCollection,
-            std::vector<int>{m_bTagsSorted[5].first, m_bTagsSorted[4].first, m_bTagsSorted[3].first, m_bTagsSorted[2].first} ), {23, 25});
-
-        m_lcme_jet_matching_mz = dijetmasses[0];
-        m_lcme_jet_matching_mh1 = dijetmasses[1];
-        m_lcme_jet_matching_mh2 = dijetmasses[2];
-        
-        TLorentzVector v4_jet_from_z1 = v4old(m_jets[jet_matching_by_mass[0]]);
-        TLorentzVector v4_jet_from_z2 = v4old(m_jets[jet_matching_by_mass[1]]);
+        // B.2. MATRIX ELEMENTS        
+        TLorentzVector v4_jet_from_z1 = v4old(m_jets[m_bTagsSorted[5].first]);
+        TLorentzVector v4_jet_from_z2 = v4old(m_jets[m_bTagsSorted[4].first]);
 
         // assume s per default
         unsigned int z1_decay_pdg = 3;
 
-        float bTagSum = m_bTagValues[jet_matching_by_mass[0]] +  m_bTagValues[jet_matching_by_mass[1]];
-        float cTagSum = m_cTagValues[jet_matching_by_mass[0]] +  m_cTagValues[jet_matching_by_mass[1]];
+        float bTagSum = m_bTagValues[m_bTagsSorted[5].first] +  m_bTagValues[m_bTagsSorted[4].first];
+        float cTagSum = m_cTagValues[m_bTagsSorted[5].first] +  m_cTagValues[m_bTagsSorted[4].first];
         float oTagSum = 1 - bTagSum - cTagSum;
 
         if (bTagSum > oTagSum && bTagSum > cTagSum)
@@ -250,8 +219,8 @@ void EventObservablesQQ::updateChannelValues(EVENT::LCEvent *pLCEvent) {
 
         // assume remaining jets to be b-jets
         calculateMatrixElements(z1_decay_pdg, 5, v4_jet_from_z1, v4_jet_from_z2,
-                                v4old(m_jets[jet_matching_by_mass[2]]), v4old(m_jets[jet_matching_by_mass[3]]),
-                                v4old(m_jets[m_bTagsSorted[0].first]), v4old(m_jets[m_bTagsSorted[1].first]), true);
+                                v4old(m_jets[2 + m_zhh_jet_matching[0]]), v4old(m_jets[2 + m_zhh_jet_matching[1]]),
+                                v4old(m_jets[2 + m_zhh_jet_matching[2]]), v4old(m_jets[2 + m_zhh_jet_matching[3]]), true);
     }
 };
 
@@ -268,3 +237,20 @@ void EventObservablesQQ::setJetMomenta() {
 	m_pzj6 = m_jets[5]->getMomentum()[2];
 	m_ej6  = m_jets[5]->getEnergy();
 };
+
+void EventObservablesQQ::calculateSimpleZHHChi2() {
+	std::vector<float> zhh_masses;
+    std::vector<ROOT::Math::PxPyPzEVector> jet_v4 = v4(m_jets);
+
+    std::tie(m_zhh_jet_matching, zhh_masses, m_zhh_chi2) = pairJetsByMass({
+        jet_v4[m_bTagsSorted[0].first],
+        jet_v4[m_bTagsSorted[1].first],
+        jet_v4[m_bTagsSorted[2].first],
+        jet_v4[m_bTagsSorted[3].first]
+    }, { 25, 25 });
+
+    m_zhh_mz = (jet_v4[m_bTagsSorted[4].first] + jet_v4[m_bTagsSorted[5].first]).M();
+    m_zhh_mh1 = zhh_masses[0];
+    m_zhh_mh2 = zhh_masses[1];
+    m_zhh_mhh = (jet_v4[m_bTagsSorted[0].first] + jet_v4[m_bTagsSorted[1].first] + jet_v4[m_bTagsSorted[2].first] + jet_v4[m_bTagsSorted[3].first]).M();
+}
