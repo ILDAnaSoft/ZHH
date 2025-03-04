@@ -19,7 +19,7 @@ function marlin_run() {
     fi
 
     echo "Starting Marlin at $(date)"
-    MarlinZHH --global.LCIOInputFiles=$INPUT_FILE --constant.OutputBaseName=$OUT_BASE_NAME --global.SkipNEvents=$EVENTS_SKIP --global.MaxRecordNumber=$EVENTS_MAX --constant.Runvvbbbb=false --constant.Runllbbbb=false
+    MarlinZHH --global.LCIOInputFiles=$INPUT_FILE --constant.OutputBaseName=$OUT_BASE_NAME --global.SkipNEvents=$EVENTS_SKIP --global.MaxRecordNumber=$EVENTS_MAX
     echo "Finished Marlin at $(date)"
 
     if [[ -f "${OUT_BASE_NAME}_AIDA.root" ]];
