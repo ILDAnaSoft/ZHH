@@ -1,0 +1,64 @@
+<marlin>
+
+  <constants>
+    <!-- ***** Global constant for reconstruction ***** -->
+    <!-- The lcgeo directory where to look for the ILD model -->
+    <constant name="lcgeo_DIR" value="/cvmfs/ilc.desy.de/sw/x86_64_gcc103_centos7/v02-03-03/lcgeo/v00-20-00" />
+    <!-- ILD detector model -->
+    <constant name="DetectorModel" value="ILD_o1_v05" />
+    <!-- The full compact file name -->
+    <constant name="CompactFile" value="${lcgeo_DIR}/ILD/compact/${DetectorModel}/${DetectorModel}.xml" />
+
+	<constant name="ILDConfigDir" value="" />
+    <constant name="ZHH_REPO_ROOT" value="." />
+  </constants>
+
+<execute>
+  <processor name="InitDD4hep"/>
+	<processor name="MLMakeNtuple"/>
+</execute>
+
+
+
+<global>
+	<parameter name="LCIOInputFiles">
+	</parameter>
+	<parameter name="MaxRecordNumber" value="-1"/>  
+	<parameter name="SkipNEvents" value="0" />  
+	<parameter name="SupressCheck" value="false" />  
+	<parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT">MESSAGE0</parameter> 
+</global>
+
+  <processor name="InitDD4hep" type="InitializeDD4hep">
+    <!--InitializeDD4hep reads a compact xml file and initializes the DD4hep::LCDD object-->
+    <!--Name of the DD4hep compact xml file to load-->
+    <parameter name="DD4hepXMLFile" type="string"> ${CompactFile} </parameter>
+    </processor>
+
+<processor name="MLMakeNtuple" type="LcfiplusProcessor">
+
+	<!-- run primary and secondary vertex finders -->
+	<parameter name="Algorithms" type="stringVec"> MLMakeNtuple </parameter>
+	<parameter name="ReadSubdetectorEnergies" type="int" value="1"/> <!-- true for ILD -->
+	<parameter name="UpdateVertexRPDaughters" type="int" value="0"/> <!-- false for non-updative PandoraPFOs -->
+	<parameter name="TrackHitOrdering" type="int" value="1"/> <!-- Track hit ordering: 0=ILD-LOI,SID-DBD, 1=ILD-DBD -->
+	<parameter name="PrintEventNumber" type="int" value="1000"/> <!-- 0 for not printing event number, n for printing every n events -->
+
+	<parameter name="MagneticField" type="double" value="3.5"/>
+	<parameter name="PIDAlgorithmName" type="string" value="LikelihoodPID" />
+	<!--<parameter name="PIDAlgorithmName" type="string" value="TMVA_BDT_MC_16bins_singleP" />-->
+
+	<!-- specify input collection names -->
+	<parameter name="PFOCollection" type="string" value="PandoraPFOs" />
+	<parameter name="PrimaryVertexCollectionName" type="string" value="PrimaryVertex" />
+
+	<parameter name="MLMakeNtuple.JetCollectionName" type="string" value="RefinedJets" />
+	<parameter name="MLMakeNtuple.EventClassification" type="int" value="1" />
+	<parameter name="MLMakeNtuple.Label" type="int" value="242425" />
+	<parameter name="MLMakeNtuple.OutputRootFileName" type="string" value="eventclass_qqqqh.root" />
+	<parameter name="MLMakeNtuple.TTreeName" type="string" value="ntp" />
+
+
+</processor>
+
+</marlin>

@@ -183,5 +183,9 @@ class PROCESS_CATEGORIES:
     f6_ftag_ssssss = 5003
     f6_ftag_cccccc = 5004
     f6_ftag_bbbbbb = 5005
+    
+    def __init__(self) -> None:
+        self.map = { key:value for key, value in PROCESS_CATEGORIES.__dict__.items() if not key.startswith('__') and not callable(key)}
+        self.inverted = { v: k for k, v in self.map.items() }
 
 ProcessCategories = PROCESS_CATEGORIES()
