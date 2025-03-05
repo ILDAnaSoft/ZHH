@@ -4,8 +4,7 @@ INPUT_FILE=$1
 TARGET_FILE=$2
 
 if [[ ! -z $REPO_ROOT || ! -d $REPO_ROOT ]]; then
-    setupwrapper() { source /home/ilc/bliewert/DevRepositories/ZHH/setup.sh; }
-    setupwrapper
+    srczhh
 fi
 
 # variables depending on SGV setup

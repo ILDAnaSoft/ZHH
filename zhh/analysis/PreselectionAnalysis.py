@@ -421,8 +421,15 @@ def analysis_stack(DATA_ROOT:str,
 
     return results
 
-def fetch_preselection_data(rf, final_states:bool=True)->np.ndarray:
+def fetch_preselection_data(rf, presel:str, final_states:bool=True, tree:str|None=None, fsTree:str='FinalStates', evtObsTree:str='EventObservables')->np.ndarray:
+    if tree is not None:
+        fsTree = tree
+        evtObsTree = tree
+    else:
+        evtObsTree = f'EventObservables{presel.upper()}'
+    
     dtype = [
+        ('id', 'I'),
         ('process', 'I'), # H=np.uint16
         ('pol_code', 'B'), # np.uint8
         ('event', 'I'), # max. encountered: 15 797 803 << 4 294 967 295 (max of uint32)
@@ -459,13 +466,12 @@ def fetch_preselection_data(rf, final_states:bool=True)->np.ndarray:
         ('qq_mh2', 'f'),
     ]
     
-    for presel in ['ll', 'vv', 'qq']:
-        dtype.extend([
-            (f'{presel}_bmax1', 'f'),
-            (f'{presel}_bmax2', 'f'),
-            (f'{presel}_bmax3', 'f'),
-            (f'{presel}_bmax4', 'f')
-        ])
+    dtype.extend([
+        (f'{presel}_bmax1', 'f'),
+        (f'{presel}_bmax2', 'f'),
+        (f'{presel}_bmax3', 'f'),
+        (f'{presel}_bmax4', 'f')
+    ])
             
     if final_states:
         for dt in fs_columns:
@@ -473,51 +479,50 @@ def fetch_preselection_data(rf, final_states:bool=True)->np.ndarray:
         
         dtype.append(('Nb_from_H', 'B'))
     
-    r_size = rf['FinalStates'].num_entries
+    r_size = rf[fsTree].num_entries
     results = np.zeros(r_size, dtype=dtype)
     
-    results['process'] = rf['FinalStates/process'].array()
-    results['pol_code'] = rf['FinalStates/polarization_code'].array()
+    results['id'] = np.arange(r_size)
+    results['process'] = rf[f'{fsTree}/process'].array()
+    results['pol_code'] = rf[f'{fsTree}/polarization_code'].array()
     
-    results['event'] = rf['FinalStates/event'].array()
-    results['event_category'] = rf['FinalStates/event_category'].array()
+    results['event'] = rf[f'{fsTree}/event'].array()
+    results['event_category'] = rf[f'{fsTree}/event_category'].array()
         
     if final_states:
-        fs_counts = rf['FinalStates/final_state_counts'][1].array()
-        results['Nb_from_H'] = rf['FinalStates/n_b_from_higgs'].array()
+        fs_counts = rf[f'{fsTree}/final_state_counts'][1].array()
+        results['Nb_from_H'] = rf[f'{fsTree}/n_b_from_higgs'].array()
         
         for i in range(len(fs_columns)):
             results[fs_columns[i]] = fs_counts[:, i]
     
-    results['xx_thrust'] = rf['EventObservablesQQ/thrust'].array()
-    results['xx_e_vis'] = rf['EventObservablesQQ/evis'].array()
-    results['xx_pt_miss'] = rf['EventObservablesQQ/ptmiss'].array()
-    results['xx_invmass_miss'] = rf['EventObservablesQQ/m_miss'].array()
-    results['xx_nisoleps'] = rf['EventObservablesQQ/nisoleptons'].array()
+    results['xx_thrust'] = rf[f'{evtObsTree}/thrust'].array()
+    results['xx_e_vis'] = rf[f'{evtObsTree}/evis'].array()
+    results['xx_pt_miss'] = rf[f'{evtObsTree}/ptmiss'].array()
+    results['xx_invmass_miss'] = rf[f'{evtObsTree}/m_miss'].array()
+    results['xx_nisoleps'] = rf[f'{evtObsTree}/nisoleptons'].array()
     
-    for presel in ['ll', 'vv', 'qq']:
-        EvtObsTree = f'EventObservables{presel.upper()}'
-        #KinFitTree = f'KinFit{presel.upper()}_ZHH'
+    #KinFitTree = f'KinFit{presel.upper()}_ZHH'
+    
+    results[f'{presel}_mh1'] = rf[f'{evtObsTree}/zhh_mh1'].array()
+    results[f'{presel}_mh2'] = rf[f'{evtObsTree}/zhh_mh2'].array()
+    
+    if presel == 'll':                        
+        #lepTypes = rf['lepTypes'].array()
+        #pass_ltype11 = np.sum(np.abs(lepTypes) == 11, axis=1) == 2
+        #pass_ltype13 = np.sum(np.abs(lepTypes) == 13, axis=1) == 2
+        #results['ll_dilepton_type'] = pass_ltype11*11 + pass_ltype13*13
+        results['ll_dilepton_type'] = rf[f'{evtObsTree}/paired_lep_type'].array()
+        results['ll_mz'] = rf[f'{evtObsTree}/mzll'].array()
+        results['ll_mz_pre_pairing'] = rf[f'{evtObsTree}/mzll_pre_pairing'].array()
         
-        results[f'{presel}_mh1'] = rf[f'{EvtObsTree}/zhh_mh1'].array()
-        results[f'{presel}_mh2'] = rf[f'{EvtObsTree}/zhh_mh2'].array()
-        
-        if presel == 'll':                        
-            #lepTypes = rf['lepTypes'].array()
-            #pass_ltype11 = np.sum(np.abs(lepTypes) == 11, axis=1) == 2
-            #pass_ltype13 = np.sum(np.abs(lepTypes) == 13, axis=1) == 2
-            #results['ll_dilepton_type'] = pass_ltype11*11 + pass_ltype13*13
-            results['ll_dilepton_type'] = rf[f'{EvtObsTree}/paired_lep_type'].array()
-            results['ll_mz'] = rf[f'{EvtObsTree}/mzll'].array()
-            results['ll_mz_pre_pairing'] = rf[f'{EvtObsTree}/mzll_pre_pairing'].array()
-            
-        elif presel == 'vv':
-            results['vv_mhh'] = rf[f'{EvtObsTree}/m_invjet'].array()
-        
-        results[f'{presel}_bmax1'] = rf[f'{EvtObsTree}/bmax1']
-        results[f'{presel}_bmax2'] = rf[f'{EvtObsTree}/bmax2']
-        results[f'{presel}_bmax3'] = rf[f'{EvtObsTree}/bmax3']
-        results[f'{presel}_bmax4'] = rf[f'{EvtObsTree}/bmax4']
+    elif presel == 'vv':
+        results['vv_mhh'] = rf[f'{evtObsTree}/m_invjet'].array()
+    
+    results[f'{presel}_bmax1'] = rf[f'{evtObsTree}/bmax1']
+    results[f'{presel}_bmax2'] = rf[f'{evtObsTree}/bmax2']
+    results[f'{presel}_bmax3'] = rf[f'{evtObsTree}/bmax3']
+    results[f'{presel}_bmax4'] = rf[f'{evtObsTree}/bmax4']
             
     return results
 

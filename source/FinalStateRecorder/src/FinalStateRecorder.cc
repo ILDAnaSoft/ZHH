@@ -208,6 +208,7 @@ void FinalStateRecorder::init()
 		m_pTTree->Branch("final_state_counts", &m_final_state_counts);
 
 		m_pTTree->Branch("process", &m_process);
+		m_pTTree->Branch("process_id", &m_process_id);
 		m_pTTree->Branch("polarization_code", &m_polarization_code);
 		m_pTTree->Branch("cross_section", &m_cross_section);
 		m_pTTree->Branch("event_category", &m_event_category);
@@ -340,19 +341,18 @@ void FinalStateRecorder::init()
 	this->register_process(new p5_ea_lvvvv());
 
 	// 6f
-	this->register_process(new p6_ttbar_yycyyc());
-	this->register_process(new p6_ttbar_yyvlyx());
-	this->register_process(new p6_ttbar_yyxylv());
-	this->register_process(new p6_ttbar_yyxylv_alias());
-	this->register_process(new p6_ttbar_yyuyyu());
-	this->register_process(new p6_ttbar_yyuyyc());
-	this->register_process(new p6_ttbar_yyxyev());
-	this->register_process(new p6_ttbar_yyvllv());
-	this->register_process(new p6_ttbar_yyvelv());
-	this->register_process(new p6_ttbar_yycyyu());
-	this->register_process(new p6_ttbar_yyveyx());
-	this->register_process(new p6_ttbar_yyvlev());
-	this->register_process(new p6_ttbar_yyveev());
+	this->register_process(new p6_yycyyc());
+	this->register_process(new p6_yyvlyx());
+	this->register_process(new p6_yyxylv());
+	this->register_process(new p6_yyuyyu());
+	this->register_process(new p6_yyuyyc());
+	this->register_process(new p6_yyxyev());
+	this->register_process(new p6_yyvllv());
+	this->register_process(new p6_yyvelv());
+	this->register_process(new p6_yycyyu());
+	this->register_process(new p6_yyveyx());
+	this->register_process(new p6_yyvlev());
+	this->register_process(new p6_yyveev());
 	this->register_process(new p6_yyyyZ_yyyyee());
 	this->register_process(new p6_yyyyZ_eeeexx());
 	this->register_process(new p6_yyyyZ_eeeell());
@@ -405,6 +405,55 @@ void FinalStateRecorder::init()
 	this->register_process(new p6_llWW_llxyev());
 	this->register_process(new p6_llWW_llxyyx());
 	this->register_process(new p6_llWW_llvllv());
+
+	// inclusive 6f mc-2025 production
+	this->register_process(new p6_inclusive_eeeexx());
+	this->register_process(new p6_inclusive_eeeeyy());
+	this->register_process(new p6_inclusive_eeevxy());
+	this->register_process(new p6_inclusive_eelvxy());
+	this->register_process(new p6_inclusive_eeveyx());
+	this->register_process(new p6_inclusive_eevlyx());
+	this->register_process(new p6_inclusive_eexxxx());
+	this->register_process(new p6_inclusive_eexyyx());
+	this->register_process(new p6_inclusive_eeyyyy());
+	this->register_process(new p6_inclusive_lleexx());
+	this->register_process(new p6_inclusive_lleeyy());
+	this->register_process(new p6_inclusive_llevxy());
+	this->register_process(new p6_inclusive_llllll());
+	this->register_process(new p6_inclusive_llllxx());
+	this->register_process(new p6_inclusive_llllyy());
+	this->register_process(new p6_inclusive_llveyx());
+	this->register_process(new p6_inclusive_llvllv());
+	this->register_process(new p6_inclusive_llxxxx());
+	this->register_process(new p6_inclusive_llxyyx());
+	this->register_process(new p6_inclusive_llyyyy());
+	this->register_process(new p6_inclusive_veevxx());
+	this->register_process(new p6_inclusive_veevyy());
+	this->register_process(new p6_inclusive_velvxx());
+	this->register_process(new p6_inclusive_velvyy());
+	this->register_process(new p6_inclusive_vlevxx());
+	this->register_process(new p6_inclusive_vlevyy());
+	this->register_process(new p6_inclusive_vllvxx());
+	this->register_process(new p6_inclusive_vllvyy());
+	this->register_process(new p6_inclusive_vvevxy());
+	this->register_process(new p6_inclusive_vvlvxy());
+	this->register_process(new p6_inclusive_vvveyx());
+	this->register_process(new p6_inclusive_vvvllv());
+	this->register_process(new p6_inclusive_vvvlyx());
+	this->register_process(new p6_inclusive_vvvvvv());
+	this->register_process(new p6_inclusive_vvvvxx());
+	this->register_process(new p6_inclusive_vvvvyy());
+	this->register_process(new p6_inclusive_vvxxxx());
+	this->register_process(new p6_inclusive_vvxyyx());
+	this->register_process(new p6_inclusive_vvyyyy());
+	this->register_process(new p6_inclusive_xxveyx());
+	this->register_process(new p6_inclusive_xxvlyx());
+	this->register_process(new p6_inclusive_xxxyev());
+	this->register_process(new p6_inclusive_xxxylv());
+	this->register_process(new p6_inclusive_yyveyx());
+	this->register_process(new p6_inclusive_yyvlyx());
+	this->register_process(new p6_inclusive_yyxyev());
+	this->register_process(new p6_inclusive_yyxylv());
 
 	this->register_process(new p6_ftag_uuuuuu());
 	this->register_process(new p6_ftag_dddddd());
@@ -527,9 +576,10 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 			}
 
 		} else {
-			m_error_code = ERROR_CODES::PROCESS_NOT_FOUND;
-			streamlog_out(MESSAGE) << "processEvent : process not registered: " << process << std::endl;
-			setReturnValue("GoodEvent", false);
+			throw EVENT::Exception("Critical error: process not registered: " + process);
+			//m_error_code = ERROR_CODES::PROCESS_NOT_FOUND;
+			//streamlog_out(MESSAGE) << "processEvent : process not registered: " << process << std::endl;
+			//setReturnValue("GoodEvent", false);
 		}
 
 	} catch(DataNotAvailableException &e) {

@@ -173,45 +173,41 @@ class p6: public FinalStateResolver {
 
 };
 
-class p6_ttbar_yycyyc : public p6 {
-    public: p6_ttbar_yycyyc(): p6( "yycyyc", PROCESS_ID::f6_ttbar_yycyyc, EVENT_CATEGORY_TRUE::OTHER_TTBAR ) {}; };
+class p6_yycyyc : public p6 {
+    public: p6_yycyyc(): p6( "yycyyc", PROCESS_ID::f6_yycyyc, EVENT_CATEGORY_TRUE::OTHER_TTBAR ) {}; };
 
-class p6_ttbar_yyvlyx : public p6 {
-    public: p6_ttbar_yyvlyx(): p6( "yyvlyx", PROCESS_ID::f6_ttbar_yyvlyx, EVENT_CATEGORY_TRUE::OTHER_TTBAR ) {}; };
+class p6_yyvlyx : public p6 {
+    public: p6_yyvlyx(): p6( "yyvlyx", PROCESS_ID::f6_yyvlyx, EVENT_CATEGORY_TRUE::OTHER_TTBAR ) {}; };
 
-class p6_ttbar_yyxylv : public p6 {
-    public: p6_ttbar_yyxylv(): p6( "yyxylv", PROCESS_ID::f6_ttbar_yyxylv, EVENT_CATEGORY_TRUE::OTHER_TTBAR ) {}; };
+class p6_yyxylv : public p6 {
+    public: p6_yyxylv(): p6( "yyxylv", PROCESS_ID::f6_yyxylv, EVENT_CATEGORY_TRUE::OTHER_TTBAR ) {}; };
 
-// Junping 6f test sample
-class p6_ttbar_yyxylv_alias : public p6 {
-    public: p6_ttbar_yyxylv_alias(): p6( "P6f_yyxylv", PROCESS_ID::f6_ttbar_yyxylv, EVENT_CATEGORY_TRUE::OTHER_TTBAR ) {}; };
+class p6_yyuyyu : public p6 {
+    public: p6_yyuyyu(): p6( "yyuyyu", PROCESS_ID::f6_yyuyyu, EVENT_CATEGORY_TRUE::OTHER_TTBAR ) {}; };
 
-class p6_ttbar_yyuyyu : public p6 {
-    public: p6_ttbar_yyuyyu(): p6( "yyuyyu", PROCESS_ID::f6_ttbar_yyuyyu, EVENT_CATEGORY_TRUE::OTHER_TTBAR ) {}; };
+class p6_yyuyyc : public p6 {
+    public: p6_yyuyyc(): p6( "yyuyyc", PROCESS_ID::f6_yyuyyc, EVENT_CATEGORY_TRUE::OTHER_TTBAR ) {}; };
 
-class p6_ttbar_yyuyyc : public p6 {
-    public: p6_ttbar_yyuyyc(): p6( "yyuyyc", PROCESS_ID::f6_ttbar_yyuyyc, EVENT_CATEGORY_TRUE::OTHER_TTBAR ) {}; };
+class p6_yyxyev : public p6 {
+    public: p6_yyxyev(): p6( "yyxyev", PROCESS_ID::f6_yyxyev, EVENT_CATEGORY_TRUE::OTHER_TTBAR ) {}; };
 
-class p6_ttbar_yyxyev : public p6 {
-    public: p6_ttbar_yyxyev(): p6( "yyxyev", PROCESS_ID::f6_ttbar_yyxyev, EVENT_CATEGORY_TRUE::OTHER_TTBAR ) {}; };
+class p6_yyvllv : public p6 {
+    public: p6_yyvllv(): p6( "yyvllv", PROCESS_ID::f6_yyvllv, EVENT_CATEGORY_TRUE::OTHER_TTBAR ) {}; };
 
-class p6_ttbar_yyvllv : public p6 {
-    public: p6_ttbar_yyvllv(): p6( "yyvllv", PROCESS_ID::f6_ttbar_yyvllv, EVENT_CATEGORY_TRUE::OTHER_TTBAR ) {}; };
+class p6_yyvelv : public p6 {
+    public: p6_yyvelv(): p6( "yyvelv", PROCESS_ID::f6_yyvelv, EVENT_CATEGORY_TRUE::OTHER_TTBAR ) {}; };
 
-class p6_ttbar_yyvelv : public p6 {
-    public: p6_ttbar_yyvelv(): p6( "yyvelv", PROCESS_ID::f6_ttbar_yyvelv, EVENT_CATEGORY_TRUE::OTHER_TTBAR ) {}; };
+class p6_yycyyu : public p6 {
+    public: p6_yycyyu(): p6( "yycyyu", PROCESS_ID::f6_yycyyu, EVENT_CATEGORY_TRUE::OTHER_TTBAR ) {}; };
 
-class p6_ttbar_yycyyu : public p6 {
-    public: p6_ttbar_yycyyu(): p6( "yycyyu", PROCESS_ID::f6_ttbar_yycyyu, EVENT_CATEGORY_TRUE::OTHER_TTBAR ) {}; };
+class p6_yyveyx : public p6 {
+    public: p6_yyveyx(): p6( "yyveyx", PROCESS_ID::f6_yyveyx, EVENT_CATEGORY_TRUE::OTHER_TTBAR ) {}; };
 
-class p6_ttbar_yyveyx : public p6 {
-    public: p6_ttbar_yyveyx(): p6( "yyveyx", PROCESS_ID::f6_ttbar_yyveyx, EVENT_CATEGORY_TRUE::OTHER_TTBAR ) {}; };
+class p6_yyvlev : public p6 {
+    public: p6_yyvlev(): p6( "yyvlev", PROCESS_ID::f6_yyvlev, EVENT_CATEGORY_TRUE::OTHER_TTBAR ) {}; };
 
-class p6_ttbar_yyvlev : public p6 {
-    public: p6_ttbar_yyvlev(): p6( "yyvlev", PROCESS_ID::f6_ttbar_yyvlev, EVENT_CATEGORY_TRUE::OTHER_TTBAR ) {}; };
-
-class p6_ttbar_yyveev : public p6 {
-    public: p6_ttbar_yyveev(): p6( "yyveev", PROCESS_ID::f6_ttbar_yyveev, EVENT_CATEGORY_TRUE::OTHER_TTBAR ) {}; };
+class p6_yyveev : public p6 {
+    public: p6_yyveev(): p6( "yyveev", PROCESS_ID::f6_yyveev, EVENT_CATEGORY_TRUE::OTHER_TTBAR ) {}; };
 
 class p6_yyyyZ_yyyyee : public p6 {
     public: p6_yyyyZ_yyyyee(): p6( "yyyyee", PROCESS_ID::f6_yyyyZ_yyyyee, EVENT_CATEGORY_TRUE::f6_yyyyZ ) {}; };
@@ -369,6 +365,150 @@ class p6_llWW_llxyyx : public p6 {
 class p6_llWW_llvllv : public p6 {
     public: p6_llWW_llvllv(): p6( "llvllv", PROCESS_ID::f6_llWW_llvllv, EVENT_CATEGORY_TRUE::llWW ) {}; };
 
+// NEW mc-2025 inclusive productions
+class p6_inclusive_eeeexx : public p6 {
+    public: p6_inclusive_eeeexx(): p6( "P6f_eeeexx", PROCESS_ID::f6_eeeexx, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_eeeeyy : public p6 {
+    public: p6_inclusive_eeeeyy(): p6( "P6f_eeeeyy", PROCESS_ID::f6_eeeeyy, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_eeevxy : public p6 {
+    public: p6_inclusive_eeevxy(): p6( "P6f_eeevxy", PROCESS_ID::f6_eeevxy, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_eelvxy : public p6 {
+    public: p6_inclusive_eelvxy(): p6( "P6f_eelvxy", PROCESS_ID::f6_eelvxy, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_eeveyx : public p6 {
+    public: p6_inclusive_eeveyx(): p6( "P6f_eeveyx", PROCESS_ID::f6_eeveyx, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_eevlyx : public p6 {
+    public: p6_inclusive_eevlyx(): p6( "P6f_eevlyx", PROCESS_ID::f6_eevlyx, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_eexxxx : public p6 {
+    public: p6_inclusive_eexxxx(): p6( "P6f_eexxxx", PROCESS_ID::f6_eexxxx, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_eexyyx : public p6 {
+    public: p6_inclusive_eexyyx(): p6( "P6f_eexyyx", PROCESS_ID::f6_eexyyx, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_eeyyyy : public p6 {
+    public: p6_inclusive_eeyyyy(): p6( "P6f_eeyyyy", PROCESS_ID::f6_eeyyyy, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_lleexx : public p6 {
+    public: p6_inclusive_lleexx(): p6( "P6f_lleexx", PROCESS_ID::f6_lleexx, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_lleeyy : public p6 {
+    public: p6_inclusive_lleeyy(): p6( "P6f_lleeyy", PROCESS_ID::f6_lleeyy, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_llevxy : public p6 {
+    public: p6_inclusive_llevxy(): p6( "P6f_llevxy", PROCESS_ID::f6_llevxy, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_llllll : public p6 {
+    public: p6_inclusive_llllll(): p6( "P6f_llllll", PROCESS_ID::f6_llllll, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_llllxx : public p6 {
+    public: p6_inclusive_llllxx(): p6( "P6f_llllxx", PROCESS_ID::f6_llllxx, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_llllyy : public p6 {
+    public: p6_inclusive_llllyy(): p6( "P6f_llllyy", PROCESS_ID::f6_llllyy, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_llveyx : public p6 {
+    public: p6_inclusive_llveyx(): p6( "P6f_llveyx", PROCESS_ID::f6_llveyx, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_llvllv : public p6 {
+    public: p6_inclusive_llvllv(): p6( "P6f_llvllv", PROCESS_ID::f6_llvllv, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_llxxxx : public p6 {
+    public: p6_inclusive_llxxxx(): p6( "P6f_llxxxx", PROCESS_ID::f6_llxxxx, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_llxyyx : public p6 {
+    public: p6_inclusive_llxyyx(): p6( "P6f_llxyyx", PROCESS_ID::f6_llxyyx, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_llyyyy : public p6 {
+    public: p6_inclusive_llyyyy(): p6( "P6f_llyyyy", PROCESS_ID::f6_llyyyy, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_veevxx : public p6 {
+    public: p6_inclusive_veevxx(): p6( "P6f_veevxx", PROCESS_ID::f6_veevxx, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_veevyy : public p6 {
+    public: p6_inclusive_veevyy(): p6( "P6f_veevyy", PROCESS_ID::f6_veevyy, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_velvxx : public p6 {
+    public: p6_inclusive_velvxx(): p6( "P6f_velvxx", PROCESS_ID::f6_velvxx, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_velvyy : public p6 {
+    public: p6_inclusive_velvyy(): p6( "P6f_velvyy", PROCESS_ID::f6_velvyy, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_vlevxx : public p6 {
+    public: p6_inclusive_vlevxx(): p6( "P6f_vlevxx", PROCESS_ID::f6_vlevxx, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_vlevyy : public p6 {
+    public: p6_inclusive_vlevyy(): p6( "P6f_vlevyy", PROCESS_ID::f6_vlevyy, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_vllvxx : public p6 {
+    public: p6_inclusive_vllvxx(): p6( "P6f_vllvxx", PROCESS_ID::f6_vllvxx, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_vllvyy : public p6 {
+    public: p6_inclusive_vllvyy(): p6( "P6f_vllvyy", PROCESS_ID::f6_vllvyy, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_vvevxy : public p6 {
+    public: p6_inclusive_vvevxy(): p6( "P6f_vvevxy", PROCESS_ID::f6_vvevxy, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_vvlvxy : public p6 {
+    public: p6_inclusive_vvlvxy(): p6( "P6f_vvlvxy", PROCESS_ID::f6_vvlvxy, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_vvveyx : public p6 {
+    public: p6_inclusive_vvveyx(): p6( "P6f_vvveyx", PROCESS_ID::f6_vvveyx, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_vvvllv : public p6 {
+    public: p6_inclusive_vvvllv(): p6( "P6f_vvvllv", PROCESS_ID::f6_vvvllv, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_vvvlyx : public p6 {
+    public: p6_inclusive_vvvlyx(): p6( "P6f_vvvlyx", PROCESS_ID::f6_vvvlyx, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_vvvvvv : public p6 {
+    public: p6_inclusive_vvvvvv(): p6( "P6f_vvvvvv", PROCESS_ID::f6_vvvvvv, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_vvvvxx : public p6 {
+    public: p6_inclusive_vvvvxx(): p6( "P6f_vvvvxx", PROCESS_ID::f6_vvvvxx, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_vvvvyy : public p6 {
+    public: p6_inclusive_vvvvyy(): p6( "P6f_vvvvyy", PROCESS_ID::f6_vvvvyy, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_vvxxxx : public p6 {
+    public: p6_inclusive_vvxxxx(): p6( "P6f_vvxxxx", PROCESS_ID::f6_vvxxxx, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_vvxyyx : public p6 {
+    public: p6_inclusive_vvxyyx(): p6( "P6f_vvxyyx", PROCESS_ID::f6_vvxyyx, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_vvyyyy : public p6 {
+    public: p6_inclusive_vvyyyy(): p6( "P6f_vvyyyy", PROCESS_ID::f6_vvyyyy, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_xxveyx : public p6 {
+    public: p6_inclusive_xxveyx(): p6( "P6f_xxveyx", PROCESS_ID::f6_xxveyx, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_xxvlyx : public p6 {
+    public: p6_inclusive_xxvlyx(): p6( "P6f_xxvlyx", PROCESS_ID::f6_xxvlyx, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_xxxyev : public p6 {
+    public: p6_inclusive_xxxyev(): p6( "P6f_xxxyev", PROCESS_ID::f6_xxxyev, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_xxxylv : public p6 {
+    public: p6_inclusive_xxxylv(): p6( "P6f_xxxylv", PROCESS_ID::f6_xxxylv, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_yyveyx : public p6 {
+    public: p6_inclusive_yyveyx(): p6( "P6f_yyveyx", PROCESS_ID::f6_yyveyx, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_yyvlyx : public p6 {
+    public: p6_inclusive_yyvlyx(): p6( "P6f_yyvlyx", PROCESS_ID::f6_yyvlyx, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_yyxyev : public p6 {
+    public: p6_inclusive_yyxyev(): p6( "P6f_yyxyev", PROCESS_ID::f6_yyxyev, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+    
+class p6_inclusive_yyxylv : public p6 {
+    public: p6_inclusive_yyxylv(): p6( "P6f_yyxylv", PROCESS_ID::f6_yyxylv, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
+
+// FLAVOR TAG
+
 class p6_ftag_uuuuuu : public p6 {
     public: p6_ftag_uuuuuu(): p6( "uuuuuu", PROCESS_ID::f6_ftag_uuuuuu, EVENT_CATEGORY_TRUE::OTHER ) {}; };
 
@@ -383,6 +523,10 @@ class p6_ftag_cccccc : public p6 {
 
 class p6_ftag_bbbbbb : public p6 {
     public: p6_ftag_bbbbbb(): p6( "bbbbbb", PROCESS_ID::f6_ftag_bbbbbb, EVENT_CATEGORY_TRUE::OTHER ) {}; };
+
+
+
+
 
 
 #endif

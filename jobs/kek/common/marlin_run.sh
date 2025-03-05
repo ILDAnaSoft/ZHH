@@ -22,11 +22,21 @@ function marlin_run() {
     MarlinZHH --global.LCIOInputFiles=$INPUT_FILE --constant.OutputBaseName=$OUT_BASE_NAME --global.SkipNEvents=$EVENTS_SKIP --global.MaxRecordNumber=$EVENTS_MAX
     echo "Finished Marlin at $(date)"
 
-    if [[ -f "${OUT_BASE_NAME}_AIDA.root" ]];
+    sleep 3
+
+    local resultFile="${OUT_BASE_NAME}_AIDA.root"
+
+    if [[ -f "$resultFile" ]];
     then
-        rootrm "${OUT_BASE_NAME}_AIDA.root":hEvtProcessingTime
-        return 0
+        if [[ is_root_readable "$resultFile" FinalStates ]]; then
+            rootrm "$resultFile":hEvtProcessingTime
+            return 0
+        else
+            echo "File does not contain a readable TTree. Did Marlin not finish successfully?"
+            return 1
+        fi
     else
+        echo "Result file $resultFile not found"
         return 1
     fi
 }

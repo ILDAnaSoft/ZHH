@@ -200,6 +200,8 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         }
 
         m_paired_lep_type = abs(isolep1->getType());
+        if (m_paired_lep_type == 211) // this should not happen...? but it does seldom...
+            m_paired_lep_type = 11; 
     
         m_px31 = v4_paired_isolep1.Px();
         m_py31 = v4_paired_isolep1.Py();

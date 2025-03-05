@@ -62,6 +62,11 @@ do
         Pointer=$((Pointer + $NMAX_PER_JOB))
         ChunkGlobal=$((ChunkGlobal + 1))
         ChunkLocal=$((ChunkLocal + 1))
+
+        echo "Prepared job $njobs"
+        if [ $njobs -eq 200 ]; then
+            break 2
+        fi
     done
     
 

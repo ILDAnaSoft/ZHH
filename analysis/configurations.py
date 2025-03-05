@@ -1,5 +1,6 @@
 from collections.abc import Callable, Sequence
-from zhh import zhh_cuts, Cut, EqualCut, fetch_preselection_data, sample_weight, parse_polarization_code
+from zhh import zhh_cuts, Cut, EqualCut, fetch_preselection_data, sample_weight, parse_polarization_code, \
+    ProcessCategories
 import uproot as ur
 import os.path as osp
 import os, subprocess, ROOT, numpy as np
@@ -68,59 +69,63 @@ class AnalysisChannel:
         if self.rf is None:
             self.rf = ur.open(self._merged_file)
     
-    def fetch(self):
-        self.summary = fetch_preselection_data(self.rf)
+    def fetch(self, presel:str, tree:str='Merged'):
+        self.summary = fetch_preselection_data(self.rf, presel, tree=tree)
     
-    def weight(self):
+    def weight(self, lumi_inv_ab:float=2.)->tuple[np.ndarray,np.ndarray]:
         assert(self.rf is not None)
-        rf = self.rf
-        
+        tree = self.rf['Merged']
+                
         # fetch data for weight calculation  
-        process = rf['FinalStates/process'].array()
-        
-        weight_data = np.zeros(process.num_entries, dtype=[
+        process = tree['process'].array()
+
+        weight_data = np.zeros(tree['process'].num_entries, dtype=[
             ('process', 'I'),
             ('polarization_code', 'B'),
             ('cross_section', 'f'),
             ('n_gen', 'I'),
             ('weight', 'f')])
-        
+
         weight_data['process'] = process
-        weight_data['polarization_code'] = rf['FinalStates/polarization_code'].array()
-        weight_data['cross_section'] = rf['FinalStates/cross_section'].array()
-        
+        weight_data['polarization_code'] = tree['polarization_code'].array()
+        weight_data['cross_section'] = tree['cross_section'].array()
+
         # get number of processes and polarization combinations
         # and build proc-pol index
         n_combinations = 0
         unq_processes = np.unique(weight_data['process'], return_counts=True)
         for proc in unq_processes[0]:
             n_combinations += np.unique(weight_data[weight_data['process'] == proc]['polarization_code']).size    
-        
-        processes = np.zeros(n_combinations, dtype=[('pid', 'H'), ('pol_e', 'i'), ('pol_p', 'i'), ('polarization_code', 'B'), ('cross_sec', 'f'), ('n_gen', 'I')])
+
+        processes = np.zeros(n_combinations, dtype=[('pid', 'H'), ('process', '<U60'), ('pol_e', 'i'), ('pol_p', 'i'), ('polarization_code', 'B'), ('cross_sec', 'f'), ('n_events', 'I'), ('weight', 'f')])
         processes['pid'] = np.arange(n_combinations)
-        
+
         counter = 0
-        for proc in unq_processes[0]:
+        for proc in np.nditer(unq_processes[0]):
+            proc = int(proc)
             for polarization_code in np.unique(weight_data[weight_data['process'] == proc]['polarization_code']):
+                process_name = ProcessCategories.inverted[proc]
                 Pem, Pep = parse_polarization_code(polarization_code)
+
+                cross_sec = weight_data[(weight_data['process'] == proc) & (weight_data['polarization_code'] == polarization_code)]['cross_section'][0]
+                n_gen = np.sum((weight_data['process'] == proc) & (weight_data['polarization_code'] == polarization_code))
+                wt = sample_weight(cross_sec, (Pem, Pep), n_gen, lumi_inv_ab)
+                
+                print(f'Process {process_name:12} with Pol e{"L" if Pem == -1 else "R"}.p{"L" if Pep == -1 else "R"} has {n_gen:9} events xsec={cross_sec:.3E} wt={wt:.3E}')
+                
+                processes[counter]['process'] = process_name
                 processes[counter]['pol_e'] = Pem
                 processes[counter]['pol_p'] = Pep
                 processes[counter]['polarization_code'] = polarization_code
-                processes[counter]['cross_sec'] = weight_data[(weight_data['process'] == proc) & (weight_data['polarization_code'] == polarization_code)]['cross_section'][0]
-                processes[counter]['n_gen'] = np.sum((weight_data['process'] == proc) & (weight_data['polarization_code'] == polarization_code))
-                counter += 1        
-
-        weights = np.zeros(len(pids), dtype=[('pid', 'H'), ('weight', 'f')])
-        weights['pid'] = pids
-
-        for pid in tqdm(pids):
-            process = processes[processes['pid'] == pid][0]
-            pol_em, pol_ep = process['pol_e'], process['pol_p']
-            cross_sec = process['cross_sec']
-            
-            n_gen = np.sum(self.summary['pid'] == pid)
-            
-            weights['weight'][weights['pid'] == pid] = sample_weight(cross_sec, (pol_em, pol_ep), n_gen)
+                processes[counter]['cross_sec'] = cross_sec
+                processes[counter]['n_events'] = n_gen
+                processes[counter]['weight'] = wt
+                
+                weight_data['weight'][(weight_data['process'] == proc) & (weight_data['polarization_code'] == polarization_code)] = wt
+                
+                counter += 1
+                
+        return weight_data, processes
     
     def presel(self):
         assert(self.rf is not None)
