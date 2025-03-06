@@ -94,6 +94,9 @@ class JetErrorAnalysis : public Processor , public TrueJet_Parser
   int m_nEvtSum;
   unsigned int m_nTrueJets;
   unsigned int m_nRecoJets;
+  std::vector<float> m_NormResidualEnergy{};
+  std::vector<float> m_NormResidualTheta{};
+  std::vector<float> m_NormResidualPhi{};
 
 
  private:
@@ -104,6 +107,9 @@ class JetErrorAnalysis : public Processor , public TrueJet_Parser
   string _recoMCTruthLink{};
   string _OutJetResidualsCol{};
   int m_matchMethod{};
+  string m_outputFile{};
+  TFile *m_pTFile{};
+  TTree *m_pTTree{};
 };
 
 #endif
