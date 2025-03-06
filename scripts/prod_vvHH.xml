@@ -61,7 +61,9 @@
         <!--processor name="MyMisclustering"/-->
       </if>
     </if>
+    <processor name="MybHadronAnalysis"/>
     <processor name="MyPreSelection_vv" />
+    <processor name="MyValidation" />
     <processor name="MyLCIOOutputProcessor" />
   </execute>
   
@@ -87,52 +89,6 @@
         <!-- optionally limit the collections that are read from the input file: -->
         <!--parameter name="LCIOReadCollectionNames">MCParticle PandoraPFOs</parameter-->
     </global>
-
-    <processor name="MyZHHKinFit_ll" type="ZHHllbbbbKinFit">
-    <!--ZHHKinFit does a 5C fit on 4 jet events and 2 leptons (Px, Py, Pz, E, M12 = M34 (for all three permutations)) -->
-    <!--Name of the input collections: isolated leptons, jets, SLD vertices, Jet-SLDvertex relations, and SLDvertex-neutrino relations -->
-    <parameter name="InputIsoLeptonsCollection" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
-    <parameter name="JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets_ll</parameter>
-    <parameter name="SLDVertexCollection" type="string" lcioInType="Vertex">SemiLeptonicDecayVertex</parameter>
-    <parameter name="JetSLDRelationCollection" type="string" lcioInType="LCRelation">JetSLDLink</parameter>
-    <parameter name="SLDNeutrinoRelationCollection" type="string" lcioInType="LCRelation">SLDNuLink</parameter>
-    <parameter name="recoNumcNuLinkName" type="string" lcioInType="LCRelation">recoNumcNuLink</parameter>
-    <!-- center-of-mass energy (default: 500.) -->
-    <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
-    <!-- maximum energy (=|p_z|) for a single ISR photon  (default: 125.6) -->
-    <parameter name="ISRPzMax" type="float"> ${ISRPzMax} </parameter>
-    <!-- include ISR in fit hypothesis?    0: false >0: true (default) -->
-    <parameter name="includeISR" type="bool">true</parameter>
-    <!-- 0 = OPALFitter, 1 = NewFitter, 2 = NewtonFitter (default: 0) -->
-    <parameter name="fitter" type="int"> 0 </parameter>
-    <!-- name of fit hypothesis: MH, ZHH, ZZH, equal mass (default), NMC (no mass constraint) -->
-    <parameter name="fithypothesis">NMC</parameter>
-    <!-- name of Output root file -->
-    <parameter name="outputFilename">${OutputDirectory}/${OutputBaseName}_Kinfit_ll.root</parameter>
-    <!-- Factor for scaling up inverse pT error for leptons (default: 1)-->
-    <parameter name="SigmaInvPtScaleFactor" type="float"> 1.1 </parameter>
-    <!-- Factor for scaling up energy error for jets (default: 1)-->
-    <parameter name="SigmaEnergyScaleFactor" type="float"> 1.5 </parameter>
-    <!-- Factor for scaling up angular errors jets (default: 1)-->
-    <parameter name="SigmaAnglesScaleFactor" type="float"> 1.3 </parameter>
-    <!-- set true if every event should be traced in DEBUG mode (default: false) -->
-    <parameter name="traceall" type="bool"> false </parameter>
-    <!-- number of individual event to be traced (default: -1) -->
-    <parameter name="ievttrace" type="int"> -1 </parameter>
-    <!-- Matching true jet with reco jet: TRUE = jets with closest angle are matched , FALSE = jets containing same leading particle are matched-->
-    <!-- Name of output collection-->
-    <parameter name="outputLeptonCollection" type="string" lcioOutType="ReconstructedParticle">LeptonsKinFit</parameter>
-    <parameter name="outputJetCollection" type="string" lcioOutType="ReconstructedParticle">JetsKinFit</parameter>
-    <parameter name="outputLeptonCollection" type="string" lcioOutType="ReconstructedParticle">LeptonsPreFit</parameter>
-    <parameter name="outputJetCollection" type="string" lcioOutType="ReconstructedParticle">JetsPreFit</parameter>
-    <parameter name="LeptonPullsOutputCollection" type="string" lcioOutType="LCFloatVec">LeptonPulls</parameter>
-    <parameter name="JetPullsOutputCollection" type="string" lcioOutType="LCFloatVec">JetPulls</parameter>
-    <!--parameter name="LeptonPullsOutputColection" type="string" lcioOutType="LCFloatVec">LeptonPulls</parameter-->
-    <!--parameter name="JetPullsOutputColection" type="string" lcioOutType="LCFloatVec">JetPulls</parameter-->
-    <!--parameter name="StartOutputCollection" type="string" lcioOutType="ReconstructedParticle">StartReco</parameter-->
-    <!-- verbosity level - DEBUG only works if compiled in debug mode! -->
-    <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> DEBUG </parameter>
-  </processor>
 
   <processor name="MyZHHKinFit_vv" type="ZHHvvbbbbKinFit">
     <!--ZHHKinFit does a 5C fit on 4 jet events and 2 leptons (Px, Py, Pz, E, M12 = M34 (for all three permutations)) -->
@@ -161,6 +117,10 @@
     <parameter name="SigmaEnergyScaleFactor" type="float"> 1.5 </parameter>
     <!-- Factor for scaling up angular errors jets (default: 1)-->
     <parameter name="SigmaAnglesScaleFactor" type="float"> 1.3 </parameter>
+    <!-- Error on px and py for Z->invisible fit object (default: 10 GeV)-->
+    <parameter name="ZinvisiblePxPyError" type="float"> 10 </parameter>
+    <!-- Error on pz for Z->invisible fit object (default: 10 GeV)-->
+    <parameter name="ZinvisiblePzError" type="float"> 0 </parameter>
     <!-- set true if every event should be traced in DEBUG mode (default: false) -->
     <parameter name="traceall" type="bool"> false </parameter>
     <!-- number of individual event to be traced (default: -1) -->
@@ -203,7 +163,7 @@
         <!--AddClusterProperties does whatever it does ...-->
         <parameter name="PFOCollectionName" type="string" lcioInType="ReconstructedParticle">PandoraPFOs </parameter>
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">DEBUG4 </parameter>
+        <parameter name="Verbosity" type="string">SILENT </parameter>
     </processor>
 
     <processor name="MyMisclustering" type="Misclustering">
@@ -213,7 +173,7 @@
         <parameter name="matchMethod" type="int">0</parameter>
         <parameter name="outputFilename" type="string">${OutputDirectory}/${OutputBaseName}_Misclustering.root</parameter>
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">DEBUG</parameter>
+        <parameter name="Verbosity" type="string">SILENT</parameter>
     </processor>
 
     <processor name="ComputeCorrectAngulardEdX" type="AngularCorrection_dEdxProcessor">
@@ -289,7 +249,7 @@
         <!--Names of the Output Higgs decay mode collection-->
         <parameter name="HdecayModeCollection" type="string" lcioOutType="MCParticle">HdecayMode</parameter>
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">MESSAGE</parameter>
+        <parameter name="Verbosity" type="string">SILENT</parameter>
     </processor>
 
     <processor name="MyFastJetProcessor" type="FastJetProcessor">
@@ -503,7 +463,7 @@
 		<!--Event selection based on semi-leptonic decays: (0): without SLD (1): with >= 0 SLD(all events) (2): with >= 1 SLD (3): with correctable SLD -->
         <parameter name="SLDMode" type="int">1</parameter>
 		<!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-		<parameter name="Verbosity" type="string">${Verbosity}</parameter>
+		<parameter name="Verbosity" type="string">SILENT</parameter>
 	</processor>
 
     <processor name="MySLDCorrection_vv" type="SLDCorrection">
@@ -608,7 +568,7 @@
 		<!--Event selection based on semi-leptonic decays: (0): without SLD (1): with >= 0 SLD(all events) (2): with >= 1 SLD (3): with correctable SLD -->
         <parameter name="SLDMode" type="int">1</parameter>
 		<!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-		<parameter name="Verbosity" type="string">${Verbosity}</parameter>
+		<parameter name="Verbosity" type="string">SILENT</parameter>
 	</processor>
 
     <processor name="JC4FT_ll" type="LcfiplusProcessor">
@@ -738,7 +698,7 @@
     <processor name="JC4FT_vv" type="LcfiplusProcessor">
         <!-- run primary and secondary vertex finders -->
         <parameter name="Algorithms" type="stringVec"> JetClustering JetVertexRefiner FlavorTag ReadMVA </parameter>
-        <parameter name="Verbosity" type="string">MESSAGE</parameter>
+        <parameter name="Verbosity" type="string">SILENT</parameter>
 
         <!-- general parameters -->
         <parameter name="PFOCollection" type="string" value="PFOsWithoutOverlay" /> <!-- input PFO collection -->
@@ -988,7 +948,7 @@
       <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
       <parameter name="outputFilename" type="string">${OutputDirectory}/${OutputBaseName}_ZinvisibleErrorAnalysis_vvHH.root</parameter>
       <parameter name="ZinvisibleResidualsOutputCollection" type="string" lcioOutType="LCFloatVec">ZinvisibleResiduals</parameter>
-      <parameter name="Verbosity" type="string">DEBUG</parameter>
+      <parameter name="Verbosity" type="string">SILENT</parameter>
     </processor>
     
     <processor name="MyPreSelection_ll" type="PreSelection">
@@ -1011,9 +971,15 @@
       
       <parameter name="outputFilename" type="string">${OutputDirectory}/${OutputBaseName}_PreSelection_llHH.root</parameter>
       <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-      <parameter name="Verbosity" type="string">MESSAGE</parameter>
+      <parameter name="Verbosity" type="string">SILENT</parameter>
     </processor>
 
+    <processor name="MybHadronAnalysis" type="bHadronAnalysis">
+      <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
+      <parameter name="outputFilename" type="string">${OutputDirectory}/${OutputBaseName}_bHadronAnalysis.root</parameter>
+      <parameter name="Verbosity" type="string">SILENT</parameter>
+    </processor>
+    
     <processor name="MyPreSelection_vv" type="PreSelection">
         <!--MyPreSelection identified events that have passed the preselection-->
         <!--Name of the input collections-->
@@ -1034,7 +1000,7 @@
 
         <parameter name="outputFilename" type="string">${OutputDirectory}/${OutputBaseName}_PreSelection_vvHH.root</parameter>
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">MESSAGE</parameter>
+        <parameter name="Verbosity" type="string">SILENT</parameter>
     </processor>
 
     <processor name="MyPreSelection_qq" type="PreSelection">
@@ -1057,8 +1023,17 @@
 
         <parameter name="outputFilename" type="string">${OutputDirectory}/${OutputBaseName}_PreSelection_qqHH.root</parameter>
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">MESSAGE</parameter>
+        <parameter name="Verbosity" type="string">SILENT</parameter>
     </processor>
+
+    <processor name="MyValidation" type="Validation">
+      <!--Name of the Input MCParticle Collection-->
+      <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
+      <!--Root file-->
+      <parameter name="outputFilename" type="string">${OutputDirectory}/${OutputBaseName}_Validation.root</parameter>
+      <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
+      <parameter name="Verbosity" type="string">SILENT</parameter>
+    </processor> 
 
     <processor name="MyErrorFlow_ll" type="ErrorFlow">
         <!--PfoAnalysis analyses output of PandoraPFANew-->
@@ -1077,7 +1052,7 @@
         <!-- A correction factor to be multiplied to angular uncertainties of Neutral Hadrons -->
         <parameter name="CovMatFactorNeutralHadrons" type="double">1.8</parameter>
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">MESSAGE</parameter>
+        <parameter name="Verbosity" type="string">SILENT</parameter>
     </processor>
 
     <processor name="MyErrorFlow_vv" type="ErrorFlow">
@@ -1097,7 +1072,7 @@
         <!-- A correction factor to be multiplied to angular uncertainties of Neutral Hadrons -->
         <parameter name="CovMatFactorNeutralHadrons" type="double">1.8</parameter>
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">MESSAGE</parameter>
+        <parameter name="Verbosity" type="string">SILENT</parameter>
     </processor>
     
     <processor name="MyFinalStateRecorder" type="FinalStateRecorder">
@@ -1107,7 +1082,7 @@
         <parameter name="outputJsonFilename" type="string">${OutputDirectory}/${OutputBaseName}_FinalStateMeta.json</parameter>
 
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">DEBUG</parameter>
+        <parameter name="Verbosity" type="string">SILENT</parameter>
     </processor>
 
     <processor name="MyTruthRecoComparison" type="TruthRecoComparison">
