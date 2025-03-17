@@ -166,7 +166,7 @@ function zhh_install_deps() {
     echo "$FlavorTagging_ML" >> "$(realpath $REPO_ROOT/$ZHH_VENV_NAME/lib/python*/site-packages)/FlavorTag.pth"
 
     # Set DATA_PATH
-    local default_data_dir="/nfs/dust/ilc/user/$(whoami)/zhh"
+    local default_data_dir="/data/dust/user/$(whoami)/zhh"
     if [[ ! -z $DATA_PATH ]]; then
         default_data_dir=$DATA_PATH
     fi

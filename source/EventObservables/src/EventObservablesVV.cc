@@ -93,14 +93,9 @@ void EventObservablesVV::updateChannelValues(EVENT::LCEvent *pLCEvent) {
     std::tie(m_npfosmin5j, m_npfosmax5j, jet5IDxPFOsMin) = nPFOsMinMax(input5JetCollection);
 
     // reconstruct the semileptonic ttbar system
+    // in the 5 jet case, assume the least b-probable jet is a tau jet
     std::vector<std::pair<int, float>> sortedBTagsJ5 =
         sortedTagging(input5JetCollection, m_JetTaggingPIDAlgorithm, m_JetTaggingPIDParameterB);
-
-    std::vector<std::pair<int, float>> sortedBTagsJ5WoTau;
-    std::copy_if (sortedBTagsJ5.begin(), sortedBTagsJ5.end(), std::back_inserter(sortedBTagsJ5WoTau), [jet5IDxPFOsMin](std::pair<int, float> jetflavorpair){
-        return jetflavorpair.first != jet5IDxPFOsMin;} );
-
-    assert(sortedBTagsJ5WoTau.size() == 4);
 
     // order is with decreasing b-tag    
     for (int i=0; i < sortedBTagsJ5.size(); ++i) {

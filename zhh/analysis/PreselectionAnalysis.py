@@ -431,9 +431,13 @@ def fetch_preselection_data(rf, presel:str, final_states:bool=True, tree:str|Non
     dtype = [
         ('id', 'I'),
         ('process', 'I'), # H=np.uint16
+        ('pid', 'I'),
         ('pol_code', 'B'), # np.uint8
         ('event', 'I'), # max. encountered: 15 797 803 << 4 294 967 295 (max of uint32)
         ('event_category', 'B'), # np.uint8
+        
+        ('is_sig', 'B'),
+        ('is_bkg', 'B'),
         
         ('ll_pass', 'B'),
         ('vv_pass', 'B'),
@@ -526,7 +530,7 @@ def fetch_preselection_data(rf, presel:str, final_states:bool=True, tree:str|Non
             
     return results
 
-fs_columns = ['Nd', 'Nu', 'Ns', 'Nc', 'Nb', 'Nt', 'Ne1', 'Nn1', 'Ne2', 'Nn2', 'Ne3', 'Nv3', 'Ng', 'Ny', 'NZ', 'NW', 'NH']
+fs_columns = ['Nd', 'Nu', 'Ns', 'Nc', 'Nb', 'Nt', 'Ne1', 'Nv1', 'Ne2', 'Nv2', 'Ne3', 'Nv3', 'Ng', 'Ny', 'NZ', 'NW', 'NH']
 
 def get_final_state_counts(DATA_ROOT:str,
                            branches:Iterable,

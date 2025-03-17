@@ -15,15 +15,10 @@ cd $TMPDIR
 
 source "$ZHH_REPO_ROOT/setup.sh"
 if source "$ZHH_REPO_ROOT/jobs/kek/common/marlin_run.sh" $INPUT_FILE $OUT_BASE_NAME $EVENTS_SKIP $EVENTS_MAX; then
-    resultSize=$(stat -c %s "${OUT_BASE_NAME}_AIDA.root")
-    if [[ $resultSize -gt 1000000 ]]; then
-        mv "${OUT_BASE_NAME}_AIDA.root" ..
-        mv "${OUT_BASE_NAME}.slcio" ..
+    mv "${OUT_BASE_NAME}_AIDA.root" ..
+    mv "${OUT_BASE_NAME}.slcio" ..
 
-        echo "Execution done"
-    else
-        echo "Execution failed; file size suspiciously small"
-    fi
+    echo "Execution done"
 
     rm -rf $TMPDIR
 else

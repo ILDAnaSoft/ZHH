@@ -35,7 +35,7 @@ Either you or `source setup.sh --install` should make sure the following environ
 |--------------------------------|------------------------|
 | REPO_ROOT                      | this repository        |
 | ILD_CONFIG_DIR                 | https://github.com/iLCSoft/ILDConfig |
-| DATA_PATH                      | Where all batch jobs save their outputs. Defaults to `/nfs/dust/ilc/user/$(whoami)/zhh`. |
+| DATA_PATH                      | Where all batch jobs save their outputs. Defaults to `/data/dust/user/$(whoami)/zhh`. |
 | TORCH_PATH (*)                 | `python -c 'import torch; print(f"{torch.__file__}")'` |
 | LCFIPlus | Necessary for weaver jet tagging. [This version](https://github.com/nVentis/LCFIPlus) continues fixes. |
 | LCFIPlusConfig | Weight files for LCFIPlus |

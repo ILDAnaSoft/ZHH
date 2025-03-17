@@ -9,7 +9,7 @@ def fig_ild_style(fig:Figure, xlim:Union[List[float], Tuple[float,float]], bins:
                   yscale:str='linear', yunit:Optional[str]='events', ylabel_prefix:str='',
                   xlocator:Optional[Locator]=None, ylocator:Optional[Locator]=None,
                   xminor:Optional[int]=5, yminor:Optional[int]=5,
-                  fontname='Arial', beam_spec:bool=True, ax_index:int=0,
+                  fontname='Arial', beam_spec:bool=True, beam_energy:int=550, ax_index:int=0,
                   title:Optional[str]=None, title_postfix:str='',
                   legend_labels:Optional[List]=None, legend_kwargs={},
                   colorpalette:Optional[List]=None,
@@ -31,7 +31,7 @@ def fig_ild_style(fig:Figure, xlim:Union[List[float], Tuple[float,float]], bins:
     fig.text(0.15+ild_offset_x, 0.83+ild_offset_y, f'ILD {ild_status}', fontsize=12, weight='bold', fontname=fontname)
     
     if beam_spec:
-        fig.text(0.15+ild_offset_x, 0.795+ild_offset_y, r'$\sqrt{s} = 500$ GeV, $L_{int} = 2$ab$^{-1}$', fontsize=8, fontname=fontname)
+        fig.text(0.15+ild_offset_x, 0.795+ild_offset_y, rf'$\sqrt{{s}} = {beam_energy}$ GeV, $L_{{int}} = 2$ab$^{{-1}}$', fontsize=8, fontname=fontname)
         fig.text(0.15+ild_offset_x, 0.765+ild_offset_y, r'$P(e^{+}, e^{-}) = (+0.3, -0.8)$', fontsize=8, fontname=fontname)
     
     for ax in fig.get_axes():

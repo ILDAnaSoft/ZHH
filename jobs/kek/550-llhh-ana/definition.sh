@@ -17,6 +17,7 @@ readarray file_names < "/home/ilc/bliewert/DevRepositories/ZHH/jobs/kek/550-llhh
 dir=$( dirname ${file_names[1]} )
 nfiles=0
 njobs=0
+nexecute=0
 ChunkGlobal=0
 
 # keep track of indices in index.txt
@@ -51,6 +52,7 @@ do
             sed -i -e "s|<EVENTS_SKIP>|$Pointer|g" definitions/$JOB_FILE
 
             echo "bash $JOB_BASEDIR/definitions/$JOB_FILE" >> pack.job
+            nexecute=$((nexecute + 1 ))
         else
             echo "File <$TARGET_FILE> already exists. No job will be scheduled for it."
         fi
@@ -63,15 +65,15 @@ do
         ChunkGlobal=$((ChunkGlobal + 1))
         ChunkLocal=$((ChunkLocal + 1))
 
-        echo "Prepared job $njobs"
-        if [ $njobs -eq 200 ]; then
-            break 2
-        fi
+        #echo "Prepared job $njobs"
+        #if [ $njobs -eq 200 ]; then
+        #    break 2
+        #fi
     done
     
 
     nfiles=$((nfiles + 1 ))
 done
 
-echo "----------------------------------------------------------"
-echo "Prepared $njobs jobs given a total of $nfiles input files "
+echo "---------------------------------------------------------------------------------"
+echo "Prepared $njobs jobs ($nexecute to execute) given a total of $nfiles input files "

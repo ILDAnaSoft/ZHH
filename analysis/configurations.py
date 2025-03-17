@@ -23,7 +23,8 @@ class AnalysisChannel:
         self._root_files = []
         self._define_bkg = define_bkg
         self._define_sig = define_sig
-        self.rf = None
+        self.rf:ur.WritableFile|None = None
+        self.summary:np.ndarray|None = None
         
     def initialize(self, work_root:str, root_files:list[str], trees:list[str]):
         self._work_dir = f'{work_root}/{self._name}'
@@ -73,19 +74,21 @@ class AnalysisChannel:
         self.summary = fetch_preselection_data(self.rf, presel, tree=tree)
     
     def weight(self, lumi_inv_ab:float=2.)->tuple[np.ndarray,np.ndarray]:
-        assert(self.rf is not None)
+        assert(self.rf is not None and self.summary is not None)
+        
         tree = self.rf['Merged']
                 
         # fetch data for weight calculation  
         process = tree['process'].array()
 
         weight_data = np.zeros(tree['process'].num_entries, dtype=[
+            ('pid', 'I'),
             ('process', 'I'),
             ('polarization_code', 'B'),
             ('cross_section', 'f'),
             ('n_gen', 'I'),
             ('weight', 'f')])
-
+        
         weight_data['process'] = process
         weight_data['polarization_code'] = tree['polarization_code'].array()
         weight_data['cross_section'] = tree['cross_section'].array()
@@ -100,30 +103,36 @@ class AnalysisChannel:
         processes = np.zeros(n_combinations, dtype=[('pid', 'H'), ('process', '<U60'), ('pol_e', 'i'), ('pol_p', 'i'), ('polarization_code', 'B'), ('cross_sec', 'f'), ('n_events', 'I'), ('weight', 'f')])
         processes['pid'] = np.arange(n_combinations)
 
-        counter = 0
+        pid = 0
         for proc in np.nditer(unq_processes[0]):
             proc = int(proc)
             for polarization_code in np.unique(weight_data[weight_data['process'] == proc]['polarization_code']):
+                mask = (weight_data['process'] == proc) & (weight_data['polarization_code'] == polarization_code)
+                
                 process_name = ProcessCategories.inverted[proc]
                 Pem, Pep = parse_polarization_code(polarization_code)
 
-                cross_sec = weight_data[(weight_data['process'] == proc) & (weight_data['polarization_code'] == polarization_code)]['cross_section'][0]
-                n_gen = np.sum((weight_data['process'] == proc) & (weight_data['polarization_code'] == polarization_code))
+                cross_sec = weight_data[mask]['cross_section'][0]
+                n_gen = np.sum(mask)
                 wt = sample_weight(cross_sec, (Pem, Pep), n_gen, lumi_inv_ab)
                 
                 print(f'Process {process_name:12} with Pol e{"L" if Pem == -1 else "R"}.p{"L" if Pep == -1 else "R"} has {n_gen:9} events xsec={cross_sec:.3E} wt={wt:.3E}')
                 
-                processes[counter]['process'] = process_name
-                processes[counter]['pol_e'] = Pem
-                processes[counter]['pol_p'] = Pep
-                processes[counter]['polarization_code'] = polarization_code
-                processes[counter]['cross_sec'] = cross_sec
-                processes[counter]['n_events'] = n_gen
-                processes[counter]['weight'] = wt
+                processes[pid]['process'] = process_name
+                processes[pid]['pol_e'] = Pem
+                processes[pid]['pol_p'] = Pep
+                processes[pid]['polarization_code'] = polarization_code
+                processes[pid]['cross_sec'] = cross_sec
+                processes[pid]['n_events'] = n_gen
+                processes[pid]['weight'] = wt
                 
-                weight_data['weight'][(weight_data['process'] == proc) & (weight_data['polarization_code'] == polarization_code)] = wt
+                weight_data['weight'][mask] = wt
+                weight_data['pid'][mask] = pid
                 
-                counter += 1
+                pid += 1
+        
+        self.summary['pid'] = weight_data['pid']
+        self.summary['weight'] = weight_data['weight']
                 
         return weight_data, processes
     

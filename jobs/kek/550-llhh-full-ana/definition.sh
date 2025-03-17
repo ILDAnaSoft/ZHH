@@ -8,13 +8,13 @@ JOB_BASEDIR=$3
 NMAX_PER_JOB=3600
 
 if [[ -z $ZHH_SETUP ]]; then
-    srczhh
+    echo "ZHH not loaded. Call srczhh"
+    exit 1
 fi
 
 # actual definition
 # here, only files from /home/ilc/tianjp/generator/PostDBD/whizard3/toGrid/E550_6f_2l4q.slcio.list
-readarray file_names < "/home/ilc/tianjp/generator/PostDBD/whizard3/toGrid/E550_6f_2l4q.slcio.list"
-dir="/group/ilc/users/bliewert/jobresults/550-6f-sgv"
+readarray file_names < files.txt
 nfiles=0
 njobs=0
 nexecute=0
@@ -23,10 +23,10 @@ ChunkGlobal=0
 # keep track of indices in index.txt
 rm -f index.txt
 
-for file in ${file_names[*]};
+for INPUT_FILE in ${file_names[*]};
 do
-    file=$( basename $file )
-    INPUT_FILE="$dir/$file"
+    file=$( basename ${INPUT_FILE} )
+    dir=$( dirname ${INPUT_FILE} )
     OUT_BASE_NAME="${file%.*}"
     OUT_BASE_DIR="$OUTPUT_DIR/$JOB_NAME"
 
@@ -71,6 +71,7 @@ do
         #fi
     done
     
+
     nfiles=$((nfiles + 1 ))
 done
 

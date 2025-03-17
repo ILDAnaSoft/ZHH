@@ -74,7 +74,7 @@
 
 <constants>
   <constant name="ILDConfigDir" value="" />
-  <constant name="OutputDir" value="/nfs/dust/ilc/user/bliewert/CPID_Training" />
+  <constant name="OutputDir" value="/data/dust/user/bliewert/CPID_Training" />
   <constant name="OutputSuffix" value="CPID" />
   <constant name="ZHH_REPO_ROOT" value="" />
   
