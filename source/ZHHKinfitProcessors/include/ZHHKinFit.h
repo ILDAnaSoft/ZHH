@@ -88,7 +88,7 @@ public:
   template<typename TYPE>
   std::vector<std::vector<TYPE*>> combinations(std::vector<std::vector<TYPE*>> collector,
 			       std::vector<std::vector<TYPE*>> sets, 
-			       int n,
+			       unsigned int n,
 			       std::vector<TYPE*> combo);
   pfoVectorVector getNeutrinosInJet( LCRelationNavigator* JetSLDNav , 
 				     LCRelationNavigator* SLDNuNav , 

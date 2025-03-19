@@ -738,7 +738,7 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
       }
       BaseFitter* fitter = fitResult.fitter.get();
       
-      
+    
       if (fitter && fitter->getError() == 0) {
 	// TODO the next line is just a test
 	streamlog_out(MESSAGE) << "   OUTER chi2 " << fitter->getChi2() << endl;
@@ -987,8 +987,8 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     //  dynamic_cast<ReconstructedParticleImpl*>(Jets[i])->setCovMatrix(bestJets[i]->getCovMatrix());
     //  outputJetCollection->addElement( Jets[i] );
     //}
-    for (auto neutrinos : bestNuSolutions) {
-      for (auto nu : neutrinos) {
+    for (auto nus : bestNuSolutions) {
+      for (auto nu : nus) {
 	std::pair<MCParticle*,ReconstructedParticle*> nupair = getMCNeutrino(NuMCNav, SLDNuNav, nu);
 	m_TrueNeutrinoEnergy.push_back(nupair.first->getEnergy());
 	m_RecoNeutrinoEnergy.push_back(nupair.second->getEnergy());
@@ -1050,15 +1050,15 @@ ReconstructedParticle* ZHHKinFit::addNeutrinoCorrection(ReconstructedParticle* j
 template<typename TYPE>
 std::vector<std::vector<TYPE*>> ZHHKinFit::combinations(std::vector<std::vector<TYPE*>> collector,
 							std::vector<std::vector<TYPE*>> sets, 
-							int n,
+							unsigned int n,
 							std::vector<TYPE*> combo) {
   if (n == sets.size()) {
     collector.push_back({combo});
     return collector;
   }
 
-  for (auto c : sets.at(n)) {
-    combo.push_back(c);
+  for (auto current : sets.at(n)) {
+    combo.push_back(current);
     collector = combinations(collector, sets, n + 1, combo);
     combo.pop_back();
   }
@@ -1144,7 +1144,6 @@ ZHHKinFit::FitResult ZHHKinFit::performllbbbbFIT( pfoVector jets, pfoVector lept
     streamlog_out(MESSAGE)  << " start four-vector of lepton"<< i_lep+1 <<": " << "[" << leptons[ i_lep ]->getMomentum()[0] << ", " << leptons[ i_lep ]->getMomentum()[1] << ", " << leptons[ i_lep ]->getMomentum()[2] << ", " << leptons[ i_lep ]->getEnergy() << "]"  << std::endl ;
   }
   
-  const int NJETS = 4;
   const int NLEPTONS = 2;
   
   double bestProb = -1;
@@ -1480,7 +1479,7 @@ ZHHKinFit::FitResult ZHHKinFit::performvvbbbbFIT( pfoVector jets, bool traceEven
   //calculate 4-momentum of Z->invisible 
   ROOT::Math::PxPyPzEVector seenFourMomentum(0.,0.,0.,0.);
   std::vector<ReconstructedParticle*> Jets{};
-  for (unsigned int i_jet = 0; i_jet < m_nJets; i_jet++) {
+  for (int i_jet = 0; i_jet < m_nJets; i_jet++) {
     seenFourMomentum += ROOT::Math::PxPyPzEVector(jets[ i_jet ]->getMomentum()[0],jets[ i_jet ]->getMomentum()[1],jets[ i_jet ]->getMomentum()[2], jets[ i_jet ]->getEnergy());
   }
   ROOT::Math::PxPyPzMVector ZinvFourMomentum(-seenFourMomentum.Px(), -seenFourMomentum.Py(), -seenFourMomentum.Pz(),91.1880); // M_Z PDG average in 2024 review
@@ -1488,8 +1487,6 @@ ZHHKinFit::FitResult ZHHKinFit::performvvbbbbFIT( pfoVector jets, bool traceEven
   shared_ptr<ZinvisibleFitObjectNew> zfo = make_shared<ZinvisibleFitObjectNew> (ZinvFourMomentum.Px(), ZinvFourMomentum.Py(), ZinvFourMomentum.Pz(), m_ZinvisiblePxPyError, m_ZinvisiblePxPyError, m_ZinvisiblePzError, 91.1880);
   zfo->setName("Zinvisible");
   
-  const int NJETS = 4;
-  const int NLEPTONS = 0;
   const int NZINVISIBLES = 1;
   
   double bestProb = -1;
@@ -1678,7 +1675,7 @@ ZHHKinFit::FitResult ZHHKinFit::performvvbbbbFIT( pfoVector jets, bool traceEven
     }
 
     for(auto j : *jfo_perm) fitter->addFitObject(*j);
-    for(auto z : *zfo_perm) fitter->addFitObject(*z);
+    for(auto zz : *zfo_perm) fitter->addFitObject(*zz);
 
     if( m_fitISR ) {
       fitter->addFitObject( *(photon) );
@@ -1801,9 +1798,6 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
     streamlog_out(MESSAGE)  << " start four-vector of jet"<< i_jet+1 <<": " << "[" << jets[ i_jet ]->getMomentum()[0] << ", " << jets[ i_jet ]->getMomentum()[1] << ", " << jets[ i_jet ]->getMomentum()[2] << ", " << jets[ i_jet ]->getEnergy() << "]" << std::endl ;
   }
 
-  const int NJETS = 6;
-  const int NLEPTONS = 0;
-  
   double bestProb = -1;
   double bestChi2 = 9999999999999.;
   FitResult bestFitResult;
