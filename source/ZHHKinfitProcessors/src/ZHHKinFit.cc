@@ -687,10 +687,6 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
       pfoVectorVector neutrinosinjet = getNeutrinosInJet(JetSLDNav , SLDNuNav , Jets[i]);
       neutrinos.push_back(neutrinosinjet);
     }
-    //pfoVectorVector neutrinos1 = getNeutrinosInJet(JetSLDNav , SLDNuNav , Jets[0]); 
-    //pfoVectorVector neutrinos2 = getNeutrinosInJet(JetSLDNav , SLDNuNav , Jets[1]);
-    //pfoVectorVector neutrinos3 = getNeutrinosInJet(JetSLDNav , SLDNuNav , Jets[2]);
-    //pfoVectorVector neutrinos4 = getNeutrinosInJet(JetSLDNav , SLDNuNav , Jets[3]);
     pfoVectorVector bestNuSolutions = {};
     
     FitResult bestFitResult = woNuFitResult;
@@ -702,63 +698,70 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     };
     
     pfoVector gcJets;
+    std::vector<std::vector<JetAndCorrection*>> CorrectedJetsVector;
+    for(int i = 0; i < m_nJets; ++i) {
+      std::vector<JetAndCorrection*> CorrectedJets;
+      for(pfoVector nu: combinations({}, neutrinos[i], 0, {})) {
+	ReconstructedParticle* cjet = addNeutrinoCorrection(Jets[i],nu);
+	streamlog_out(MESSAGE) << "   cjet stored" << endl;
+	JetAndCorrection* jetNu = new JetAndCorrection(cjet, nu);
+	CorrectedJets.push_back(jetNu);
+	gcJets.push_back(cjet);
+      }
+      CorrectedJetsVector.push_back(CorrectedJets);
+    }
 
+    streamlog_out(MESSAGE) << "   GOING THROUGH COMBINATIONS FOR " << m_nJets << " jets" << endl;
+    streamlog_out(MESSAGE) << "   WE HAVE " << CorrectedJetsVector.size() << " total jets stored" << endl;
+    // need to have equal amount of vectors as jets
+    assert(CorrectedJetsVector.size() == m_nJets);
     //For each jet loop over all possible combinations of the SLDcorrection sets
-    //LOOP 1
-    for(pfoVector nu1: combinations({}, neutrinos[0], 0, {})) {
-      ReconstructedParticle* cjet1 = addNeutrinoCorrection(Jets[0],nu1);
-      gcJets.push_back(cjet1);
-      //LOOP 2
-      for(pfoVector nu2: combinations({}, neutrinos[1], 0, {})) {
-	ReconstructedParticle* cjet2 = addNeutrinoCorrection(Jets[1], nu2);
-	gcJets.push_back(cjet2);
-	//LOOP 3
-	for(pfoVector nu3: combinations({}, neutrinos[2], 0, {})) {
-	  ReconstructedParticle* cjet3 = addNeutrinoCorrection(Jets[2],nu3);
-	  gcJets.push_back(cjet3);
-	  //LOOP 4
-	  for(pfoVector nu4: combinations({}, neutrinos[3], 0, {})) {
-	    ReconstructedParticle* cjet4 = addNeutrinoCorrection(Jets[3],nu4);
-	    gcJets.push_back(cjet4);
-	    
-	    std::vector< ReconstructedParticle* > CorrectedJets{cjet1, cjet2, cjet3, cjet4};
-	    pfoVectorVector NuSolutions{nu1, nu2, nu3, nu4};
-	    FitResult fitResult;
-	    if (m_signature == "llbbbb") {
-	      fitResult = performllbbbbFIT( CorrectedJets, Leptons, traceEvent );
-	    }
-	    if (m_signature == "vvbbbb") {
-	      fitResult = performvvbbbbFIT( CorrectedJets, traceEvent );
-	    }
-	    if (m_signature == "qqbbbb") {
-	      fitResult = performqqbbbbFIT( CorrectedJets, traceEvent );
-	    }
-	    BaseFitter* fitter = fitResult.fitter.get();
-	    
-	    
-	    if (fitter && fitter->getError() == 0) {
-	      // TODO the next line is just a test
-	      streamlog_out(MESSAGE) << "   OUTER chi2 " << fitter->getChi2() << endl;
-	      /*
-		for(auto it = fitResult.constraints->begin(); it != fitResult.constraints->end(); it++) {
-		streamlog_out(MESSAGE) << "   OUTER testing " << (*it)->getName() << endl;
-		if (strcmp((*it)->getName(), "h1 mass")==0) {
-		auto mc = dynamic_pointer_cast<MassConstraint>(*it);
+    for(std::vector<JetAndCorrection*> CorrectedJetsAndNu : combinations({}, CorrectedJetsVector, 0, {})) {
+      streamlog_out(MESSAGE) << "   size: " << CorrectedJetsAndNu.size() << endl;
+      
+      pfoVectorVector NuSolutions;
+      pfoVector CorrectedJets;
+
+      for(JetAndCorrection* jetNu : CorrectedJetsAndNu) {
+	NuSolutions.push_back(jetNu->nu);
+	CorrectedJets.push_back(jetNu->particle);
+      }
+      FitResult fitResult;
+      if (m_signature == "llbbbb") {
+	fitResult = performllbbbbFIT( CorrectedJets, Leptons, traceEvent );
+      }
+      if (m_signature == "vvbbbb") {
+	fitResult = performvvbbbbFIT( CorrectedJets, traceEvent );
+      }
+      if (m_signature == "qqbbbb") {
+	fitResult = performqqbbbbFIT( CorrectedJets, traceEvent );
+      }
+      BaseFitter* fitter = fitResult.fitter.get();
+      
+      
+      if (fitter && fitter->getError() == 0) {
+	// TODO the next line is just a test
+	streamlog_out(MESSAGE) << "   OUTER chi2 " << fitter->getChi2() << endl;
+	/*
+	  for(auto it = fitResult.constraints->begin(); it != fitResult.constraints->end(); it++) {
+	  streamlog_out(MESSAGE) << "   OUTER testing " << (*it)->getName() << endl;
+	  if (strcmp((*it)->getName(), "h1 mass")==0) {
+	  auto mc = dynamic_pointer_cast<MassConstraint>(*it);
 		streamlog_out(MESSAGE)<< "   OUTER higgs mass constraint: " << mc->getMass() << endl;
 		}
 		}*/
-	      /*for(auto it = fitter->getFitObjects()->begin(); it != fitter->getFitObjects()->end(); it++) {
-		streamlog_out(MESSAGE)<< "   OUTER FITTER FO : " << (*it)->getName() << endl;
-		}
-	      */
-	      // TODO the next line is just a test
-	      /*for(auto it = fitResult.fitobjects->begin(); it != fitResult.fitobjects->end(); it++) streamlog_out(MESSAGE) << "   testing FO " << (*it)->getName() << endl;*/
-	      if(!bestFitResult.fitter) {
-		bestFitResult = fitResult;
-		bestJets = CorrectedJets;
-		bestNuSolutions = NuSolutions;
-		continue;
-	      }
+	/*for(auto it = fitter->getFitObjects()->begin(); it != fitter->getFitObjects()->end(); it++) {
+	  streamlog_out(MESSAGE)<< "   OUTER FITTER FO : " << (*it)->getName() << endl;
+	  }
+	*/
+	// TODO the next line is just a test
+	/*for(auto it = fitResult.fitobjects->begin(); it != fitResult.fitobjects->end(); it++) streamlog_out(MESSAGE) << "   testing FO " << (*it)->getName() << endl;*/
+	if(!bestFitResult.fitter) {
+	  bestFitResult = fitResult;
+	  bestJets = CorrectedJets;
+	  bestNuSolutions = NuSolutions;
+	  continue;
+	}
 	      if(fitter->getChi2() < bestFitResult.fitter->getChi2()) {
 		streamlog_out(MESSAGE)<< "   New fit result is better than stored! Store the new one instead " << endl;
 		bestFitResult = fitResult;
@@ -766,11 +769,11 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
 		bestNuSolutions = NuSolutions;
 		streamlog_out(MESSAGE) << " BestFit has error code: " << bestFitResult.fitter->getError() << endl;
 	      }
-	    }
-	  }
-	}
-      }
+      } 
     }
+      
+
+
     /*
      * Clean up all jets we don't use for best solution
      * DISABLE THIS FOR NOW, AS DELETING ALSO DELETES MEMORY
@@ -1040,14 +1043,15 @@ ReconstructedParticle* ZHHKinFit::addNeutrinoCorrection(ReconstructedParticle* j
 }
 
 /*
- * Given a vector A of n vectors we want to return
- * all possible vectors of length n where the first
+ * Given a vector `sets` of `k` vectors we want to return
+ * all possible vectors of length `k` where the first
  * element is from A[0], the second from A[1] etc.
  */
-std::vector<std::vector<EVENT::ReconstructedParticle*>> ZHHKinFit::combinations(pfoVectorVector collector,
-											     pfoVectorVector sets, 
-											     int n,
-											     pfoVector combo) {
+template<typename TYPE>
+std::vector<std::vector<TYPE*>> ZHHKinFit::combinations(std::vector<std::vector<TYPE*>> collector,
+							std::vector<std::vector<TYPE*>> sets, 
+							int n,
+							std::vector<TYPE*> combo) {
   if (n == sets.size()) {
     collector.push_back({combo});
     return collector;

@@ -73,6 +73,10 @@ public:
     shared_ptr<vector<shared_ptr<BaseHardConstraint>>> constraints;
     shared_ptr<vector<shared_ptr<BaseFitObject>>> fitobjects;
   };
+  struct JetAndCorrection {
+    ReconstructedParticle* particle;
+    pfoVector nu;
+  };
   virtual void	init();
   virtual void	Clear();
   virtual void	processRunHeader();
@@ -80,11 +84,12 @@ public:
   ReconstructedParticle* addNeutrinoCorrection(ReconstructedParticle* jet,
 					       pfoVector neutrinos);
   
-  
-  pfoVectorVector combinations(pfoVectorVector collector,
-			       pfoVectorVector sets, 
+
+  template<typename TYPE>
+  std::vector<std::vector<TYPE*>> combinations(std::vector<std::vector<TYPE*>> collector,
+			       std::vector<std::vector<TYPE*>> sets, 
 			       int n,
-			       pfoVector combo);
+			       std::vector<TYPE*> combo);
   pfoVectorVector getNeutrinosInJet( LCRelationNavigator* JetSLDNav , 
 				     LCRelationNavigator* SLDNuNav , 
 				     EVENT::ReconstructedParticle* jet);
