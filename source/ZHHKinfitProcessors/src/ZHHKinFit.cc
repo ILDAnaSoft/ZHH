@@ -684,7 +684,7 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     //{{0,+,_,...}_SLD1, {{0,+,_,...}_SLD2}, ...}
     vector<pfoVectorVector> neutrinos;
     for (int i = 0; i < m_nJets; ++i) {
-      neutrinosinjet = getNeutrinosInJet(JetSLDNav , SLDNuNav , Jets[i]);
+      pfoVectorVector neutrinosinjet = getNeutrinosInJet(JetSLDNav , SLDNuNav , Jets[i]);
       neutrinos.push_back(neutrinosinjet);
     }
     //pfoVectorVector neutrinos1 = getNeutrinosInJet(JetSLDNav , SLDNuNav , Jets[0]); 
@@ -705,19 +705,19 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
 
     //For each jet loop over all possible combinations of the SLDcorrection sets
     //LOOP 1
-    for(pfoVector nu1: combinations({}, neutrinos1, 0, {})) {
+    for(pfoVector nu1: combinations({}, neutrinos[0], 0, {})) {
       ReconstructedParticle* cjet1 = addNeutrinoCorrection(Jets[0],nu1);
       gcJets.push_back(cjet1);
       //LOOP 2
-      for(pfoVector nu2: combinations({}, neutrinos2, 0, {})) {
+      for(pfoVector nu2: combinations({}, neutrinos[1], 0, {})) {
 	ReconstructedParticle* cjet2 = addNeutrinoCorrection(Jets[1], nu2);
 	gcJets.push_back(cjet2);
 	//LOOP 3
-	for(pfoVector nu3: combinations({}, neutrinos3, 0, {})) {
+	for(pfoVector nu3: combinations({}, neutrinos[2], 0, {})) {
 	  ReconstructedParticle* cjet3 = addNeutrinoCorrection(Jets[2],nu3);
 	  gcJets.push_back(cjet3);
 	  //LOOP 4
-	  for(pfoVector nu4: combinations({}, neutrinos4, 0, {})) {
+	  for(pfoVector nu4: combinations({}, neutrinos[3], 0, {})) {
 	    ReconstructedParticle* cjet4 = addNeutrinoCorrection(Jets[3],nu4);
 	    gcJets.push_back(cjet4);
 	    
@@ -2232,7 +2232,7 @@ std::vector<double> ZHHKinFit::calculateInitialMasses(pfoVector jets, pfoVector 
   //calculate 4-momentum of Z->invisible
   ROOT::Math::PxPyPzEVector seenFourMomentum(0.,0.,0.,0.);
   std::vector<ReconstructedParticle*> Jets{};
-  for (unsigned int i_jet = 0; i_jet < m_nJets; i_jet++) {
+  for (int i_jet = 0; i_jet < m_nJets; i_jet++) {
     seenFourMomentum += ROOT::Math::PxPyPzEVector(jets[ i_jet ]->getMomentum()[0],jets[ i_jet ]->getMomentum()[1],jets[ i_jet ]->getMomentum()[2], jets[ i_jet ]->getEnergy());
   }
   ROOT::Math::PxPyPzMVector ZinvFourMomentum(-seenFourMomentum.Px(), -seenFourMomentum.Pz(), -seenFourMomentum.Pz(),91.1880); // M_Z PDG average in 2024 review    
