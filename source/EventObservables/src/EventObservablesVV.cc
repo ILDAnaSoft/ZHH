@@ -1,5 +1,8 @@
 #include "EventObservablesVV.h"
 
+// errorCodes:
+// -
+
 EventObservablesVV aEventObservablesVV;
 
 EventObservablesVV::EventObservablesVV(): EventObservablesBase("EventObservablesVV"),
@@ -126,7 +129,7 @@ void EventObservablesVV::updateChannelValues(EVENT::LCEvent *pLCEvent) {
     m_yPlus5j = params_y[jet5PIDh.getParameterIndex(algo_y, "y56")];
 
     // TREAT 6 JET COLLECTION
-    for (int i=0; i < 6; ++i) {
+    for (int i=0; i < input6JetCollection->getNumberOfElements(); ++i) {
         ReconstructedParticle* jet = (ReconstructedParticle*) input6JetCollection->getElementAt(i);
 
         m_pjmax6 = std::max(m_pjmax6, (float)v4(jet).P());

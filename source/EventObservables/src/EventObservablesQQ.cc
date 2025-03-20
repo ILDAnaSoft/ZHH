@@ -1,5 +1,8 @@
 #include "EventObservablesQQ.h"
 
+// errorCodes:
+// -
+
 EventObservablesQQ aEventObservablesQQ;
 
 EventObservablesQQ::EventObservablesQQ(): EventObservablesBase("EventObservablesQQ"),
@@ -111,7 +114,7 @@ void EventObservablesQQ::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         std::tie(m_npfosmin6j, m_npfosmax6j, std::ignore) = nPFOsMinMax(inputJetCollection);
 
         // TREAT 4 JET COLLECTION
-        for (int i=0; i < 4; ++i) {
+        for (int i=0; i < input4JetCollection->getNumberOfElements(); ++i) {
             ReconstructedParticle* jet = (ReconstructedParticle*) input4JetCollection->getElementAt(i);
             ROOT::Math::PxPyPzEVector jet_v4 = v4(jet);
 				

@@ -9,6 +9,7 @@ from matplotlib.figure import Figure
 from matplotlib.axes import Axes
 from ..analysis.Cuts import Cut, EqualCut, WindowCut, GreaterThanEqualCut, LessThanEqualCut
 from ..analysis.ZHHCuts import zhh_cuts
+from ..util.PlotContext import PlotContext
 
 # For a given final state, plots the most important processes
 def plot_preselection_by_event_category(presel_results:np.ndarray, processes:np.ndarray, weights:np.ndarray,
@@ -102,7 +103,8 @@ def plot_preselection_by_event_categories(presel_results:np.ndarray, processes:n
 def plot_preselection_by_calc_dict(calc_dict, hypothesis:str, xlabel:str, xunit:Optional[str]=None,
                                  bins:int=100, xlim:Optional[Iterable]=None, title_label:str='events',
                                  plot_flat:bool=False, yscale:Optional[str]=None,
-                                 ild_style_kwargs:dict={}, plot_hist_kwargs:dict={})->List[Figure]:
+                                 ild_style_kwargs:dict={}, plot_hist_kwargs:dict={},
+                                 plot_context:Optional[PlotContext]=None)->List[Figure]:
     
     from phc import plot_hist
     
@@ -116,7 +118,8 @@ def plot_preselection_by_calc_dict(calc_dict, hypothesis:str, xlabel:str, xunit:
         plot_weights.append(calc_dict[key][1])
         
     fig_plot_hist_kwargs = {
-        'stacked': True
+        'stacked': True,
+        'colorpalette': None if plot_context is None else plot_context.getColorPalette(list(plot_dict.keys()))
     } | plot_hist_kwargs
     
     fig1, _, counts_wt = plot_hist(plot_dict, xlim=xlim, bins=bins, custom_styling=True, weights=plot_weights, return_hist=True, **fig_plot_hist_kwargs)

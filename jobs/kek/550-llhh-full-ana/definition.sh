@@ -5,7 +5,7 @@ OUTPUT_DIR=$1
 JOB_NAME=$2
 JOB_BASEDIR=$3
 
-NMAX_PER_JOB=3600
+NMAX_PER_JOB=3000
 
 if [[ -z $ZHH_SETUP ]]; then
     echo "ZHH not loaded. Call srczhh"

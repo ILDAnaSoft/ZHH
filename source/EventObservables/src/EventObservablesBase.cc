@@ -239,6 +239,7 @@ void EventObservablesBase::prepareBaseTree()
 		ttree->Branch("run", &m_nRun, "run/I");
 		ttree->Branch("event", &m_nEvt, "event/I");
 		ttree->Branch("errorCode", &m_statusCode, "errorCode/I");
+		ttree->Branch("errorCodes", &m_errorCodes);
 
 		ttree->Branch("evis", &m_Evis, "evis/F");
 		ttree->Branch("m_miss", &m_missingMass, "m_miss/F");
@@ -430,6 +431,7 @@ void EventObservablesBase::clearBaseValues()
 	streamlog_out(DEBUG) << "   Clear called  " << std::endl;
 
 	m_statusCode = 0;
+	m_errorCodes.clear();
 
 	m_pmis.SetPxPyPzE(0.,0.,0.,0.);
 	

@@ -206,6 +206,12 @@ class EventObservablesBase: public Processor
 		int m_nEvt;
 		int m_statusCode;
 
+		// errorCodes
+		// 1000-1999: LL
+		// 2000-2999: VV
+		// 3000-3999: QQ
+		std::vector<int> m_errorCodes{};
+
 		ROOT::Math::PxPyPzEVector m_pmis{};
 		ROOT::Math::PxPyPzEVector m_ecms{};
 		

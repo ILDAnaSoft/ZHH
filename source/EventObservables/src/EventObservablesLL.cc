@@ -1,5 +1,8 @@
 #include "EventObservablesLL.h"
 
+// errorCodes:
+// 1001: lepton type neither 11 nor 13 (?). we force it to 11
+
 EventObservablesLL aEventObservablesLL;
 
 EventObservablesLL::EventObservablesLL(): EventObservablesBase("EventObservablesLL"),
@@ -200,8 +203,10 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         }
 
         m_paired_lep_type = abs(isolep1->getType());
-        if (m_paired_lep_type == 211) // this should not happen...? but it does seldom...
+        if (m_paired_lep_type != 11 && m_paired_lep_type != 13) { // this should not happen...? but it does seldom...
             m_paired_lep_type = 11; 
+            m_errorCodes.push_back(1001);
+        }
     
         m_px31 = v4_paired_isolep1.Px();
         m_py31 = v4_paired_isolep1.Py();

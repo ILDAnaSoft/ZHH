@@ -234,8 +234,6 @@ def get_preselection_passes(
             with open(f'{DATA_ROOT}/{branch}/zhh_FinalStateMeta.json', 'r') as file:
                 meta = json.load(file)
                 
-                # {'crossSection': 133070.796875, 'crossSectionError': 78.4000015258789, 'eventWeight': 1.0, 'nEvtSum': 995, 'polElectron': -1.0, 'polPositron': 1.0, 'processId': 250127, 'processName': '2f_z_bhabhang', 'run': 250127}
-                
             n_gen = meta['nEvtSum']
             proc = meta["processName"]
             

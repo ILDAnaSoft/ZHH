@@ -1,6 +1,6 @@
 from collections.abc import Callable, Sequence
 from zhh import zhh_cuts, Cut, EqualCut, fetch_preselection_data, sample_weight, parse_polarization_code, \
-    ProcessCategories
+    ProcessCategories, get_pol_key
 import uproot as ur
 import os.path as osp
 import os, subprocess, ROOT, numpy as np
@@ -35,37 +35,24 @@ class AnalysisChannel:
             os.makedirs(self._work_dir)
         
         if not os.path.isfile(merged_file):
-            if False:
-                cmd = f'source {os.environ["REPO_ROOT"]}/setup.sh && hadd -f source.root ' + ' '.join(self._root_files)
-                print(cmd)
-                p = subprocess.Popen(cmd, shell=True, cwd=self._work_dir)
-                if p.wait() != 0:
-                    raise RuntimeError('Failed to merge root files')
-            elif False:
-                with open(f'{self._work_dir}/merge.C', 'w') as f:
-                    f.write('TChain *chain = new TChain("hAnl");\n')
-                    for i, path in enumerate(self._root_files):
-                        f.write(f'chain->Add("{path}");\n')
-                    f.write(f'chain->Merge("{self._work_dir}");\n')
-            else:
-                chain = ROOT.TChain(trees[0])
-                friends = []
-                for t in trees[1:]:
-                    friend = ROOT.TChain(t)
-                    friends.append(friend)
+            chain = ROOT.TChain(trees[0])
+            friends = []
+            for t in trees[1:]:
+                friend = ROOT.TChain(t)
+                friends.append(friend)
 
-                for file in root_files:
-                    for friend in friends:
-                        friend.Add(file)
-
-                    chain.Add(file)
-                    
+            for file in root_files:
                 for friend in friends:
-                    chain.AddFriend(friend)
-                    
-                #c.Add("/home/ilc/bliewert/jobresults/550-2l4q-ana/E550-TDR_ws.P6f_eexxxx.Gwhizard-3_1_5.eL.pL.I410026.1-0_AIDA.root")
-                df = ROOT.RDataFrame(chain)
-                df.Snapshot('Merged', merged_file)
+                    friend.Add(file)
+
+                chain.Add(file)
+                
+            for friend in friends:
+                chain.AddFriend(friend)
+                
+            #c.Add("/home/ilc/bliewert/jobresults/550-2l4q-ana/E550-TDR_ws.P6f_eexxxx.Gwhizard-3_1_5.eL.pL.I410026.1-0_AIDA.root")
+            df = ROOT.RDataFrame(chain)
+            df.Snapshot('Merged', merged_file)
             
         if self.rf is None:
             self.rf = ur.open(self._merged_file)
@@ -100,7 +87,16 @@ class AnalysisChannel:
         for proc in unq_processes[0]:
             n_combinations += np.unique(weight_data[weight_data['process'] == proc]['polarization_code']).size    
 
-        processes = np.zeros(n_combinations, dtype=[('pid', 'H'), ('process', '<U60'), ('pol_e', 'i'), ('pol_p', 'i'), ('polarization_code', 'B'), ('cross_sec', 'f'), ('n_events', 'I'), ('weight', 'f')])
+        processes = np.zeros(n_combinations, dtype=[
+            ('pid', 'H'),
+            ('process', '<U60'),
+            ('proc_pol', '<U64'),
+            ('pol_e', 'i'),
+            ('pol_p', 'i'),
+            ('polarization_code', 'B'),
+            ('cross_sec', 'f'),
+            ('n_events', 'I'),
+            ('weight', 'f')])
         processes['pid'] = np.arange(n_combinations)
 
         pid = 0
@@ -117,8 +113,10 @@ class AnalysisChannel:
                 wt = sample_weight(cross_sec, (Pem, Pep), n_gen, lumi_inv_ab)
                 
                 print(f'Process {process_name:12} with Pol e{"L" if Pem == -1 else "R"}.p{"L" if Pep == -1 else "R"} has {n_gen:9} events xsec={cross_sec:.3E} wt={wt:.3E}')
+                procpol = f'{process_name}_{get_pol_key(Pem, Pep)}'
                 
                 processes[pid]['process'] = process_name
+                processes[pid]['proc_pol'] = procpol
                 processes[pid]['pol_e'] = Pem
                 processes[pid]['pol_p'] = Pep
                 processes[pid]['polarization_code'] = polarization_code
