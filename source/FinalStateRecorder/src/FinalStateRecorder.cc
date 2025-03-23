@@ -505,10 +505,10 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 		m_process_id = pLCEvent->getParameters().getIntVal("ProcessID");
 		m_process_name = pLCEvent->getParameters().getStringVal("processName");
 
-		if (m_beam_pol1 == -1 && m_beam_pol1 == -1) m_polarization_code = POLARIZATION_CODES::EL_PL; else
-		if (m_beam_pol1 == -1 && m_beam_pol1 ==  1) m_polarization_code = POLARIZATION_CODES::EL_PR; else
-		if (m_beam_pol1 ==  1 && m_beam_pol1 == -1) m_polarization_code = POLARIZATION_CODES::ER_PL; else
-		if (m_beam_pol1 ==  1 && m_beam_pol1 ==  1) m_polarization_code = POLARIZATION_CODES::ER_PR;
+		if (m_beam_pol1 == -1 && m_beam_pol2 == -1) m_polarization_code = POLARIZATION_CODES::EL_PL; else
+		if (m_beam_pol1 == -1 && m_beam_pol2 ==  1) m_polarization_code = POLARIZATION_CODES::EL_PR; else
+		if (m_beam_pol1 ==  1 && m_beam_pol2 == -1) m_polarization_code = POLARIZATION_CODES::ER_PL; else
+		if (m_beam_pol1 ==  1 && m_beam_pol2 ==  1) m_polarization_code = POLARIZATION_CODES::ER_PR;
 	}
 
 	this->clear();
