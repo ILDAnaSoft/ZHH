@@ -4,7 +4,8 @@ def zhh_cuts(hypothesis:str,
              additional:bool=True,
              b_tagging:bool=True,
              mH:float=125.,
-             mZ:float=91.2,):
+             mZ:float=91.2,
+             disable_cuts:list[str]=[]):
     
     if hypothesis[:2].lower() == 'll':
         cuts = [GreaterThanEqualCut('xx_nisoleps', 2, label='nisoleps'),
@@ -42,5 +43,8 @@ def zhh_cuts(hypothesis:str,
         
     else:
         raise NotImplementedError(f'Unknown hypothesis <{hypothesis}>')
+    
+    for to_remove in disable_cuts:
+        cuts = [cut for cut in cuts if cut.quantity != to_remove]
         
     return cuts

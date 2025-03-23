@@ -15,7 +15,7 @@ config = {
 }
 
 class AnalysisChannel:
-    def __init__(self, name:str, cuts:Sequence[Cut], define_bkg:Callable, define_sig:Callable):     
+    def __init__(self, name:str, cuts:Sequence[Cut], define_bkg:Callable|None=None, define_sig:Callable|None=None):     
         #ROOT.EnableImplicitMT(config['N_CORES'])
            
         self._name = name

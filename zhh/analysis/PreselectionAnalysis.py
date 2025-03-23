@@ -434,8 +434,8 @@ def fetch_preselection_data(rf, presel:str, final_states:bool=True, tree:str|Non
         ('event', 'I'), # max. encountered: 15 797 803 << 4 294 967 295 (max of uint32)
         ('event_category', 'B'), # np.uint8
         
-        ('is_sig', 'B'),
-        ('is_bkg', 'B'),
+        ('is_sig', '?'),
+        ('is_bkg', '?'),
         
         ('ll_pass', 'B'),
         ('vv_pass', 'B'),
