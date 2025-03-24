@@ -24,6 +24,4 @@ if __name__=="__main__":
     print(f'Found {len(files)} output files')
     
     analysis = AnalysisChannel(name, zhh_cuts(cuts))
-    analysis.initialize(work_root, root_files=files, trees=['FinalStates', 'EventObservablesLL', 'KinFitLLZHH'])
-
-    rf = llhh1_lvbbqq.rf
+    analysis.initialize(work_root, trees=['FinalStates', 'EventObservablesLL', 'KinFitLLNMC', 'KinFitLLZHH', 'KinFitLLZZH', 'KinFitLLZZZ'], root_files=files)

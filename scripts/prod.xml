@@ -1507,8 +1507,7 @@
         <parameter name="LepPairCollection" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
         <parameter name="JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets4</parameter>
         <parameter name="2JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets2</parameter>
-        <parameter name="inputPfoCollection" type="string" lcioInType="ReconstructedParticle">PandoraPFOsWithoutLepPair</parameter>
-        <parameter name="inputPfoRawCollection" type="string" lcioInType="ReconstructedParticle">${PFOsWithoutOverlayCollection}</parameter>
+        <parameter name="inputPfoCollection" type="string" lcioInType="ReconstructedParticle">${PFOsWithoutOverlayCollection}</parameter>
 
         <parameter name="JetTaggingPIDAlgorithm" type="string">weaver</parameter>
         <parameter name="JetTaggingPIDParameterB" type="string">mc_b</parameter>
@@ -1721,8 +1720,7 @@
         <parameter name="JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets4</parameter>
         <parameter name="5JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets5</parameter>
         <parameter name="6JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets6</parameter>
-        <parameter name="inputPfoCollection" type="string" lcioInType="ReconstructedParticle">PandoraPFOsWithoutLepPair</parameter>
-        <parameter name="inputPfoRawCollection" type="string" lcioInType="ReconstructedParticle">${PFOsWithoutOverlayCollection}</parameter>
+        <parameter name="inputPfoCollection" type="string" lcioInType="ReconstructedParticle">${PFOsWithoutOverlayCollection}</parameter>
 
         <parameter name="JetTaggingPIDAlgorithm" type="string">weaver</parameter>
         <parameter name="JetTaggingPIDParameterB" type="string">mc_b</parameter>
@@ -1924,8 +1922,7 @@
         <parameter name="LepPairCollection" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
         <parameter name="JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets6</parameter>
         <parameter name="4JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets4</parameter>
-        <parameter name="inputPfoCollection" type="string" lcioInType="ReconstructedParticle">PandoraPFOsWithoutLepPair</parameter>
-        <parameter name="inputPfoRawCollection" type="string" lcioInType="ReconstructedParticle">${PFOsWithoutOverlayCollection}</parameter>
+        <parameter name="inputPfoCollection" type="string" lcioInType="ReconstructedParticle">${PFOsWithoutOverlayCollection}</parameter>
 
         <parameter name="JetTaggingPIDAlgorithm" type="string">weaver</parameter>
         <parameter name="JetTaggingPIDParameterB" type="string">mc_b</parameter>

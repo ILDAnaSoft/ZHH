@@ -4,6 +4,7 @@ from zhh import zhh_cuts, Cut, EqualCut, fetch_preselection_data, sample_weight,
 import uproot as ur
 import os.path as osp
 import os, subprocess, ROOT, numpy as np
+from tqdm.auto import tqdm
 
 # 4x3 analysis channels:
 # llHH:
@@ -26,7 +27,7 @@ class AnalysisChannel:
         self.rf:ur.WritableFile|None = None
         self.summary:np.ndarray|None = None
         
-    def initialize(self, work_root:str, root_files:list[str], trees:list[str]):
+    def initialize(self, work_root:str, trees:list[str], root_files:list[str]|None=None):
         self._work_dir = f'{work_root}/{self._name}'
         self._root_files = root_files
         self._merged_file = merged_file = f'{self._work_dir}/Merged.root'
@@ -41,7 +42,8 @@ class AnalysisChannel:
                 friend = ROOT.TChain(t)
                 friends.append(friend)
 
-            for file in root_files:
+            pbar = tqdm(root_files)
+            for file in pbar:
                 for friend in friends:
                     friend.Add(file)
 
@@ -49,8 +51,9 @@ class AnalysisChannel:
                 
             for friend in friends:
                 chain.AddFriend(friend)
-                
+            
             #c.Add("/home/ilc/bliewert/jobresults/550-2l4q-ana/E550-TDR_ws.P6f_eexxxx.Gwhizard-3_1_5.eL.pL.I410026.1-0_AIDA.root")
+            pbar.set_description('Writing file...')
             df = ROOT.RDataFrame(chain)
             df.Snapshot('Merged', merged_file)
             

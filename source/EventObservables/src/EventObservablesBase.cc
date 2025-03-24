@@ -80,13 +80,6 @@ EventObservablesBase::EventObservablesBase(const std::string &name) : Processor(
             std::string("PandoraPFOs")
             );
 
-	registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
-			"inputPfoRawCollection",
-			"Name of input pfo collection",
-			m_inputPfoRawCollection,
-			std::string("PandoraPFOsWithoutOverlay")
-			);
-
 	registerProcessorParameter("whichPreselection",
             "Which set of cuts to use in the preselection. This will overwrite any input preselection values.",
             m_whichPreselection,
@@ -552,7 +545,6 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 		LCCollection *inputLeptonCollection = pLCEvent->getCollection( m_inputIsolatedleptonCollection );
 		LCCollection *inputLepPairCollection = pLCEvent->getCollection( m_inputLepPairCollection );
 		LCCollection *inputPfoCollection = pLCEvent->getCollection( m_inputPfoCollection );
-		LCCollection *inputPfoRawCollection = pLCEvent->getCollection( m_inputPfoRawCollection );
 
 		m_nJets = inputJetCollection->getNumberOfElements();
 		if (m_nJets != m_nAskedJets())
@@ -588,7 +580,7 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 		m_invJetMass = pfosum.M();
 
 		// ---------- THRUST ----------
-		const EVENT::LCParameters& raw_pfo_params = inputPfoRawCollection->getParameters();
+		const EVENT::LCParameters& raw_pfo_params = inputPfoCollection->getParameters();
 
 		m_thrust = raw_pfo_params.getFloatVal("principleThrustValue");
 		m_thrustMajor = raw_pfo_params.getFloatVal("majorThrustValue");
@@ -958,13 +950,13 @@ void EventObservablesBase::calculateMatrixElements(
 	double result_zhh = 0.;
 	double result_zzh = 0.;
 
-	streamlog_out(DEBUG) << "LCME Debug: E, Px, Py, Pz " << std::endl;
-	streamlog_out(DEBUG) << "  Z_1: " << from_z_1.E() << " " << from_z_1.Px() << " " << from_z_1.Py() << " " << from_z_1.Pz() << std::endl;
-	streamlog_out(DEBUG) << "  Z_2: " << from_z_2.E() << " " << from_z_2.Px() << " " << from_z_2.Py() << " " << from_z_2.Pz() << std::endl;
-	streamlog_out(DEBUG) << "  J_1: " << vecs_jet[idx[0]].E() << " " << vecs_jet[idx[0]].Px() << " " << vecs_jet[idx[0]].Py() << " " << vecs_jet[idx[0]].Pz() << std::endl;
-	streamlog_out(DEBUG) << "  J_2: " << vecs_jet[idx[1]].E() << " " << vecs_jet[idx[1]].Px() << " " << vecs_jet[idx[1]].Py() << " " << vecs_jet[idx[1]].Pz() << std::endl;
-	streamlog_out(DEBUG) << "  J_3: " << vecs_jet[idx[2]].E() << " " << vecs_jet[idx[2]].Px() << " " << vecs_jet[idx[2]].Py() << " " << vecs_jet[idx[2]].Pz() << std::endl;
-	streamlog_out(DEBUG) << "  J_4: " << vecs_jet[idx[3]].E() << " " << vecs_jet[idx[3]].Px() << " " << vecs_jet[idx[3]].Py() << " " << vecs_jet[idx[3]].Pz() << std::endl;
+	streamlog_out(DEBUG) << "LCME Debug: E, Px, Py, Pz" << std::endl
+						 << "  Z_1: " << from_z_1.E() << " " << from_z_1.Px() << " " << from_z_1.Py() << " " << from_z_1.Pz() << std::endl
+						 << "  Z_2: " << from_z_2.E() << " " << from_z_2.Px() << " " << from_z_2.Py() << " " << from_z_2.Pz() << std::endl
+						 << "  J_1: " << vecs_jet[idx[0]].E() << " " << vecs_jet[idx[0]].Px() << " " << vecs_jet[idx[0]].Py() << " " << vecs_jet[idx[0]].Pz() << std::endl
+						 << "  J_2: " << vecs_jet[idx[1]].E() << " " << vecs_jet[idx[1]].Px() << " " << vecs_jet[idx[1]].Py() << " " << vecs_jet[idx[1]].Pz() << std::endl
+						 << "  J_3: " << vecs_jet[idx[2]].E() << " " << vecs_jet[idx[2]].Px() << " " << vecs_jet[idx[2]].Py() << " " << vecs_jet[idx[2]].Pz() << std::endl
+						 << "  J_4: " << vecs_jet[idx[3]].E() << " " << vecs_jet[idx[3]].Px() << " " << vecs_jet[idx[3]].Py() << " " << vecs_jet[idx[3]].Pz() << std::endl;
 
 	/*
 	std::cout << "  TOT: " << from_z_1.E() + from_z_2.E() + vecs_jet[idx[0]].E() + vecs_jet[idx[1]].E() + vecs_jet[idx[2]].E() + vecs_jet[idx[3]].E() << " "
