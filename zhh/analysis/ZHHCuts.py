@@ -1,11 +1,12 @@
 from .Cuts import Cut, EqualCut, WindowCut, GreaterThanEqualCut, LessThanEqualCut
+from collections.abc import Sequence
 
 def zhh_cuts(hypothesis:str,
              additional:bool=True,
              b_tagging:bool=True,
              mH:float=125.,
              mZ:float=91.2,
-             disable_cuts:list[str]=[]):
+             disable_cuts:list[str]=[])->Sequence[Cut]:
     
     if hypothesis[:2].lower() == 'll':
         cuts = [GreaterThanEqualCut('xx_nisoleps', 2, label='nisoleps'),

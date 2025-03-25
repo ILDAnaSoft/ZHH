@@ -21,6 +21,9 @@
         <constant name="RunTruthRecoComparison" value="False" />
 
         <!-- These variables should be constant -->
+        <constant name="LCFIPlusML_ONNX" value="${ZHH_REPO_ROOT}/dependencies/LCFIPlusConfig/onnx/ilc_nnqq_sgvnew_3cat_cut/ilc_nnqq_sgvnew_3cat_cut.onnx" />
+        <constant name="LCFIPlusML_JSON" value="${ZHH_REPO_ROOT}/dependencies/LCFIPlusConfig/onnx/ilc_nnqq_sgvnew_3cat_cut/preprocess.json" />
+
         <constant name="lcgeo_DIR" value="/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-centos7-gcc12.2.0-opt/k4geo/0.20-e42drs/share/k4geo" />
         <constant name="DetectorModel" value="ILD_l5_o1_v02" />
         <constant name="CompactFile" value="${lcgeo_DIR}/ILD/compact/${DetectorModel}/${DetectorModel}.xml" />
@@ -686,8 +689,8 @@
         <parameter name="MLInferenceWeaver.JetCollectionName" type="string" value="RefinedJets4" />
         <parameter name="MLInferenceWeaver.OutputParameterName" type="string" value="weaver" />
 
-        <parameter name="MLInferenceWeaver.JsonFileName" type="string" value="${ZHH_REPO_ROOT}/dependencies/LCFIPlusConfig/onnx/ilc_nnqq_neutrals/preprocess.json" />
-        <parameter name="MLInferenceWeaver.OnnxFileName" type="string" value="${ZHH_REPO_ROOT}/dependencies/LCFIPlusConfig/onnx/ilc_nnqq_neutrals/ilc_nnqq_neutrals.onnx" />
+        <parameter name="MLInferenceWeaver.JsonFileName" type="string" value="${LCFIPlusML_JSON}" />
+        <parameter name="MLInferenceWeaver.OnnxFileName" type="string" value="${LCFIPlusML_ONNX}" />
     </processor>
 
     <processor name="MySLDCorrection4J" type="SLDCorrection">
@@ -939,8 +942,8 @@
         <parameter name="MLInferenceWeaver.JetCollectionName" type="string" value="RefinedJets5" />
         <parameter name="MLInferenceWeaver.OutputParameterName" type="string" value="weaver" />
 
-        <parameter name="MLInferenceWeaver.JsonFileName" type="string" value="${ZHH_REPO_ROOT}/dependencies/LCFIPlusConfig/onnx/ilc_nnqq_neutrals/preprocess.json" />
-        <parameter name="MLInferenceWeaver.OnnxFileName" type="string" value="${ZHH_REPO_ROOT}/dependencies/LCFIPlusConfig/onnx/ilc_nnqq_neutrals/ilc_nnqq_neutrals.onnx" />
+        <parameter name="MLInferenceWeaver.JsonFileName" type="string" value="${LCFIPlusML_JSON}" />
+        <parameter name="MLInferenceWeaver.OnnxFileName" type="string" value="${LCFIPlusML_ONNX}" />
     </processor>
 
     <processor name="MySLDCorrection5J" type="SLDCorrection">
@@ -1192,8 +1195,8 @@
         <parameter name="MLInferenceWeaver.JetCollectionName" type="string" value="RefinedJets6" />
         <parameter name="MLInferenceWeaver.OutputParameterName" type="string" value="weaver" />
 
-        <parameter name="MLInferenceWeaver.JsonFileName" type="string" value="${ZHH_REPO_ROOT}/dependencies/LCFIPlusConfig/onnx/ilc_nnqq_neutrals/preprocess.json" />
-        <parameter name="MLInferenceWeaver.OnnxFileName" type="string" value="${ZHH_REPO_ROOT}/dependencies/LCFIPlusConfig/onnx/ilc_nnqq_neutrals/ilc_nnqq_neutrals.onnx" />
+        <parameter name="MLInferenceWeaver.JsonFileName" type="string" value="${LCFIPlusML_JSON}" />
+        <parameter name="MLInferenceWeaver.OnnxFileName" type="string" value="${LCFIPlusML_ONNX}" />
     </processor>
 
     <processor name="MySLDCorrection6J" type="SLDCorrection">

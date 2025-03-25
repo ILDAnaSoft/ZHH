@@ -4,6 +4,7 @@ from matplotlib.figure import Figure
 from matplotlib.legend_handler import HandlerTuple
 from typing import Optional, List, Iterable, Union, Tuple, Literal
 from ..util.get_matplotlib_fonts import resolve_fonts
+from ..util.PlotContext import PlotContext
 
 ild_style_defaults = {
     'fontname': ['Liberation Sans'],
@@ -27,6 +28,7 @@ def fig_ild_style(fig:Figure, xlim:Union[List[float], Tuple[float,float]], bins:
                   title:Optional[str]=None, title_postfix:str='',
                   legend_labels:Optional[List]=None, legend_kwargs={},
                   colorpalette:Optional[List]=ild_style_defaults['colorpalette'],
+                  plot_context:PlotContext|None=None,
                   ild_text_position:Optional[Literal['upper left','upper right']]='upper left',
                   ild_offset_x:float=ild_style_defaults['ild_offset_x'],
                   ild_offset_y:float=ild_style_defaults['ild_offset_y'],
@@ -34,8 +36,17 @@ def fig_ild_style(fig:Figure, xlim:Union[List[float], Tuple[float,float]], bins:
                   show_binning_on_y_scale:bool=True)->Figure:
     
     if colorpalette is None:
-        from phc import get_colorpalette
-        colorpalette = get_colorpalette()
+        #from phc import get_colorpalette
+        #colorpalette = get_colorpalette()
+        n_patches = len(fig.axes[0].patches)
+        
+        if plot_context is not None:
+            if hasattr(fig, 'columns'):
+                colorpalette = plot_context.getColorPalette(fig.columns)
+            else:
+                raise Exception('Could not get colors for legend. Assign the .columns attribute to the figure.')
+        else:
+            colorpalette = [fig.axes[0].patches[n_patches -1 - i].get_facecolor() for i in range(n_patches)]
     
     if yunit is None or yunit =='':
         yunit = '1'

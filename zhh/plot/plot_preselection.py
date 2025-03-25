@@ -1,4 +1,5 @@
 from typing import Optional, List, Tuple, Iterable
+from collections.abc import Sequence
 from tqdm.auto import tqdm
 from .ild_style import fig_ild_style
 from ..analysis.PreselectionAnalysis import calc_preselection_by_event_categories
@@ -226,22 +227,26 @@ def plot_total_efficiency(counts_first:dict, counts_last:dict, hypothesis:str,
     return fig
 
 def plot_cut_efficiencies(counts_all:List[dict], hypothesis:str, signal_categories:List[str],
-                          colorpalette:Optional[List[str]]=None,
-                          color_dict:Optional[dict]=None,
+                          colorpalette:Optional[list[str]]=None,
+                          plot_context:Optional[PlotContext]=None,
+                          cuts:Optional[Sequence[Cut]]=None,
                           width:float = 0.6, spacing:float=0.2):
     
-    if color_dict is not None:
-        colorpalette = [color_dict[key] for key in signal_categories]
-        
     if colorpalette is None:
-        from phc import get_colorpalette
-        colorpalette = get_colorpalette()
+        if plot_context is not None:
+            colorpalette = plot_context.getColorPalette(signal_categories)
+        else:
+            from phc import get_colorpalette
+            colorpalette = get_colorpalette()
+        
+    if cuts is None:
+        cuts = zhh_cuts(hypothesis)
     
     figs = []
     ncats = len(signal_categories)
     
     fig, ax = plt.subplots(figsize=(5*ncats, 6))
-    X_axis = (width*ncats + spacing)*np.arange(len(zhh_cuts(hypothesis)))
+    X_axis = (width*ncats + spacing)*np.arange(len(cuts))
     
     ax.set_title(f'Efficiency of preselection cuts ({hypothesis})')
     #ax.set_yscale('log')
@@ -254,11 +259,11 @@ def plot_cut_efficiencies(counts_all:List[dict], hypothesis:str, signal_categori
         ratios = []
         labels = []
         
-        for j, cut in enumerate(zhh_cuts(hypothesis)):
+        for j, cut in enumerate(cuts):
             ratio = counts_all[j+1][key] / counts_all[j][key]
             ratios.append(0 if math.isnan(ratio) else ratio)
             labels.append(rf'${cut.label}$')
-        
+        print(ratios)
         ax.bar(X_axis + X_offsets[i], ratios, width, color=colorpalette[i], align='center', label=key)
         ax.bar_label(ax.containers[i], labels=[f'{r:.1%}' for r in ratios])
         
