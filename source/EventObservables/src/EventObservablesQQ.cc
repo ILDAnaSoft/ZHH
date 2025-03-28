@@ -39,11 +39,15 @@ void EventObservablesQQ::prepareChannelTree() {
 		ttree->Branch("pyj5", &m_pyj5, "pyj5/F");
 		ttree->Branch("pzj5", &m_pzj5, "pzj5/F");
 		ttree->Branch("ej5", &m_ej5, "ej5/F");
+        ttree->Branch("qj5", &m_qj5, "qj5/F");
+        ttree->Branch("qdj5", &m_qdj5, "qdj5/F");
 
 		ttree->Branch("pxj6", &m_pxj6, "pxj6/F");
 		ttree->Branch("pyj6", &m_pyj6, "pyj6/F");
 		ttree->Branch("pzj6", &m_pzj6, "pzj6/F");
 		ttree->Branch("ej6", &m_ej6, "ej6/F");
+        ttree->Branch("qj6", &m_qj6, "qj6/F");
+        ttree->Branch("qdj6", &m_qdj6, "qdj6/F");
 
         ttree->Branch("bmax5", &m_bmax5, "bmax5/F");
         ttree->Branch("bmax6", &m_bmax6, "bmax6/F");
@@ -83,11 +87,15 @@ void EventObservablesQQ::clearChannelValues() {
     m_pyj5 = 0.;
     m_pzj5 = 0.;
     m_ej5 = 0.;
+    m_qj5 = 0.;
+    m_qdj5 = 0.;
 
     m_pxj6 = 0.;
     m_pyj6 = 0.;
     m_pzj6 = 0.;
     m_ej6 = 0.;
+    m_qj6 = 0.;
+    m_qdj6 = 0.;
 
     m_bmax5 = 0.;
     m_bmax6 = 0.;
@@ -234,11 +242,13 @@ void EventObservablesQQ::setJetMomenta() {
 	m_pyj5 = m_jets[4]->getMomentum()[1];
 	m_pzj5 = m_jets[4]->getMomentum()[2];
 	m_ej5  = m_jets[4]->getEnergy();
+    std::tie(m_qj5, m_qdj5) = jetCharge(m_jets[4]);
 
     m_pxj6 = m_jets[5]->getMomentum()[0];
 	m_pyj6 = m_jets[5]->getMomentum()[1];
 	m_pzj6 = m_jets[5]->getMomentum()[2];
 	m_ej6  = m_jets[5]->getEnergy();
+    std::tie(m_qj6, m_qdj6) = jetCharge(m_jets[5]);
 };
 
 void EventObservablesQQ::calculateSimpleZHHChi2() {

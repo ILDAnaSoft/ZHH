@@ -4,3 +4,4 @@ from .assign_colors import assign_colors
 from .OptionDict import OptionDict
 from .PlotContext import PlotContext
 from .get_matplotlib_fonts import get_matplotlib_fonts, resolve_fonts
+from .LazilyLoadedDict import LazilyLoadedDict

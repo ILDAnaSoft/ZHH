@@ -24,15 +24,15 @@ void EventObservablesLL::prepareChannelTree() {
         ttree->Branch("npfosmin4j", &m_npfosmin4j, "npfosmin4j/I");
 		ttree->Branch("npfosmax4j", &m_npfosmax4j, "npfosmax4j/I");
 
-        ttree->Branch("px31", &m_px31, "px31/F");
-		ttree->Branch("py31", &m_py31, "py31/F");
-		ttree->Branch("pz31", &m_pz31, "pz31/F");
-		ttree->Branch("e31", &m_e31, "e31/F");
+        ttree->Branch("pxl1", &m_pxl1, "pxl1/F");
+		ttree->Branch("pyl1", &m_pyl1, "pyl1/F");
+		ttree->Branch("pzl1", &m_pzl1, "pzl1/F");
+		ttree->Branch("el1", &m_el1, "el1/F");
 
-		ttree->Branch("px32", &m_px32, "px32/F");
-		ttree->Branch("py32", &m_py32, "py32/F");
-		ttree->Branch("pz32", &m_pz32, "pz32/F");
-		ttree->Branch("e32", &m_e32, "e32/F");
+		ttree->Branch("pxl2", &m_pxl2, "pxl2/F");
+		ttree->Branch("pyl2", &m_pyl2, "pyl2/F");
+		ttree->Branch("pzl2", &m_pzl2, "pzl2/F");
+		ttree->Branch("el2", &m_el2, "el2/F");
 
         ttree->Branch("paired_lep_type", &m_paired_lep_type, "paired_lep_type/I");
         ttree->Branch("plmin", &m_plmin, "plmin/F");
@@ -63,15 +63,15 @@ void EventObservablesLL::clearChannelValues() {
     m_npfosmin4j = 0;
     m_npfosmax4j = 0;
 
-    m_px31 = 0.;
-    m_py31 = 0.;
-    m_pz31 = 0.;
-    m_e31 = 0.;
+    m_pxl1 = 0.;
+    m_pyl1 = 0.;
+    m_pzl1 = 0.;
+    m_el1 = 0.;
 
-    m_px32 = 0.;
-    m_py32 = 0.;
-    m_pz32 = 0.;
-    m_e32 = 0.;
+    m_pxl2 = 0.;
+    m_pyl2 = 0.;
+    m_pzl2 = 0.;
+    m_el2 = 0.;
 
     m_paired_lep_type = 0;
 
@@ -208,15 +208,15 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
             m_errorCodes.push_back(1001);
         }
     
-        m_px31 = v4_paired_isolep1.Px();
-        m_py31 = v4_paired_isolep1.Py();
-        m_pz31 = v4_paired_isolep1.Pz();
-        m_e31 = v4_paired_isolep1.E();
+        m_pxl1 = v4_paired_isolep1.Px();
+        m_pyl1 = v4_paired_isolep1.Py();
+        m_pzl1 = v4_paired_isolep1.Pz();
+        m_el1 = v4_paired_isolep1.E();
 
-        m_px32 = v4_paired_isolep2.Px();
-        m_py32 = v4_paired_isolep2.Py();
-        m_pz32 = v4_paired_isolep2.Pz();
-        m_e32 = v4_paired_isolep2.E();
+        m_pxl2 = v4_paired_isolep2.Px();
+        m_pyl2 = v4_paired_isolep2.Py();
+        m_pzl2 = v4_paired_isolep2.Pz();
+        m_el2 = v4_paired_isolep2.E();
 
         m_mzll = momentumZv4.M();
         m_zhh_mz = m_mzll;

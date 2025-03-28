@@ -64,11 +64,15 @@ class EventObservablesQQ : public EventObservablesBase, public EventObservablesF
 		float m_pyj5{};
 		float m_pzj5{};
 		float m_ej5{};
+		float m_qj5{};
+		float m_qdj5{};
 
 		float m_pxj6{};
 		float m_pyj6{};
 		float m_pzj6{};
 		float m_ej6{};
+		float m_qj6{};
+		float m_qdj6{};
 
 		float m_bmax5{};
 		float m_bmax6{};

@@ -50,15 +50,15 @@ class EventObservablesLL : public EventObservablesBase {
 		int m_npfosmax4j{};
 
 		// isolated lepton momenta and energies
-		float m_px31{};
-		float m_py31{};
-		float m_pz31{};
-		float m_e31{};
+		float m_pxl1{};
+		float m_pyl1{};
+		float m_pzl1{};
+		float m_el1{};
 
-		float m_px32{};
-		float m_py32{};
-		float m_pz32{};
-		float m_e32{};
+		float m_pxl2{};
+		float m_pyl2{};
+		float m_pzl2{};
+		float m_el2{};
 
 		float m_plmin{};
 		float m_plmax{};
