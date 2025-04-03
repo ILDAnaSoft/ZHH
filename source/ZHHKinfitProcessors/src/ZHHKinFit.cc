@@ -302,6 +302,7 @@ void ZHHKinFit::init()
   m_pTTree->Branch( "ISREnergyAfterFit" , &m_ISREnergyAfterFit , "ISREnergyAfterFit/F" );
   m_pTTree->Branch( "FitProbability" , &m_FitProbability , "FitProbability/F" );
   m_pTTree->Branch( "FitChi2" , &m_FitChi2 , "FitChi2/F" );
+  m_pTTree->Branch( "perm" , &m_perm );
   m_pTTree->Branch( "pullJetEnergy" , &m_pullJetEnergy );
   m_pTTree->Branch( "pullJetTheta" , &m_pullJetTheta );
   m_pTTree->Branch( "pullJetPhi" , &m_pullJetPhi );
@@ -355,6 +356,7 @@ void ZHHKinFit::Clear()
   m_ISREnergyAfterFit = 0.0;
   m_FitProbability = 0.0;
   m_FitChi2 = 0.0;
+  m_perm.clear();
   m_pullJetEnergy.clear();
   m_pullJetTheta.clear();
   m_pullJetPhi.clear();
@@ -412,22 +414,52 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
   LCRelationNavigator* SLDNuNav = NULL;
   LCRelationNavigator* NuMCNav = NULL;
   try {
-    streamlog_out(DEBUG0) << "	getting jet collection: " << m_inputJetCollection << std::endl ;
-    inputJetCollection = pLCEvent->getCollection( m_inputJetCollection );
-    streamlog_out(DEBUG0) << "	getting lepton collection: " << m_inputleptonCollection << std::endl ;
+    streamlog_out(DEBUG0) << "  getting lepton collection: " << m_inputleptonCollection << std::endl ;
     inputLeptonCollection = pLCEvent->getCollection( m_inputleptonCollection );
-    streamlog_out(DEBUG0) << "	getting semi-leptonic vertex collection: " << m_inputSLDVertexCollection << std::endl ;
-    inputSLDecayCollection = pLCEvent->getCollection( m_inputSLDVertexCollection );
-    streamlog_out(DEBUG0) << "  getting mc particle collection: " << _MCParticleColllectionName << std::endl ;
-    inputMCParticleCollection = pLCEvent->getCollection( _MCParticleColllectionName );
-    JetSLDNav = new LCRelationNavigator( pLCEvent->getCollection( m_inputJetSLDLink ) );
-    SLDNuNav = new LCRelationNavigator( pLCEvent->getCollection( m_inputSLDNuLink ) );
-    //not needed for the fit itself, only to find corresponding MCParticle for each neutrino:
-    NuMCNav = new LCRelationNavigator( pLCEvent->getCollection( m_recoNumcNuLinkName ) );
   } catch(DataNotAvailableException &e) {
-    streamlog_out(MESSAGE) << "processEvent : Input collections not found in event " << m_nEvt << std::endl;
+    streamlog_out(MESSAGE) << "processEvent : Input lepton collection not found in event " << m_nEvt << std::endl;
     return;
   }
+  try {
+    streamlog_out(DEBUG0) << "  getting jet collection: " << m_inputJetCollection << std::endl ;
+    inputJetCollection = pLCEvent->getCollection( m_inputJetCollection );
+  } catch(DataNotAvailableException &e) {
+    streamlog_out(MESSAGE) << "processEvent : Input jet collection not found in event " << m_nEvt << std::endl;
+    return;
+  }
+  try {
+    streamlog_out(DEBUG0) << "  getting semi-leptonic vertex collection: " << m_inputSLDVertexCollection << std::endl ;
+    inputSLDecayCollection = pLCEvent->getCollection( m_inputSLDVertexCollection );
+  } catch(DataNotAvailableException &e) {
+    streamlog_out(MESSAGE) << "processEvent : Input semi-leptonic vertex collection collection not found in event " << m_nEvt << std::endl;
+    return;
+  }
+  try {
+    streamlog_out(DEBUG0) << "  getting mc particle collection: " << _MCParticleColllectionName << std::endl ;
+    inputMCParticleCollection = pLCEvent->getCollection( _MCParticleColllectionName );
+  } catch(DataNotAvailableException &e) {
+    streamlog_out(MESSAGE) << "processEvent : Input mc particle collection not found in event " << m_nEvt << std::endl;
+    return;
+  }
+  try {
+    JetSLDNav = new LCRelationNavigator( pLCEvent->getCollection( m_inputJetSLDLink ) );
+    } catch(DataNotAvailableException &e) {
+    streamlog_out(MESSAGE) << "processEvent : JetSLDNav collection not found in event " << m_nEvt << std::endl;
+    return;
+  }
+  try {
+    SLDNuNav = new LCRelationNavigator( pLCEvent->getCollection( m_inputSLDNuLink ) );
+  } catch(DataNotAvailableException &e) {
+    streamlog_out(MESSAGE) << "processEvent : SLDNuNav collection not found in event " << m_nEvt << std::endl;
+    return;
+  }
+  try {
+    NuMCNav = new LCRelationNavigator( pLCEvent->getCollection( m_recoNumcNuLinkName ) );
+  } catch(DataNotAvailableException &e) {
+    streamlog_out(MESSAGE) << "processEvent : NuMCNav collection not found in event " << m_nEvt << std::endl;
+    return;
+  }
+
   m_nCorrectedSLD = inputSLDecayCollection->getNumberOfElements();
   m_nSLDecayBHadron = inputSLDecayCollection->getParameters().getIntVal( "nBHadronSLD_found" );
   m_nSLDecayCHadron = inputSLDecayCollection->getParameters().getIntVal( "nCHadronSLD_found" );
@@ -569,15 +601,14 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     
     streamlog_out(MESSAGE) << "Getting fitobjects now... ";
     auto fitobjects = woNuFitResult.fitobjects;
-    vector<unsigned int> perm;
     streamlog_out(MESSAGE) << "Fitter contains " << fitobjects->size() << " fitobjects : ";
     for (auto it = fitobjects->begin(); it != fitobjects->end(); ++it) {
       streamlog_out(MESSAGE) << (*it)->getName() << " ";
-      perm.push_back((unsigned int)((string)(*it)->getName()).back()-48);
+      m_perm.push_back((int)((string)(*it)->getName()).back()-48);
     }
     streamlog_out(MESSAGE) << endl;
     
-    vector<double> startmasses = calculateInitialMasses(Jets, Leptons, perm);
+    vector<double> startmasses = calculateInitialMasses(Jets, Leptons, m_perm);
     m_ZMassBeforeFit  = startmasses[0];
     m_H1MassBeforeFit = startmasses[1];
     m_H2MassBeforeFit = startmasses[2];
@@ -846,19 +877,20 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     
     streamlog_out(MESSAGE) << "Getting fitobjects now... ";
     auto fitobjects = bestFitResult.fitobjects;
-    vector<unsigned int> perm;
+    //reset permutation vector 
+    m_perm.clear();
     streamlog_out(MESSAGE1) << "Fitter contains " << fitobjects->size() << " fitobjects : ";
     for (auto it = fitobjects->begin(); it != fitobjects->end(); ++it) {
       streamlog_out(MESSAGE1) << (*it)->getName() << " ";
-      perm.push_back((unsigned int)((string)(*it)->getName()).back()-48);
+      m_perm.push_back((int)((string)(*it)->getName()).back()-48);
     }
     streamlog_out(MESSAGE1) << endl;
     
     streamlog_out(MESSAGE1) << "ladida checking permutations: "; 
-    for (auto idx: perm) streamlog_out(MESSAGE1) << idx << " ";
+    for (auto idx: m_perm) streamlog_out(MESSAGE1) << idx << " ";
     streamlog_out(MESSAGE1) << endl;
     
-    vector<double> startmasses = calculateInitialMasses(bestJets, Leptons, perm);
+    vector<double> startmasses = calculateInitialMasses(bestJets, Leptons, m_perm);
     m_ZMassBeforeFit  = startmasses[0];
     m_H1MassBeforeFit = startmasses[1];
     m_H2MassBeforeFit = startmasses[2];
@@ -1008,6 +1040,16 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
   for (auto startlepton: startleptons) outputStartLeptonCollection->addElement(startlepton);
   for (auto fittedjet: fittedjets) outputJetCollection->addElement(fittedjet);
   for (auto fittedlepton: fittedleptons) outputLeptonCollection->addElement(fittedlepton);
+
+  //add permutations as parameter to both jet collections
+  //std::vector<int> jetperm= {m_perm.begin(),m_perm.begin()+m_nJets};
+  //std::vector<int> jetperm;
+  //for (unsigned int i = 0; i < m_nJets; i++) streamlog_out(MESSAGE1) << m_perm[i] << endl;
+  //for (unsigned int i = 0; i < m_nJets; i++) jetperm.push_back(m_perm[i]);
+  //for (unsigned int i = 0; i < m_nJets; i++) streamlog_out(MESSAGE1) << jetperm[i] << endl;
+  //m_perm.erase(m_perm.begin()+m_nJets,m_perm.end());
+  outputStartJetCollection->parameters().setValues("permutation", m_perm);
+  outputJetCollection->parameters().setValues("permutation", m_perm);
   
   pLCEvent->addCollection( outputJetCollection , m_outputJetCollection.c_str() );
   streamlog_out(DEBUG0) << " Output Jet collection added to event" << std::endl;
@@ -2197,7 +2239,7 @@ void ZHHKinFit::getLeptonParameters( ReconstructedParticle* lepton , float (&par
   streamlog_out(DEBUG6) << "			SigmaPhi	= " << errors[ 2 ] << std::endl ;
 }
 
-std::vector<double> ZHHKinFit::calculateInitialMasses(pfoVector jets, pfoVector leptons, vector<unsigned int> perm)
+std::vector<double> ZHHKinFit::calculateInitialMasses(pfoVector jets, pfoVector leptons, vector<int> perm)
 {
   std::vector<double> masses;
   shared_ptr<vector<shared_ptr<JetFitObject>>> jfo = make_shared<vector<shared_ptr<JetFitObject>>>();

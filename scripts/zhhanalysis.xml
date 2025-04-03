@@ -45,13 +45,14 @@
       <processor name="MyErrorFlow"/>
       <if condition="MyHdecayMode.GoodEvent">
 	<processor name="MyZHHKinFit_solveNu" />
-	<!--processor name="MyZHHKinFit_zhh" />
-	<processor name="MyZHHKinFit_zzh" /-->
-	<processor name="MyTrueJet"/> 
+	<processor name="MyZHHKinFit_zhh" />
+	<processor name="MyZHHKinFit_zzh" />
+	<!--processor name="MyTrueJet"/> 
 	<processor name="MyMisclustering" />
 	<processor name="MyJetErrorAnalysis" condition="" />
+	<processor name="MyJetwNuErrorAnalysis" condition="" />
 	<processor name="MyLeptonErrorAnalysis" condition="" />	
-	<processor name="MyZinvisibleErrorAnalysis"/>
+	<processor name="MyZinvisibleErrorAnalysis"/-->
       </if>
     </if>
     <processor name="MyPreSelection"/>
@@ -77,6 +78,7 @@
     <!--parameter name="LCIOReadCollectionNames">MCParticle PandoraPFOs</parameter-->
   </global>
 
+  
   <processor name="InitDD4hep" type="InitializeDD4hep">
     <!--InitializeDD4hep reads a compact xml file and initializes the DD4hep::LCDD object-->
     <!--Name of the DD4hep compact xml file to load-->
@@ -437,7 +439,7 @@
    <!-- solve nu correction? -->
    <parameter name="solveNuCorrection" type="bool">true</parameter>
    <!-- 0 = OPALFitter, 1 = NewFitter, 2 = NewtonFitter (default: 0) -->
-   <parameter name="fitter" type="int"> 0 </parameter>
+   <parameter name="fitter" type="int"> 1 </parameter>
    <!-- name of fit hypothesis: MH, ZHH, ZZH, equal mass (default), NMC (no mass constraint) -->
    <parameter name="fithypothesis">NMC</parameter>
    <!-- name of Output root file -->
@@ -469,7 +471,7 @@
    <!--ZHHKinFit does a fit on ZHH events with 4-momentum conservation and possiblity for mass constraints-->
    <!--Name of the input collections: leptons, jets, SLD vertices, Jet-SLDvertex relations, and SLDvertex-neutrino relations -->
    <parameter name="LeptonsCollectionName" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
-   <parameter name="JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets</parameter>
+   <parameter name="JetCollectionName" type="string" lcioInType="ReconstructedParticle">JetsPreFit_solveNu</parameter>
    <parameter name="SLDVertexCollection" type="string" lcioInType="Vertex">SemiLeptonicDecayVertex</parameter>
    <parameter name="JetSLDRelationCollection" type="string" lcioInType="LCRelation">JetSLDLink</parameter>
    <parameter name="SLDNeutrinoRelationCollection" type="string" lcioInType="LCRelation">SLDNuLink</parameter>
@@ -484,7 +486,7 @@
    <!-- solve nu correction? -->
    <parameter name="solveNuCorrection" type="bool">false</parameter>
    <!-- 0 = OPALFitter, 1 = NewFitter, 2 = NewtonFitter (default: 0) -->
-   <parameter name="fitter" type="int"> 0 </parameter>
+   <parameter name="fitter" type="int"> 1 </parameter>
    <!-- name of fit hypothesis: MH, ZHH, ZZH, equal mass (default), NMC (no mass constraint) -->
    <parameter name="fithypothesis">ZHH</parameter>
    <!-- name of Output root file -->
@@ -492,9 +494,9 @@
    <!-- Factor for scaling up inverse pT error for leptons (default: 1)-->
    <parameter name="SigmaInvPtScaleFactor" type="float"> 1.1 </parameter>
    <!-- Factor for scaling up energy error for jets (default: 1)-->
-   <parameter name="SigmaEnergyScaleFactor" type="float"> 1.5 </parameter>
+   <parameter name="SigmaEnergyScaleFactor" type="float"> 1.4 </parameter>
    <!-- Factor for scaling up angular errors jets (default: 1)-->
-   <parameter name="SigmaAnglesScaleFactor" type="float"> 1.3 </parameter>
+   <parameter name="SigmaAnglesScaleFactor" type="float"> 1.4 </parameter>
    <!-- set true if every event should be traced in DEBUG mode (default: false) -->
    <parameter name="traceall" type="bool"> false </parameter>
    <!-- number of individual event to be traced (default: -1) -->
@@ -503,20 +505,20 @@
    <!-- Name of output collection-->
    <parameter name="outputLeptonCollection" type="string" lcioOutType="ReconstructedParticle">LeptonsKinFit_zhh</parameter>
    <parameter name="outputJetCollection" type="string" lcioOutType="ReconstructedParticle">JetsKinFit_zhh</parameter>
-   <parameter name="outputSartLeptonCollection" type="string" lcioOutType="ReconstructedParticle">LeptonsPreFit_zhh</parameter>
+   <parameter name="outputStartLeptonCollection" type="string" lcioOutType="ReconstructedParticle">LeptonsPreFit_zhh</parameter>
    <parameter name="outputStartJetCollection" type="string" lcioOutType="ReconstructedParticle">JetswNuPreFit_zhh</parameter>
    <!--parameter name="LeptonPullsOutputColection" type="string" lcioOutType="LCFloatVec">LeptonPulls</parameter-->
    <!--parameter name="JetPullsOutputColection" type="string" lcioOutType="LCFloatVec">JetPulls</parameter-->
    <!--parameter name="StartOutputCollection" type="string" lcioOutType="ReconstructedParticle">StartReco</parameter-->
    <!-- verbosity level - DEBUG only works if compiled in debug mode! -->
-   <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> SILENT </parameter>
+   <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> DEBUG </parameter>
  </processor>
 
  <processor name="MyZHHKinFit_zzh" type="ZHHKinFit">
    <!--ZHHKinFit does a fit on ZHH events with 4-momentum conservation and possiblity for mass constraints-->
    <!--Name of the input collections: leptons, jets, SLD vertices, Jet-SLDvertex relations, and SLDvertex-neutrino relations -->
    <parameter name="LeptonsCollectionName" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
-   <parameter name="JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets</parameter>
+   <parameter name="JetCollectionName" type="string" lcioInType="ReconstructedParticle">JetsPreFit_solveNu</parameter>
    <parameter name="SLDVertexCollection" type="string" lcioInType="Vertex">SemiLeptonicDecayVertex</parameter>
    <parameter name="JetSLDRelationCollection" type="string" lcioInType="LCRelation">JetSLDLink</parameter>
    <parameter name="SLDNeutrinoRelationCollection" type="string" lcioInType="LCRelation">SLDNuLink</parameter>
@@ -531,7 +533,7 @@
    <!-- solve nu correction? -->
    <parameter name="solveNuCorrection" type="bool">false</parameter>   
    <!-- 0 = OPALFitter, 1 = NewFitter, 2 = NewtonFitter (default: 0) -->
-   <parameter name="fitter" type="int"> 0 </parameter>
+   <parameter name="fitter" type="int"> 1 </parameter>
    <!-- name of fit hypothesis: MH, ZHH, ZZH, equal mass (default), NMC (no mass constraint) -->
    <parameter name="fithypothesis">ZZH</parameter>
    <!-- name of Output root file -->
@@ -539,9 +541,9 @@
    <!-- Factor for scaling up inverse pT error for leptons (default: 1)-->
    <parameter name="SigmaInvPtScaleFactor" type="float"> 1.1 </parameter>
    <!-- Factor for scaling up energy error for jets (default: 1)-->
-   <parameter name="SigmaEnergyScaleFactor" type="float"> 1.5 </parameter>
+   <parameter name="SigmaEnergyScaleFactor" type="float"> 1.4 </parameter>
    <!-- Factor for scaling up angular errors jets (default: 1)-->
-   <parameter name="SigmaAnglesScaleFactor" type="float"> 1.3 </parameter>
+   <parameter name="SigmaAnglesScaleFactor" type="float"> 1.4 </parameter>
    <!-- set true if every event should be traced in DEBUG mode (default: false) -->
    <parameter name="traceall" type="bool"> false </parameter>
    <!-- number of individual event to be traced (default: -1) -->
@@ -559,7 +561,6 @@
    <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> SILENT </parameter>
  </processor>
  
- 
  <processor name="MyErrorFlow" type="ErrorFlow">
    <!--PfoAnalysis analyses output of PandoraPFANew-->
    <parameter name="InputPFOCollection" type="string" lcioInType="ReconstructedParticle">RefinedJets</parameter>
@@ -576,7 +577,7 @@
     <parameter name="RecoJetCollection" type="string" lcioInType="ReconstructedParticle">RefinedJets</parameter>
     <parameter name="matchMethod" type="int">0</parameter>
     <parameter name="outputFilename" type="string">${OutputDirectory}/${OutputBaseName}_Misclustering.root</parameter>
-    <parameter name="Verbosity" type="string">DEBUG</parameter>
+    <parameter name="Verbosity" type="string">SILENT</parameter>
   </processor>
 
   <processor name="MyJetErrorAnalysis" type="JetErrorAnalysis">

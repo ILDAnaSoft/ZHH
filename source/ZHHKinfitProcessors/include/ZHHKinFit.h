@@ -101,7 +101,7 @@ public:
   FitResult performqqbbbbFIT( pfoVector jets,bool traceEvent);	    
   virtual void	getJetParameters( ReconstructedParticle* jet , float (&parameters)[ 3 ] , float (&errors)[ 3 ] );
   virtual void	getLeptonParameters( ReconstructedParticle* lepton , float (&parameters)[ 3 ] , float (&errors)[ 3 ] );
-  std::vector<double> calculateInitialMasses(pfoVector jets, pfoVector leptons, vector<unsigned int> perm);
+  std::vector<double> calculateInitialMasses(pfoVector jets, pfoVector leptons, vector<int> perm);
   std::vector<double> calculateMassesFromSimpleChi2Pairing(pfoVector jets, pfoVector leptons);
   std::vector<double> calculatePulls(std::shared_ptr<ParticleFitObject> fittedobject, ReconstructedParticle* startobject, int type);
   double calcChi2(shared_ptr<vector<shared_ptr<BaseFitObject>>> fitobjects);
@@ -187,6 +187,7 @@ private:
   float m_ISREnergyAfterFit{};
   float m_FitProbability{};
   float m_FitChi2{};
+  std::vector<int> m_perm{};
   std::vector<float> m_pullJetEnergy{};
   std::vector<float> m_pullJetTheta{};
   std::vector<float> m_pullJetPhi{};
@@ -207,14 +208,6 @@ private:
   std::vector<float> m_Sigma_PzE{};
   std::vector<float> m_Sigma_E2{};
   
-  double ZEnergy{};
-  double Zmomentum[3]{0.0};
-  double H1Energy{};
-  double H1momentum[3]{0.0};
-  double H2Energy{};
-  double H2momentum[3]{0.0};
-  double ISREnergy{};
-  double ISRmomentum[3]{0.0};
 };
 
 #endif
