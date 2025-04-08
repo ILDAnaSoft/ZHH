@@ -36,8 +36,6 @@ dependencies/**
 *.bbl
 *.blg
 .env
-.env.sh
-.env.bck
 install/**
 *notebooks/**
 *Notebooks/**
@@ -57,3 +55,4 @@ weights
 HighLevelReco
 WWCATOUTCM
 WWCATOUTROOT
+*.env*
