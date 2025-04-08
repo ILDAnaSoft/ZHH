@@ -70,7 +70,7 @@ function abort_job_submission() {
     JOB_GROUP=/$(whoami)/$JOB_NAME
 
     while read line; do
-        bsub -q s -g $JOB_GROUP -J $njob "$line" #  || echo "Job submission failed. Bailing out" && exit 6
+        bsub -q s -g $JOB_GROUP -J "$JOB_NAME.$njob" "$line" #  || echo "Job submission failed. Bailing out" && exit 6
         njob=$((njob + 1 ))
     done < pack.job
 

@@ -1,4 +1,4 @@
-# example usage: python find_source_files.py --statistics=0
+# example usage: python find_source_files.py --statistics=0.3
 
 from glob import glob
 import argparse
@@ -13,15 +13,18 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--statistics', type=float, default=.3, help='fraction between 0 and 1 of the files to be used. at least one file per process and polarization will always be used')
-    parser.add_argument('--source_mask', type=str, default='/home/ilc/bliewert/jobresults/550-hh-sgv/*.slcio', help='globbable file mask for all source SLCIO files')
+    parser.add_argument('--source_masks', type=str, default='/home/ilc/bliewert/jobresults/550-hh-sgv/*.slcio', help='comma-separated list of globbable file masks for all source SLCIO files')
 
     args = parser.parse_args()
 
     statistics = float(args.statistics)
-    source_mask = str(args.source_mask)
-
-    files = glob(source_mask, recursive=True)
-    #files = list(filter(lambda path: any([elem in get_process(path) for elem in ['e1e1', 'e2e2', 'v', 'l']]), files))
+    source_masks = str(args.source_mask)
+    files = []
+    
+    for source_mask in source_masks.split(','):
+        files += glob(source_mask, recursive=True)
+        #files = list(filter(lambda path: any([elem in get_process(path) for elem in ['e1e1', 'e2e2', 'v', 'l']]), files))
+        
     files.sort()
 
     counts_max = {}
