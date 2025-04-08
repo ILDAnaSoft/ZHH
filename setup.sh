@@ -47,7 +47,7 @@ function zhh_recompile() {
     }
 
     # Compile the ML and helper libraries
-    for module_to_compile in "$MarlinML" "$VariablesForDeepMLFlavorTagger" "$BTaggingVariables" "$MarlinReco"
+    for module_to_compile in "$MarlinML" "$VariablesForDeepMLFlavorTagger" "$BTaggingVariables" "$MarlinReco" "$MarlinKinfit"
     do
         compile_pkg $module_to_compile && zhh_echo "+++ Successfully compiled $module_to_compile +++" || { zhh_echo "!!! Error [$?] while trying to compile $module_to_compile !!!"; cd $REPO_ROOT; return 1; }
     done
@@ -66,9 +66,14 @@ function zhh_attach_marlin_dlls() {
         "$REPO_ROOT/source/JetTaggingComparison/lib/libJetTaggingComparison.so"
         "$REPO_ROOT/source/PreSelection/lib/libPreSelection.so"
         "$REPO_ROOT/source/FinalStateRecorder/lib/libFinalStateRecorder.so"
-        "$REPO_ROOT/source/ZHHKinfitProcessors/lib/libZHHKinfitProcessors.so"
+        "$REPO_ROOT/source/ZHHKinfitProcessors/install/lib/libZHHKinfitProcessors.so"
         "$REPO_ROOT/source/TruthRecoComparison/lib/libTruthRecoComparison.so"
 	"$REPO_ROOT/source/ZinvisibleErrorAnalysis/lib/libZinvisibleErrorAnalysis.so"
+	"$REPO_ROOT/source/Validation/lib/libValidation.so"
+	"$REPO_ROOT/source/bHadronAnalysis/install/lib/libbHadronAnalysis.so"
+	"$REPO_ROOT/source/JetErrorAnalysis/install/lib/libJetErrorAnalysis.so" 
+	"$REPO_ROOT/source/LeptonErrorAnalysis/install/lib/libLeptonErrorAnalysis.so" 
+	"$REPO_ROOT/source/Misclustering/lib/libMisclustering.so"
         #"$MarlinML/lib64/libJetTaggers.so"
         #"$VariablesForDeepMLFlavorTagger/lib/libVariablesForDeepMLFlavorTagger.so"
         #"$BTaggingVariables/lib/libBTaggingVariables.so"

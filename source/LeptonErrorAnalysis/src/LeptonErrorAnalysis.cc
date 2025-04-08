@@ -33,7 +33,10 @@ LeptonErrorAnalysis::LeptonErrorAnalysis() : Processor("LeptonErrorAnalysis"),
 					     c(0),
 					     mm2m(0),
 					     eV2GeV(0),
-					     eB(0)
+					     eB(0),
+					     m_NormResidualInvPt{},
+					     m_NormResidualTheta{},
+					     m_NormResidualPhi{}
 
 {
 
@@ -60,10 +63,10 @@ LeptonErrorAnalysis::LeptonErrorAnalysis() : Processor("LeptonErrorAnalysis"),
 			   );
 
   registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
-			   "inputIsolepCollection",
-			   "Name of input isolated lepton collection",
-			   m_inputIsolepCollection,
-			   std::string("IsolatedLeptons")
+			   "inputLeptonCollection",
+			   "Name of input lepton collection",
+			   m_inputLepCollection,
+			   std::string("Leptons")
 			   );
   
   registerInputCollection(LCIO::LCRELATION,
@@ -80,11 +83,17 @@ LeptonErrorAnalysis::LeptonErrorAnalysis() : Processor("LeptonErrorAnalysis"),
 			  std::string("MCTruthMarlinTrkTracksLink")
 			  );
 
+  registerProcessorParameter( "outputFilename",
+			      "name of output root file",
+			      m_outputFile,
+			      std::string("")
+			      );
+  
  // Outputs: Normalised Residuals
- registerOutputCollection( LCIO::LCFLOATVEC,                                                                                                            
-			   "LeptonResidualsOutputCollection",                                                                                                
-			   "Output LeptonResiduals (invPt, theta, phi)  Collection" ,                                                                           
-			   _OutLeptonResidualsCol,                                                                                                          
+ registerOutputCollection( LCIO::LCFLOATVEC, 
+			   "LeptonResidualsOutputCollection", 
+			   "Output LeptonResiduals (invPt, theta, phi)  Collection" , 
+			   _OutLeptonResidualsCol, 
 			   std::string("LeptonResiduals"));
 }
 
@@ -98,11 +107,25 @@ void LeptonErrorAnalysis::init() {
   mm2m = 1e-3;
   eV2GeV = 1e-9;
   eB = m_Bfield * c * mm2m * eV2GeV; 
+
+  m_pTFile = new TFile(m_outputFile.c_str(),"recreate");
+
+  m_pTTree = new TTree("eventTree","eventTree");
+  m_pTTree->SetDirectory(m_pTFile);
+  m_pTTree->Branch("NormResidualInvPt", &m_NormResidualInvPt);
+  m_pTTree->Branch("NormResidualTheta", &m_NormResidualTheta);
+  m_pTTree->Branch("NormResidualPhi", &m_NormResidualPhi);
+
+  streamlog_out(MESSAGE) << "   init finished  " << std::endl;
 }
 
 void LeptonErrorAnalysis::Clear()
 {
-
+  streamlog_out(DEBUG) << "   Clear called  " << std::endl;
+  m_NormResidualInvPt.clear();
+  m_NormResidualTheta.clear();
+  m_NormResidualPhi.clear();
+    
 }
 
 void LeptonErrorAnalysis::processRunHeader()
@@ -113,7 +136,8 @@ void LeptonErrorAnalysis::processRunHeader()
 
 void LeptonErrorAnalysis::processEvent( LCEvent* pLCEvent)
 {
-
+  this->Clear();
+  
   m_nRun = pLCEvent->getRunNumber();
   m_nEvt = pLCEvent->getEventNumber();
   streamlog_out(DEBUG2) << "Processing event " << pLCEvent->getEventNumber() << std::endl;
@@ -121,33 +145,44 @@ void LeptonErrorAnalysis::processEvent( LCEvent* pLCEvent)
   //this->Clear();
   try
     {
-      LeptonCol= pLCEvent->getCollection( m_inputIsolepCollection );
+      LeptonCol= pLCEvent->getCollection( m_inputLepCollection );
       int n_Leptons = LeptonCol->getNumberOfElements();
       if (n_Leptons == 2) {
         LCCollectionVec *OutLeptonResidualsCol = new LCCollectionVec(LCIO::LCFLOATVEC);
-	//Loop over isolated leptons
+	//Loop over leptons
         for (int i_lep=0; i_lep<n_Leptons; i_lep++) {
 	  LCFloatVec *LeptonResiduals = new LCFloatVec;
 	  float leptonResiduals[ 3 ]{ 0.0 };
 	  //for each lepton find corresponding MC particle and calculate the normalised residual
 	  ReconstructedParticle* lepton = dynamic_cast<ReconstructedParticleImpl*>(LeptonCol->getElementAt(i_lep));
-	  getLeptonResiduals(pLCEvent, lepton, leptonResiduals);
+	  getLeptonResiduals(pLCEvent, lepton, leptonResiduals); 
 
-	  LeptonResiduals->push_back(leptonResiduals[0]);                                                                                                                                                 
-	  LeptonResiduals->push_back(leptonResiduals[1]);                                                                                                                                                 
+	  bool calculatedresiduals = false;
+	  for (unsigned int i=0; i<3; i++) if (leptonResiduals[i] != 0.0) calculatedresiduals = true;
+	  if (!calculatedresiduals) continue;
+	  
+	  LeptonResiduals->push_back(leptonResiduals[0]); 
+	  LeptonResiduals->push_back(leptonResiduals[1]); 
 	  LeptonResiduals->push_back(leptonResiduals[2]); 
 
+	  streamlog_out(DEBUG) << "Residuals: " << leptonResiduals[0] << " " << leptonResiduals[1] << " " << leptonResiduals[2] << " " << endl;
+	  
+	  m_NormResidualInvPt.push_back(leptonResiduals[0]);
+	  m_NormResidualTheta.push_back(leptonResiduals[1]);
+	  m_NormResidualPhi.push_back(leptonResiduals[2]);
+
+	  
 	  OutLeptonResidualsCol->addElement(LeptonResiduals);
 	} 
 	pLCEvent->addCollection(OutLeptonResidualsCol, _OutLeptonResidualsCol.c_str() );
       } 
-      
       m_nEvt++;
     }
   catch(DataNotAvailableException &e)
     {
       streamlog_out(MESSAGE) << "Check : Input collections not found in event " << m_nEvt << std::endl;
     }
+  m_pTTree->Fill();
 }
 
 
@@ -220,6 +255,11 @@ void LeptonErrorAnalysis::getLeptonResiduals( EVENT::LCEvent *pLCEvent ,EVENT::R
 //std::vector<float> LeptonErrorAnalysis::getLeptonResiduals( EVENT::ReconstructedParticle* lepton, TLorentzVector mcpFourMomentum )
 void LeptonErrorAnalysis::calculateResiduals( EVENT::ReconstructedParticle* lepton, TLorentzVector mcpFourMomentum, float(&leptonResiduals)[ 3 ] )
 {
+  streamlog_out(DEBUG) << "Energy: " << lepton->getEnergy() << " " << mcpFourMomentum.E() << endl;
+  streamlog_out(DEBUG) << "Px: " << lepton->getMomentum()[0] << " " << mcpFourMomentum.Px() << endl;
+  streamlog_out(DEBUG) << "Py: " << lepton->getMomentum()[1] << " " << mcpFourMomentum.Py() << endl;
+  streamlog_out(DEBUG) << "Pz: " << lepton->getMomentum()[2] << " " << mcpFourMomentum.Pz() << endl;
+
   TrackVec trackVec = lepton->getTracks();
   if ( trackVec.size() != 1 ) return;
 
@@ -256,6 +296,10 @@ void LeptonErrorAnalysis::calculateResiduals( EVENT::ReconstructedParticle* lept
   float NormResidualTheta = ThetaResidual / sigmaTheta;
   float NormResidualPhi = PhiResidual / sigmaPhi;
   
+  streamlog_out(DEBUG) << "NormResidualInvPt = " << InvPtResidual << "/" << sigmaInvPt << " = " << NormResidualInvPt << endl;
+  streamlog_out(DEBUG) << "NormResidualTheta = " << ThetaResidual << "/" << sigmaTheta << " = " << NormResidualTheta << endl;
+  streamlog_out(DEBUG) << "NormResidualPhi = " << PhiResidual << "/" << sigmaPhi << " = " << NormResidualPhi << endl;
+  
   leptonResiduals[0] = NormResidualInvPt;
   leptonResiduals[1] = NormResidualTheta;
   leptonResiduals[2] = NormResidualPhi;
@@ -269,5 +313,10 @@ void LeptonErrorAnalysis::check()
 
 void LeptonErrorAnalysis::end()
 {
-
+  streamlog_out(MESSAGE) << "writing root file" << endl;
+  m_pTFile->cd();
+  m_pTTree->Write();
+  m_pTFile->Close();
+  delete m_pTFile;
+  
 }

@@ -56,6 +56,7 @@ class LeptonPairing : public Processor
   string m_inputPFOsWOIsoLepCollection{};
   string m_outputLepPairCollection{};
   string m_outputPFOsWOLepPairCollection{};
+  string m_outputIsoLepPairCollection{};
   
 
 };
