@@ -1,7 +1,23 @@
 #ifndef ZHHvvbbbbKinFit_h
 #define ZHHvvbbbbKinFit_h 1
 
-#include "ZHHBaseKinfitProcessor.h"
+#include <iostream>
+#include <vector>
+#include <string>
+
+#include "marlin/Processor.h"
+#include "lcio.h"
+#include "TrueJet_Parser.h"
+#include <EVENT/Vertex.h>
+#include <EVENT/ReconstructedParticle.h>
+#include "TLorentzVector.h"
+#include "DDMarlinCED.h"
+
+#include <GeometryUtil.h>
+#include <CLHEP/Vector/LorentzVector.h>
+#include "JetFitObject.h"
+#include "LeptonFitObject.h"
+#include "ISRPhotonFitObject.h"
 #include "ZinvisibleFitObject.h"
 #include "MomentumConstraint.h"
 #include "OPALFitterGSL.h"
@@ -27,10 +43,11 @@ using namespace lcio ;
 using namespace marlin ;
 using namespace std;
 
-class ZHHvvbbbbKinFit : public ZHHBaseKinfitProcessor
+class ZHHvvbbbbKinFit : public Processor , public TrueJet_Parser
 {
 
 	public:
+
 		virtual Processor*  newProcessor()
 		{
 			return new ZHHvvbbbbKinFit;

@@ -69,13 +69,13 @@ set(sources
   EventObservables/src/EventObservablesVV.cc
   EventObservables/src/EventObservablesQQ.cc
   TruthRecoComparison/src/TruthRecoComparison.cc
-  ZHHKinfitProcessors/src/ZHHBaseKinfitProcessor.cc
   ZHHKinfitProcessors/src/ZHHllbbbbKinFit.cc
   ZHHKinfitProcessors/src/ZHHqqbbbbKinFit.cc
   ZHHKinfitProcessors/src/ZHHvvbbbbKinFit.cc
   ZHHKinfitProcessors/src/ZHHllbbbbKinFitv1.cc
   ZHHKinfitProcessors/src/ZHHqqbbbbKinFitv1.cc
   ZHHKinfitProcessors/src/ZHHvvbbbbKinFitv1.cc
+  #ZHHKinfitProcessors/src/ZHHKinFit.cc
   ZinvisibleErrorAnalysis/src/ZinvisibleErrorAnalysis.cc
   PreSelection/src/PreSelection.cc
 )

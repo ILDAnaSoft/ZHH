@@ -90,12 +90,21 @@ class ZinvisibleErrorAnalysis : public Processor , public TrueJet_Parser
   float m_EnergyZinv;
   float m_ThetaZinv;   
   float m_PhiZinv;
+  float m_PxZinv;
+  float m_PyZinv;
+  float m_PzZinv;
   float m_EnergyZvv;
   float m_ThetaZvv;   
   float m_PhiZvv;   
+  float m_PxZvv;   
+  float m_PyZvv;   
+  float m_PzZvv;   
   float m_EnergyResidual;
   float m_ThetaResidual;   
   float m_PhiResidual;
+  float m_PxResidual;
+  float m_PyResidual;
+  float m_PzResidual;
   
  private:
 

@@ -94,17 +94,24 @@ class LeptonErrorAnalysis : public Processor , public TrueJet_Parser
   float mm2m;
   float eV2GeV;
   float eB;
+  std::vector<float> m_NormResidualInvPt{};
+  std::vector<float> m_NormResidualTheta{};
+  std::vector<float> m_NormResidualPhi{};
 
+  
  private:
 
 
   std::string _MCParticleCollectionName{};
   std::string _recoParticleCollectionName{};
-  std::string m_inputIsolepCollection{};
+  std::string m_inputLepCollection{};
   std::string m_TrackMCTruthLinkCollection{};
   std::string m_MCTruthTrackLinkCollection{};
 
   std::string _OutLeptonResidualsCol{};
+  std::string m_outputFile{};
+  TFile *m_pTFile{};
+  TTree *m_pTTree{};
 };
 
 #endif

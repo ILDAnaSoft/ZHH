@@ -17,14 +17,92 @@ double inv_mass(T* p1, T* p2){
 
 ZHHvvbbbbKinFit aZHHvvbbbbKinFit ;
 
-ZHHvvbbbbKinFit::ZHHvvbbbbKinFit(): ZHHBaseKinfitProcessor("ZHHvvbbbbKinFit") {
-	_description = "ZHHvvbbbbKinFit does a kinematic fit on Z->invisible + 4 jet events";
+ZHHvvbbbbKinFit::ZHHvvbbbbKinFit() :
+Processor("ZHHvvbbbbKinFit"),
+m_nRun(0),
+m_nEvt(0),
+m_nRunSum(0),
+m_nEvtSum(0),
+m_Bfield(0.0),
+c(0.0),
+mm2m(0.0),
+eV2GeV(0.0),
+eB(0.0)
+{
 
-  registerProcessorParameter(	"nJets",
-    "Number of jet should be in the event",
-    m_nAskedJets,
-    int(4)
-  );
+//	modify processor description
+	_description = "ZHHvvbbbbKinFit does a kinematic fit on Z->invisible + 4 jet events" ;
+
+//	register steering parameters: name, description, class-variable, default value
+
+	registerInputCollection( 	LCIO::RECONSTRUCTEDPARTICLE,
+					"isolatedleptonCollection" ,
+					"Name of the Isolated Lepton collection"  ,
+					m_inputIsolatedleptonCollection ,
+					std::string("LeptonPair")
+				);
+
+	registerInputCollection( 	LCIO::RECONSTRUCTEDPARTICLE,
+					"JetCollectionName" ,
+					"Name of the Jet collection"  ,
+					m_inputJetCollection ,
+					std::string("Durham4Jets")
+				);
+
+	registerInputCollection( 	LCIO::VERTEX,
+					"SLDVertexCollection" ,
+					"Name of Semi-Leptonic Decay Vertices Collection"  ,
+					m_inputSLDVertexCollection ,
+					std::string("SemiLeptonicDecayVertex")
+				);
+
+	registerInputCollection(	LCIO::LCRELATION,
+					"JetSLDRelationCollection",
+					"Name of the Jet-SemiLeptonicDecay Relation collection",
+					m_inputJetSLDLink,
+					std::string("JetSLDLinkName")
+				);
+
+	registerInputCollection(	LCIO::LCRELATION,
+					"SLDNeutrinoRelationCollection",
+					"Name of the JetSemiLeptonicDecayVertex-Neutrinos Relation collection",
+					m_inputSLDNuLink,
+					std::string("SLDNuLinkName")
+				);
+
+	registerInputCollection(       LCIO::LCRELATION,
+                                        "recoNumcNuLinkName",
+                                        "Name of the reconstructedNeutrino-trueNeutrino input Link collection",
+                                        m_recoNumcNuLinkName,
+                                        std::string("recoNumcNuLinkName")
+					);
+
+	registerInputCollection( 	LCIO::MCPARTICLE,
+					"MCParticleCollection" ,
+					"Name of the MCParticle collection"  ,
+					_MCParticleColllectionName ,
+					std::string("MCParticlesSkimmed")
+					);
+
+	registerInputCollection( 	LCIO::RECONSTRUCTEDPARTICLE,
+					"RecoParticleCollection" ,
+					"Name of the ReconstructedParticles input collection"  ,
+					_recoParticleCollectionName ,
+					std::string("PandoraPFOs")
+				);
+
+	registerInputCollection( 	LCIO::LCRELATION,
+					"RecoMCTruthLink",
+					"Name of the RecoMCTruthLink input collection"  ,
+					_recoMCTruthLink,
+					std::string("RecoMCTruthLink")
+				);
+
+	registerProcessorParameter(	"nJets",
+					"Number of jet should be in the event",
+					m_nAskedJets,
+					int(4)
+				);
 
 	registerProcessorParameter(	"nIsoLeps",
 					"Number of Isolated Leptons should be in the event",
@@ -266,28 +344,125 @@ void ZHHvvbbbbKinFit::init()
 	m_pTTree->Branch("Sigma_E2",&m_Sigma_E2);
 
 	streamlog_out(DEBUG) << "   init finished  " << std::endl;
+
 }
 
-void ZHHvvbbbbKinFit::clearChannelValues() {
-  // must be changed when properties are added which do not appear in base;
+void ZHHvvbbbbKinFit::Clear()
+{
+	streamlog_out(DEBUG) << "   Clear called  " << std::endl;
+
+	m_nJets = 0;
+	m_nIsoLeps = 0;
+	m_nSLDecayBHadron = 0;
+	m_nSLDecayCHadron = 0;
+	m_nSLDecayTauLepton = 0;
+	m_nSLDecayTotal = 0;
+	m_nCorrectedSLD = 0;
+	m_ISREnergyTrue = 0.0;
+	m_FitErrorCode_woNu = 1;
+	m_ZMassBeforeFit_woNu = 0.0;
+	m_H1MassBeforeFit_woNu = 0.0;
+	m_H2MassBeforeFit_woNu = 0.0;
+	m_HHMassBeforeFit_woNu = 0.0;
+	m_ZHHMassBeforeFit_woNu = 0.0;
+	m_ISREnergyBeforeFit_woNu = 0.0;
+	m_ZMassAfterFit_woNu = 0.0;
+	m_H1MassAfterFit_woNu = 0.0;
+	m_H2MassAfterFit_woNu = 0.0;
+	m_HHMassAfterFit_woNu = 0.0;
+	m_ZHHMassAfterFit_woNu = 0.0;
+	m_ISREnergyAfterFit_woNu = 0.0;
+	m_FitProbability_woNu = 0.0;
+	m_FitChi2_woNu = 0.0;
+	m_pullJetEnergy_woNu.clear();
+	m_pullJetTheta_woNu.clear();
+	m_pullJetPhi_woNu.clear();
+	m_pullLeptonInvPt_woNu.clear();
+	m_pullLeptonTheta_woNu.clear();
+	m_pullLeptonPhi_woNu.clear();
+	/*m_FitErrorCode_wNu = 1;
+	m_ZMassBeforeFit_wNu = 0.0;
+	m_H1MassBeforeFit_wNu = 0.0;
+	m_H2MassBeforeFit_wNu = 0.0;
+	m_ZMassAfterFit_wNu = 0.0;
+	m_H1MassAfterFit_wNu = 0.0;
+	m_H2MassAfterFit_wNu = 0.0;
+	m_FitProbability_wNu = 0.0;
+	m_FitChi2_wNu = 0.0;
+	m_pullJetEnergy_wNu.clear();
+	m_pullJetTheta_wNu.clear();
+	m_pullJetPhi_wNu.clear();
+	m_pullLeptonInvPt_wNu.clear();
+	m_pullLeptonTheta_wNu.clear();
+	m_pullLeptonPhi_wNu.clear();*/
+	m_FitErrorCode = 1;
+	m_ZMassBeforeFit = 0.0;
+	m_H1MassBeforeFit = 0.0;
+	m_H2MassBeforeFit = 0.0;
+	m_HHMassBeforeFit = 0.0;
+	m_ZHHMassBeforeFit = 0.0;
+	m_ISREnergyBeforeFit = 0.0;
+	m_ZMassAfterFit = 0.0;
+	m_H1MassAfterFit = 0.0;
+	m_H2MassAfterFit = 0.0;
+	m_HHMassAfterFit = 0.0;
+	m_ZHHMassAfterFit = 0.0;
+	m_ISREnergyAfterFit = 0.0;
+	m_FitProbability = 0.0;
+	m_FitChi2 = 0.0;
+	m_pullJetEnergy.clear();
+	m_pullJetTheta.clear();
+	m_pullJetPhi.clear();
+	m_pullLeptonInvPt.clear();
+	m_pullLeptonTheta.clear();
+	m_pullLeptonPhi.clear();
+        m_TrueNeutrinoEnergy.clear();
+        m_RecoNeutrinoEnergy.clear();
+        m_RecoNeutrinoEnergyKinfit.clear();
+	m_Sigma_Px2.clear();
+	m_Sigma_PxPy.clear();
+	m_Sigma_Py2.clear();
+	m_Sigma_PxPz.clear();
+	m_Sigma_PyPz.clear();
+	m_Sigma_Pz2.clear();
+	m_Sigma_PxE.clear();
+	m_Sigma_PyE.clear();
+	m_Sigma_PzE.clear();
+	m_Sigma_E2.clear();
+
 }
 
-void ZHHvvbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
-{  
+void ZHHvvbbbbKinFit::processRunHeader()
+{
+	m_nRun++ ;
+}
+
+void ZHHvvbbbbKinFit::processEvent( EVENT::LCEvent *pLCEvent )
+{
+  this->Clear();
+  m_nRun = pLCEvent->getRunNumber();
+  m_nEvt = pLCEvent->getEventNumber();
+  streamlog_out(MESSAGE1) << "	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
+  streamlog_out(MESSAGE1) << "	////////////////////////////////// processing event " << m_nEvt << " in run " << m_nRun << " /////////////////////////////////////////////////" << std::endl;
+  streamlog_out(MESSAGE1) << "	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
+  
   LCCollection *inputJetCollection = NULL;
   LCCollection *inputLeptonCollection = NULL;
   LCCollection *inputSLDecayCollection = NULL;
   LCCollection *inputMCParticleCollection = NULL;
-
-  /*
   IMPL::LCCollectionVec* outputLeptonCollection = NULL;
   outputLeptonCollection = new IMPL::LCCollectionVec(LCIO::RECONSTRUCTEDPARTICLE);
+  outputLeptonCollection->setSubset( true );
+  IMPL::LCCollectionVec* outputJetCollection = NULL;
+  outputJetCollection = new IMPL::LCCollectionVec(LCIO::RECONSTRUCTEDPARTICLE);
+  outputJetCollection->setSubset( true );
   IMPL::LCCollectionVec* outputStartLeptonCollection = NULL;
   outputStartLeptonCollection = new IMPL::LCCollectionVec(LCIO::RECONSTRUCTEDPARTICLE);
+  outputStartLeptonCollection->setSubset( true );
   IMPL::LCCollectionVec* outputStartJetCollection = NULL;
   outputStartJetCollection = new IMPL::LCCollectionVec(LCIO::RECONSTRUCTEDPARTICLE);
-  //LCCollectionVec *outputNuEnergyCollection = new LCCollectionVec(LCIO::LCFLOATVEC);
-  */
+  outputStartJetCollection->setSubset( true );
+  LCCollectionVec *outputNuEnergyCollection = new LCCollectionVec(LCIO::LCFLOATVEC);
 
   LCRelationNavigator* JetSLDNav = NULL;
   LCRelationNavigator* SLDNuNav = NULL;
@@ -344,11 +519,10 @@ void ZHHvvbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
     MCParticle *mcp = dynamic_cast<EVENT::MCParticle*>(inputMCParticleCollection->getElementAt(i));
     if (mcp->getPDG() == 25) mchiggs.push_back(mcp);
   }
-  if (mchiggs.size() == 2) m_System23MassHardProcess = inv_mass(mchiggs.at(0), mchiggs.at(1));
+  if (mchiggs.size() == 2) m_HHMassHardProcess = inv_mass(mchiggs.at(0), mchiggs.at(1));
   else streamlog_out(WARNING) << "////////////////////////////////////////////////// MC Higgs pair not found //////////////////////////////////////////////////" << endl;
 
   if ( m_nJets != m_nAskedJets || m_nIsoLeps != m_nAskedIsoLeps ) {
-    streamlog_out(MESSAGE) << "Skipping event: Jets(Actual:Required)=(" << m_nJets << " : " << m_nAskedJets << ") |  ISOLeptons(Actual:Required)=(" << m_nIsoLeps << ":" << m_nAskedIsoLeps << ")" << std::endl;
     m_pTTree->Fill();
     return;
   }
@@ -383,14 +557,48 @@ void ZHHvvbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
   streamlog_out(MESSAGE) << "	||||||||||||||||||||||||||||  KINFIT WITHOUT NEUTRINO COORECTION  ||||||||||||||||||||||||||||" << std::endl ;
   streamlog_out(MESSAGE) << "	||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||" << std::endl ;
 
-  FitResult woNuFitResult = performFIT( Jets, Leptons, traceEvent, true );
+  FitResult woNuFitResult = performFIT( Jets, Leptons, traceEvent );
   BaseFitter* woNuFitter = woNuFitResult.fitter.get();
  
- streamlog_out(MESSAGE) << "Performed fit WITHOUT neutrino correction" << endl;
+ streamlog_out(MESSAGE) << "Performed fit without neutrino correction" << endl;
   if (!woNuFitResult.fitter) {
     streamlog_out(MESSAGE) << "Did not find a functioning fit" << endl;
   } else {
-    //Fill root branches
+  //Fill root branches
+    m_FitErrorCode_woNu = woNuFitResult.fitter->getError();
+    m_FitProbability_woNu = woNuFitResult.fitter->getProbability();
+    m_FitChi2_woNu = woNuFitResult.fitter->getChi2();
+    streamlog_out(MESSAGE) << "error code = " << woNuFitResult.fitter->getError() << endl;
+    streamlog_out(MESSAGE) << "fit prob = " << woNuFitResult.fitter->getProbability() << endl;
+    streamlog_out(MESSAGE) << "fit chi2 = " << woNuFitResult.fitter->getChi2()<< endl;
+    streamlog_out(MESSAGE) << "Getting constraints now... ";
+    auto constraints = woNuFitResult.constraints;
+    streamlog_out(MESSAGE) << "Fitter contains " << constraints->size() << " constraints : ";
+    for (auto it = constraints->begin(); it != constraints->end(); ++it) {
+      streamlog_out(MESSAGE) << (*it)->getName() << " ";
+      if (strcmp((*it)->getName(), "z mass")==0) {
+	auto mc = dynamic_pointer_cast<MassConstraint>(*it);
+	m_ZMassAfterFit_woNu = mc->getMass();
+      }
+      if (strcmp((*it)->getName(), "h1 mass")==0) {
+	auto mc = dynamic_pointer_cast<MassConstraint>(*it);
+	m_H1MassAfterFit_woNu = mc->getMass();
+      }
+      if (strcmp((*it)->getName(), "h2 mass")==0) {
+	auto mc = dynamic_pointer_cast<MassConstraint>(*it);
+	m_H2MassAfterFit_woNu = mc->getMass();
+      }
+      if (strcmp((*it)->getName(), "hh mass")==0) {
+	auto mc = dynamic_pointer_cast<MassConstraint>(*it);
+	m_HHMassAfterFit_woNu = mc->getMass();
+      }
+      if (strcmp((*it)->getName(), "zhh mass")==0) {
+	auto mc = dynamic_pointer_cast<MassConstraint>(*it);
+	m_ZHHMassAfterFit_woNu = mc->getMass();
+      }
+    }
+    streamlog_out(MESSAGE) << endl;
+
     streamlog_out(MESSAGE) << "Getting fitobjects now... ";
     auto fitobjects_woNu = woNuFitResult.fitobjects;
     vector<unsigned int> perm_woNu;
@@ -402,22 +610,22 @@ void ZHHvvbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
     streamlog_out(MESSAGE) << endl;
 
     vector<double> startmasses_woNu = calculateInitialMasses(Jets, Leptons, perm_woNu);
-    m_Boson1BeforeFit_woNu = startmasses_woNu[0];
-    m_Boson2BeforeFit_woNu = startmasses_woNu[1];
-    m_Boson3BeforeFit_woNu = startmasses_woNu[2];
-    m_System23MassBeforeFit_woNu = startmasses_woNu[3];
-    m_System123MassBeforeFit_woNu = startmasses_woNu[4];
+    m_ZMassBeforeFit_woNu  = startmasses_woNu[0];
+    m_H1MassBeforeFit_woNu = startmasses_woNu[1];
+    m_H2MassBeforeFit_woNu = startmasses_woNu[2];
+    m_HHMassBeforeFit_woNu = startmasses_woNu[3];
+    m_ZHHMassBeforeFit_woNu = startmasses_woNu[4];
 
-    streamlog_out(MESSAGE1) << "Boson1 mass prefit = " << m_Boson1BeforeFit_woNu << endl;
-    streamlog_out(MESSAGE1) << "Boson2 mass prefit = " << m_Boson2BeforeFit_woNu << endl;
-    streamlog_out(MESSAGE1) << "Boson3 mass prefit = " << m_Boson3BeforeFit_woNu << endl;
-    streamlog_out(MESSAGE1) << "System23 mass prefit = " << m_System23MassBeforeFit_woNu << endl;
-    streamlog_out(MESSAGE1) << "System123 mass prefit = " << m_System123MassBeforeFit_woNu << endl;
-    streamlog_out(MESSAGE1) << "Boson1 mass postfit = " << m_Boson1AfterFit_woNu << endl;
-    streamlog_out(MESSAGE1) << "Boson2 mass postfit = " << m_Boson2AfterFit_woNu << endl;
-    streamlog_out(MESSAGE1) << "Boson3 mass postfit = " << m_Boson3AfterFit_woNu << endl;
-    streamlog_out(MESSAGE1) << "System23 mass postfit = " << m_System23MassAfterFit_woNu << endl;
-    streamlog_out(MESSAGE1) << "System123 mass postfit = " << m_System123MassAfterFit_woNu << endl;
+    streamlog_out(MESSAGE1) << "Z mass prefit = " << m_ZMassBeforeFit_woNu << endl;
+    streamlog_out(MESSAGE1) << "H1 mass prefit = " << m_H1MassBeforeFit_woNu << endl;
+    streamlog_out(MESSAGE1) << "H2 mass prefit = " << m_H2MassBeforeFit_woNu << endl;
+    streamlog_out(MESSAGE1) << "HH mass prefit = " << m_HHMassBeforeFit_woNu << endl;
+    streamlog_out(MESSAGE1) << "ZHH mass prefit = " << m_ZHHMassBeforeFit_woNu << endl;
+    streamlog_out(MESSAGE) << "Z mass postfit = " << m_ZMassAfterFit_woNu << endl;
+    streamlog_out(MESSAGE) << "H1 mass postfit = " << m_H1MassAfterFit_woNu << endl;
+    streamlog_out(MESSAGE) << "H2 mass postfit = " << m_H2MassAfterFit_woNu << endl;
+    streamlog_out(MESSAGE) << "HH mass postfit = " << m_HHMassAfterFit_woNu << endl;
+    streamlog_out(MESSAGE) << "ZHH mass postfit = " << m_ZHHMassAfterFit_woNu << endl;
     
     for (int i = 0; i < m_nJets; ++i) {   
       string fitname = "jet"+to_string(i);
@@ -487,9 +695,10 @@ void ZHHvvbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
 	  
 	  std::vector< ReconstructedParticle* > CorrectedJets{cjet1, cjet2, cjet3, cjet4};
 	  pfoVectorVector NuSolutions{nu1, nu2, nu3, nu4};
-	  FitResult fitResult = performFIT( CorrectedJets, Leptons , traceEvent, false);
+	  FitResult fitResult = performFIT( CorrectedJets, Leptons , traceEvent);
 	  BaseFitter* fitter = fitResult.fitter.get();
 
+	  
 	  if (fitter && fitter->getError() == 0) {
 	    // TODO the next line is just a test
 	    streamlog_out(MESSAGE) << "   OUTER chi2 " << fitter->getChi2() << endl;
@@ -507,7 +716,13 @@ void ZHHvvbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
 	    */
 	    // TODO the next line is just a test
 	    /*for(auto it = fitResult.fitobjects->begin(); it != fitResult.fitobjects->end(); it++) streamlog_out(MESSAGE) << "   testing FO " << (*it)->getName() << endl;*/
-	    if(!bestFitResult.fitter || fitter->getChi2() < bestFitResult.fitter->getChi2()) {
+	    if(!bestFitResult.fitter) {
+	      bestFitResult = fitResult;
+	      bestJets = CorrectedJets;
+	      bestNuSolutions = NuSolutions;
+	      continue;
+	    }
+	    if(fitter->getChi2() < bestFitResult.fitter->getChi2()) {
 	      streamlog_out(MESSAGE)<< "   New fit result is better than stored! Store the new one instead " << endl;
 	      bestFitResult = fitResult;
 	      bestJets = CorrectedJets;
@@ -537,34 +752,64 @@ void ZHHvvbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
     }*/
 
   streamlog_out(MESSAGE) << "Performed fit" << endl;
-
-  if (!bestFitResult.fitter || bestFitResult.fitter.get()->getError() != 0) {
+  if (!bestFitResult.fitter) {
     streamlog_out(MESSAGE) << "Did not find a functioning fit" << endl;
-
-    vector<double> startmasses;
-    std::tie(startmasses, m_FitChi2_byMass, m_bestMatchingByMass) = calculateMassesFromSimpleChi2Pairing(Jets, Leptons);
-    
-    m_Boson1BeforeFit  = startmasses[0];
-    m_Boson2BeforeFit = startmasses[1];
-    m_Boson3BeforeFit = startmasses[2];
-    m_System23MassBeforeFit = startmasses[3];
-    m_System123MassBeforeFit = startmasses[4];
+    vector<double> startmasses = calculateMassesFromSimpleChi2Pairing(Jets, Leptons);
+    m_ZMassBeforeFit  = startmasses[0];
+    m_H1MassBeforeFit = startmasses[1];
+    m_H2MassBeforeFit = startmasses[2];
+    m_HHMassBeforeFit = startmasses[3];
+    m_ZHHMassBeforeFit = startmasses[4];
+    streamlog_out(MESSAGE) << "masses from simple chi2:" << m_ZMassBeforeFit << ", " << m_H1MassBeforeFit << ", " << m_H2MassBeforeFit << ", " << m_HHMassBeforeFit << std::endl ; 
 
     m_pTTree->Fill();
-    attachBestPermutation(inputJetCollection, m_bestMatchingByMass, "vv", false);
     return;
   }
   for (unsigned int i_jet =0; i_jet < bestJets.size(); i_jet++) {
     streamlog_out(MESSAGE)  << "After fit four-vector of jet"<< i_jet+1 <<": " << "[" << bestJets[ i_jet ]->getMomentum()[0] << ", " << bestJets[ i_jet]->getMomentum()[1] << ", " << bestJets[ i_jet ]->getMomentum()[2] << ", " << bestJets[ i_jet ]->getEnergy() << "]" << std::endl ;
   }
   //Fill root branches
+  m_FitErrorCode = bestFitResult.fitter->getError();
+  m_FitProbability = bestFitResult.fitter->getProbability();
+  m_FitChi2 = bestFitResult.fitter->getChi2();
+  streamlog_out(MESSAGE1) << "error code = " << bestFitResult.fitter->getError() << endl;
+  streamlog_out(MESSAGE1) << "fit prob = " << bestFitResult.fitter->getProbability() << endl;
+  streamlog_out(MESSAGE1) << "fit chi2 = " << bestFitResult.fitter->getChi2()<< endl;
+  streamlog_out(MESSAGE) << "Getting constraints now... ";
+  auto constraints = bestFitResult.constraints;
+  streamlog_out(MESSAGE) << "Fitter contains " << constraints->size() << " constraints : ";
+  for (auto it = constraints->begin(); it != constraints->end(); ++it) {
+    streamlog_out(MESSAGE) << (*it)->getName() << " ";
+    if (strcmp((*it)->getName(), "z mass")==0) {
+      auto mc = dynamic_pointer_cast<MassConstraint>(*it);
+      m_ZMassAfterFit = mc->getMass();
+    }
+    if (strcmp((*it)->getName(), "h1 mass")==0) {
+      auto mc = dynamic_pointer_cast<MassConstraint>(*it);
+      m_H1MassAfterFit = mc->getMass();
+    }
+    if (strcmp((*it)->getName(), "h2 mass")==0) {
+      auto mc = dynamic_pointer_cast<MassConstraint>(*it);
+      m_H2MassAfterFit = mc->getMass();
+    }
+    if (strcmp((*it)->getName(), "hh mass")==0) {
+      auto mc = dynamic_pointer_cast<MassConstraint>(*it);
+      m_HHMassAfterFit = mc->getMass();
+    }
+    if (strcmp((*it)->getName(), "zhh mass")==0) {
+      auto mc = dynamic_pointer_cast<MassConstraint>(*it);
+      m_ZHHMassAfterFit = mc->getMass();
+    }
+  }
+  streamlog_out(MESSAGE) << endl;
+
   streamlog_out(MESSAGE) << "Getting fitobjects now... ";
   auto fitobjects = bestFitResult.fitobjects;
   vector<unsigned int> perm;
   streamlog_out(MESSAGE1) << "Fitter contains " << fitobjects->size() << " fitobjects : ";
-  for (unsigned short i = 0; i < m_nJets; i++) {
-    streamlog_out(MESSAGE1) << i << " = " << fitobjects->at(i)->getName() << endl;
-    perm.push_back(i);
+  for (auto it = fitobjects->begin(); it != fitobjects->end(); ++it) {
+    streamlog_out(MESSAGE1) << (*it)->getName() << " ";
+    perm.push_back((unsigned int)((string)(*it)->getName()).back()-48);
   }
   streamlog_out(MESSAGE1) << endl;
 
@@ -573,24 +818,24 @@ void ZHHvvbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
   streamlog_out(MESSAGE1) << endl;
 
   vector<double> startmasses = calculateInitialMasses(bestJets, Leptons, perm);
-  m_Boson1BeforeFit  = startmasses[0];
-  m_Boson2BeforeFit = startmasses[1];
-  m_Boson3BeforeFit = startmasses[2];
-  m_System23MassBeforeFit = startmasses[3];
-  m_System123MassBeforeFit = startmasses[4];
+  m_ZMassBeforeFit  = startmasses[0];
+  m_H1MassBeforeFit = startmasses[1];
+  m_H2MassBeforeFit = startmasses[2];
+  m_HHMassBeforeFit = startmasses[3];
+  m_ZHHMassBeforeFit = startmasses[4];
 
-  streamlog_out(MESSAGE1) << "Boson1 mass prefit = " << m_Boson1BeforeFit << endl;
-  streamlog_out(MESSAGE1) << "Boson2 mass prefit = " << m_Boson2BeforeFit << endl;
-  streamlog_out(MESSAGE1) << "Boson3 mass prefit = " << m_Boson3BeforeFit << endl;
-  streamlog_out(MESSAGE1) << "System23 mass prefit = " << m_System23MassBeforeFit << endl;
-  streamlog_out(MESSAGE1) << "System123 mass prefit = " << m_System123MassBeforeFit << endl;
-  streamlog_out(MESSAGE1) << "Boson1 mass postfit = " << m_Boson1AfterFit << endl;
-  streamlog_out(MESSAGE1) << "Boson2 mass postfit = " << m_Boson2AfterFit << endl;
-  streamlog_out(MESSAGE1) << "Boson3 mass postfit = " << m_Boson3AfterFit << endl;
-  streamlog_out(MESSAGE1) << "System23 mass postfit = " << m_System23MassAfterFit << endl;
-  streamlog_out(MESSAGE1) << "System123 mass postfit = " << m_System123MassAfterFit << endl;
+  streamlog_out(MESSAGE1) << "Z mass prefit = " << m_ZMassBeforeFit << endl;
+  streamlog_out(MESSAGE1) << "H1 mass prefit = " << m_H1MassBeforeFit << endl;
+  streamlog_out(MESSAGE1) << "H2 mass prefit = " << m_H2MassBeforeFit << endl;
+  streamlog_out(MESSAGE1) << "HH mass prefit = " << m_HHMassBeforeFit << endl;
+  streamlog_out(MESSAGE1) << "ZHH mass prefit = " << m_ZHHMassBeforeFit << endl;
+  streamlog_out(MESSAGE1) << "Z mass postfit = " << m_ZMassAfterFit << endl;
+  streamlog_out(MESSAGE1) << "H1 mass postfit = " << m_H1MassAfterFit << endl;
+  streamlog_out(MESSAGE1) << "H2 mass postfit = " << m_H2MassAfterFit << endl;
+  streamlog_out(MESSAGE1) << "HH mass postfit = " << m_HHMassAfterFit << endl;
+  streamlog_out(MESSAGE1) << "ZHH mass postfit = " << m_ZHHMassAfterFit << endl;
 
-  const char * photonname = "photon";
+  string photonname = "photon";
   auto fitphoton = find_if(fitobjects->begin(), fitobjects->end(), [&photonname](const std::shared_ptr<BaseFitObject> obj) {return obj->getName() == photonname;});
   if (fitphoton == fitobjects->end()) {
     streamlog_out(MESSAGE) << "Did not find photon" <<endl;
@@ -602,6 +847,7 @@ void ZHHvvbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
     streamlog_out(MESSAGE) << "ISR energy postfit = " << m_ISREnergyAfterFit << endl;
   }
 
+
   for (int i = 0; i < m_nJets; ++i) {   
     string fitname = "jet"+to_string(i);
     auto fitjet = find_if(fitobjects->begin(), fitobjects->end(), [&fitname](const std::shared_ptr<BaseFitObject> obj) {return obj->getName() == fitname;});
@@ -611,8 +857,6 @@ void ZHHvvbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
     }
     std::shared_ptr<JetFitObject> castfitjet =  std::dynamic_pointer_cast<JetFitObject>(*fitjet);
     vector<double> pulls = calculatePulls(castfitjet, bestJets[i], 1);
-
-    m_v4_postfit_jets.push_back(ROOT::Math::PxPyPzEVector(castfitjet->getPx(), castfitjet->getPy(), castfitjet->getPz(), castfitjet->getE()));
     m_pullJetEnergy.push_back(pulls[0]);
     m_pullJetTheta.push_back(pulls[1]);
     m_pullJetPhi.push_back(pulls[2]);
@@ -626,17 +870,15 @@ void ZHHvvbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
     }
     std::shared_ptr<LeptonFitObject> castfitlepton =  std::dynamic_pointer_cast<LeptonFitObject>(*fitlepton);
     vector<double> pulls = calculatePulls(castfitlepton, Leptons[i], 2);
-    
-    m_v4_postfit_jets.push_back(ROOT::Math::PxPyPzEVector(castfitlepton->getPx(), castfitlepton->getPy(), castfitlepton->getPz(), castfitlepton->getE()));
     m_pullLeptonInvPt.push_back(pulls[0]);
     m_pullLeptonTheta.push_back(pulls[1]);
     m_pullLeptonPhi.push_back(pulls[2]);
   }
   
   /*
-    m_Boson1BeforeFit // "Boson1BeforeFit/F" );
-    m_Boson2BeforeFit // "Boson2BeforeFit/F" );
-    m_Boson3BeforeFit // "Boson3BeforeFit/F" );
+    m_ZMassBeforeFit // "ZMassBeforeFit/F" );
+    m_H1MassBeforeFit // "H1MassBeforeFit/F" );
+    m_H2MassBeforeFit // "H2MassBeforeFit/F" );
   */
   streamlog_out(DEBUG) << "Pulls have been calculated" << std::endl;
   //Fill output collections
@@ -667,21 +909,119 @@ void ZHHvvbbbbKinFit::updateChannelValues( EVENT::LCEvent *pLCEvent )
   //pLCEvent->addCollection( outputNuEnergyCollection, m_outputNuEnergyCollection.c_str() );
   //streamlog_out(DEBUG0) << " Output true and reco Nu collection added to event" << std::endl;
   m_pTTree->Fill();
-
-  fillOutputCollections(pLCEvent);
-  attachBestPermutation(pLCEvent->getCollection(m_outputJetCollection), m_bestMatchingKinfit, "vv", true);
 }
 
-std::tuple<std::vector<double>, double, std::vector<unsigned short>>
-  ZHHvvbbbbKinFit::calculateMassesFromSimpleChi2Pairing(pfoVector jets, pfoVector leptons) 
-{
-  (void) leptons;
 
-  std::vector<double> masses (5, 0.);
-  std::vector<unsigned short> bestperm;
+ReconstructedParticle* ZHHvvbbbbKinFit::addNeutrinoCorrection(ReconstructedParticle* jet, pfoVector neutrinos) {
+  std::vector< float > jetCovMat = jet->getCovMatrix();
+  ROOT::Math::PxPyPzEVector jetFourMomentum(jet->getMomentum()[0],jet->getMomentum()[1],jet->getMomentum()[2], jet->getEnergy());
+  for(auto nu : neutrinos) {
+    jetFourMomentum += ROOT::Math::PxPyPzEVector( nu->getMomentum()[0], nu->getMomentum()[1], nu->getMomentum()[2] , nu->getEnergy() );
 
-  //calculate 4-momentum of Z->invisible
-  std::vector<ROOT::Math::PxPyPzEVector> fourVecs = v4(jets);
+    std::transform(jetCovMat.begin(), jetCovMat.end(), nu->getCovMatrix().begin(), 
+		   jetCovMat.begin(), std::plus<float>());
+  }
+  ReconstructedParticleImpl* rp = new ReconstructedParticleImpl(*dynamic_cast<ReconstructedParticleImpl*>(jet));
+  rp->setEnergy(jetFourMomentum.E());
+  float jetThreeMomentum[3] = { jetFourMomentum.Px(), jetFourMomentum.Py(), jetFourMomentum.Pz()};
+  rp->setMomentum(jetThreeMomentum);
+  rp->setCovMatrix(jetCovMat);
+  
+  ReconstructedParticle* outrp = static_cast<ReconstructedParticle*>(rp);
+  return outrp;
+}
+
+/*
+ * Given a vector A of n vectors we want to return
+ * all possible vectors of length n where the first
+ * element is from A[0], the second from A[1] etc.
+ */
+std::vector<std::vector<EVENT::ReconstructedParticle*>> ZHHvvbbbbKinFit::combinations(pfoVectorVector collector,
+											     pfoVectorVector sets, 
+											     int n,
+											     pfoVector combo) {
+  if (n == sets.size()) {
+    collector.push_back({combo});
+    return collector;
+  }
+
+  for (auto c : sets.at(n)) {
+    combo.push_back(c);
+    collector = combinations(collector, sets, n + 1, combo);
+    combo.pop_back();
+  }
+  return collector;
+}
+
+
+std::vector<std::vector<EVENT::ReconstructedParticle*>> ZHHvvbbbbKinFit::getNeutrinosInJet( LCRelationNavigator* JetSLDNav , 
+												   LCRelationNavigator* SLDNuNav , 
+												   EVENT::ReconstructedParticle* jet) {
+  pfoVectorVector output;
+  const EVENT::LCObjectVec& SLDVertices = JetSLDNav->getRelatedToObjects( jet );
+  streamlog_out(MESSAGE) << "Number of SLD vertices: " << SLDVertices.size() << std::endl;
+  for ( auto sldVertex : SLDVertices )
+    {
+      pfoVector neutrinosThisVertex;
+      const EVENT::LCObjectVec& neutrinos = SLDNuNav->getRelatedToObjects( sldVertex );
+      for(auto neutrino : neutrinos) {
+	ReconstructedParticle* nu = static_cast<ReconstructedParticle*>(neutrino);
+	neutrinosThisVertex.push_back(nu);
+      }
+      output.push_back(neutrinosThisVertex);
+    }
+  return output;
+}
+
+std::pair<MCParticle*,ReconstructedParticle*> ZHHvvbbbbKinFit::getMCNeutrino(LCRelationNavigator* NuMCNav,
+										    LCRelationNavigator* SLDNuNav,
+										    EVENT::ReconstructedParticle* neutrino) {
+  MCParticle* MCNu;
+  ReconstructedParticle* BestNu;
+  const EVENT::LCObjectVec& SLDVertex = SLDNuNav->getRelatedFromObjects( neutrino );
+  streamlog_out(MESSAGE) << " Got SLDVertices " << SLDVertex.size() << std::endl;
+  const EVENT::LCObjectVec& neutrinos = SLDNuNav->getRelatedToObjects( SLDVertex.at(0) );
+  streamlog_out(MESSAGE) << " Got neutrinos " << neutrinos.size() << std::endl;
+  const EVENT::LCObjectVec& MCP = NuMCNav->getRelatedToObjects( neutrinos.at(0) );
+  streamlog_out(MESSAGE) << " Got MC particles " << MCP.size() << std::endl;
+  MCNu = (MCParticle*) MCP.at(0);
+  float chi2min = 9999999;
+  for (auto nu : neutrinos) {
+    float chi2 = (MCNu->getEnergy()-static_cast<ReconstructedParticle*>(nu)->getEnergy())*(MCNu->getEnergy()-static_cast<ReconstructedParticle*>(nu)->getEnergy());
+    if (chi2<chi2min) {
+      chi2min=chi2;
+      BestNu = (ReconstructedParticle*) nu;
+    }
+  }
+  return make_pair(MCNu,BestNu);
+}
+
+ZHHvvbbbbKinFit::FitResult ZHHvvbbbbKinFit::performFIT( pfoVector jets, 
+							pfoVector leptons,
+							bool traceEvent) {
+  shared_ptr<vector<shared_ptr<JetFitObject>>> jfo = make_shared<vector<shared_ptr<JetFitObject>>>();
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //////												  //////
+  //////					Set JetFitObjects					  //////
+  //////												  //////
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  for (unsigned int i_jet =0; i_jet < jets.size(); i_jet++) {
+    streamlog_out(MESSAGE6) << "get jet"<< i_jet+1 <<" parameters"  << std::endl ; //changed from debug level
+    float parameters[ 3 ]{ 0.0 } , errors[ 3 ]{ 0.0 };
+    getJetParameters( jets[ i_jet ] , parameters , errors );
+    auto j = make_shared<JetFitObject> ( parameters[ 0 ] , parameters[ 1 ] , parameters[ 2 ] , errors[ 0 ] , errors[ 1 ] , errors[ 2 ] , jets[ i_jet ]->getMass() );
+    jfo->push_back(j);
+    const string name = "jet"+to_string(i_jet);
+    j->setName(name.c_str());
+    //streamlog_out(MESSAGE)  << " start four-vector of jet"<< i_jet+1 <<": " << *j  << std::endl ;
+    streamlog_out(MESSAGE)  << " start four-vector of jet"<< i_jet+1 <<": " << "[" << jets[ i_jet ]->getMomentum()[0] << ", " << jets[ i_jet ]->getMomentum()[1] << ", " << jets[ i_jet ]->getMomentum()[2] << ", " << jets[ i_jet ]->getEnergy() << "]" << std::endl ;
+  }
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //////                                                                                                  //////
+  //////                                        Set ZinvisibleFitObject                                   //////
+  //////                                                                                                  //////
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //calculate 4-momentum of Z->invisible 
   ROOT::Math::PxPyPzEVector seenFourMomentum(0.,0.,0.,0.);
   std::vector<ReconstructedParticle*> Jets{};
   for (unsigned int i_jet = 0; i_jet < m_nJets; i_jet++) {
@@ -1218,31 +1558,95 @@ std::vector<double> ZHHvvbbbbKinFit::calculateMassesFromSimpleChi2Pairing(pfoVec
     hhFourMomentum +=  ROOT::Math::PxPyPzEVector( jet->getMomentum()[0], jet->getMomentum()[1], jet->getMomentum()[2] , jet->getEnergy() );
   }
   zhhFourMomentum = hhFourMomentum + ZinvFourMomentum;
-  double hh = hhFourMomentum.M(); // system23
-  double zhh = zhhFourMomentum.M(); // system123
-
-  float chi2min = 99999.;
-  std::vector<float> dijet_masses;
-
-  unsigned short output_idx = 0;
-  if (m_nDijets) {
-    if (m_dijetTargets[output_idx] == 23) {
-      masses[0] = kMassZ; // system1; dummy value
-      output_idx++;
+  double hh = hhFourMomentum.M();
+  double zhh = zhhFourMomentum.M();
+  double chi2min = 99999. ;
+  for (auto perm : perms) {
+    double temp1 = inv_mass(jets.at(perm[0]),jets.at(perm[1]));
+    double temp2 = inv_mass(jets.at(perm[2]),jets.at(perm[3]));
+    double chi2;
+    if (m_fithypothesis == "MH") {
+      chi2 = (temp1-m1)*(temp1-m1);
+    } else {      
+      chi2 = (temp1-m1)*(temp1-m1)+(temp2-m2)*(temp2-m2);
     }
-    
-    std::tie(dijet_masses, chi2min, bestperm) = simpleChi2Pairing(jets);
-
-    for (unsigned short dijet_idx = 0; dijet_idx < m_nDijets; dijet_idx++) {
-      masses[output_idx] = dijet_masses[dijet_idx];
-      output_idx++;
+    if (chi2 < chi2min) {
+      chi2min = chi2;
+      h1 = temp1;
+      h2 = temp2;
     }
   }
-  
-  masses[3] = hh;
-  masses[4] = zhh;
+  masses.push_back(z);
+  masses.push_back(h1);
+  masses.push_back(h2);
+  masses.push_back(hh);
+  masses.push_back(zhh);
 
-  streamlog_out(MESSAGE) << "masses from simple chi2: " << masses[0] << ", " << masses[1] << ", " << masses[2] << ", " << hh << ", " << zhh << std::endl ; 
+  streamlog_out(MESSAGE) << "masses from simple chi2:" << z << ", " << h1 << ", " << h2 << ", " << hh << std::endl ; 
 
-  return std::make_tuple(masses, chi2min, bestperm);
+  return masses;
+
+}
+
+
+
+std::vector<double> ZHHvvbbbbKinFit::calculatePulls(std::shared_ptr<ParticleFitObject> fittedobject, ReconstructedParticle* startobject, int type)
+{
+  std::vector<double> pulls;
+  double start, fitted;
+  double errfit, errmea, sigma;
+  float parameters[ 3 ]{ 0.0 } , errors[ 3 ]{ 0.0 };
+  if (type == 1) getJetParameters(startobject, parameters, errors);
+  if (type == 2) getLeptonParameters(startobject, parameters, errors);
+  for (int ipar = 0; ipar < 3; ipar++) {
+    fitted = fittedobject->getParam(ipar);
+    start = parameters[ipar];
+    errfit = fittedobject->getError(ipar);
+    errmea = errors[ipar];
+    sigma = errmea*errmea-errfit*errfit;
+    streamlog_out(DEBUG3) << "fitted = " << fitted << ", start = " << start << std::endl ;
+    streamlog_out(DEBUG3) << "errfit = " << errfit << ", errmea = " << errmea << ", sigma = " << sigma << std::endl ;
+    if (sigma > 0) {
+      sigma = sqrt(sigma);
+      pulls.push_back((fitted - start)/sigma);
+    }
+    else {
+      streamlog_out(DEBUG3) << "NOT GOOD...................." << std::endl ;
+      pulls.push_back(-4.5);
+    }
+  }
+  return pulls;
+}
+
+double ZHHvvbbbbKinFit::calcChi2(shared_ptr<vector<shared_ptr<BaseFitObject>>> fitobjects) {
+  double chi2 = 0;
+  for (auto it = fitobjects->begin(); it != fitobjects->end(); ++it) {
+    shared_ptr<BaseFitObject> fo = *it;
+    assert (fo);
+    chi2 += fo->getChi2();
+  }/*
+  for (SoftConstraintIterator i = softconstraints.begin(); i != softconstraints.end(); ++i) {
+    BaseSoftConstraint *bsc = *i;
+    assert (bsc);
+    chi2 += bsc->getChi2();
+    }*/
+  return chi2;
+}
+
+void ZHHvvbbbbKinFit::check( LCEvent* )
+{
+//	nothing to check here - could be used to fill checkplots in reconstruction processor
+}
+
+
+void ZHHvvbbbbKinFit::end()
+{
+//	streamlog_out(MESSAGE) << "# of events: " << m_nEvt << std::endl;
+//	streamlog_out(ERROR) << "# of nucorrection: " << correction<< std::endl;
+//	streamlog_out(ERROR) << "# of Covariance failed: " << nCo<< std::endl;
+  m_pTFile->cd();
+  m_pTTree->Write();
+  m_pTFile->Close();
+  delete m_pTFile;
+
 }

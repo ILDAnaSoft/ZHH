@@ -47,7 +47,10 @@ ZinvisibleErrorAnalysis::ZinvisibleErrorAnalysis() : Processor("ZinvisibleErrorA
 						     m_PzZvv(0.),
 						     m_EnergyResidual(0.),
 						     m_ThetaResidual(0.),
-						     m_PhiResidual(0.)
+						     m_PhiResidual(0.),
+						     m_PxResidual(0.),
+						     m_PyResidual(0.),
+						     m_PzResidual(0.)
 
 
 {
@@ -109,7 +112,7 @@ void ZinvisibleErrorAnalysis::init()
   m_nEvtSum = 0;
 
   m_pTFile = new TFile(m_outputFile.c_str(),"recreate");
-  
+
   m_pTTree = new TTree("eventTree","eventTree");
   m_pTTree->SetDirectory(m_pTFile);
   m_pTTree->Branch("run", &m_nRun, "run/I");
@@ -273,6 +276,7 @@ void ZinvisibleErrorAnalysis::check()
 
 void ZinvisibleErrorAnalysis::end()
 {
+streamlog_out(MESSAGE) << "writing root file" << endl;
   m_pTFile->cd();
   m_pTTree->Write();
 

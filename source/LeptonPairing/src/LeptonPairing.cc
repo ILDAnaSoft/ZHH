@@ -79,6 +79,13 @@ LeptonPairing::LeptonPairing():
 			   string("PandoraPFOsWithoutLepPair")
 			   );
 
+  registerOutputCollection(LCIO::RECONSTRUCTEDPARTICLE,
+			   "IsoLepPairCollection",
+			   "Name of output paired isolated lepton collection",
+			   m_outputIsoLepPairCollection,
+			   string("IsoLeptonPair")
+			   );
+
   registerProcessorParameter("diLepInvMass",
 			     "Invariant mass of di-lepton system in Isolated Leptons [GeV]",
 			     m_diLepInvMass,
@@ -162,6 +169,8 @@ void LeptonPairing::processEvent( EVENT::LCEvent *pLCEvent ) {
   //m_LepPairCol->setSubset( true );
   IMPL::LCCollectionVec* m_PFOsWOLepPairCol = new IMPL::LCCollectionVec( LCIO::RECONSTRUCTEDPARTICLE );
   m_PFOsWOLepPairCol->setSubset( true );
+  IMPL::LCCollectionVec* m_IsoLepPairCol = new IMPL::LCCollectionVec( LCIO::RECONSTRUCTEDPARTICLE );
+  m_IsoLepPairCol->setSubset( true );
 
   int InIsoLeps = IsoLepCollection->getNumberOfElements();
   streamlog_out(DEBUG7) << "Number of iso leptons = " << InIsoLeps << endl;
@@ -224,6 +233,8 @@ void LeptonPairing::processEvent( EVENT::LCEvent *pLCEvent ) {
     ZHH::doPhotonRecovery(LeptonPair[1],PFOsWOIsoLepCollection,recoLepton2,fCosFSRCut,_lep_type,photons);
     m_RecoLepsInvMass.push_back(inv_mass(recoLepton1,recoLepton2));
     
+    m_IsoLepPairCol->addElement(LeptonPair[0]);
+    m_IsoLepPairCol->addElement(LeptonPair[1]);
     m_LepPairCol->addElement(recoLepton1);
     m_LepPairCol->addElement(recoLepton2);
 
@@ -253,6 +264,7 @@ void LeptonPairing::processEvent( EVENT::LCEvent *pLCEvent ) {
   streamlog_out(DEBUG7) << "nnewpfos " << m_PFOsWOLepPairCol->getNumberOfElements() << endl;
   pLCEvent->addCollection(m_LepPairCol, m_outputLepPairCollection.c_str());
   pLCEvent->addCollection(m_PFOsWOLepPairCol, m_outputPFOsWOLepPairCollection.c_str());
+  pLCEvent->addCollection(m_IsoLepPairCol, m_outputIsoLepPairCollection.c_str());
   if ( m_fillRootTree ) m_pTTree->Fill();
 }
 

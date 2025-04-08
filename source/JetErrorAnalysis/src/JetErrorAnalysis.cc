@@ -33,7 +33,10 @@ JetErrorAnalysis::JetErrorAnalysis() : Processor("JetErrorAnalysis"),
 				       m_nRunSum(0),
 				       m_nEvtSum(0),
 				       m_nTrueJets(0),
-				       m_nRecoJets(0)
+				       m_nRecoJets(0),
+				       m_NormResidualEnergy{},
+				       m_NormResidualTheta{},
+				       m_NormResidualPhi{}
 
 {
 
@@ -148,6 +151,13 @@ JetErrorAnalysis::JetErrorAnalysis() : Processor("JetErrorAnalysis"),
 			    int(0)
 			    );
 
+   registerProcessorParameter( "outputFilename",
+			      "name of output root file",
+			      m_outputFile,
+			      std::string("")
+			      );
+
+ 
  // Outputs: Normalised Residuals                                                                                                                          
  registerOutputCollection( LCIO::LCFLOATVEC,
                            "JetResidualsOutputCollection",
@@ -161,8 +171,17 @@ JetErrorAnalysis::JetErrorAnalysis() : Processor("JetErrorAnalysis"),
 void JetErrorAnalysis::init()
 {
 
-streamlog_out(DEBUG6) << "   init called  " << endl ;
+  streamlog_out(DEBUG6) << "   init called  " << endl ;
 
+  if (m_outputFile.size()) {
+    m_pTFile = new TFile(m_outputFile.c_str(), "recreate");
+    m_pTTree->SetDirectory(m_pTFile);
+  }
+  
+  m_pTTree->Branch("NormResidualEnergy", &m_NormResidualEnergy);
+  m_pTTree->Branch("NormResidualTheta", &m_NormResidualTheta);
+  m_pTTree->Branch("NormResidualPhi", &m_NormResidualPhi);
+  
 }
 
 void JetErrorAnalysis::Clear()
@@ -170,6 +189,9 @@ void JetErrorAnalysis::Clear()
   streamlog_out(DEBUG) << "   Clear called  " << endl;
   m_nTrueJets = 0;
   m_nRecoJets = 0;
+  m_NormResidualEnergy.clear();
+  m_NormResidualTheta.clear();
+  m_NormResidualPhi.clear();
 
 }
 
@@ -192,17 +214,18 @@ void JetErrorAnalysis::processEvent( LCEvent* pLCEvent)
   streamlog_out(MESSAGE) << "////////////////////////////////////////////////////////////////////////////" << endl;
   streamlog_out(MESSAGE) << "////////////////////Processing event: " << m_nEvt << "////////////////////" << endl;
   streamlog_out(MESSAGE) << "////////////////////////////////////////////////////////////////////////////" << endl;
-
+  streamlog_out(MESSAGE) << "ladida" << endl;
   try {
+    streamlog_out(MESSAGE3) << "ladida" << endl;
     recoJetCol= pLCEvent->getCollection( m_recoJetCollectionName );
     TrueJet_Parser* trueJet= this;
     trueJet->getall(pLCEvent);
     
     m_nRecoJets = recoJetCol->getNumberOfElements();
-    streamlog_out(DEBUG3) << "Number of Reconstructed Jets: " << m_nRecoJets << endl;
+    streamlog_out(MESSAGE3) << "Number of Reconstructed Jets: " << m_nRecoJets << endl;
     
     int njets = trueJet->njets();
-    streamlog_out(DEBUG3) << "Number of True Jets: " << njets << endl;
+    streamlog_out(MESSAGE3) << "Number of True Jets: " << njets << endl;
     //vector<int> trueHadronicJetIndices; trueHadronicJetIndices.clear();
     //vector<int> recoJetIndices; recoJetIndices.clear();
     for (int i_jet = 0 ; i_jet < njets ; i_jet++ ) {
@@ -211,7 +234,7 @@ void JetErrorAnalysis::processEvent( LCEvent* pLCEvent)
 	//	trueHadronicJetIndices.push_back( i_jet );
       }
     }
-    streamlog_out(DEBUG3) << "Number of True Hadronic Jets(type = 1): " << m_nTrueJets << endl;
+    streamlog_out(MESSAGE3) << "Number of True Hadronic Jets(type = 1): " << m_nTrueJets << endl;
     if ( m_nRecoJets == m_nTrueJets ) {
 
       LCCollectionVec *OutJetResidualsCol = new LCCollectionVec(LCIO::LCFLOATVEC);
@@ -234,7 +257,14 @@ void JetErrorAnalysis::processEvent( LCEvent* pLCEvent)
 	  LCFloatVec *JetResiduals = new LCFloatVec;
 	  JetResiduals->push_back(jetResiduals[i][0]);
 	  JetResiduals->push_back(jetResiduals[i][1]);
-	  JetResiduals->push_back(jetResiduals[i][2]); 
+	  JetResiduals->push_back(jetResiduals[i][2]);
+
+	 streamlog_out(MESSAGE) << "Residuals: " << jetResiduals[i][0] << " " << jetResiduals[i][1] << " " << jetResiduals[i][2] << " " << endl; 
+
+	  m_NormResidualEnergy.push_back(jetResiduals[i][0]);
+	  m_NormResidualTheta.push_back(jetResiduals[i][1]);
+	  m_NormResidualPhi.push_back(jetResiduals[i][2]);
+
 	  OutJetResidualsCol->addElement(JetResiduals);
 	}
       }
@@ -361,7 +391,8 @@ void JetErrorAnalysis::processEvent( LCEvent* pLCEvent)
   catch(DataNotAvailableException &e) {
     streamlog_out(MESSAGE) << "Check : Input collections not found in event " << m_nEvt << endl;
   }
-
+  m_pTTree->Fill();
+  
 }
 
 void JetErrorAnalysis::getJetResidualsByAngularSpace( EVENT::LCEvent *pLCEvent, vector<EVENT::ReconstructedParticle*> recoJets, vector<vector<double>> &JetResiduals)
@@ -553,5 +584,16 @@ void JetErrorAnalysis::check()
 
 void JetErrorAnalysis::end()
 {
+  streamlog_out(MESSAGE) << "writing root file" << endl;
 
+  if (m_outputFile.size()) {
+    m_pTFile->cd();
+  }
+  
+  m_pTTree->Write();
+  
+  if (m_outputFile.size()) {
+    m_pTFile->Close();
+    delete m_pTFile;
+  }
 }
