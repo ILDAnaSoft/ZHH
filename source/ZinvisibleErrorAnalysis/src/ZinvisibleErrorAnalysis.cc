@@ -36,13 +36,18 @@ ZinvisibleErrorAnalysis::ZinvisibleErrorAnalysis() : Processor("ZinvisibleErrorA
 						     m_EnergyZinv(0.),
 						     m_ThetaZinv(0.),
 						     m_PhiZinv(0.),
+						     m_PxZinv(0.),
+						     m_PyZinv(0.),
+						     m_PzZinv(0.),
 						     m_EnergyZvv(0.),
 						     m_ThetaZvv(0.),
 						     m_PhiZvv(0.),
+						     m_PxZvv(0.),
+						     m_PyZvv(0.),
+						     m_PzZvv(0.),
 						     m_EnergyResidual(0.),
 						     m_ThetaResidual(0.),
-						     m_PhiResidual(0.),
-                 m_pTFile(NULL)
+						     m_PhiResidual(0.)
 
 
 {
@@ -103,23 +108,31 @@ void ZinvisibleErrorAnalysis::init()
   m_nRunSum = 0;
   m_nEvtSum = 0;
 
-  if (m_outputFile.size()) {
-    m_pTFile = new TFile(m_outputFile.c_str(),"recreate");
-    m_pTTree->SetDirectory(m_pTFile);
-  }
+  m_pTFile = new TFile(m_outputFile.c_str(),"recreate");
   
+  m_pTTree = new TTree("eventTree","eventTree");
+  m_pTTree->SetDirectory(m_pTFile);
   m_pTTree->Branch("run", &m_nRun, "run/I");
   m_pTTree->Branch("event", &m_nEvt, "event/I");
   m_pTTree->Branch("nJets",&m_nJets,"nJets/I") ;
   m_pTTree->Branch("EnergyZinv",&m_EnergyZinv,"EnergyZinv/F") ;
   m_pTTree->Branch("ThetaZinv",&m_ThetaZinv,"ThetaZinv/F") ;
   m_pTTree->Branch("PhiZinv",&m_PhiZinv,"PhiZinv/F") ;
+  m_pTTree->Branch("PxZinv",&m_PxZinv,"PxZinv/F") ;
+  m_pTTree->Branch("PyZinv",&m_PyZinv,"PyZinv/F") ;
+  m_pTTree->Branch("PzZinv",&m_PzZinv,"PzZinv/F") ;
   m_pTTree->Branch("EnergyZvv",&m_EnergyZvv,"EnergyZvv/F") ;
   m_pTTree->Branch("ThetaZvv",&m_ThetaZvv,"ThetaZvv/F") ;
   m_pTTree->Branch("PhiZvv",&m_PhiZvv,"PhiZvv/F") ;
+  m_pTTree->Branch("PxZvv",&m_PxZvv,"PxZvv/F") ;
+  m_pTTree->Branch("PyZvv",&m_PyZvv,"PyZvv/F") ;
+  m_pTTree->Branch("PzZvv",&m_PzZvv,"PzZvv/F") ;
   m_pTTree->Branch("EnergyResidual",&m_EnergyResidual,"EnergyResidual/F") ;
   m_pTTree->Branch("ThetaResidual",&m_ThetaResidual,"ThetaResidual/F") ;
   m_pTTree->Branch("PhiResidual",&m_PhiResidual,"PhiResidual/F") ;
+  m_pTTree->Branch("PxResidual",&m_PxResidual,"PxResidual/F") ;
+  m_pTTree->Branch("PyResidual",&m_PyResidual,"PyResidual/F") ;
+  m_pTTree->Branch("PzResidual",&m_PzResidual,"PzResidual/F") ;
   
   streamlog_out(MESSAGE) << "   init finished  " << std::endl;
 	
@@ -132,12 +145,21 @@ void ZinvisibleErrorAnalysis::Clear()
   m_EnergyZinv = 0;
   m_ThetaZinv = 0;
   m_PhiZinv = 0;
+  m_PxZinv = 0;
+  m_PyZinv = 0;
+  m_PzZinv = 0;
   m_EnergyZvv = 0;
   m_ThetaZvv = 0;
   m_PhiZvv = 0;
+  m_PxZvv = 0;
+  m_PyZvv = 0;
+  m_PzZvv = 0;
   m_EnergyResidual = 0;
   m_ThetaResidual = 0;
   m_PhiResidual = 0;
+  m_PxResidual = 0;
+  m_PyResidual = 0;
+  m_PzResidual = 0;
  
 
 }
@@ -174,11 +196,6 @@ void ZinvisibleErrorAnalysis::processEvent( LCEvent* pLCEvent)
   }
   
   m_nJets = inputJetCollection->getNumberOfElements();
-  streamlog_out(MESSAGE) << "Number of Reconstructed Jets: " << m_nJets << endl;
-  streamlog_out(MESSAGE) << "Energy residual: " << m_EnergyZinv << " - " << m_EnergyZvv << " = " << m_EnergyResidual << endl;
-  streamlog_out(MESSAGE) << "Theta residual: " << m_ThetaZinv << " - " << m_ThetaZvv << " = " << m_ThetaResidual << endl;
-  streamlog_out(MESSAGE) << "Phi residual: " << m_PhiZinv << " - " << m_PhiZvv << " = " << m_PhiResidual << endl;
-    
   if ( m_nJets != 4 ) {
     m_pTTree->Fill();
     return;
@@ -191,7 +208,7 @@ void ZinvisibleErrorAnalysis::processEvent( LCEvent* pLCEvent)
     ReconstructedParticle* jet = dynamic_cast<ReconstructedParticle*>( inputJetCollection->getElementAt( i_jet ) );
     seenFourMomentum += ROOT::Math::PxPyPzEVector(jet->getMomentum()[0],jet->getMomentum()[1],jet->getMomentum()[2], jet->getEnergy());
   }
-  ROOT::Math::PxPyPzMVector ZinvFourMomentum(-seenFourMomentum.Px(), -seenFourMomentum.Pz(), -seenFourMomentum.Pz(),91.1880); // PDG average in 2024 review
+  ROOT::Math::PxPyPzMVector ZinvFourMomentum(-seenFourMomentum.Px(), -seenFourMomentum.Py(), -seenFourMomentum.Pz(),91.1880); // PDG average in 2024 review
   
   //calculate 4-momentum of Z->vv (true)
   ROOT::Math::PxPyPzEVector ZvvFourMomentum(0.,0.,0.,0.);
@@ -211,17 +228,29 @@ void ZinvisibleErrorAnalysis::processEvent( LCEvent* pLCEvent)
   m_EnergyZinv = ZinvFourMomentum.E();
   m_ThetaZinv = ZinvFourMomentum.Theta();  
   m_PhiZinv = ZinvFourMomentum.Phi();  
+  m_PxZinv = ZinvFourMomentum.Px();  
+  m_PyZinv = ZinvFourMomentum.Py();  
+  m_PzZinv = ZinvFourMomentum.Pz();  
   m_EnergyZvv = ZvvFourMomentum.E();
   m_ThetaZvv = ZvvFourMomentum.Theta(); 
   m_PhiZvv = ZvvFourMomentum.Phi();
+  m_PxZvv = ZvvFourMomentum.Px();
+  m_PyZvv = ZvvFourMomentum.Py();
+  m_PzZvv = ZvvFourMomentum.Pz();
 
   m_EnergyResidual = m_EnergyZinv-m_EnergyZvv;
   m_ThetaResidual = m_ThetaZinv-m_ThetaZvv;
   m_PhiResidual = m_PhiZinv-m_PhiZvv;
+  m_PxResidual = m_PxZinv-m_PxZvv;
+  m_PyResidual = m_PyZinv-m_PyZvv;
+  m_PzResidual = m_PzZinv-m_PzZvv;
 
   ZinvisibleResidual->push_back(m_EnergyResidual);
   ZinvisibleResidual->push_back(m_ThetaResidual);
   ZinvisibleResidual->push_back(m_PhiResidual);
+  ZinvisibleResidual->push_back(m_PxResidual);
+  ZinvisibleResidual->push_back(m_PyResidual);
+  ZinvisibleResidual->push_back(m_PzResidual);
 
   OutZinvisibleResidualsCol->addElement(ZinvisibleResidual);
   pLCEvent->addCollection(OutZinvisibleResidualsCol, _OutZinvisibleResidualsCol.c_str() );
@@ -230,6 +259,9 @@ void ZinvisibleErrorAnalysis::processEvent( LCEvent* pLCEvent)
   streamlog_out(MESSAGE) << "Energy residual: " << m_EnergyZinv << " - " << m_EnergyZvv << " = " << m_EnergyResidual << endl;
   streamlog_out(MESSAGE) << "Theta residual: " << m_ThetaZinv << " - " << m_ThetaZvv << " = " << m_ThetaResidual << endl;
   streamlog_out(MESSAGE) << "Phi residual: " << m_PhiZinv << " - " << m_PhiZvv << " = " << m_PhiResidual << endl;
+  streamlog_out(MESSAGE) << "Px residual: " << m_PxZinv << " - " << m_PxZvv << " = " << m_PxResidual << endl;
+  streamlog_out(MESSAGE) << "Py residual: " << m_PyZinv << " - " << m_PyZvv << " = " << m_PyResidual << endl;
+  streamlog_out(MESSAGE) << "Pz residual: " << m_PzZinv << " - " << m_PzZvv << " = " << m_PzResidual << endl;
   
   m_pTTree->Fill();
 }
@@ -241,9 +273,7 @@ void ZinvisibleErrorAnalysis::check()
 
 void ZinvisibleErrorAnalysis::end()
 {
-  if (m_pTFile != NULL) {
-    m_pTFile->cd();
-  }
+  m_pTFile->cd();
   m_pTTree->Write();
 
   if (m_pTFile != NULL) {
