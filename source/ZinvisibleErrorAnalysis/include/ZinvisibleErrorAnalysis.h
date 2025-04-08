@@ -17,15 +17,13 @@
 #include <string>
 #include "TrueJet_Parser.h"
 #include "TLorentzVector.h"
-#include <TFile.h>
 #include <TTree.h>
 #include <Math/Vector4D.h>
-class TFile;
-class TH1F;
-class TH1I;
-class TH2I;
-class TH2F;
-class TTree;
+#include "TFile.h"
+#include "TH1F.h"
+#include "TH1I.h"
+#include "TH2I.h"
+#include "TH2F.h"
 
 using namespace lcio;
 using namespace marlin;
@@ -116,7 +114,7 @@ class ZinvisibleErrorAnalysis : public Processor , public TrueJet_Parser
   string _OutZinvisibleResidualsCol{};
   string m_outputFile{};
   TFile	*m_pTFile{};
-  TTree *m_pTTree{};
+  TTree *m_pTTree = new TTree("ZinvisibleErrorAnalysis", "ZinvisibleErrorAnalysis");
 
 };
 

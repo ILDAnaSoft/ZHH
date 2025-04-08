@@ -6,6 +6,7 @@
 #include "FinalStates_5p.h"
 #include "FinalStates_6p.h"
 
+#include "FinalStates_h2f.h"
 #include "FinalStates_h4f.h"
 #include "FinalStates_hh2f.h"
 

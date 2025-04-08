@@ -15,7 +15,7 @@ struct RESOLVER_ERRORS {
     enum Values: unsigned int {
         OK = 0,
         UNKNOWN_ERROR = 5001,
-        UNALLOWED_VALUES = 5002,
+        UNALLOWED_VALUES = 5002, // the definition of expected particles does not match for an encounted event. probably the way the event was generated has changed 
         UNEXPECTED_CHILDREN = 5020,
         HIGGS_NOT_FOUND = 5030,
         UNEXPECTED_SIZE = 5040,
@@ -33,6 +33,7 @@ class FinalStateResolver {
         std::vector<int> m_isr_indices;
 
         int m_n_b_from_higgs = 0;
+        int m_n_c_from_higgs = 0;
 
         void assert_true(bool check) {
             if (!check) {
@@ -62,6 +63,7 @@ class FinalStateResolver {
         int get_n_fermions() { return m_n_fermions; };
         int get_n_higgs() { return m_n_higgs; };
         int get_n_b_from_higgs() { return m_n_b_from_higgs; };
+        int get_n_c_from_higgs() { return m_n_c_from_higgs; };
 
         std::vector<EVENT::MCParticle*> resolve_isr_particles(LCCollection *mcp_collection) {
             std::vector<EVENT::MCParticle*> isr_particles;
@@ -77,8 +79,29 @@ class FinalStateResolver {
             return isr_particles;
         };
         
-        // To be overwritten by deriving class definitions, the lower three MUST be defined
-        virtual int get_event_category(std::map<int, int> m_final_state_counts) { return m_event_category; };
+        // CAN be overwritten by deriving class definitions
+        virtual int get_event_category(std::map<int, int> m_final_state_counts) {
+            (void)m_final_state_counts;
+            return m_event_category; };
+        
+        virtual std::vector<int> resolve_higgs_decays(LCCollection *mcp_collection) {
+            if (get_n_higgs()) {
+                std::vector<int> result;
+                std::vector<MCParticle*> fs_particles = resolve_fs_particles(mcp_collection, false);
+
+                for (size_t i = 0; i < fs_particles.size(); i++) {
+					if (fs_particles[i]->getPDG() == 25) {
+                        result.push_back(fs_particles[i]->getDaughters()[0]->getPDG());
+                        result.push_back(fs_particles[i]->getDaughters()[1]->getPDG());
+                    }
+                }
+
+                return result;
+            } else
+                return {};
+        };
+
+        // MUST be overwritten by deriving class definitions
         virtual std::vector<EVENT::MCParticle*> resolve_fs_particles(LCCollection *mcp_collection, bool resolve_higgs = false) = 0;
         virtual std::vector<int> resolve(LCCollection *mcp_collection) = 0;
 };

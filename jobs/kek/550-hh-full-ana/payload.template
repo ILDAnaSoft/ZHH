@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# define inputs
+export INPUT_FILE="<INPUT_FILE>"
+export OUT_BASE_NAME="<OUT_BASE_NAME>"
+export OUT_BASE_DIR="<OUT_BASE_DIR>"
+export ZHH_REPO_ROOT="<ZHH_REPO_ROOT>"
+export EVENTS_MAX="<EVENTS_MAX>"
+export EVENTS_SKIP="<EVENTS_SKIP>"
+
+export TMPDIR="$OUT_BASE_DIR/TMP-$LSB_JOBID-${OUT_BASE_NAME}"
+
+mkdir -p $TMPDIR
+cd $TMPDIR
+
+source "$ZHH_REPO_ROOT/setup.sh"
+if source "$ZHH_REPO_ROOT/jobs/kek/common/marlin_run.sh" $INPUT_FILE $OUT_BASE_NAME $EVENTS_SKIP $EVENTS_MAX; then
+    mv "${OUT_BASE_NAME}_AIDA.root" ..
+    mv "${OUT_BASE_NAME}.slcio" ..
+
+    echo "Execution done"
+
+    rm -rf $TMPDIR
+else
+    echo "Execution failed"
+fi

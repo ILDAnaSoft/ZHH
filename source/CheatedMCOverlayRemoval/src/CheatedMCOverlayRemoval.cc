@@ -4,6 +4,8 @@
 #include <string>
 #include <EVENT/LCCollection.h>
 #include <EVENT/MCParticle.h>
+#include <UTIL/PIDHandler.h>
+#include "sync_pids.h"
 
 using namespace lcio ;
 using namespace marlin ;
@@ -57,12 +59,16 @@ CheatedMCOverlayRemoval::CheatedMCOverlayRemoval() :
 				 _OutputPfoCollection,
 				 std::string("PFOsWithoutOverlay")
 				 );	
+
 	registerOutputCollection(LCIO::RECONSTRUCTEDPARTICLE,
 				 "OutputOverlayCollection",
 				 "Name of output Overlay collection",
 				 _OutputOverlayCollection,
 				 std::string("PFOsFromOverlay")
 				 );	
+
+	registerProcessorParameter("PIDAlgoSync", "Whether or not to sync PIDs. if false, the PID parameters will not be synced", m_PIDAlgoSync, false);
+  	registerProcessorParameter("PIDAlgosToKeep", "list of PID Algo names whose parameters to sync. will sync all if empty. ", m_PIDAlgorithmsToKeep, std::vector<std::string>{});
 }
 
 void CheatedMCOverlayRemoval::init()
@@ -131,8 +137,10 @@ void CheatedMCOverlayRemoval::processEvent( LCEvent *pLCEvent )
 	}
       }
 
+	  std::map<int, int> pid_algo_mapping;
       for (int i=0; i<m_nAllPFOs; i++) {
-	ReconstructedParticle* pfo = (ReconstructedParticle*) PFOs->getElementAt(i);
+		EVENT::LCObject* pfo_in = PFOs->getElementAt(i);
+		ReconstructedParticle* pfo = dynamic_cast<ReconstructedParticle*> (pfo_in);
 	float weightPFOtoMCP = 0.0;
 	float weightMCPtoPFO = 0.0;
 	MCParticle* linkedMCP = getLinkedMCP( pfo, RecoMCParticleNav , MCParticleRecoNav , false , false , weightPFOtoMCP , weightMCPtoPFO );
@@ -144,6 +152,11 @@ void CheatedMCOverlayRemoval::processEvent( LCEvent *pLCEvent )
 	  if (linkedMCP->isOverlay()) continue;
 	}
 	OutputPfoCollection->addElement(pfo);
+
+	if (m_PIDAlgoSync) {
+		sync_pids(PFOs, OutputPfoCollection, pfo_in, pfo, &pid_algo_mapping, m_PIDAlgorithmsToKeep);
+	}
+
 	nKeptPFOs++;
       }
 
@@ -164,11 +177,11 @@ void CheatedMCOverlayRemoval::processEvent( LCEvent *pLCEvent )
     }*/
 
       m_nEvt++ ;
-    }
-  catch(...)
-    {
+    } catch(lcio::DataNotAvailableException &e) {
       streamlog_out(WARNING) << "Check : Input collections not found in event " << m_nEvt << std::endl;
-    }
+    } catch (Exception &e) {
+	  streamlog_out(WARNING) << "Unexpected exception occured in " << m_nEvt << std::endl;
+	}
   streamlog_out(DEBUG) << "nevt = " << m_nEvt << std::endl;
 }
 

@@ -4,10 +4,10 @@ from math import ceil
 from law import LocalFileTarget
 
 from analysis.framework import HTCondorWorkflow, zhh_configs
-
+from .utils import ShellTask, BaseTask, RealTimeLoggedTask
 from zhh import get_raw_files, analysis_stack, ProcessIndex, \
     get_adjusted_time_per_event, get_runtime_analysis, get_sample_chunk_splits, get_process_normalization, \
-    get_chunks_factual, BaseTask
+    get_chunks_factual
 
 from typing import Optional, cast
 from glob import glob
@@ -32,8 +32,10 @@ class RawIndex(BaseTask):
         config = zhh_configs.get(str(self.tag))
         if callable(config.slcio_files):
             files = config.slcio_files(self)
-        else:
+        elif config.slcio_files is not None:
             files = config.slcio_files
+        else:
+            raise Exception(f'Invalid slcio_files in config <{self.tag}>')
             
         files.sort()
         return files
@@ -120,6 +122,8 @@ class AnalysisSummary(BaseTask, HTCondorWorkflow):
     analysis_chunks: Optional[str] = None
     processes_index: Optional[str] = None
     
+    branch_data: tuple[str, list[str], str, str]
+    
     def workflow_requires(self):
         from analysis.tasks_analysis import AnalysisFinal
         
@@ -170,13 +174,13 @@ class AnalysisSummary(BaseTask, HTCondorWorkflow):
     def run(self):
         from zhh import numpy2root
         
-        src = self.branch_map[self.branch]
+        src = self.branch_data
         DATA_ROOT, branches, analysis_chunks, processes_index = src
         
-        chunks = np.load(analysis_chunks)
+        chunks:np.ndarray = np.load(analysis_chunks)
         chunks_factual = get_chunks_factual(DATA_ROOT, chunks)
         
-        processes = np.load(processes_index)
+        processes:np.ndarray = np.load(processes_index)
         
         output = self.output()
         BaseTask.touch_parent(output)
