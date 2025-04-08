@@ -12,6 +12,9 @@ class ffhh: public p6 {
     protected:
         vector<int> m_z_decay_filter;
 
+        const unsigned short HIGGS_1_IDX = 10;
+        const unsigned short HIGGS_2_IDX = 11;
+
     public:
         // Set process ID and event category
         ffhh( string process_name, int process_id, int event_category, vector<int> z_decay_filter ):
@@ -26,8 +29,8 @@ class ffhh: public p6 {
             fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(9));
 
             // Get Higgs bosons
-            MCParticle* h1 = (MCParticle*)mcp_collection->getElementAt(10);
-            MCParticle* h2 = (MCParticle*)mcp_collection->getElementAt(11);
+            MCParticle* h1 = (MCParticle*)mcp_collection->getElementAt(HIGGS_1_IDX);
+            MCParticle* h2 = (MCParticle*)mcp_collection->getElementAt(HIGGS_2_IDX);
 
             if (resolve_higgs) {
                 // Get H-decayed fermions

@@ -5,27 +5,28 @@ OUTPUT_DIR=$1
 JOB_NAME=$2
 JOB_BASEDIR=$3
 
-NMAX_PER_JOB=3600
+NMAX_PER_JOB=3000
 
 if [[ -z $ZHH_SETUP ]]; then
-    srczhh
+    echo "ZHH not loaded. Call srczhh"
+    exit 1
 fi
 
 # actual definition
 # here, only files from /home/ilc/tianjp/generator/PostDBD/whizard3/toGrid/E550_6f_2l4q.slcio.list
-readarray file_names < "/home/ilc/bliewert/DevRepositories/ZHH/jobs/kek/550-llhh-ana/files.txt"
-dir=$( dirname ${file_names[1]} )
+readarray file_names < files.txt
 nfiles=0
 njobs=0
+nexecute=0
 ChunkGlobal=0
 
 # keep track of indices in index.txt
 rm -f index.txt
 
-for file in ${file_names[*]};
+for INPUT_FILE in ${file_names[*]};
 do
-    file=$( basename $file )
-    INPUT_FILE="$dir/$file"
+    file=$( basename ${INPUT_FILE} )
+    dir=$( dirname ${INPUT_FILE} )
     OUT_BASE_NAME="${file%.*}"
     OUT_BASE_DIR="$OUTPUT_DIR/$JOB_NAME"
 
@@ -51,6 +52,7 @@ do
             sed -i -e "s|<EVENTS_SKIP>|$Pointer|g" definitions/$JOB_FILE
 
             echo "bash $JOB_BASEDIR/definitions/$JOB_FILE" >> pack.job
+            nexecute=$((nexecute + 1 ))
         else
             echo "File <$TARGET_FILE> already exists. No job will be scheduled for it."
         fi
@@ -63,15 +65,15 @@ do
         ChunkGlobal=$((ChunkGlobal + 1))
         ChunkLocal=$((ChunkLocal + 1))
 
-        echo "Prepared job $njobs"
-        if [ $njobs -eq 200 ]; then
-            break 2
-        fi
+        #echo "Prepared job $njobs"
+        #if [ $njobs -eq 200 ]; then
+        #    break 2
+        #fi
     done
     
 
     nfiles=$((nfiles + 1 ))
 done
 
-echo "----------------------------------------------------------"
-echo "Prepared $njobs jobs given a total of $nfiles input files "
+echo "---------------------------------------------------------------------------------"
+echo "Prepared $njobs jobs ($nexecute to execute) given a total of $nfiles input files "

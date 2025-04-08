@@ -55,6 +55,7 @@ class EventObservablesBase: public Processor
         virtual void end();
 
 		// helper functions
+		std::tuple<float, float> jetCharge(ReconstructedParticle* jet);
 		static ReconstructedParticleVec getElements(LCCollection *collection, std::vector<int> elements);
 
 		// return (smallest, largest number of PFOs, index of jet with least PFOs)
@@ -120,16 +121,13 @@ class EventObservablesBase: public Processor
 		virtual std::string m_yMinusParameter() = 0;
 		virtual std::string m_yPlusParameter() = 0;
 		virtual bool m_use_matrix_elements() = 0;
-
-		// can be channel specific, but default implementations exist
-		virtual void calculateSimpleZHHChi2();
+		virtual void calculateSimpleZHHChi2() = 0;
 
 		// names of input collections
 		std::string m_inputIsolatedleptonCollection{};
 		std::string m_inputLepPairCollection{};
 		std::string m_inputJetCollection{};
 		std::string m_inputPfoCollection{};
-		std::string m_inputPfoRawCollection{};
 		std::string m_outputFile{};
 		std::string m_whichPreselection{};
 		std::string m_cutDefinitionsJSONFile{};
@@ -165,10 +163,15 @@ class EventObservablesBase: public Processor
 
 		float m_ECM{};
 		std::vector <float> m_polarizations{};
+		float m_jetChargeKappa{};
 
-		// matrix elements; here given as log of the mean over 4 permutations, and over ghe given polarization
+		// matrix elements; here given as log of the mean over 4 permutations, and over the given polarization
 		double m_lcme_zhh_log{};
 		double m_lcme_zzh_log{};
+
+		vector<float> m_lcme_weights{};
+		vector<double> m_lcme_zhh_raw{};
+		vector<double> m_lcme_zzh_raw{};
 
 		lcme::LCMEZHH *m_lcmezhh{}; // ZHH MEM calculator instance
 		lcme::LCMEZZH *m_lcmezzh{}; // ZZH MEM calculator instance
@@ -185,6 +188,17 @@ class EventObservablesBase: public Processor
 			TLorentzVector jet1, TLorentzVector jet2,
 			TLorentzVector jet3, TLorentzVector jet4,
 			bool permute_from_z);
+
+		void calculateMatrixElements(
+			int z1_decay_pdg, // Z=dijet1
+			int dj2_decay_pdg, // dijet2
+			TLorentzVector from_z1, TLorentzVector from_z2,
+			TLorentzVector jet1, TLorentzVector jet2,
+			TLorentzVector jet3, TLorentzVector jet4,
+			bool permute_from_z,
+			unsigned short nperms,
+			std::vector<float> weights
+			);
 		
 		// the following is energy dependant; if ECM changes, this may need to be updated!!!
 		std::map<int, int> m_pdg_to_lcme_mode = {
@@ -205,6 +219,12 @@ class EventObservablesBase: public Processor
 		int m_nRun;
 		int m_nEvt;
 		int m_statusCode;
+
+		// errorCodes
+		// 1000-1999: LL
+		// 2000-2999: VV
+		// 3000-3999: QQ
+		std::vector<int> m_errorCodes{};
 
 		ROOT::Math::PxPyPzEVector m_pmis{};
 		ROOT::Math::PxPyPzEVector m_ecms{};
@@ -255,8 +275,9 @@ class EventObservablesBase: public Processor
 		// returns a vector of pairs (jet idx, tag value) sorted ASCENDING by btags
 		static std::vector<std::pair<int, float>> sortedTagging(std::vector<float> tags_by_jet_order);
 
-		static bool jetTaggingComparator ( const JetTaggingPair& l, const JetTaggingPair& r) { return l.first < r.first || std::isnan(l.first); };
+		static bool jetTaggingComparator ( const JetTaggingPair& l, const JetTaggingPair& r) { return l.first > r.first || std::isnan(r.first); };
 		std::vector<JetTaggingPair> m_bTagsSorted{}; // (jet index, btag1value) sorted DESC; first highest, last lowest
+		std::vector<JetTaggingPair> m_bTagsSorted2{}; // (jet index, btag1value) sorted DESC; first highest, last lowest
 		std::vector<double> m_bTagValues{};
 		std::vector<double> m_cTagValues{};
 
@@ -290,21 +311,29 @@ class EventObservablesBase: public Processor
 		float m_pyj1{};
 		float m_pzj1{};
 		float m_ej1{};
+		float m_qj1{};
+		float m_qdj1{}; // dynamic jet charge, see https://arxiv.org/pdf/2101.04304
 
 		float m_pxj2{};
 		float m_pyj2{};
 		float m_pzj2{};
 		float m_ej2{};
+		float m_qj2{};
+		float m_qdj2{};
 
 		float m_pxj3{};
 		float m_pyj3{};
 		float m_pzj3{};
 		float m_ej3{};
+		float m_qj3{};
+		float m_qdj3{};
 
 		float m_pxj4{};
 		float m_pyj4{};
 		float m_pzj4{};
 		float m_ej4{};
+		float m_qj4{};
+		float m_qdj4{};
 
 		void setJetMomenta();
 

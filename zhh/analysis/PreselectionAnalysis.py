@@ -8,6 +8,7 @@ import json
 import numpy as np
 import uproot as ur
 import awkward as ak
+from ..util.LazyTablelike import LazyTablelike
 
 DEFAULTS = {
     'PROD_NAME': '500-TDR_ws',
@@ -234,8 +235,6 @@ def get_preselection_passes(
             with open(f'{DATA_ROOT}/{branch}/zhh_FinalStateMeta.json', 'r') as file:
                 meta = json.load(file)
                 
-                # {'crossSection': 133070.796875, 'crossSectionError': 78.4000015258789, 'eventWeight': 1.0, 'nEvtSum': 995, 'polElectron': -1.0, 'polPositron': 1.0, 'processId': 250127, 'processName': '2f_z_bhabhang', 'run': 250127}
-                
             n_gen = meta['nEvtSum']
             proc = meta["processName"]
             
@@ -310,11 +309,11 @@ def analysis_stack(DATA_ROOT:str,
     
     if kinematics:
         for dt in [
-            ('xx_thrust', 'f'),
-            ('xx_e_vis', 'f'),
-            ('xx_pt_miss', 'f'),
-            ('xx_invmass_miss', 'f'),
-            ('xx_nisoleps', 'B'),
+            ('thrust', 'f'),
+            ('e_vis', 'f'),
+            ('pt_miss', 'f'),
+            ('invmass_miss', 'f'),
+            ('nisoleps', 'B'),
         
             # llHH
             ('ll_mh1', 'f'),
@@ -385,11 +384,11 @@ def analysis_stack(DATA_ROOT:str,
                 
                 if i == 0:
                     if kinematics:
-                        chunk['xx_thrust'] = rf['thrust'].array()
-                        chunk['xx_e_vis'] = rf['Evis'].array()
-                        chunk['xx_pt_miss'] = rf['missingPT'].array()
-                        chunk['xx_invmass_miss'] = rf['missingInvMass'].array()
-                        chunk['xx_nisoleps'] = rf['nIsoLeptons'].array()
+                        chunk['thrust'] = rf['thrust'].array()
+                        chunk['e_vis'] = rf['Evis'].array()
+                        chunk['pt_miss'] = rf['missingPT'].array()
+                        chunk['invmass_miss'] = rf['missingInvMass'].array()
+                        chunk['nisoleps'] = rf['nIsoLeptons'].array()
                     
                 if kinematics:
                     chunk[f'{presel}_nbjets'] = rf['nbjets'].array()
@@ -427,23 +426,29 @@ def fetch_preselection_data(rf, presel:str, final_states:bool=True, tree:str|Non
         evtObsTree = tree
     else:
         evtObsTree = f'EventObservables{presel.upper()}'
+        
+    #result = LazyTablelike(tree.num_entries)
     
     dtype = [
         ('id', 'I'),
         ('process', 'I'), # H=np.uint16
+        ('pid', 'I'),
         ('pol_code', 'B'), # np.uint8
         ('event', 'I'), # max. encountered: 15 797 803 << 4 294 967 295 (max of uint32)
         ('event_category', 'B'), # np.uint8
+        
+        ('is_sig', '?'),
+        ('is_bkg', '?'),
         
         ('ll_pass', 'B'),
         ('vv_pass', 'B'),
         ('qq_pass', 'B'),
         
-        ('xx_thrust', 'f'),
-        ('xx_e_vis', 'f'),
-        ('xx_pt_miss', 'f'),
-        ('xx_invmass_miss', 'f'),
-        ('xx_nisoleps', 'B'),
+        ('thrust', 'f'),
+        ('e_vis', 'f'),
+        ('pt_miss', 'f'),
+        ('invmass_miss', 'f'),
+        ('nisoleps', 'B'),
         ('xx_paired_isoleptype', 'B'),
         
         ('passed', 'B'),
@@ -496,11 +501,11 @@ def fetch_preselection_data(rf, presel:str, final_states:bool=True, tree:str|Non
         for i in range(len(fs_columns)):
             results[fs_columns[i]] = fs_counts[:, i]
     
-    results['xx_thrust'] = rf[f'{evtObsTree}/thrust'].array()
-    results['xx_e_vis'] = rf[f'{evtObsTree}/evis'].array()
-    results['xx_pt_miss'] = rf[f'{evtObsTree}/ptmiss'].array()
-    results['xx_invmass_miss'] = rf[f'{evtObsTree}/m_miss'].array()
-    results['xx_nisoleps'] = rf[f'{evtObsTree}/nisoleptons'].array()
+    results['thrust'] = rf[f'{evtObsTree}/thrust'].array()
+    results['e_vis'] = rf[f'{evtObsTree}/evis'].array()
+    results['pt_miss'] = rf[f'{evtObsTree}/ptmiss'].array()
+    results['invmass_miss'] = rf[f'{evtObsTree}/m_miss'].array()
+    results['nisoleps'] = rf[f'{evtObsTree}/nisoleptons'].array()
     
     #KinFitTree = f'KinFit{presel.upper()}_ZHH'
     
@@ -526,7 +531,117 @@ def fetch_preselection_data(rf, presel:str, final_states:bool=True, tree:str|Non
             
     return results
 
-fs_columns = ['Nd', 'Nu', 'Ns', 'Nc', 'Nb', 'Nt', 'Ne1', 'Nn1', 'Ne2', 'Nn2', 'Ne3', 'Nv3', 'Ng', 'Ny', 'NZ', 'NW', 'NH']
+
+def fetch_preselection_data_old(rf, presel:str, final_states:bool=True, tree:str|None=None, fsTree:str='FinalStates', evtObsTree:str='EventObservables')->np.ndarray:
+    if tree is not None:
+        fsTree = tree
+        evtObsTree = tree
+    else:
+        evtObsTree = f'EventObservables{presel.upper()}'
+    
+    dtype = [
+        ('id', 'I'),
+        ('process', 'I'), # H=np.uint16
+        ('pid', 'I'),
+        ('pol_code', 'B'), # np.uint8
+        ('event', 'I'), # max. encountered: 15 797 803 << 4 294 967 295 (max of uint32)
+        ('event_category', 'B'), # np.uint8
+        
+        ('is_sig', '?'),
+        ('is_bkg', '?'),
+        
+        ('ll_pass', 'B'),
+        ('vv_pass', 'B'),
+        ('qq_pass', 'B'),
+        
+        ('thrust', 'f'),
+        ('e_vis', 'f'),
+        ('pt_miss', 'f'),
+        ('invmass_miss', 'f'),
+        ('nisoleps', 'B'),
+        ('xx_paired_isoleptype', 'B'),
+        
+        ('passed', 'B'),
+        ('weight', 'f'),
+        
+        # ll
+        ('ll_mh1', 'f'),
+        ('ll_mh2', 'f'),
+        ('ll_dilepton_type', 'B'),
+        ('ll_mz', 'f'),
+        ('ll_mz_pre_pairing', 'f'),
+        
+        # vv
+        ('vv_mh1', 'f'),
+        ('vv_mh2', 'f'),
+        ('vv_mhh', 'f'),
+        
+        # qq
+        ('qq_mh1', 'f'),
+        ('qq_mh2', 'f'),
+    ]
+    
+    dtype.extend([
+        (f'{presel}_bmax1', 'f'),
+        (f'{presel}_bmax2', 'f'),
+        (f'{presel}_bmax3', 'f'),
+        (f'{presel}_bmax4', 'f')
+    ])
+            
+    if final_states:
+        for dt in fs_columns:
+            dtype.append((dt, 'B'))
+        
+        dtype.append(('Nb_from_H', 'B'))
+    
+    r_size = rf[fsTree].num_entries
+    results = np.zeros(r_size, dtype=dtype)
+    
+    results['id'] = np.arange(r_size)
+    results['process'] = rf[f'{fsTree}/process'].array()
+    results['pol_code'] = rf[f'{fsTree}/polarization_code'].array()
+    
+    results['event'] = rf[f'{fsTree}/event'].array()
+    results['event_category'] = rf[f'{fsTree}/event_category'].array()
+        
+    if final_states:
+        fs_counts = rf[f'{fsTree}/final_state_counts'][1].array()
+        results['Nb_from_H'] = rf[f'{fsTree}/n_b_from_higgs'].array()
+        
+        for i in range(len(fs_columns)):
+            results[fs_columns[i]] = fs_counts[:, i]
+    
+    results['thrust'] = rf[f'{evtObsTree}/thrust'].array()
+    results['e_vis'] = rf[f'{evtObsTree}/evis'].array()
+    results['pt_miss'] = rf[f'{evtObsTree}/ptmiss'].array()
+    results['invmass_miss'] = rf[f'{evtObsTree}/m_miss'].array()
+    results['nisoleps'] = rf[f'{evtObsTree}/nisoleptons'].array()
+    
+    #KinFitTree = f'KinFit{presel.upper()}_ZHH'
+    
+    results[f'{presel}_mh1'] = rf[f'{evtObsTree}/zhh_mh1'].array()
+    results[f'{presel}_mh2'] = rf[f'{evtObsTree}/zhh_mh2'].array()
+    
+    if presel == 'll':                        
+        #lepTypes = rf['lepTypes'].array()
+        #pass_ltype11 = np.sum(np.abs(lepTypes) == 11, axis=1) == 2
+        #pass_ltype13 = np.sum(np.abs(lepTypes) == 13, axis=1) == 2
+        #results['ll_dilepton_type'] = pass_ltype11*11 + pass_ltype13*13
+        results['ll_dilepton_type'] = rf[f'{evtObsTree}/paired_lep_type'].array()
+        results['ll_mz'] = rf[f'{evtObsTree}/mzll'].array()
+        results['ll_mz_pre_pairing'] = rf[f'{evtObsTree}/mzll_pre_pairing'].array()
+        
+    elif presel == 'vv':
+        results['vv_mhh'] = rf[f'{evtObsTree}/m_invjet'].array()
+    
+    results[f'{presel}_bmax1'] = rf[f'{evtObsTree}/bmax1']
+    results[f'{presel}_bmax2'] = rf[f'{evtObsTree}/bmax2']
+    results[f'{presel}_bmax3'] = rf[f'{evtObsTree}/bmax3']
+    results[f'{presel}_bmax4'] = rf[f'{evtObsTree}/bmax4']
+            
+    return results
+
+fs_columns = ['Nd', 'Nu', 'Ns', 'Nc', 'Nb', 'Nt', 'Ne1', 'Nv1', 'Ne2', 'Nv2', 'Ne3', 'Nv3', 'Ng', 'Ny', 'NZ', 'NW', 'NH']
 
 def get_final_state_counts(DATA_ROOT:str,
                            branches:Iterable,

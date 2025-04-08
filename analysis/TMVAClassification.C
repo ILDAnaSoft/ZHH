@@ -15,9 +15,25 @@
 #include "TMVA/DataLoader.h"
 #include "TMVA/Tools.h"
 #include "TMVA/TMVAGui.h"
+
+std::vector<std::string> split(const std::string& s, const std::string& delimiter) {
+   std::vector<std::string> tokens;
+   size_t pos = 0;
+   std::string token;
+   while ((pos = s.find(delimiter)) != std::string::npos) {
+       token = s.substr(0, pos);
+       tokens.push_back(token);
+       s.erase(0, pos + delimiter.length());
+   }
+   tokens.push_back(s);
+
+   return tokens;
+}
  
-int TMVAClassification( TString myMethodList = "" )
+int TMVAClassification( TString variables )
 {
+   std::vector<std::string> varList = split(variables.Data(), ",");
+
    // The explicit loading of the shared libTMVA is done in TMVAlogon.C, defined in .rootrc
    // if you use your private .rootrc, or run from a different directory, please copy the
    // corresponding lines from .rootrc
@@ -106,6 +122,7 @@ int TMVAClassification( TString myMethodList = "" )
    std::cout << "==> Start TMVAClassification" << std::endl;
  
    // Select methods (don't look at this code - not of interest)
+   TString myMethodList = "";
    if (myMethodList != "") {
       for (std::map<std::string,int>::iterator it = Use.begin(); it != Use.end(); it++) it->second = 0;
  
@@ -172,13 +189,20 @@ int TMVAClassification( TString myMethodList = "" )
    // Define the input variables that shall be used for the MVA training
    // note that you may also use variable expressions, such as: "3*var1/var2*abs(var3)"
    // [all types of expressions that can also be parsed by TTree::Draw( "expression" )]
-   dataloader->AddVariable("evis");
-   dataloader->AddVariable("mzll");
-   dataloader->AddVariable("plmin");
-   dataloader->AddVariable("mbmax34");
-   dataloader->AddVariable("ptmiss");
-   dataloader->AddVariable("npfos");
-   dataloader->AddVariable("mvalepminus");
+
+   if (false) {
+      dataloader->AddVariable("evis");
+      dataloader->AddVariable("mzll");
+      dataloader->AddVariable("plmin");
+      dataloader->AddVariable("mbmax34");
+      dataloader->AddVariable("ptmiss");
+      dataloader->AddVariable("npfos");
+      dataloader->AddVariable("mvalepminus");
+   }
+
+   for (auto variable: varList) {
+      dataloader->AddVariable(variable.c_str());
+   }
    
    //dataloader->AddVariable( "myvar2 := var1-var2", "Expression 2", "", 'F' );
    //dataloader->AddVariable( "var3",                "Variable 3", "units", 'F' );
@@ -197,13 +221,8 @@ int TMVAClassification( TString myMethodList = "" )
    Double_t backgroundWeight = 1.0;
  
    // You can add an arbitrary number of signal or background trees
-   dataloader->AddSignalTree    ( signalTree,     signalWeight );
-   dataloader->AddBackgroundTree( background, backgroundWeight );
- 
-   // To give different trees for training and testing, do as follows:
-   //
-   //     dataloader->AddSignalTree( signalTrainingTree, signalTrainWeight, "Training" );
-   //     dataloader->AddSignalTree( signalTestTree,     signalTestWeight,  "Test" );
+   //dataloader->AddSignalTree    ( signalTree,     signalWeight );
+   //dataloader->AddBackgroundTree( background, backgroundWeight );
  
    // Use the following code instead of the above two or four lines to add signal and background
    // training and test events "by hand"
@@ -211,32 +230,39 @@ int TMVAClassification( TString myMethodList = "" )
    //      variable definition, but simply compute the expression before adding the event
    // ```cpp
    // // --- begin ----------------------------------------------------------
-   // std::vector<Double_t> vars( 4 ); // vector has size of number of input variables
-   // Float_t  treevars[4], weight;
+   std::vector<Double_t> vars( varList.size() ); // vector has size of number of input variables
+   Float_t treevars[varList.size()];
    //
    // // Signal
-   // for (UInt_t ivar=0; ivar<4; ivar++) signalTree->SetBranchAddress( Form( "var%i", ivar+1 ), &(treevars[ivar]) );
-   // for (UInt_t i=0; i<signalTree->GetEntries(); i++) {
-   //    signalTree->GetEntry(i);
-   //    for (UInt_t ivar=0; ivar<4; ivar++) vars[ivar] = treevars[ivar];
-   //    // add training and test events; here: first half is training, second is testing
-   //    // note that the weight can also be event-wise
-   //    if (i < signalTree->GetEntries()/2.0) dataloader->AddSignalTrainingEvent( vars, signalWeight );
-   //    else                              dataloader->AddSignalTestEvent    ( vars, signalWeight );
-   // }
+   signalTree->SetBranchAddress("weight", &signalWeight);
+   for (UInt_t ivar=0; ivar < varList.size(); ivar++)
+      signalTree->SetBranchAddress(varList[ivar].c_str(), &(treevars[ivar]) );
+
+   for (UInt_t i=0; i < signalTree->GetEntries(); i++) {
+       signalTree->GetEntry(i);
+       for (UInt_t ivar=0; ivar < varList.size(); ivar++)
+         vars[ivar] = treevars[ivar];
+
+       if (i < signalTree->GetEntries()/2.) dataloader->AddSignalTrainingEvent( vars, signalWeight );
+       else                                 dataloader->AddSignalTestEvent    ( vars, signalWeight );
+   }
    //
    // // Background (has event weights)
-   // background->SetBranchAddress( "weight", &weight );
-   // for (UInt_t ivar=0; ivar<4; ivar++) background->SetBranchAddress( Form( "var%i", ivar+1 ), &(treevars[ivar]) );
-   // for (UInt_t i=0; i<background->GetEntries(); i++) {
-   //    background->GetEntry(i);
-   //    for (UInt_t ivar=0; ivar<4; ivar++) vars[ivar] = treevars[ivar];
-   //    // add training and test events; here: first half is training, second is testing
-   //    // note that the weight can also be event-wise
-   //    if (i < background->GetEntries()/2) dataloader->AddBackgroundTrainingEvent( vars, backgroundWeight*weight );
-   //    else                                dataloader->AddBackgroundTestEvent    ( vars, backgroundWeight*weight );
-   // }
-   // // --- end ------------------------------------------------------------
+   background->SetBranchAddress( "weight", &backgroundWeight );
+   for (UInt_t ivar=0; ivar < varList.size(); ivar++)
+      background->SetBranchAddress( varList[ivar].c_str(), &(treevars[ivar]) );
+
+   for (UInt_t i=0; i < background->GetEntries(); i++) {
+       background->GetEntry(i);
+       for (UInt_t ivar=0; ivar < varList.size(); ivar++)
+         vars[ivar] = treevars[ivar];
+
+        // add training and test events; here: first half is training, second is testing
+        // note that the weight can also be event-wise
+        if (i < background->GetEntries()/2.) dataloader->AddBackgroundTrainingEvent( vars, backgroundWeight );
+        else                                 dataloader->AddBackgroundTestEvent    ( vars, backgroundWeight );
+   }
+   // --- end ------------------------------------------------------------
    // ```
    // End of tree registration
  

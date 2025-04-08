@@ -77,6 +77,7 @@ set(sources
   ZHHKinfitProcessors/src/ZHHqqbbbbKinFitv1.cc
   ZHHKinfitProcessors/src/ZHHvvbbbbKinFitv1.cc
   ZinvisibleErrorAnalysis/src/ZinvisibleErrorAnalysis.cc
+  PreSelection/src/PreSelection.cc
 )
 
 add_library(ZHHProcessors SHARED ${sources})

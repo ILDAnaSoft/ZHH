@@ -33,7 +33,7 @@ We use the following `.env` file:
 ```
 REPO_ROOT=".."
 ENV_SETUP_SCRIPT="$REPO_ROOT/setup.sh"
-TASK_ROOT="/nfs/dust/ilc/user/$(whoami)/FT_ParticleNet4Tags"
+TASK_ROOT="/data/dust/user/$(whoami)/FT_ParticleNet4Tags"
 ```
 
 We use the ZHH environment as it already includes the `$FlavorTagging_ML` environment variable as well as the Python virtual environment `$ZHH_VENV_NAME`. 

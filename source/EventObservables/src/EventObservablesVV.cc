@@ -1,5 +1,8 @@
 #include "EventObservablesVV.h"
 
+// errorCodes:
+// -
+
 EventObservablesVV aEventObservablesVV;
 
 EventObservablesVV::EventObservablesVV(): EventObservablesBase("EventObservablesVV"),
@@ -93,14 +96,9 @@ void EventObservablesVV::updateChannelValues(EVENT::LCEvent *pLCEvent) {
     std::tie(m_npfosmin5j, m_npfosmax5j, jet5IDxPFOsMin) = nPFOsMinMax(input5JetCollection);
 
     // reconstruct the semileptonic ttbar system
+    // in the 5 jet case, assume the least b-probable jet is a tau jet
     std::vector<std::pair<int, float>> sortedBTagsJ5 =
         sortedTagging(input5JetCollection, m_JetTaggingPIDAlgorithm, m_JetTaggingPIDParameterB);
-
-    std::vector<std::pair<int, float>> sortedBTagsJ5WoTau;
-    std::copy_if (sortedBTagsJ5.begin(), sortedBTagsJ5.end(), std::back_inserter(sortedBTagsJ5WoTau), [jet5IDxPFOsMin](std::pair<int, float> jetflavorpair){
-        return jetflavorpair.first != jet5IDxPFOsMin;} );
-
-    assert(sortedBTagsJ5WoTau.size() == 4);
 
     // order is with decreasing b-tag    
     for (int i=0; i < sortedBTagsJ5.size(); ++i) {
@@ -131,7 +129,7 @@ void EventObservablesVV::updateChannelValues(EVENT::LCEvent *pLCEvent) {
     m_yPlus5j = params_y[jet5PIDh.getParameterIndex(algo_y, "y56")];
 
     // TREAT 6 JET COLLECTION
-    for (int i=0; i < 6; ++i) {
+    for (int i=0; i < input6JetCollection->getNumberOfElements(); ++i) {
         ReconstructedParticle* jet = (ReconstructedParticle*) input6JetCollection->getElementAt(i);
 
         m_pjmax6 = std::max(m_pjmax6, (float)v4(jet).P());
@@ -158,28 +156,5 @@ void EventObservablesVV::updateChannelValues(EVENT::LCEvent *pLCEvent) {
 };
 
 void EventObservablesVV::calculateSimpleZHHChi2() {
-	std::vector<float> zhh_masses;
-	std::vector<ROOT::Math::PxPyPzEVector> jet_v4 = v4(m_jets);
-
-	std::tie(m_zhh_jet_matching, zhh_masses, m_zhh_chi2) = pairJetsByMass(jet_v4, { 25, 25 });
-
-    m_zhh_mh1 = zhh_masses[0];
-    m_zhh_mh2 = zhh_masses[1];
-    m_zhh_mhh = (jet_v4[0] + jet_v4[1] + jet_v4[2] + jet_v4[3]).M();
-
-	// SET P1ST AND COSTH1ST
-    std::vector<ROOT::Math::PxPyPzEVector> dijets = {
-        m_pmis,
-        jet_v4[m_zhh_jet_matching[0]] + jet_v4[m_zhh_jet_matching[1]],
-        jet_v4[m_zhh_jet_matching[2]] + jet_v4[m_zhh_jet_matching[3]]
-    };
-
-    m_zhh_mz = m_missingMass; // = m_pmis.M()
-
-    for (ROOT::Math::PxPyPzEVector dijet: dijets) {
-        if (dijet.P() > m_zhh_p1st) {
-            m_zhh_p1st = dijet.P();
-            m_zhh_cosTh1st = cos(dijet.Theta());
-        }
-    }    
+	
 }

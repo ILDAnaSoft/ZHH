@@ -5,16 +5,15 @@ OUTPUT_DIR=$1
 JOB_NAME=$2
 JOB_BASEDIR=$3
 
-NMAX_PER_JOB=3600
+NMAX_PER_JOB=3000
 
 if [[ -z $ZHH_SETUP ]]; then
     srczhh
 fi
 
 # actual definition
-# here, only files from /home/ilc/tianjp/generator/PostDBD/whizard3/toGrid/E550_6f_2l4q.slcio.list
-readarray file_names < "/home/ilc/tianjp/generator/PostDBD/whizard3/toGrid/E550_6f_2l4q.slcio.list"
-dir="/group/ilc/users/bliewert/jobresults/550-6f-sgv"
+readarray file_names < "files.txt"
+dir=$( dirname ${file_names[1]} )
 nfiles=0
 njobs=0
 nexecute=0
@@ -71,6 +70,7 @@ do
         #fi
     done
     
+
     nfiles=$((nfiles + 1 ))
 done
 

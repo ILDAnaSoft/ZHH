@@ -28,7 +28,8 @@ function marlin_run() {
 
     if [[ -f "$resultFile" ]];
     then
-        if [[ is_root_readable "$resultFile" FinalStates ]]; then
+        is_root_readable "$resultFile" FinalStates
+        if [ $? -eq 0 ]; then
             rootrm "$resultFile":hEvtProcessingTime
             return 0
         else

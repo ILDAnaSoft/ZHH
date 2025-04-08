@@ -470,7 +470,7 @@
 </processor>
  
 <processor name="ParticleNetTagger_6J" type="ParticleNetNTaggerProcessor">
-  <parameter name="ModelScriptFile" type="string"> /nfs/dust/ilc/user/bliewert/FTag2/ParticleNet_4tags/Training/ParticleNet_4tags_ranger_nan_transform_after_std/model_cp_35.pth </parameter>
+  <parameter name="ModelScriptFile" type="string"> /data/dust/user/bliewert/FTag2/ParticleNet_4tags/Training/ParticleNet_4tags_ranger_nan_transform_after_std/model_cp_35.pth </parameter>
   
   <!--
   <parameter name="DebugDumpEvent" type="int"> ${DebugDumpEvent} </parameter>

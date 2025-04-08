@@ -80,13 +80,6 @@ EventObservablesBase::EventObservablesBase(const std::string &name) : Processor(
             std::string("PandoraPFOs")
             );
 
-	registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
-			"inputPfoRawCollection",
-			"Name of input pfo collection",
-			m_inputPfoRawCollection,
-			std::string("PandoraPFOsWithoutOverlay")
-			);
-
 	registerProcessorParameter("whichPreselection",
             "Which set of cuts to use in the preselection. This will overwrite any input preselection values.",
             m_whichPreselection,
@@ -213,6 +206,12 @@ EventObservablesBase::EventObservablesBase(const std::string &name) : Processor(
             std::vector<float>{ -0.8, 0.3 }
             );
 
+	registerProcessorParameter("jetChargeKappa",
+			"exponent kappa of constituents i, their energy fraction z_i for calculation of jet charge Q = sum_i (q_i * z_i^kappa)",
+			m_jetChargeKappa,
+			float(.3)
+			);
+
   	registerProcessorParameter("outputFilename",
 			"name of output root file",
 			m_outputFile,
@@ -239,6 +238,7 @@ void EventObservablesBase::prepareBaseTree()
 		ttree->Branch("run", &m_nRun, "run/I");
 		ttree->Branch("event", &m_nEvt, "event/I");
 		ttree->Branch("errorCode", &m_statusCode, "errorCode/I");
+		ttree->Branch("errorCodes", &m_errorCodes);
 
 		ttree->Branch("evis", &m_Evis, "evis/F");
 		ttree->Branch("m_miss", &m_missingMass, "m_miss/F");
@@ -316,21 +316,29 @@ void EventObservablesBase::prepareBaseTree()
 		ttree->Branch("pyj1", &m_pyj1, "pyj1/F");
 		ttree->Branch("pzj1", &m_pzj1, "pzj1/F");
 		ttree->Branch("ej1", &m_ej1, "ej1/F");
+		ttree->Branch("qj1", &m_qj1, "qj1/F");
+        ttree->Branch("qdj1", &m_qdj1, "qdj1/F");
 
 		ttree->Branch("pxj2", &m_pxj2, "pxj2/F");
 		ttree->Branch("pyj2", &m_pyj2, "pyj2/F");
 		ttree->Branch("pzj2", &m_pzj2, "pzj2/F");
 		ttree->Branch("ej2", &m_ej2, "ej2/F");
+		ttree->Branch("qj2", &m_qj2, "qj2/F");
+        ttree->Branch("qdj2", &m_qdj2, "qdj2/F");
 
 		ttree->Branch("pxj3", &m_pxj3, "pxj3/F");
 		ttree->Branch("pyj3", &m_pyj3, "pyj3/F");
 		ttree->Branch("pzj3", &m_pzj3, "pzj3/F");
 		ttree->Branch("ej3", &m_ej3, "ej3/F");
+		ttree->Branch("qj3", &m_qj3, "qj3/F");
+        ttree->Branch("qdj3", &m_qdj3, "qdj3/F");
 
 		ttree->Branch("pxj4", &m_pxj4, "pxj4/F");
 		ttree->Branch("pyj4", &m_pyj4, "pyj4/F");
 		ttree->Branch("pzj4", &m_pzj4, "pzj4/F");
 		ttree->Branch("ej4", &m_ej4, "ej4/F");
+		ttree->Branch("qj4", &m_qj4, "qj4/F");
+        ttree->Branch("qdj4", &m_qdj4, "qdj4/F");
 
 		// jet matching
 		//ttree->Branch("jet_matching", &m_jet_matching);
@@ -340,6 +348,9 @@ void EventObservablesBase::prepareBaseTree()
 
 		// matrix elements
 		if (m_use_matrix_elements()) {
+			ttree->Branch("me_zhh_raw", &m_lcme_zhh_raw);
+			ttree->Branch("me_zzh_raw", &m_lcme_zzh_raw);
+
 			ttree->Branch("me_zhh_log", &m_lcme_zhh_log, "me_zhh_log/D");
 			ttree->Branch("me_zzh_log", &m_lcme_zzh_log, "me_zzh_log/D");
 		}
@@ -430,6 +441,7 @@ void EventObservablesBase::clearBaseValues()
 	streamlog_out(DEBUG) << "   Clear called  " << std::endl;
 
 	m_statusCode = 0;
+	m_errorCodes.clear();
 
 	m_pmis.SetPxPyPzE(0.,0.,0.,0.);
 	
@@ -462,6 +474,7 @@ void EventObservablesBase::clearBaseValues()
 	
 	// flavor tagging
 	m_bTagsSorted.clear();
+	m_bTagsSorted2.clear();
 	std::fill(m_bTagValues.begin(), m_bTagValues.end(), -1.);
 	std::fill(m_cTagValues.begin(), m_cTagValues.end(), -1.);
 
@@ -521,6 +534,13 @@ void EventObservablesBase::clearBaseValues()
     m_zhh_chi2 = 0.;
 	m_zhh_p1st = 0.;
 	m_zhh_cosTh1st = 0.;
+
+	m_lcme_zhh_log = 0.;
+	m_lcme_zzh_log = 0.;
+
+	m_lcme_weights.clear();
+	m_lcme_zhh_raw.clear();
+	m_lcme_zzh_raw.clear();
 	
 	/*
 	m_dileptonMassPrePairing = -999.;
@@ -537,6 +557,35 @@ void EventObservablesBase::clearBaseValues()
 	m_preselsPassedConsec = 0;
 	m_isPassed = 0;
 	*/
+
+	// jet quantities
+	m_pxj1 = 0.;
+	m_pyj1 = 0.;
+	m_pzj1 = 0.;
+	m_ej1  = 0.;
+	m_qj1  = 0.;
+	m_qdj1 = 0.;
+
+	m_pxj2 = 0.;
+	m_pyj2 = 0.;
+	m_pzj2 = 0.;
+	m_ej2  = 0.;
+	m_qj2  = 0.;
+	m_qdj2 = 0.;
+
+	m_pxj3 = 0.;
+	m_pyj3 = 0.;
+	m_pzj3 = 0.;
+	m_ej3  = 0.;
+	m_qj3  = 0.;
+	m_qdj3 = 0.;
+
+	m_pxj4 = 0.;
+	m_pyj4 = 0.;
+	m_pzj4 = 0.;
+	m_ej4  = 0.;
+	m_qj4  = 0.;
+	m_qdj4 = 0.;
 }
 
 void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
@@ -550,7 +599,6 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 		LCCollection *inputLeptonCollection = pLCEvent->getCollection( m_inputIsolatedleptonCollection );
 		LCCollection *inputLepPairCollection = pLCEvent->getCollection( m_inputLepPairCollection );
 		LCCollection *inputPfoCollection = pLCEvent->getCollection( m_inputPfoCollection );
-		LCCollection *inputPfoRawCollection = pLCEvent->getCollection( m_inputPfoRawCollection );
 
 		m_nJets = inputJetCollection->getNumberOfElements();
 		if (m_nJets != m_nAskedJets())
@@ -583,10 +631,9 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 		
 		// ---------- VISIBLE ENERGY ----------
 		m_Evis = pfosum.E();
-		m_invJetMass = pfosum.M();
 
 		// ---------- THRUST ----------
-		const EVENT::LCParameters& raw_pfo_params = inputPfoRawCollection->getParameters();
+		const EVENT::LCParameters& raw_pfo_params = inputPfoCollection->getParameters();
 
 		m_thrust = raw_pfo_params.getFloatVal("principleThrustValue");
 		m_thrustMajor = raw_pfo_params.getFloatVal("majorThrustValue");
@@ -609,10 +656,12 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 
 		// continue only if the number of jets and isolated leptons match the preselection
 		// and the numbers in the Kinfit processors
+		
 		if ( m_nJets == m_nAskedJets() ) {
 			streamlog_out(MESSAGE) << "Continue with "<< m_nJets << " jets and "<< inputLepPairCollection->getNumberOfElements() << " ISOLeptons" << std::endl;
 
 			// ---------- JET PROPERTIES AND FLAVOUR TAGGING ----------
+			ROOT::Math::PxPyPzEVector jetsum(0.,0.,0.,0.);
 			for (int i=0; i < m_nJets; ++i) {
 				ReconstructedParticle* jet = (ReconstructedParticle*) inputJetCollection->getElementAt(i);
 				ROOT::Math::PxPyPzEVector jet_v4 = v4(jet);
@@ -625,7 +674,9 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 				m_ptjmax = std::max(m_ptjmax, (float)jet_v4.Pt());
 				m_pjmax = std::max(m_pjmax, currentJetMomentum);
 				m_jets.push_back(jet);
+				jetsum += jet_v4;
 			}
+			m_invJetMass = jetsum.M();
 
 			PIDHandler jetPIDh(inputJetCollection);
 			int _FTAlgoID = jetPIDh.getAlgorithmID(m_JetTaggingPIDAlgorithm);
@@ -662,9 +713,8 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 			}
 
 			// calculate bmax1,2,3,4
-			for (size_t i = 0; i < m_bTagValues.size(); i++) {
+			for (size_t i = 0; i < m_bTagValues.size(); i++)
 				m_bTagsSorted.push_back(std::make_pair(i, m_bTagValues[i]));
-			}
 
 			std::sort (m_bTagsSorted.begin(), m_bTagsSorted.end(), jetTaggingComparator);
 
@@ -686,13 +736,15 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 			m_cmax4 = cTagsSorted[3];
 
 			if (m_use_tags2) {
-				std::vector<double> bTagsSorted2(m_bTagValues2.begin(), m_bTagValues2.end());
-				std::sort (bTagsSorted2.begin(), bTagsSorted2.end());
+				for (size_t i = 0; i < m_bTagValues2.size(); i++)
+					m_bTagsSorted2.push_back(std::make_pair(i, m_bTagValues2[i]));
 
-				m_bmax12 = bTagsSorted2[0];
-				m_bmax22 = bTagsSorted2[1];
-				m_bmax32 = bTagsSorted2[2];
-				m_bmax42 = bTagsSorted2[3];
+				std::sort (m_bTagsSorted2.begin(), m_bTagsSorted2.end(), jetTaggingComparator);
+
+				m_bmax12 = m_bTagsSorted2[0].second;
+				m_bmax22 = m_bTagsSorted2[1].second;
+				m_bmax32 = m_bTagsSorted2[2].second;
+				m_bmax42 = m_bTagsSorted2[3].second;
 
 				std::vector<double> cTagsSorted2(m_cTagValues2.begin(), m_cTagValues2.end());
 				std::sort (cTagsSorted2.begin(), cTagsSorted2.end());
@@ -947,22 +999,40 @@ void EventObservablesBase::calculateMatrixElements(
 	TLorentzVector jet3, TLorentzVector jet4, // from h
 	bool permute_from_z
 ){
+	unsigned short nperms = 24;
+	float default_weight = 1./nperms;
+	std::vector<float> weights (nperms, default_weight);
+
+	return calculateMatrixElements(b1_decay_pdg, b2_decay_pdg, from_z_1, from_z_2, jet1, jet2, jet3, jet4, permute_from_z, nperms, weights);
+}
+
+void EventObservablesBase::calculateMatrixElements(
+	int b1_decay_pdg,
+	int b2_decay_pdg,
+	TLorentzVector from_z_1, TLorentzVector from_z_2, // from z
+	TLorentzVector jet1, TLorentzVector jet2, // from z or h
+	TLorentzVector jet3, TLorentzVector jet4, // from h
+	bool permute_from_z,
+	unsigned short nperms,
+	std::vector<float> weights
+){
 	m_lcmezhh->SetZDecayMode(m_pdg_to_lcme_mode[b1_decay_pdg]);
 	m_lcmezzh->SetZDecayMode(m_pdg_to_lcme_mode[b1_decay_pdg], m_pdg_to_lcme_mode[b2_decay_pdg]);
 
-	std::vector<unsigned short> idx = { 0, 1, 2, 3 };
+	std::vector<unsigned short> idx = { 0, 1, 2, 3 }; // nperms !(idx.size())
 	TLorentzVector vecs_jet [4] = { jet1, jet2, jet3, jet4 };
 
 	double result_zhh = 0.;
 	double result_zzh = 0.;
+	m_lcme_weights = weights;
 
-	streamlog_out(DEBUG) << "LCME Debug: E, Px, Py, Pz " << std::endl;
-	streamlog_out(DEBUG) << "  Z_1: " << from_z_1.E() << " " << from_z_1.Px() << " " << from_z_1.Py() << " " << from_z_1.Pz() << std::endl;
-	streamlog_out(DEBUG) << "  Z_2: " << from_z_2.E() << " " << from_z_2.Px() << " " << from_z_2.Py() << " " << from_z_2.Pz() << std::endl;
-	streamlog_out(DEBUG) << "  J_1: " << vecs_jet[idx[0]].E() << " " << vecs_jet[idx[0]].Px() << " " << vecs_jet[idx[0]].Py() << " " << vecs_jet[idx[0]].Pz() << std::endl;
-	streamlog_out(DEBUG) << "  J_2: " << vecs_jet[idx[1]].E() << " " << vecs_jet[idx[1]].Px() << " " << vecs_jet[idx[1]].Py() << " " << vecs_jet[idx[1]].Pz() << std::endl;
-	streamlog_out(DEBUG) << "  J_3: " << vecs_jet[idx[2]].E() << " " << vecs_jet[idx[2]].Px() << " " << vecs_jet[idx[2]].Py() << " " << vecs_jet[idx[2]].Pz() << std::endl;
-	streamlog_out(DEBUG) << "  J_4: " << vecs_jet[idx[3]].E() << " " << vecs_jet[idx[3]].Px() << " " << vecs_jet[idx[3]].Py() << " " << vecs_jet[idx[3]].Pz() << std::endl;
+	streamlog_out(DEBUG) << "LCME Debug: E, Px, Py, Pz" << std::endl
+						 << "  Z_1: " << from_z_1.E() << " " << from_z_1.Px() << " " << from_z_1.Py() << " " << from_z_1.Pz() << std::endl
+						 << "  Z_2: " << from_z_2.E() << " " << from_z_2.Px() << " " << from_z_2.Py() << " " << from_z_2.Pz() << std::endl
+						 << "  J_1: " << vecs_jet[idx[0]].E() << " " << vecs_jet[idx[0]].Px() << " " << vecs_jet[idx[0]].Py() << " " << vecs_jet[idx[0]].Pz() << std::endl
+						 << "  J_2: " << vecs_jet[idx[1]].E() << " " << vecs_jet[idx[1]].Px() << " " << vecs_jet[idx[1]].Py() << " " << vecs_jet[idx[1]].Pz() << std::endl
+						 << "  J_3: " << vecs_jet[idx[2]].E() << " " << vecs_jet[idx[2]].Px() << " " << vecs_jet[idx[2]].Py() << " " << vecs_jet[idx[2]].Pz() << std::endl
+						 << "  J_4: " << vecs_jet[idx[3]].E() << " " << vecs_jet[idx[3]].Px() << " " << vecs_jet[idx[3]].Py() << " " << vecs_jet[idx[3]].Pz() << std::endl;
 
 	/*
 	std::cout << "  TOT: " << from_z_1.E() + from_z_2.E() + vecs_jet[idx[0]].E() + vecs_jet[idx[1]].E() + vecs_jet[idx[2]].E() + vecs_jet[idx[3]].E() << " "
@@ -972,8 +1042,6 @@ void EventObservablesBase::calculateMatrixElements(
 							<< std::endl;
 	*/
 
-	int nperms = 24;
-
 	std::vector<std::vector<unsigned short>> perms_from_z = {{ 0, 1 }};
 	if (permute_from_z) {
 		perms_from_z.push_back({1, 0});
@@ -982,10 +1050,6 @@ void EventObservablesBase::calculateMatrixElements(
 	TLorentzVector vecs_from_z [2] = { from_z_1, from_z_2 };
 
 	// TODO: only calculating 12 is necessary, as H -> a+b is symmetric with respect to a <-> b
-	
-	float default_weight = 1./nperms;
-
-	std::vector<float> weights (nperms, default_weight);
 
 	int nperm = 0;
 	double lcme_zhh = 0.;
@@ -994,19 +1058,24 @@ void EventObservablesBase::calculateMatrixElements(
 	streamlog_out(DEBUG) << "ME^2 (ZHH; ZZH) =" << std::endl;
 	for (auto perm_from_z: perms_from_z) {
 		do {
-			TLorentzVector zhh_inputs [4] = { vecs_from_z[perm_from_z[0]], vecs_from_z[perm_from_z[1]], vecs_jet[idx[0]] + vecs_jet[idx[1]], vecs_jet[idx[2]] + vecs_jet[idx[3]] };
-			TLorentzVector zzh_inputs [5] = { vecs_from_z[perm_from_z[0]], vecs_from_z[perm_from_z[1]], vecs_jet[idx[0]] , vecs_jet[idx[1]], vecs_jet[idx[2]] + vecs_jet[idx[3]] };
+			if (weights[nperm] != 0) {
+				TLorentzVector zhh_inputs [4] = { vecs_from_z[perm_from_z[0]], vecs_from_z[perm_from_z[1]], vecs_jet[idx[0]] + vecs_jet[idx[1]], vecs_jet[idx[2]] + vecs_jet[idx[3]] };
+				TLorentzVector zzh_inputs [5] = { vecs_from_z[perm_from_z[0]], vecs_from_z[perm_from_z[1]], vecs_jet[idx[0]] , vecs_jet[idx[1]], vecs_jet[idx[2]] + vecs_jet[idx[3]] };
 
-			m_lcmezhh->SetMomentumFinal(zhh_inputs);
-			m_lcmezzh->SetMomentumFinal(zzh_inputs);
+				m_lcmezhh->SetMomentumFinal(zhh_inputs);
+				m_lcmezzh->SetMomentumFinal(zzh_inputs);
 
-			lcme_zhh = m_lcmezhh->GetMatrixElement2();
-			lcme_zzh = m_lcmezzh->GetMatrixElement2();
-			
-			streamlog_out(DEBUG) << " Perm " << (nperm+1) << "/" <<nperms  << ": (" << lcme_zhh << "; " << lcme_zzh << ") | wt=" << weights[nperm] << std::endl;
+				lcme_zhh = m_lcmezhh->GetMatrixElement2();
+				lcme_zzh = m_lcmezzh->GetMatrixElement2();
 
-			result_zhh += lcme_zhh * weights[nperm];
-			result_zzh += lcme_zzh * weights[nperm];
+				m_lcme_zhh_raw.push_back(lcme_zhh);
+				m_lcme_zzh_raw.push_back(lcme_zzh);
+				
+				streamlog_out(DEBUG) << " Perm " << (nperm+1) << "/" <<nperms  << ": (" << lcme_zhh << "; " << lcme_zzh << ") | wt=" << weights[nperm] << std::endl;
+
+				result_zhh += lcme_zhh * weights[nperm];
+				result_zzh += lcme_zzh * weights[nperm];
+			}
 
 			nperm += 1;
 		} while (std::next_permutation(idx.begin(), idx.end()));
@@ -1040,26 +1109,56 @@ std::tuple<int, int, int> EventObservablesBase::nPFOsMinMax(LCCollection *collec
 	return std::make_tuple(min_res, max_res, min_idx);
 };
 
+std::tuple<float, float> EventObservablesBase::jetCharge(ReconstructedParticle* jet) {
+	float charge = 0;
+	float dynamic_charge = 0;
+	float jet_energy = jet->getEnergy();
+	float jet_momentum = v4(jet).P();
+	float z_i;
+
+	EVENT::ReconstructedParticleVec jetConstituents = jet->getParticles();
+	
+	for (int i=0; i < jetConstituents.size(); i++) {
+		ReconstructedParticle* pfo = dynamic_cast<ReconstructedParticle*>(jetConstituents[i]);
+
+		// only consider hadronic pfos
+		if (abs(pfo->getType()) > 100) {
+			z_i = pfo->getEnergy() / jet_energy;
+
+			charge += std::pow(z_i, m_jetChargeKappa) * pfo->getCharge();
+
+			// also calculate the dynamic jet charge, as per https://arxiv.org/pdf/2101.04304
+			dynamic_charge += std::pow(z_i, v4(pfo).P()/jet_momentum) * pfo->getCharge();
+		}
+	}
+
+	return std::make_tuple(charge, dynamic_charge);
+}
+
 void EventObservablesBase::setJetMomenta() {
 	m_pxj1 = m_jets[0]->getMomentum()[0];
 	m_pyj1 = m_jets[0]->getMomentum()[1];
 	m_pzj1 = m_jets[0]->getMomentum()[2];
 	m_ej1  = m_jets[0]->getEnergy();
+	std::tie(m_qj1, m_qdj1) = jetCharge(m_jets[0]);
 
 	m_pxj2 = m_jets[1]->getMomentum()[0];
 	m_pyj2 = m_jets[1]->getMomentum()[1];
 	m_pzj2 = m_jets[1]->getMomentum()[2];
 	m_ej2  = m_jets[1]->getEnergy();
+	std::tie(m_qj2, m_qdj2) = jetCharge(m_jets[1]);
 
 	m_pxj3 = m_jets[2]->getMomentum()[0];
 	m_pyj3 = m_jets[2]->getMomentum()[1];
 	m_pzj3 = m_jets[2]->getMomentum()[2];
 	m_ej3  = m_jets[2]->getEnergy();
+	std::tie(m_qj3, m_qdj3) = jetCharge(m_jets[2]);
 
 	m_pxj4 = m_jets[3]->getMomentum()[0];
 	m_pyj4 = m_jets[3]->getMomentum()[1];
 	m_pzj4 = m_jets[3]->getMomentum()[2];
 	m_ej4  = m_jets[3]->getEnergy();
+	std::tie(m_qj4, m_qdj4) = jetCharge(m_jets[3]);
 };
 
 float EventObservablesBase::leadingMomentum(ReconstructedParticleVec jets) {
@@ -1100,14 +1199,3 @@ std::vector<std::pair<int, float>> EventObservablesBase::sortedTagging(LCCollect
 
 	return sortedTagging(tags_by_jet_order);
 };
-
-void EventObservablesBase::calculateSimpleZHHChi2() {
-	std::vector<float> zhh_masses;
-	std::vector<ROOT::Math::PxPyPzEVector> jet_v4 = v4(m_jets);
-
-	std::tie(m_zhh_jet_matching, zhh_masses, m_zhh_chi2) = pairJetsByMass(jet_v4, { 25, 25 });
-
-    m_zhh_mh1 = zhh_masses[0];
-    m_zhh_mh2 = zhh_masses[1];
-    m_zhh_mhh = (jet_v4[0] + jet_v4[1] + jet_v4[2] + jet_v4[3]).M();
-}

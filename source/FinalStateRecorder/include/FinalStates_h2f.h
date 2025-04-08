@@ -9,6 +9,9 @@
 using namespace std;
 
 class ffh: public p4 {
+    protected:
+        const unsigned short HIGGS_IDX = 10;
+
     public:
         // Set process ID and event category
         ffh( string process_name, int process_id, int event_category, vector<int> z_decay_filter ):
@@ -22,7 +25,7 @@ class ffh: public p4 {
             fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(9));
 
             // Get Higgs boson
-            MCParticle* h = (MCParticle*)mcp_collection->getElementAt(10);
+            MCParticle* h = (MCParticle*)mcp_collection->getElementAt(HIGGS_IDX);
 
             if (resolve_higgs) {
                 // Get H-decayed fermions
@@ -45,10 +48,9 @@ class ffh: public p4 {
                 vec_contains(m_final_state_filter, abs(fs_particles[1]->getPDG())), RESOLVER_ERRORS::UNALLOWED_VALUES);
 
             // Get H-decayed fermions
-            assert_true(fs_particles[4]->getPDG() == 25, RESOLVER_ERRORS::HIGGS_NOT_FOUND);
+            assert_true(fs_particles[2]->getPDG() == 25, RESOLVER_ERRORS::HIGGS_NOT_FOUND);
 
-            vector<int> d1 = pdgs_of_daughter_particles(fs_particles[4]);
-
+            vector<int> d1 = pdgs_of_daughter_particles(fs_particles[2]);
             assert_true(d1.size() == 2, RESOLVER_ERRORS::UNEXPECTED_CHILDREN);
 
             m_n_b_from_higgs = count(d1.begin(), d1.end(), 5);
@@ -57,8 +59,6 @@ class ffh: public p4 {
             return vector<int>{
                 fs_particles[0]->getPDG(),
                 fs_particles[1]->getPDG(),
-                fs_particles[2]->getPDG(),
-                fs_particles[3]->getPDG(),
                 d1[0],
                 d1[1]
             };
