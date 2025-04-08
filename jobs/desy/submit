@@ -1,0 +1,119 @@
+#!/usr/bin/bash
+
+# Helper file to submit any batch job
+# must be defined in a sub directory
+
+JOB_NAME=$1
+START_DIR="$(pwd)"
+
+if [[ -z $ZHH_SETUP || -z $REPO_ROOT ]]; then
+    echo "> ZHH environment not sourced. Aborting."
+    exit 1
+fi
+
+if [[ ! -f ".env" ]]; then
+    echo "> No .env file exists. Aborting."
+    exit 1
+fi
+
+if [[ ! -d "$VIRTUAL_ENV" ]]; then
+    echo "> Activating zhhvenv..."
+
+    source "$REPO_ROOT/$ZHH_VENV_NAME/bin/activate"
+    if [ $? != 0 ]; then
+        echo "> Could not activate Python environment. Aborting."
+        exit 1
+    fi
+fi
+
+if [[ -z "$DATA_PATH" ]]; then
+    export DATA_PATH="/data/dust/user/$(whoami)/jobresults"
+fi
+
+if [[ ! -d "$DATA_PATH" ]]; then
+    mkdir -p "$DATA_PATH"
+    if [ $? != 0 ]; then
+        echo "> Failed to create DATA_DIR <$DATA_DIR>. Aborting."
+        exit 1
+    fi
+fi
+
+if [[ ! -d "$REPO_ROOT/jobs/desy/$JOB_NAME" ]]; then
+    echo "> Unknown job <$JOB_NAME>"
+    exit 2
+fi
+
+if [[ ! -f "$REPO_ROOT/jobs/desy/$JOB_NAME/prepare.py" ]]; then
+    echo "> Job definition invalid"
+    exit 3
+fi
+
+echo "> Output will be written to <$DATA_PATH/$JOB_NAME>"
+
+# clear job definitions
+JOB_BASEDIR="$REPO_ROOT/jobs/desy/$JOB_NAME"
+
+rm -rf "$JOB_BASEDIR/*.queue"
+rm -rf "$JOB_BASEDIR/*.job"
+
+cd "$JOB_BASEDIR"
+
+function abort_job_submission() {
+    find $JOB_BASEDIR -type f -name "*.queue" -delete
+    find $JOB_BASEDIR -type f -name "*.sub" -delete
+}
+
+# create updated definitions
+python prepare.py $JOB_NAME
+
+choices=(`ls *.sub`)
+if [ $? != 0 ]; then
+    echo "> Could not find job files. Chek if prepare.py ran successfully"
+    exit 1
+fi
+
+nchoices=${#choices[@]}
+choice=0
+if [[ $nchoices -gt 1 ]]; then
+    echo "> Found $nchoices possible job types. Please select (number): "
+
+    for ((i=0;i<nchoices;i++)); do
+        jobtype=${choices[i]//.sub/}
+        queue_file="$jobtype.queue"
+        njobs=$(cat $queue_file | wc -l)
+        echo "  $i: $jobtype ($njobs jobs)"
+    done
+
+    choice=""
+    read -p "> Which job type do you wish to execute? (abort) " choice
+    choice=${choice:-"abort"}
+
+    if [[ $choice == "abort" || $choice -ge $nchoices ]]; then
+        echo "> Job type $choice invalid. Aborting"
+        abort_job_submission
+        exit 1
+    fi
+fi
+
+jobtype=${choices[$choice]//.sub/}
+
+echo "> Selected job type <$jobtype>"
+
+queue_file="$jobtype.queue"
+
+if [[ ! -f "$queue_file" ]]; then
+    echo "> No queue file $queue_file found. Aborting."
+    exit 2
+fi
+
+njobs=$(cat $queue_file | wc -l)
+if [[ $njobs -eq 0 ]]; then
+    echo "> Job already done."
+    exit 0
+fi
+
+echo "> Submitting $njobs jobs..."
+
+condor_submit "$jobtype.sub" && echo "Success" || echo "Critical error"
+
+cd $START_DIR

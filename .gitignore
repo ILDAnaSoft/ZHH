@@ -53,3 +53,7 @@ setup.sh
 definitions
 *.job
 weights
+*.queue
+HighLevelReco
+WWCATOUTCM
+WWCATOUTROOT

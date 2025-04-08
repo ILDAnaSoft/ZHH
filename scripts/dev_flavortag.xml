@@ -59,7 +59,7 @@
 
 <processor name="AIDA" type="AIDAProcessor">
   <parameter name="Compress" type="int"> 1 </parameter>
-  <parameter name="FileName" type="string"> ${OutputDir}/AIDAFile_${OutputSuffix}.root </parameter>
+  <parameter name="FileName" type="string"> ${OutputDir}/AIDAFile_${OutputSuffix} </parameter>
   <parameter name="FileType" type="string"> root </parameter>
 </processor>
 

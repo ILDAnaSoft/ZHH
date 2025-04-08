@@ -22,6 +22,46 @@
 
 <global>
 	<parameter name="LCIOInputFiles">
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eL.pR.I404019.0.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eL.pR.I404019.1.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eL.pR.I404019.10.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eL.pR.I404019.11.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eL.pR.I404019.12.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eL.pR.I404019.13.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eL.pR.I404019.14.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eL.pR.I404019.15.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eL.pR.I404019.16.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eL.pR.I404019.17.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eL.pR.I404019.18.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eL.pR.I404019.19.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eL.pR.I404019.2.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eL.pR.I404019.3.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eL.pR.I404019.4.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eL.pR.I404019.5.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eL.pR.I404019.6.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eL.pR.I404019.7.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eL.pR.I404019.8.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eL.pR.I404019.9.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eR.pL.I404020.0.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eR.pL.I404020.1.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eR.pL.I404020.10.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eR.pL.I404020.11.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eR.pL.I404020.12.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eR.pL.I404020.13.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eR.pL.I404020.14.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eR.pL.I404020.15.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eR.pL.I404020.16.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eR.pL.I404020.17.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eR.pL.I404020.18.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eR.pL.I404020.19.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eR.pL.I404020.2.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eR.pL.I404020.3.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eR.pL.I404020.4.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eR.pL.I404020.5.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eR.pL.I404020.6.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eR.pL.I404020.7.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eR.pL.I404020.8.slcio
+		/nfs/dust/ilc/user/bliewert/zhh/FastSimSGV/550-hh-fast/E550-Test.Pqqqqh.Gwhizard-2_8_5.eR.pL.I404020.9.slcio
 	</parameter>
 	<parameter name="MaxRecordNumber" value="-1"/>  
 	<parameter name="SkipNEvents" value="0" />  
