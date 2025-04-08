@@ -125,6 +125,27 @@ class FinalStateRecorder : public Processor
 			{ 25, 0 } // h
 		};
 
+		std::vector<int> m_higgs_final_states{};
+		std::map<int, int> m_higgs_final_state_counts {
+			{ 1, 0 }, // d
+			{ 2, 0 }, // u
+			{ 3, 0 }, // s
+			{ 4, 0 }, // c
+			{ 5, 0 }, // b
+			{ 6, 0 }, // t
+			{ 11, 0 }, // e
+			{ 12, 0 }, // ve
+			{ 13, 0 }, // µ
+			{ 14, 0 }, // vµ
+			{ 15, 0 }, // tau
+			{ 16, 0 }, // vtau
+			{ 21, 0 }, // g
+			{ 22, 0 }, // γ
+			{ 23, 0 }, // Z
+			{ 24, 0 }, // W
+			{ 25, 0 } // h
+		};
+
 		int m_process{};
 		unsigned short m_polarization_code{};
 		int m_event_category{};

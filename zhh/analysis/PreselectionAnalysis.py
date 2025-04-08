@@ -8,7 +8,7 @@ import json
 import numpy as np
 import uproot as ur
 import awkward as ak
-from ..util.LazilyLoadedDict import LazilyLoadedDict
+from ..util.LazyTablelike import LazyTablelike
 
 DEFAULTS = {
     'PROD_NAME': '500-TDR_ws',
@@ -309,11 +309,11 @@ def analysis_stack(DATA_ROOT:str,
     
     if kinematics:
         for dt in [
-            ('xx_thrust', 'f'),
-            ('xx_e_vis', 'f'),
-            ('xx_pt_miss', 'f'),
-            ('xx_invmass_miss', 'f'),
-            ('xx_nisoleps', 'B'),
+            ('thrust', 'f'),
+            ('e_vis', 'f'),
+            ('pt_miss', 'f'),
+            ('invmass_miss', 'f'),
+            ('nisoleps', 'B'),
         
             # llHH
             ('ll_mh1', 'f'),
@@ -384,11 +384,11 @@ def analysis_stack(DATA_ROOT:str,
                 
                 if i == 0:
                     if kinematics:
-                        chunk['xx_thrust'] = rf['thrust'].array()
-                        chunk['xx_e_vis'] = rf['Evis'].array()
-                        chunk['xx_pt_miss'] = rf['missingPT'].array()
-                        chunk['xx_invmass_miss'] = rf['missingInvMass'].array()
-                        chunk['xx_nisoleps'] = rf['nIsoLeptons'].array()
+                        chunk['thrust'] = rf['thrust'].array()
+                        chunk['e_vis'] = rf['Evis'].array()
+                        chunk['pt_miss'] = rf['missingPT'].array()
+                        chunk['invmass_miss'] = rf['missingInvMass'].array()
+                        chunk['nisoleps'] = rf['nIsoLeptons'].array()
                     
                 if kinematics:
                     chunk[f'{presel}_nbjets'] = rf['nbjets'].array()
@@ -427,7 +427,7 @@ def fetch_preselection_data(rf, presel:str, final_states:bool=True, tree:str|Non
     else:
         evtObsTree = f'EventObservables{presel.upper()}'
         
-    result = LazilyLoadedDict(tree.num_entries)
+    #result = LazyTablelike(tree.num_entries)
     
     dtype = [
         ('id', 'I'),
@@ -444,11 +444,11 @@ def fetch_preselection_data(rf, presel:str, final_states:bool=True, tree:str|Non
         ('vv_pass', 'B'),
         ('qq_pass', 'B'),
         
-        ('xx_thrust', 'f'),
-        ('xx_e_vis', 'f'),
-        ('xx_pt_miss', 'f'),
-        ('xx_invmass_miss', 'f'),
-        ('xx_nisoleps', 'B'),
+        ('thrust', 'f'),
+        ('e_vis', 'f'),
+        ('pt_miss', 'f'),
+        ('invmass_miss', 'f'),
+        ('nisoleps', 'B'),
         ('xx_paired_isoleptype', 'B'),
         
         ('passed', 'B'),
@@ -501,11 +501,11 @@ def fetch_preselection_data(rf, presel:str, final_states:bool=True, tree:str|Non
         for i in range(len(fs_columns)):
             results[fs_columns[i]] = fs_counts[:, i]
     
-    results['xx_thrust'] = rf[f'{evtObsTree}/thrust'].array()
-    results['xx_e_vis'] = rf[f'{evtObsTree}/evis'].array()
-    results['xx_pt_miss'] = rf[f'{evtObsTree}/ptmiss'].array()
-    results['xx_invmass_miss'] = rf[f'{evtObsTree}/m_miss'].array()
-    results['xx_nisoleps'] = rf[f'{evtObsTree}/nisoleptons'].array()
+    results['thrust'] = rf[f'{evtObsTree}/thrust'].array()
+    results['e_vis'] = rf[f'{evtObsTree}/evis'].array()
+    results['pt_miss'] = rf[f'{evtObsTree}/ptmiss'].array()
+    results['invmass_miss'] = rf[f'{evtObsTree}/m_miss'].array()
+    results['nisoleps'] = rf[f'{evtObsTree}/nisoleptons'].array()
     
     #KinFitTree = f'KinFit{presel.upper()}_ZHH'
     
@@ -554,11 +554,11 @@ def fetch_preselection_data_old(rf, presel:str, final_states:bool=True, tree:str
         ('vv_pass', 'B'),
         ('qq_pass', 'B'),
         
-        ('xx_thrust', 'f'),
-        ('xx_e_vis', 'f'),
-        ('xx_pt_miss', 'f'),
-        ('xx_invmass_miss', 'f'),
-        ('xx_nisoleps', 'B'),
+        ('thrust', 'f'),
+        ('e_vis', 'f'),
+        ('pt_miss', 'f'),
+        ('invmass_miss', 'f'),
+        ('nisoleps', 'B'),
         ('xx_paired_isoleptype', 'B'),
         
         ('passed', 'B'),
@@ -611,11 +611,11 @@ def fetch_preselection_data_old(rf, presel:str, final_states:bool=True, tree:str
         for i in range(len(fs_columns)):
             results[fs_columns[i]] = fs_counts[:, i]
     
-    results['xx_thrust'] = rf[f'{evtObsTree}/thrust'].array()
-    results['xx_e_vis'] = rf[f'{evtObsTree}/evis'].array()
-    results['xx_pt_miss'] = rf[f'{evtObsTree}/ptmiss'].array()
-    results['xx_invmass_miss'] = rf[f'{evtObsTree}/m_miss'].array()
-    results['xx_nisoleps'] = rf[f'{evtObsTree}/nisoleptons'].array()
+    results['thrust'] = rf[f'{evtObsTree}/thrust'].array()
+    results['e_vis'] = rf[f'{evtObsTree}/evis'].array()
+    results['pt_miss'] = rf[f'{evtObsTree}/ptmiss'].array()
+    results['invmass_miss'] = rf[f'{evtObsTree}/m_miss'].array()
+    results['nisoleps'] = rf[f'{evtObsTree}/nisoleptons'].array()
     
     #KinFitTree = f'KinFit{presel.upper()}_ZHH'
     

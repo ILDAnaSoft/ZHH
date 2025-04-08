@@ -631,7 +631,6 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 		
 		// ---------- VISIBLE ENERGY ----------
 		m_Evis = pfosum.E();
-		m_invJetMass = pfosum.M();
 
 		// ---------- THRUST ----------
 		const EVENT::LCParameters& raw_pfo_params = inputPfoCollection->getParameters();
@@ -657,10 +656,12 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 
 		// continue only if the number of jets and isolated leptons match the preselection
 		// and the numbers in the Kinfit processors
+		
 		if ( m_nJets == m_nAskedJets() ) {
 			streamlog_out(MESSAGE) << "Continue with "<< m_nJets << " jets and "<< inputLepPairCollection->getNumberOfElements() << " ISOLeptons" << std::endl;
 
 			// ---------- JET PROPERTIES AND FLAVOUR TAGGING ----------
+			ROOT::Math::PxPyPzEVector jetsum(0.,0.,0.,0.);
 			for (int i=0; i < m_nJets; ++i) {
 				ReconstructedParticle* jet = (ReconstructedParticle*) inputJetCollection->getElementAt(i);
 				ROOT::Math::PxPyPzEVector jet_v4 = v4(jet);
@@ -673,7 +674,9 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 				m_ptjmax = std::max(m_ptjmax, (float)jet_v4.Pt());
 				m_pjmax = std::max(m_pjmax, currentJetMomentum);
 				m_jets.push_back(jet);
+				jetsum += jet_v4;
 			}
+			m_invJetMass = jetsum.M();
 
 			PIDHandler jetPIDh(inputJetCollection);
 			int _FTAlgoID = jetPIDh.getAlgorithmID(m_JetTaggingPIDAlgorithm);

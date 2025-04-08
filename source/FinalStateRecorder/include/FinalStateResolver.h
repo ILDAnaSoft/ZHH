@@ -79,11 +79,29 @@ class FinalStateResolver {
             return isr_particles;
         };
         
-        // To be overwritten by deriving class definitions, the lower three MUST be defined
+        // CAN be overwritten by deriving class definitions
         virtual int get_event_category(std::map<int, int> m_final_state_counts) {
             (void)m_final_state_counts;
             return m_event_category; };
+        
+        virtual std::vector<int> resolve_higgs_decays(LCCollection *mcp_collection) {
+            if (get_n_higgs()) {
+                std::vector<int> result;
+                std::vector<MCParticle*> fs_particles = resolve_fs_particles(mcp_collection, false);
 
+                for (size_t i = 0; i < fs_particles.size(); i++) {
+					if (fs_particles[i]->getPDG() == 25) {
+                        result.push_back(fs_particles[i]->getDaughters()[0]->getPDG());
+                        result.push_back(fs_particles[i]->getDaughters()[1]->getPDG());
+                    }
+                }
+
+                return result;
+            } else
+                return {};
+        };
+
+        // MUST be overwritten by deriving class definitions
         virtual std::vector<EVENT::MCParticle*> resolve_fs_particles(LCCollection *mcp_collection, bool resolve_higgs = false) = 0;
         virtual std::vector<int> resolve(LCCollection *mcp_collection) = 0;
 };

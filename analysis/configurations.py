@@ -1,10 +1,11 @@
 from collections.abc import Callable, Sequence
 from zhh import zhh_cuts, Cut, EqualCut, fetch_preselection_data, sample_weight, parse_polarization_code, \
-    ProcessCategories, get_pol_key
+    ProcessCategories, get_pol_key, PreselectionSummary
 import uproot as ur
 import os.path as osp
 import os, subprocess, ROOT, numpy as np
 from tqdm.auto import tqdm
+from typing import cast
 
 # 4x3 analysis channels:
 # llHH:
@@ -25,7 +26,7 @@ class AnalysisChannel:
         self._define_bkg = define_bkg
         self._define_sig = define_sig
         self.rf:ur.WritableFile|None = None
-        self.summary:np.ndarray|None = None
+        self.summary:PreselectionSummary|None = None
         
     def initialize(self, work_root:str, trees:list[str], root_files:list[str]|None=None):
         self._work_dir = f'{work_root}/{self._name}'
@@ -61,7 +62,10 @@ class AnalysisChannel:
             self.rf = ur.open(self._merged_file)
     
     def fetch(self, presel:str, tree:str='Merged'):
-        self.summary = fetch_preselection_data(self.rf, presel, tree=tree)
+        assert(self.rf is not None)
+        self.summary = PreselectionSummary(cast(ur.TTree, self.rf[tree]), preselection=presel)
+        #self.summary = fetch_preselection_data(self.rf, presel, tree=tree)
+        return self.summary
     
     def weight(self, lumi_inv_ab:float=2.)->tuple[np.ndarray,np.ndarray]:
         assert(self.rf is not None and self.summary is not None)

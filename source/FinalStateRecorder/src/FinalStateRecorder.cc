@@ -207,6 +207,9 @@ void FinalStateRecorder::init()
 		m_pTTree->Branch("final_states", &m_final_states);
 		m_pTTree->Branch("final_state_counts", &m_final_state_counts);
 
+		m_pTTree->Branch("higgs_final_states", &m_higgs_final_states);
+		m_pTTree->Branch("higgs_final_state_counts", &m_final_state_counts);
+
 		m_pTTree->Branch("process", &m_process);
 		m_pTTree->Branch("process_id", &m_process_id);
 		m_pTTree->Branch("polarization_code", &m_polarization_code);
@@ -474,6 +477,9 @@ void FinalStateRecorder::clear()
 	for (auto const& [key, value] : m_final_state_counts)
 		m_final_state_counts[key] = 0;
 
+	for (auto const& [key, value] : m_higgs_final_state_counts)
+		m_higgs_final_state_counts[key] = 0;
+
 	m_process = 0;
 	m_n_fermion = 0;
 	m_n_higgs = 0;
@@ -534,9 +540,11 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 			m_n_fermion = resolver->get_n_fermions();
 			m_n_higgs = resolver->get_n_higgs();
 
-			// Get final state information
+			// Get final state information for total final state and Higgs only
 			try {
 				m_final_states = resolver->resolve(inputMCParticleCollection);
+				m_higgs_final_states = resolver->resolve_higgs_decays(inputMCParticleCollection);
+
 				m_n_b_from_higgs = resolver->get_n_b_from_higgs();
 				m_n_c_from_higgs = resolver->get_n_c_from_higgs();
 
@@ -549,11 +557,21 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 						std::cerr << "Encountered unallowed final state particle " << particle_pdg << " in run " << m_n_run << " (process " << m_process << ") at event " << m_n_evt << std::endl ;
 						throw ERROR_CODES::UNALLOWED_VALUES;
 					}
-					
+				}
+
+				for (size_t i = 0; i < m_higgs_final_states.size(); i++) {
+					int particle_pdg = abs(m_higgs_final_states[i]);
+
+					if (m_higgs_final_state_counts.find(abs(particle_pdg)) != m_higgs_final_state_counts.end()) {
+						m_higgs_final_state_counts[particle_pdg]++;
+					} else {
+						std::cerr << "Encountered unallowed final state particle " << particle_pdg << " in run " << m_n_run << " (process " << m_process << ") at event " << m_n_evt << std::endl ;
+						throw ERROR_CODES::UNALLOWED_VALUES;
+					}
 				}
 				
 				// Set ZHH event category
-				if (m_process >= PROCESS_ID::e1e1hh && m_process <= PROCESS_ID::e2e2hh) {
+				if (m_process == PROCESS_ID::e1e1hh || m_process == PROCESS_ID::e2e2hh || m_process == PROCESS_ID::e3e3hh) {
 					m_event_category_zhh = EVENT_CATEGORY::LEPTONIC;
 				} else if (m_process == PROCESS_ID::n1n1hh || m_process == PROCESS_ID::n23n23hh) {
 					m_event_category_zhh = EVENT_CATEGORY::NEUTRINO;
