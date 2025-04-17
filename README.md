@@ -15,7 +15,7 @@ If you wish to use your own local copies of the repositories, create (or edit, i
 source install.sh
 ```
 
-This will download the necessary repositories into `dependencies` and for ILDConfig extract LCFIPlus weights. Also, if the directory `$ZHH_VENV_NAME` (defaults `zhhvenv`) is not found, a virtual environment can be automatically set up, including python 3.11 and all dependencies defined in the `requirements.txt` file. Also, all ZHH and dependency processors will be compiled.
+This will download the necessary repositories into `dependencies` and for ILDConfig extract LCFIPlus weights. Also, if the directory `$ZHH_VENV_NAME` (defaults `zhhvenv`) is not found, a virtual environment can be automatically set up, including python 3.11 and all dependencies defined in the `requirements.txt` file. Also, all ZHH and dependency processors will be compiled. The script may ask you for input at several points, where you can safely just press ENTER (this always confirms the default option).
 
 To test if the setup succeeded, call `MarlinZHH --global.LCIOInputFiles=<SomeLCIOFile>` where `SomeLCIOFile` points to a new (mc2020+) DST file. This will run Marlin with the `prod.xml` steering file (scripts directory). On DESY NAF, a valid default is given for `LCIOInputFiles`, so a simple `MarlinZHH` suffices.
 
