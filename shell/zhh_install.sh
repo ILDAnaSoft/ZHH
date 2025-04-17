@@ -51,7 +51,7 @@ EOF
                 source $REPO_ROOT/$ZHH_VENV_NAME/bin/activate 
                 pip install ipykernel
                 python -m ipykernel install --user --name=$ZHH_VENV_NAME
-            )
+            ) && echo "Success: IPython kernel installed" || echo "Error: IPython kernel installation failed"
         fi
     else
         echo "Python venv <$ZHH_VENV_NAME> already exists. If you want to redo the setup, delete the directory <$REPO_ROOT/$ZHH_VENV_NAME>."
