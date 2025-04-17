@@ -37,7 +37,7 @@ action(){
             cd build
 
             if [[ $delete_existing = "True" || ! -f Makefile  ]]; then
-                cmake -DCMAKE_CXX_STANDARD=17 ..
+                cmake ..
             fi
             
             if [[ $isdebug = "True" ]]; then
