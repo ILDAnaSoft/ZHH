@@ -48,7 +48,7 @@ EOF
         read -p "Do you want to make the kernel available for Jupyter Notebook? (y) " yn
         if [[ -z $yn || $yn == "y" ]]; then
             (
-                source ./bin/activate 
+                source $REPO_ROOT/$ZHH_VENV_NAME/bin/activate 
                 pip install ipykernel
                 python -m ipykernel install --user --name=$ZHH_VENV_NAME
             )
