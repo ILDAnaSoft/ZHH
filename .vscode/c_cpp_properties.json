@@ -42,7 +42,7 @@
             "configurationProvider": "ms-vscode.cmake-tools",
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
-                "databaseFilename": ""
+                "databaseFilename": "${workspaceFolder}/.intellisense"
               }
         }
     ],

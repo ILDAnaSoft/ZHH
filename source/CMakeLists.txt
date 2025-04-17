@@ -75,7 +75,7 @@ set(sources
   ZHHKinfitProcessors/src/ZHHllbbbbKinFitv1.cc
   ZHHKinfitProcessors/src/ZHHqqbbbbKinFitv1.cc
   ZHHKinfitProcessors/src/ZHHvvbbbbKinFitv1.cc
-  #ZHHKinfitProcessors/src/ZHHKinFit.cc
+  ZHHKinfitProcessors/src/ZHHKinFit.cc
   ZinvisibleErrorAnalysis/src/ZinvisibleErrorAnalysis.cc
   PreSelection/src/PreSelection.cc
 )

@@ -30,7 +30,39 @@ class Config_550_hh_fast(AnalysisConfiguration):
     def sgv_inputs(self):
         input_files = glob('/pnfs/desy.de/ilc/prod/ilc/mc-2020/generated/550-Test/hh/*.slcio')
         input_files.sort()
-        input_options = [None] * len(input_files)
+        input_options = [{
+            'analysis_steering.CALO_TREATMENT': 'PFL '
+        }] * len(input_files)
+        
+        return input_files, input_options
+    
+    statistics = 1.
+    marlin_globals = {  }
+    marlin_constants = { 'CMSEnergy': 550 }
+
+class Config_550_hh_fast_perf(AnalysisConfiguration):
+    tag = '550-hh-fast-perf'
+    
+    def sgv_inputs(self):
+        input_files:list[str] = []
+        input_options:list[dict] = []
+        
+        for cms_energy, sgv_input_format, source_dir, file_ending in [
+            (550, 'LCIO', '/pnfs/desy.de/ilc/prod/ilc/mc-2020/generated/550-Test/hh', 'slcio'),
+        ]:
+            sgv_options:SGVOptions = {
+                'global_steering.MAXEV': 999999,
+                'global_generation_steering.CMS_ENE': cms_energy,
+                'external_read_generation_steering.GENERATOR_INPUT_TYPE': sgv_input_format,
+                'external_read_generation_steering.INPUT_FILENAMES': f'input.{file_ending}',
+                'analysis_steering.CALO_TREATMENT': 'PERF'
+            }
+            files = glob(f'{source_dir}/*.{file_ending}')
+            files.sort()
+            
+            for file in files:
+                input_files.append(file)
+                input_options.append(sgv_options)
         
         return input_files, input_options
     
@@ -203,3 +235,4 @@ zhh_configs.add(Config_550_hh_full())
 zhh_configs.add(Config_5x0_ft_fast())
 zhh_configs.add(Config_550_test_fast())
 zhh_configs.add(Config_550_ll_fast())
+zhh_configs.add(Config_550_hh_fast_perf())

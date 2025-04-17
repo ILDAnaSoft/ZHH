@@ -147,7 +147,7 @@ class FastSimSGVExternalReadJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     
     # this must fit the compilation of usesgvlcio (here: default)
     # copied from steering_file_src to the working directory
-    steering_file_name = 'sgv.steer'
+    steering_file_name = 'fort.17'
     
     sgv_env = '$SGV_DIR/sgvenv.sh'
     sgv_input = 'input.slcio' # this must fit the steering file, also the GENERATOR_INPUT_TYPE
@@ -184,7 +184,8 @@ class FastSimSGVExternalReadJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     
     def get_temp_dir(self):
         if not self.tmp_dir:
-            self.tmp_dir = f'{osp.splitext(cast(str, self.output().path))[0]}-TMP-{str(uuid.uuid4())}'
+            output_path = cast(str, self.output().path)
+            self.tmp_dir = f'{osp.dirname(output_path)}/TMP-{osp.splitext(osp.basename(output_path))[0]}-{str(uuid.uuid4())}'
             
         return self.tmp_dir
     
@@ -209,7 +210,8 @@ class FastSimSGVExternalReadJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         cmd += f' && echo "Finished SGV at $(date)"'
         cmd += f' && echo "Moving from worker node to destination"'
         cmd += f' && mv "{self.sgv_output}" "{target_path}"'
-        cmd += f' && rm -rf "" ) '
+        cmd += f' )'
+        #cmd += f' && rm -rf "" ) '
         
         return cmd
     

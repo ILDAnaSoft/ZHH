@@ -27,7 +27,8 @@ ZHHKinFit::ZHHKinFit() :
   c(0.0),
   mm2m(0.0),
   eV2GeV(0.0),
-  eB(0.0)
+  eB(0.0),
+  m_pTFile(nullptr)
 {
   
   //	modify processor description
@@ -270,11 +271,15 @@ void ZHHKinFit::init()
   ISRPzMaxB = std::pow((double)m_isrpzmax,b);
   
   printParameters();
+
+  const char* treeName = (std::string("KinFitLL") + m_fithypothesis).c_str();
+	m_pTTree = new TTree(treeName, treeName);
   
-  m_pTFile = new TFile(m_outputFile.c_str(),"recreate");
-  
-  m_pTTree = new TTree("eventTree","eventTree");
-  m_pTTree->SetDirectory(m_pTFile);
+  if (m_outputFile.size()) {
+    m_pTFile = new TFile(m_outputFile.c_str(),"recreate");
+    m_pTTree->SetDirectory(m_pTFile);
+  }
+
   m_pTTree->Branch("run", &m_nRun, "run/I");
   m_pTTree->Branch("event", &m_nEvt, "event/I");
   m_pTTree->Branch("nJets",&m_nJets,"nJets/I") ;
@@ -2455,9 +2460,13 @@ void ZHHKinFit::end()
 //	streamlog_out(MESSAGE) << "# of events: " << m_nEvt << std::endl;
 //	streamlog_out(ERROR) << "# of nucorrection: " << correction<< std::endl;
 //	streamlog_out(ERROR) << "# of Covariance failed: " << nCo<< std::endl;
-  m_pTFile->cd();
+  if (m_pTFile != nullptr)
+    m_pTFile->cd();
+  
   m_pTTree->Write();
-  m_pTFile->Close();
-  delete m_pTFile;
 
+  if (m_pTFile != nullptr) {
+    m_pTFile->Close();
+    delete m_pTFile;
+  }
 }
