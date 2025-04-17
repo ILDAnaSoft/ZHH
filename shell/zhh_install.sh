@@ -47,8 +47,11 @@ EOF
 
         read -p "Do you want to make the kernel available for Jupyter Notebook? (y) " yn
         if [[ -z $yn || $yn == "y" ]]; then
-            pip install ipykernel
-            python -m ipykernel install --user --name=$ZHH_VENV_NAME
+            (
+                source ./bin/activate 
+                pip install ipykernel
+                python -m ipykernel install --user --name=$ZHH_VENV_NAME
+            )
         fi
     else
         echo "Python venv <$ZHH_VENV_NAME> already exists. If you want to redo the setup, delete the directory <$REPO_ROOT/$ZHH_VENV_NAME>."
@@ -206,7 +209,7 @@ TORCH_PATH="$TORCH_PATH"
 ZHH_VENV_NAME="$ZHH_VENV_NAME"
 DATA_PATH="$data_dir"
 SGV_DIR="$sgv_dir"
-ONNXRUNTIMEPATH="/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/py-onnxruntime/1.17.1-s4gp4m"
+ONNXRUNTIMEPATH="$ONNXRUNTIMEPATH"
 Physsim="$Physsim"
 
 EOF

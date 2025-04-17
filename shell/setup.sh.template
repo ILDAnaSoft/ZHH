@@ -12,6 +12,9 @@ export MarlinKinfit_ROOT="$MarlinKinfit"
 export LD_LIBRARY_PATH="$Physsim/lib64:$LD_LIBRARY_PATH"
 export CPATH=$(echo $CPATH | sed -e "s|/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/physsim/0.5-433xdn/include/physsim|$Physsim/include|g")
 
+# For LCFIPlus
+export ONNXRUNTIMEPATH="/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/py-onnxruntime/1.17.1-s4gp4m"
+
 function zhh_attach_marlin_dlls() {
     # TODO: no need for loop
     local libs=(
