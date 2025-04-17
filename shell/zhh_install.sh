@@ -5,12 +5,21 @@ function zhh_get_install_arg() {
     local varname="$2"
     local default="$3"
 
-    if [[ -z $ZHH_INSTALL_USE_DEFAULT ]]; then
-        read -p "$message" value
-        $varname="$value"
+    if [ -z $ZHH_INSTALL_USE_DEFAULT ]; then
+        #read -p "$message" value
+        #$varname="$value"
+
+        printf "%s" "$message"
+        read $varname
+
+        echo "variable with name ($varname) = ${!varname}"
+
+        if [ -z ${!varname} ]; then
+            IFS= read -r -d '' "$varname" <<< $default
+        fi
     else
         zhh_echo "Using default value <$default> for $varname"
-        $varname="$default"        
+        IFS= read -r -d '' "$varname" <<< $default
     fi
 }
 
