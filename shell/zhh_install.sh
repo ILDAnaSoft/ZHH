@@ -6,9 +6,6 @@ function zhh_get_install_arg() {
     local default="$3"
 
     if [ -z $ZHH_INSTALL_USE_DEFAULT ]; then
-        #read -p "$message" value
-        #$varname="$value"
-
         printf "%s" "$message"
         read $varname
 
