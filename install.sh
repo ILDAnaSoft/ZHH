@@ -42,6 +42,7 @@ fi
 
 # Parse user input
 ZHH_COMMAND="install"
+ZHH_INSTALL_USE_DEFAULT=""
 
 for ((i=1; i<=$#; i++)); do
     eval arg=\$$i
@@ -53,6 +54,9 @@ for ((i=1; i<=$#; i++)); do
             ;;
         --setup|-f)
             ZHH_WRITE_SETUP=1
+            ;;
+        --auto)
+            ZHH_INSTALL_USE_DEFAULT=1
             ;;
         --install-dir|-d)
             if [[ -z "$argn" ]]; then
@@ -108,7 +112,7 @@ if [[ "$ZHH_COMMAND" = "install" ]]; then
     if [[ -z "$ZHH_INSTALL_DIR" ]]; then
         ZHH_INSTALL_DIR=$( realpath "$REPO_ROOT/dependencies" )
 
-        read -p "Where do you wish to install all the dependencies? ($ZHH_INSTALL_DIR) " zhh_install_dir
+        zhh_get_install_arg "Where do you wish to install all the dependencies? ($ZHH_INSTALL_DIR) " zhh_install_dir "$ZHH_INSTALL_DIR"
         if [[ ! -z "$zhh_install_dir" ]]; then 
             ZHH_INSTALL_DIR=$zhh_install_dir
         fi

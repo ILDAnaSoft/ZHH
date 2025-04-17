@@ -1,5 +1,19 @@
 #!/bin/bash
 
+function zhh_get_install_arg() {
+    local message="$1"
+    local varname="$2"
+    local default="$3"
+
+    if [[ -z $ZHH_INSTALL_USE_DEFAULT ]]; then
+        read -p "$message" value
+        $varname="$value"
+    else
+        zhh_echo "Using default value <$default> for $varname"
+        $varname="$default"        
+    fi
+}
+
 function zhh_install_venv() {
     echo "Checking python venv installation with name <$ZHH_VENV_NAME>..."
     
@@ -26,6 +40,16 @@ function zhh_install_venv() {
         # Add $REPO_ROOT to PYTHONPATH
         echo "$REPO_ROOT" >> "$(realpath $REPO_ROOT/$ZHH_VENV_NAME/lib/python*/site-packages)/zhh.pth"
 
+        # Install Jupyter kernel
+        zhh_get_install_arg "Do you want to make the kernel available for Jupyter Notebook? (y) " yn y
+        if [[ -z $yn || $yn == "y" ]]; then
+            (
+                source $REPO_ROOT/$ZHH_VENV_NAME/bin/activate 
+                pip install ipykernel
+                python -m ipykernel install --user --name=$ZHH_VENV_NAME
+            ) && echo "Success: IPython kernel installed" || echo "Error: IPython kernel installation failed"
+        fi
+
         # Replace the python executable with a shim so it is guaranteed
         # that the key4hep stack is sourced and the correct env active.
         local PYVER=$( python -c "from sys import version_info as v; print(f'{v.major}.{v.minor}')" )
@@ -44,15 +68,6 @@ setupwrapper() { source \$REPO_ROOT/setup.sh 2>&1 >/dev/null; }
 setupwrapper && source \$REPO_ROOT/$ZHH_VENV_NAME/bin/activate && exec python.exe "\$@"
 EOF
         chmod 755 $PYLOC
-
-        read -p "Do you want to make the kernel available for Jupyter Notebook? (y) " yn
-        if [[ -z $yn || $yn == "y" ]]; then
-            (
-                source $REPO_ROOT/$ZHH_VENV_NAME/bin/activate 
-                pip install ipykernel
-                python -m ipykernel install --user --name=$ZHH_VENV_NAME
-            ) && echo "Success: IPython kernel installed" || echo "Error: IPython kernel installation failed"
-        fi
     else
         echo "Python venv <$ZHH_VENV_NAME> already exists. If you want to redo the setup, delete the directory <$REPO_ROOT/$ZHH_VENV_NAME>."
     fi
@@ -68,7 +83,7 @@ function zhh_install_deps() {
     fi
 
     if [[ -d $INSTALL_DIR && ! -z "$( ls -A $INSTALL_DIR )" ]]; then
-        read -p "install-dir <$INSTALL_DIR> is not empty. Do you wish to continue with the existing contents? (y) " yn
+        zhh_get_install_arg "install-dir <$INSTALL_DIR> is not empty. Do you wish to continue with the existing contents? (y) " yn y
         
         if [[ "$yn" != "" && "$yn" != "y" ]]; then
             echo "Aborting."
@@ -77,8 +92,7 @@ function zhh_install_deps() {
     fi
 
     if [[ -f ".env" ]]; then
-        read -p "You wish to install the dependencies, but an .env file which would be overwritten already exists. Do you wish to continue anyway? (y) " yn
-        local yn=${yn:-"y"}
+        zhh_get_install_arg "You wish to install the dependencies, but an .env file which would be overwritten already exists. Do you wish to continue anyway? (y) " yn y
 
         if [[ "$yn" = "y" ]]; then
             rm -f .env.bck
@@ -115,7 +129,7 @@ function zhh_install_deps() {
             if [[ -z ${!dependency} || ! -d ${!dependency} ]]; then
                 local install_dir
                 local ypath="y"
-                read -p "Dependency $dependency not found. Install it to default location (y) or supply a path to it: " ypath
+                zhh_get_install_arg "Dependency $dependency not found. Install it to default location (y) or supply a path to it: " ypath y
 
                 if [[ $ypath = "y" || -z $ypath ]]; then
                     local dirnamecur="${dirnames[$ind]}"
@@ -175,7 +189,7 @@ function zhh_install_deps() {
     fi
 
     local data_dir=""
-    read -p "Where do you want to store analysis results for batch processing? ($default_data_dir) " data_dir
+    zhh_get_install_arg "Where do you want to store analysis results for batch processing? ($default_data_dir) " data_dir "$default_data_dir"
     local data_dir=${data_dir:-$default_data_dir}
 
     mkdir -p "$data_dir"
@@ -183,7 +197,7 @@ function zhh_install_deps() {
     # install SGV
     local default_sgv_dir="$REPO_ROOT/dependencies/sgv"
     local sgv_dir=""
-    read -p "Where do you want to install SGV? ($default_sgv_dir) " sgv_dir
+    zhh_get_install_arg "Where do you want to install SGV? ($default_sgv_dir) " sgv_dir "$default_sgv_dir"
     local sgv_dir=${sgv_dir:-$default_sgv_dir}
 
     if [[ -d $sgv_dir ]]; then  
