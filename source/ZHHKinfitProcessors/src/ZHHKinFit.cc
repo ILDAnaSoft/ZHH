@@ -660,7 +660,7 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
       //set pre fit objects
       ReconstructedParticleImpl* startjet = new ReconstructedParticleImpl;
       ROOT::Math::PxPyPzEVector startFourMomentum(Jets[i]->getMomentum()[0], Jets[i]->getMomentum()[1], Jets[i]->getMomentum()[2], Jets[i]->getEnergy());
-      m_PrefitJetFourMomentum.push_back(StartFourMomentum);
+      m_PrefitJetFourMomentum.push_back(startFourMomentum);
       startjet->setMomentum(Jets[i]->getMomentum());
       startjet->setEnergy(Jets[i]->getEnergy());
       startjet->setType(Jets[i]->getType());
@@ -966,7 +966,7 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
       //set pre fit objects
       ReconstructedParticleImpl* startjet = new ReconstructedParticleImpl;
       ROOT::Math::PxPyPzEVector startFourMomentum(Jets[i]->getMomentum()[0], Jets[i]->getMomentum()[1], Jets[i]->getMomentum()[2], Jets[i]->getEnergy());
-      m_PrefitJetFourMomentum.push_back(StartFourMomentum);
+      m_PrefitJetFourMomentum.push_back(startFourMomentum);
       startjet->setMomentum(bestJets[i]->getMomentum());
       startjet->setEnergy(bestJets[i]->getEnergy());
       startjet->setType(bestJets[i]->getType());
