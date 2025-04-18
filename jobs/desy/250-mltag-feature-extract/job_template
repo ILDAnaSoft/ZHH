@@ -1,0 +1,18 @@
+executable = per_job.sh
+
+arguments = $(raw_file) $(suffix) $(env_file) $(JobId) $(CPID_NAME) $(TASK_NAME)
+should_transfer_files = True
+transfer_executable = True
+
+max_retries = 3
+Requirements = (Machine =!= LastRemoteHost)
+request_cpus = 1
+request_memory = 4000 Mb
+
+log = $TASK_ROOT/$(TASK_NAME)/logs/$(JobId).log
+output = $TASK_ROOT/$(TASK_NAME)/logs/$(JobId).out
+error = $TASK_ROOT/$(TASK_NAME)/logs/$(JobId).err
+
+transfer_output_files = ""
+
+queue raw_file,suffix,env_file,CPID_NAME,TASK_NAME from $TARGET_SUFFIX.queue

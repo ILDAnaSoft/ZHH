@@ -28,7 +28,8 @@ TruthRecoComparison::TruthRecoComparison() :
   Processor("TruthRecoComparison"),
   m_n_run(0),
   m_n_evt(0),
-  m_error_code(ERROR_CODES::UNINITIALIZED)
+  m_error_code(ERROR_CODES::UNINITIALIZED),
+  m_pTFile(NULL)
 {
 
 	_description = "TruthRecoComparison writes relevant observables to root-file " ;
@@ -71,7 +72,7 @@ TruthRecoComparison::TruthRecoComparison() :
   	registerProcessorParameter("outputRootFilename",
 				"name of output root file",
 				m_outputRootFile,
-				std::string("TruthRecoComparison.root")
+				std::string("")
 				);
 
 	registerProcessorParameter("ECM" ,
@@ -108,9 +109,10 @@ void TruthRecoComparison::init()
 	
 	this->clear();
 
-	m_pTFile = new TFile(m_outputRootFile.c_str(),"recreate");
-	m_pTTree = new TTree("eventTree", "eventTree");
-	m_pTTree->SetDirectory(m_pTFile);
+	if (m_outputRootFile.size()) {
+		m_pTFile = new TFile(m_outputRootFile.c_str(),"recreate");
+		m_pTTree->SetDirectory(m_pTFile);
+	}
 
 	m_pTTree->Branch("run", &m_n_run, "run/I");
 	m_pTTree->Branch("event", &m_n_evt, "event/I");
@@ -316,11 +318,16 @@ void TruthRecoComparison::check()
 void TruthRecoComparison::end()
 {
 	// Write ROOT file
-	m_pTFile->cd();
-	m_pTTree->Write();
-	m_pTFile->Close();
+	if (m_pTFile != NULL) {
+		m_pTFile->cd();
+	}
 
-	delete m_pTFile;
+	m_pTTree->Write();
+	
+	if (m_pTFile != NULL) {
+		m_pTFile->Close();
+		delete m_pTFile;
+	}
 }
 
 EVENT::ReconstructedParticle* TruthRecoComparison::getLinkedPFO( EVENT::MCParticle *mcParticle , LCRelationNavigator RecoMCParticleNav , LCRelationNavigator MCParticleRecoNav , bool getChargedPFO , bool getNeutralPFO , float &weightPFOtoMCP , float &weightMCPtoPFO )

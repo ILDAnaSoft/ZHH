@@ -126,11 +126,11 @@ A detailed table of the resulting data is given in the following. The quantities
 | ll_pass            | unsigned byte `B`       | llHH pass flag (from PreSelection processor) |
 | vv_pass            | unsigned byte `B`       | vvHH pass flag (-).                  |
 | qq_pass            | unsigned byte `B`       | qqHH pass flag (-).                  |
-| xx_thrust          | float `f`               | Thrust value.                        |
-| xx_e_vis           | float `f`               | Visible energy.                      |
-| xx_pt_miss         | float `f`               | Missing transverse momentum.         |
-| xx_invmass_miss    | float `f`               | Invariant mass of the missing pT     |
-| xx_nisoleps        | unsigned byte `B`       | Number of isolated leptons.          |
+| thrust          | float `f`               | Thrust value.                        |
+| e_vis           | float `f`               | Visible energy.                      |
+| pt_miss         | float `f`               | Missing transverse momentum.         |
+| invmass_miss    | float `f`               | Invariant mass of the missing pT     |
+| nisoleps        | unsigned byte `B`       | Number of isolated leptons.          |
 | ll_mh1             | float `f`               | Mass of the first H boson in llHH.   |
 | ll_mh2             | float `f`               | Mass of the second H boson in llHH.  |
 | ll_nbjets          | unsigned byte `B`       | Number of b-jets in llHH.            |

@@ -118,7 +118,7 @@ void AddNeutralPFOCovMat::processEvent( EVENT::LCEvent *pLCEvent )
 			float pfoMass = outputPFO->getMass();
 			TVector3 clusterPosition( 0.0 , 0.0 , 0.0 );
 			TLorentzVector pfoFourMomentum( 0.0 , 0.0 , 0.0 , 0.0 );
-			double outputPFOMomentum[3]{0., 0., 0.};
+			//double outputPFOMomentum[3]{0., 0., 0.};
 			std::vector<float> outputCovMatrix( 10 , 0.0 );
 			if ( ( outputPFO->getTracks() ).size() == 0 )
 			{
@@ -155,9 +155,9 @@ void AddNeutralPFOCovMat::processEvent( EVENT::LCEvent *pLCEvent )
 				pfoFourMomentum	= TLorentzVector( pfoMomentum , pfoE );
 				outputCovMatrix	= getNeutralCovMat( clusterPosition , pfoEnergy , pfoMass , clusterPositionError , clusterEnergyError );
 
-				outputPFOMomentum[ 0 ] = pfoFourMomentum.Px();
-				outputPFOMomentum[ 1 ] = pfoFourMomentum.Py();
-				outputPFOMomentum[ 2 ] = pfoFourMomentum.Pz();
+				//outputPFOMomentum[ 0 ] = pfoFourMomentum.Px();
+				//outputPFOMomentum[ 1 ] = pfoFourMomentum.Py();
+				//outputPFOMomentum[ 2 ] = pfoFourMomentum.Pz();
 				pfoE = pfoFourMomentum.E();
 
 

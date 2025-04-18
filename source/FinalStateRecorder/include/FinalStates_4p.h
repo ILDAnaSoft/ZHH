@@ -17,6 +17,10 @@ class p4: public FinalStateResolver {
         p4( string process_name, int process_id, int event_category, vector<int> decay_filter ):
             FinalStateResolver( process_name, process_id, event_category, 4, 0, vector<int> {4,5} ),
             m_final_state_filter {decay_filter} {};
+        
+        p4( string process_name, int process_id, int event_category, int n_fermions, int n_higgs, vector<int> isr_particles, vector<int> decay_filter ):
+            FinalStateResolver( process_name, process_id, event_category, n_fermions, n_higgs, isr_particles ),
+            m_final_state_filter {decay_filter} {};
 
         vector<MCParticle*> resolve_fs_particles(LCCollection *mcp_collection, bool resolve_higgs = false) {
             (void) resolve_higgs;

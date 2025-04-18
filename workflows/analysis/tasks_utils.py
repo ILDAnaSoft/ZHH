@@ -3,7 +3,7 @@ import luigi
 import law
 import os.path as osp
 from glob import glob
-from zhh import ForcibleTask, ShellTask, BaseTask
+from .utils import ForcibleTask, ShellTask, BaseTask
 
 class SetupPackages(ShellTask, ForcibleTask, law.LocalWorkflow):
     packages = ['AddNeutralPFOCovMat', 'CheatedMCOverlayRemoval', 'LeptonPairing', 'HdecayMode', 'PreSelection', 'FinalStateRecorder']
@@ -42,8 +42,10 @@ class CheckDirectories(BaseTask):
         return self.local_target('report.txt')
     
     def run(self):
-        paths = glob(self.search_masks[0]) + glob(self.search_masks[1])
+        search_masks = self.search_masks()
+        paths = glob(search_masks[0]) + glob(search_masks[1])
         paths.sort()
+        
         if self.debug:
             paths = paths[:10]
         

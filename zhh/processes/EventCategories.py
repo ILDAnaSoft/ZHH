@@ -100,6 +100,8 @@ class EVENT_CATEGORY_TRUE:
     f6_xxWW = 96
     f6_xxxxZ = 97
     
+    OTHER_F6 = 98
+    
     def __init__(self) -> None:
         self.map = { key:value for key, value in EVENT_CATEGORY_TRUE.__dict__.items() if not key.startswith('__') and not callable(key)}
         self.inverted = { v: k for k, v in self.map.items() }

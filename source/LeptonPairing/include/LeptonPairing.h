@@ -50,7 +50,7 @@ class LeptonPairing : public Processor
   vector<float> m_IsoLepsInvMass;
   vector<float> m_RecoLepsInvMass;
   TFile *m_pTFile{};
-  TTree *m_pTTree{};
+  TTree *m_pTTree = new TTree("LeptonPairing", "LeptonPairing");
 
   string m_inputIsoLepCollection{};
   string m_inputPFOsWOIsoLepCollection{};
