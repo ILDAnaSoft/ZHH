@@ -123,9 +123,6 @@ if [ "$ZHH_COMMAND" = "install" ]; then
 
     zhh_echo "Attempting to install dependencies to <$ZHH_INSTALL_DIR>..."
     zhh_install_deps $ZHH_INSTALL_DIR
-    
-    zhh_echo "Compiling dependencies..."
-    zhh_recompile
 fi
 
 # install the setup.sh script
@@ -150,3 +147,8 @@ if [[ -f ~/.bashrc ]]; then
 fi
 
 source $REPO_ROOT/setup.sh
+
+if [ "$ZHH_COMMAND" = "install" ]; then
+    zhh_echo "Compiling dependencies..."
+    zhh_recompile
+fi
