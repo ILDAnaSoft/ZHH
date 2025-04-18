@@ -1,25 +1,5 @@
 #!/bin/bash
 
-function zhh_get_install_arg() {
-    local message="$1"
-    local varname="$2"
-    local default="$3"
-
-    if [ -z $ZHH_INSTALL_USE_DEFAULT ]; then
-        printf "%s" "$message"
-        read $varname
-
-        echo "variable with name ($varname) = ${!varname}"
-
-        if [ -z ${!varname} ]; then
-            IFS= read -r -d '' "$varname" <<< $default
-        fi
-    else
-        zhh_echo "Using default value <$default> for $varname"
-        IFS= read -r -d '' "$varname" <<< $default
-    fi
-}
-
 function zhh_install_venv() {
     echo "Checking python venv installation with name <$ZHH_VENV_NAME>..."
     
@@ -47,7 +27,7 @@ function zhh_install_venv() {
         echo "$REPO_ROOT" >> "$(realpath $REPO_ROOT/$ZHH_VENV_NAME/lib/python*/site-packages)/zhh.pth"
 
         # Install Jupyter kernel
-        zhh_get_install_arg "Do you want to make the kernel available for Jupyter Notebook? (y) " yn y
+        get_input_arg "Do you want to make the kernel available for Jupyter Notebook? (y) " yn y
         if [[ -z $yn || $yn == "y" ]]; then
             (
                 source $REPO_ROOT/$ZHH_VENV_NAME/bin/activate 
@@ -89,7 +69,7 @@ function zhh_install_deps() {
     fi
 
     if [[ -d $INSTALL_DIR && ! -z "$( ls -A $INSTALL_DIR )" ]]; then
-        zhh_get_install_arg "install-dir <$INSTALL_DIR> is not empty. Do you wish to continue with the existing contents? (y) " yn y
+        get_input_arg "install-dir <$INSTALL_DIR> is not empty. Do you wish to continue with the existing contents? (y) " yn y
         
         if [[ "$yn" != "" && "$yn" != "y" ]]; then
             echo "Aborting."
@@ -98,7 +78,7 @@ function zhh_install_deps() {
     fi
 
     if [[ -f ".env" ]]; then
-        zhh_get_install_arg "You wish to install the dependencies, but an .env file which would be overwritten already exists. Do you wish to continue anyway? (y) " yn y
+        get_input_arg "You wish to install the dependencies, but an .env file which would be overwritten already exists. Do you wish to continue anyway? (y) " yn y
 
         if [[ "$yn" = "y" ]]; then
             rm -f .env.bck
@@ -108,10 +88,9 @@ function zhh_install_deps() {
         fi
     fi
 
-    if [[ ! -d $MarlinMLFlavorTagging || ! -d $MarlinMLFlavorTagging || ! -d $FlavorTagging_ML || ! -d $ILD_CONFIG_DIR || ! -d $MarlinReco || ! -d $MarlinKinfit || ! -d $LCFIPlusConfig || ! -d $LCFIPlus || ! -d $Physsim ]]; then
+    if [[ ! -d $MarlinMLFlavorTagging || ! -d $FlavorTagging_ML || ! -d $ILD_CONFIG_DIR || ! -d $MarlinReco || ! -d $MarlinKinfit || ! -d $LCFIPlusConfig || ! -d $LCFIPlus || ! -d $Physsim ]]; then
         echo "At least one of the dependencies could not be found. Retrieving them..."
 
-        local ind="$( [ -z "${ZSH_VERSION}" ] && echo "0" || echo "1" )" # ZSH arrays are 1-indexed
         local repositories=(
             https://gitlab.desy.de/bryan.bliewert/MarlinMLFlavorTagging.git
             https://gitlab.desy.de/bryan.bliewert/FlavorTagging_ML.git
@@ -129,22 +108,24 @@ function zhh_install_deps() {
 
         mkdir -p $INSTALL_DIR
 
-        for dependency in ${varnames[*]}
+        for ((i=0; i<${#varnames[@]}; i+=1));
         do
+            dependency="${varnames[$i]}"
+
             # Check if the variables defined by varnames already exist
             if [[ -z ${!dependency} || ! -d ${!dependency} ]]; then
                 local install_dir
                 local ypath="y"
-                zhh_get_install_arg "Dependency $dependency not found. Install it to default location (y) or supply a path to it: " ypath y
+                get_input_arg "Dependency $dependency not found. Install it to default location (y) or supply a path to it: " ypath y
 
                 if [[ $ypath = "y" || -z $ypath ]]; then
-                    local dirnamecur="${dirnames[$ind]}"
-                    local commitcur="${commits[$ind]}"
+                    local dirnamecur="${dirnames[$i]}"
+                    local commitcur="${commits[$i]}"
                     install_dir="$INSTALL_DIR/$dirnamecur"
 
                     if [[ ! -d "$install_dir" ]]; then
                         echo "Cloning to $INSTALL_DIR/$dirnamecur"
-                        git clone -b ${branchnames[$ind]} --recurse-submodules ${repositories[$ind]} "$install_dir"
+                        git clone -b ${branchnames[$i]} --recurse-submodules ${repositories[$i]} "$install_dir"
 
                         if [[ $commitcur != "latest" ]]; then
                             echo "Checking out commit $commitcur"
@@ -170,8 +151,6 @@ function zhh_install_deps() {
             else
                 echo "Dependency $dependency already found."
             fi
-
-            ind=$((ind+1))
         done
     fi
 
@@ -194,17 +173,12 @@ function zhh_install_deps() {
         default_data_dir=$DATA_PATH
     fi
 
-    local data_dir=""
-    zhh_get_install_arg "Where do you want to store analysis results for batch processing? ($default_data_dir) " data_dir "$default_data_dir"
-    local data_dir=${data_dir:-$default_data_dir}
-
+    get_input_arg "Where do you want to store analysis results for batch processing? ($default_data_dir) " data_dir "$default_data_dir"
     mkdir -p "$data_dir"
 
     # install SGV
     local default_sgv_dir="$REPO_ROOT/dependencies/sgv"
-    local sgv_dir=""
-    zhh_get_install_arg "Where do you want to install SGV? ($default_sgv_dir) " sgv_dir "$default_sgv_dir"
-    local sgv_dir=${sgv_dir:-$default_sgv_dir}
+    get_input_arg "Where do you want to install SGV? ($default_sgv_dir) " sgv_dir "$default_sgv_dir"
 
     if [[ -d $sgv_dir ]]; then  
         echo "SGV_DIR <$sgv_dir> already exists. Skipping..."

@@ -20,6 +20,7 @@ function usage() {
 }
 
 ZHH_K4H_RELEASE="2025-01-28"
+export ONNXRUNTIMEPATH="/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/py-onnxruntime/1.17.1-s4gp4m"
 
 function zhh_echo() {
     echo "ZHH> $1"
@@ -31,6 +32,11 @@ if [[ ! -d "$REPO_ROOT" ]]; then
 
     REPO_ROOT="$(realpath "${BASH_SOURCE[${#BASH_SOURCE[@]} - 1]}" )"
     export REPO_ROOT="$(dirname $REPO_ROOT)"
+
+    if [[ ! -d "$REPO_ROOT/zhh" ]]; then
+        zhh_echo "Error: REPO_ROOT could not be inferred. Checking cwd.."
+        export REPO_ROOT="$(pwd)"
+    fi
 
     if [[ -d "$REPO_ROOT/zhh" && -d "$REPO_ROOT/source" ]]; then
         zhh_echo "Success: Found REPO_ROOT at <$REPO_ROOT>"
@@ -100,23 +106,20 @@ source $REPO_ROOT/shell/common.sh
 
 #########################################
 
-if [[ "$ZHH_COMMAND" = "install" ]]; then
+if [ "$ZHH_COMMAND" = "install" ]; then
     unset zhh_install_dir
 
     source $REPO_ROOT/shell/zhh_install.sh
 
     # Python virtual environment (venv)
-    zhh_install_venv
+    #zhh_install_venv
 
     # Dependencies
-    if [[ -z "$ZHH_INSTALL_DIR" ]]; then
-        ZHH_INSTALL_DIR=$( realpath "$REPO_ROOT/dependencies" )
-
-        zhh_get_install_arg "Where do you wish to install all the dependencies? ($ZHH_INSTALL_DIR) " zhh_install_dir "$ZHH_INSTALL_DIR"
-        if [[ ! -z "$zhh_install_dir" ]]; then 
-            ZHH_INSTALL_DIR=$zhh_install_dir
-        fi
+    if [ -z "$ZHH_INSTALL_DIR" ]; then
+        get_input_arg "Where do you wish to install all the dependencies? ($ZHH_INSTALL_DIR) " ZHH_INSTALL_DIR $( realpath "$REPO_ROOT/dependencies" )
     fi
+
+    echo "> $ZHH_INSTALL_DIR <"
 
     zhh_echo "Attempting to install dependencies to <$ZHH_INSTALL_DIR>..."
     zhh_install_deps $ZHH_INSTALL_DIR

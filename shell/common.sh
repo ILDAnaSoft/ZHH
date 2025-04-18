@@ -5,11 +5,32 @@ function zhh_echo() {
     echo "ZHH> $1"
 }
 
+function get_input_arg() {
+    local message="$1"
+    local varname="$2"
+    local default="$3"
+
+    if [ -z $ZHH_INSTALL_USE_DEFAULT ]; then
+        printf "%s" "$message"
+        read $varname
+
+        echo "variable with name ($varname) = ${!varname}"
+
+        if [ -z ${!varname} ]; then
+            IFS= read -r "$varname" <<< $default
+            # add -d '' for multi line
+        fi
+    else
+        zhh_echo "$message"
+        IFS= read -r "$varname" <<< "$default"
+        zhh_echo "  AUTO -> [$varname]=[$default]"
+    fi
+}
+
 function zhh_recompile() {
     # Compile ZHH processors
     cd $REPO_ROOT
-    unset yn
-    read -p "Do you wish to keep existing binaries of compiled ZHH processors? (y) " yn
+    get_input_arg "Do you wish to recompile ZHH processors? (y) " yn y
     
     if [[  "$yn" = "y" || -z "$yn" ]]; then
         source compile_from_scratch.sh keep $@

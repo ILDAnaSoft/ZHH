@@ -1,5 +1,10 @@
 #!/bin/bash
-# If called with the keyword keep (source compile_from_scratch.sh keep), only make install will be called on the processors
+
+# Usage: source compile_from_scratch.sh [keep] [debug] [offline] [skipdeps]
+#        - keep: only make install will be called on the processors; if ommitted, the build directory will be deleted and cmake will be called again
+#        - debug: make install output will be printed to the console
+#        - offline: do not pull the latest code from git for ZHH and all to-be-compiled dependencies
+#        - skipdeps: only compile the source code, do not compile dependencies
 
 action(){
     local RED='\033[0;31m'
