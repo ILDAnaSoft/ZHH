@@ -1,5 +1,5 @@
-#ifndef ZHHKinFit_h
-#define ZHHKinFit_h 1
+#ifndef ttbarKinFit_h
+#define ttbarKinFit_h 1
 
 #include <iostream>
 #include <vector>
@@ -44,19 +44,19 @@ using namespace lcio ;
 using namespace marlin ;
 using namespace std;
 
-class ZHHKinFit : public Processor , public TrueJet_Parser
+class ttbarKinFit : public Processor , public TrueJet_Parser
 {
   
 public:
   
   virtual Processor*  newProcessor()
   {
-    return new ZHHKinFit;
+    return new ttbarKinFit;
   }
-  ZHHKinFit() ;
-  virtual ~ZHHKinFit() = default;
-  ZHHKinFit(const ZHHKinFit&) = delete;
-  ZHHKinFit& operator=(const ZHHKinFit&) = delete;
+  ttbarKinFit() ;
+  virtual ~ttbarKinFit() = default;
+  ttbarKinFit(const ttbarKinFit&) = delete;
+  ttbarKinFit& operator=(const ttbarKinFit&) = delete;
   typedef vector<EVENT::ReconstructedParticle*>	pfoVector;
   typedef vector<vector<EVENT::ReconstructedParticle*>>	pfoVectorVector;
   struct FitResult {
@@ -81,27 +81,12 @@ public:
   virtual void	Clear();
   virtual void	processRunHeader();
   virtual void	processEvent( EVENT::LCEvent *pLCEvent );
-  ReconstructedParticle* addNeutrinoCorrection(ReconstructedParticle* jet,
-					       pfoVector neutrinos);
-  
-
-  template<typename TYPE>
-  std::vector<std::vector<TYPE*>> combinations(std::vector<std::vector<TYPE*>> collector,
-			       std::vector<std::vector<TYPE*>> sets, 
-			       unsigned int n,
-			       std::vector<TYPE*> combo);
-  pfoVectorVector getNeutrinosInJet( LCRelationNavigator* JetSLDNav , 
-				     LCRelationNavigator* SLDNuNav , 
-				     EVENT::ReconstructedParticle* jet);
-  std::pair<MCParticle*,ReconstructedParticle*> getMCNeutrino(LCRelationNavigator* NuMCNav,
-							      LCRelationNavigator* SLDNuNav,
-							      EVENT::ReconstructedParticle* neutrino);
   FitResult performllbbbbFIT( pfoVector jets,pfoVector leptons,bool traceEvent);	    
   FitResult performvvbbbbFIT( pfoVector jets,bool traceEvent);	    
   FitResult performqqbbbbFIT( pfoVector jets,bool traceEvent);	    
   virtual void	getJetParameters( ReconstructedParticle* jet , float (&parameters)[ 3 ] , float (&errors)[ 3 ] );
   virtual void	getLeptonParameters( ReconstructedParticle* lepton , float (&parameters)[ 3 ] , float (&errors)[ 3 ] );
-  std::pair<std::vector<double>,std::vector<double>> calculateInitialValues(pfoVector jets, pfoVector leptons, vector<int> perm);
+  std::vector<double> calculateInitialMasses(pfoVector jets, pfoVector leptons, vector<int> perm);
   std::vector<double> calculateMassesFromSimpleChi2Pairing(pfoVector jets, pfoVector leptons);
   std::vector<double> calculatePulls(std::shared_ptr<ParticleFitObject> fittedobject, ReconstructedParticle* startobject, int type);
   double calcChi2(shared_ptr<vector<shared_ptr<BaseFitObject>>> fitobjects);
@@ -116,10 +101,10 @@ private:
   
   std::string m_inputleptonCollection{};
   std::string m_inputJetCollection{};
-  std::string m_inputSLDVertexCollection{};
-  std::string m_inputJetSLDLink{};
-  std::string m_inputSLDNuLink{};
-  std::string m_recoNumcNuLinkName{};
+  //std::string m_inputSLDVertexCollection{};
+  //std::string m_inputJetSLDLink{};
+  //std::string m_inputSLDNuLink{};
+  //std::string m_recoNumcNuLinkName{};
   std::string _MCParticleColllectionName{};
   std::string _recoParticleCollectionName{};
   std::string _recoMCTruthLink{};
@@ -136,7 +121,7 @@ private:
   int m_nAskedJets{};
   int m_nAskedLeps{};
   bool m_fitISR = true;
-  bool m_solveNu = false;
+  //bool m_solveNu = false;
   int m_fitter{};
   bool m_traceall{};
   int m_ievttrace{};
@@ -158,51 +143,45 @@ private:
   float m_SigmaInvPtScaleFactor{};
   float m_SigmaEnergyScaleFactor{};
   float m_SigmaAnglesScaleFactor{};
-  float m_ZinvisiblePxPyError{};
-  float m_ZinvisiblePzError{};
+  //float m_ZinvisiblePxPyError{};
+  //float m_ZinvisiblePzError{};
   double b{};
   double ISRPzMaxB{};
   TFile *m_pTFile{};
   TTree *m_pTTree{};
-  int m_nSLDecayBHadron{};
-  int m_nSLDecayCHadron{};
-  int m_nSLDecayTauLepton{};
-  int m_nSLDecayTotal{};
-  int m_nCorrectedSLD{};
+  //int m_nSLDecayBHadron{};
+  //int m_nSLDecayCHadron{};
+  //int m_nSLDecayTauLepton{};
+  //int m_nSLDecayTotal{};
+  //int m_nCorrectedSLD{};
   float m_ISREnergyTrue{};
   float m_BSEnergyTrue{};
-  float m_HHMassHardProcess{};
+  //float m_HHMassHardProcess{};
   int m_FitErrorCode{};
-  float m_pxcstartvalue{};
-  float m_pycstartvalue{};
-  float m_pzcstartvalue{};
-  float m_ecstartvalue{};
-  float m_ZMassBeforeFit{};
-  float m_H1MassBeforeFit{};
-  float m_H2MassBeforeFit{};
-  float m_HHMassBeforeFit{};
-  float m_ZHHMassBeforeFit{};
+  //float m_ZMassBeforeFit{};
+  //float m_H1MassBeforeFit{};
+  //float m_H2MassBeforeFit{};
+  //float m_HHMassBeforeFit{};
+  //float m_ZHHMassBeforeFit{};
   float m_ISREnergyBeforeFit{};
-  float m_ZMassAfterFit{};
-  float m_H1MassAfterFit{};
-  float m_H2MassAfterFit{};
-  float m_HHMassAfterFit{};
-  float m_ZHHMassAfterFit{};
+  //float m_ZMassAfterFit{};
+  //float m_H1MassAfterFit{};
+  //float m_H2MassAfterFit{};
+  //float m_HHMassAfterFit{};
+  //float m_ZHHMassAfterFit{};
   float m_ISREnergyAfterFit{};
   float m_FitProbability{};
   float m_FitChi2{};
   std::vector<int> m_perm{};
-  std::vector<ROOT::Math::PxPyPzEVector> m_PrefitJetFourMomentum{};
-  std::vector<ROOT::Math::PxPyPzEVector> m_PostfitJetFourMomentum{};
   std::vector<float> m_pullJetEnergy{};
   std::vector<float> m_pullJetTheta{};
   std::vector<float> m_pullJetPhi{};
   std::vector<float> m_pullLeptonInvPt{};
   std::vector<float> m_pullLeptonTheta{};
   std::vector<float> m_pullLeptonPhi{};
-  std::vector<float> m_TrueNeutrinoEnergy{};
-  std::vector<float> m_RecoNeutrinoEnergy{};
-  std::vector<float> m_RecoNeutrinoEnergyKinfit{};
+  //std::vector<float> m_TrueNeutrinoEnergy{};
+  //std::vector<float> m_RecoNeutrinoEnergy{};
+  //std::vector<float> m_RecoNeutrinoEnergyKinfit{};
   std::vector<float> m_Sigma_Px2{};
   std::vector<float> m_Sigma_PxPy{};
   std::vector<float> m_Sigma_Py2{};
