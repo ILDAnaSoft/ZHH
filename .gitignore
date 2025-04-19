@@ -38,3 +38,6 @@ install/**
 *notebooks/**
 *Notebooks/**
 zhhvenv
+source/*/install/
+*.py
+*.sub
