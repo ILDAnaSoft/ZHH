@@ -5,17 +5,19 @@ Code for ZHH analysis with ILD
 
 Running the analysis requires dependencies provided by the key4hep stack *and* more. For a list of them, see [this list](#List-of-required-dependencies).
 
-The recommended way to setup the environment variables is to use `install.sh`. It prepares all necessary dependencies (see [here](#Fresh-install)) and creates a `setup.sh` to load the environment in the future. All necessary environment variables are saved in `.env`.
+The recommended way to setup the environment variables is to `source install.sh [--auto]`. It prepares all necessary dependencies (see [here](#Fresh-install)) and creates a `setup.sh` to load the environment in the future. All necessary environment variables are saved in `.env`.
 
 If you wish to use your own local copies of the repositories, create (or edit, if it already exists) the `.env` file according to the list outlined [here](#List-of-required-dependencies).
 
 ### Fresh install
 
+The easiest way to setup the whole Python and C++ environment automatically uses a key4hep stack from CVMFS. If the latter is available, you may use 
+
 ```shell
-source install.sh
+source install.sh [--auto]
 ```
 
-This will download the necessary repositories into `dependencies` and for ILDConfig extract LCFIPlus weights. Also, if the directory `$ZHH_VENV_NAME` (defaults `zhhvenv`) is not found, a virtual environment can be automatically set up, including python 3.11 and all dependencies defined in the `requirements.txt` file. Also, all ZHH and dependency processors will be compiled. The script may ask you for input at several points, where you can safely just press ENTER (this always confirms the default option).
+where `--auto` is a switch to use sensible default values. Please use bash, not zsh for the initial setup. This will download all necessary dependencies into a `dependencies` directory inside the working directory of the `ZHH` repo, compile them, extract LCFIPlus weights for ILDConfig, setup a Python 3.11 virtual environment (with name `zhhvenv`) and install all required Python packages defined in the `requirements.txt` file. Finally, all Marlin processors inside `source` are compiled and a copy of the fast-sim tool SGV is installed.
 
 To test if the setup succeeded, call `MarlinZHH --global.LCIOInputFiles=<SomeLCIOFile>` where `SomeLCIOFile` points to a new (mc2020+) DST file. This will run Marlin with the `prod.xml` steering file (scripts directory). On DESY NAF, a valid default is given for `LCIOInputFiles`, so a simple `MarlinZHH` suffices.
 

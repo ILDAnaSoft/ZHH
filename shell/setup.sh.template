@@ -34,7 +34,12 @@ function zhh_attach_marlin_dlls() {
         "/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/marlinreco/1.36.1-ywnmqe/lib/libMarlinReco.so"
         "/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/marlinmlflavortagging/0.1.0-2cepkq/lib/libMarlinMLFlavorTagging.so"
         "/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/marlinkinfit/0.6.1-myr4kp/lib/libMarlinKinfit.so")
-    local libs_new=("$LCFIPlus/build/lib/libLCFIPlus.so" "$MarlinReco/lib/libMarlinReco.so" "$MarlinMLFlavorTagging/lib/libMarlinMLFlavorTagging.so" "$MarlinKinfit/lib/libMarlinKinfit.so")
+    
+    local libs_new=(
+        "$LCFIPlus/build/lib/libLCFIPlus.so"
+        "$MarlinReco/lib/libMarlinReco.so"
+        "$MarlinMLFlavorTagging/lib/libMarlinMLFlavorTagging.so"
+        "$MarlinKinfit/lib/libMarlinKinfit.so")
 
     for i in "${!libs_new[@]}"; do
         local lib="${libs_new[$i]}"
