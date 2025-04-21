@@ -12,9 +12,10 @@ import law.contrib.htcondor.workflow
 import os, luigi, law, law.util, law.contrib, law.contrib.htcondor, law.job.base, math
 from typing import Optional, Union, cast, TYPE_CHECKING, Any
 from collections.abc import Callable
-from .utils.types import SGVOptions
+from .utils.types import SGVOptions, WhizardOption
 if TYPE_CHECKING:
     from analysis.tasks import RawIndex
+    from analysis.tasks_reco import FastSimSGV
 
 # the htcondor workflow implementation is part of a law contrib package
 # so we need to explicitly load it
@@ -106,22 +107,35 @@ class HTCondorWorkflow(law.contrib.htcondor.HTCondorWorkflow):
 
         return config
 
-"""_summary_
-
-Raises:
-    ValueError: _description_
-"""
 class AnalysisConfiguration:    
     tag:str
-    
-    sgv_inputs:Optional[Callable[[], tuple[list[str], list[SGVOptions|None]]]] = None
 
-    def index_requires(self, raw_index_task: 'RawIndex'):
-        """We check if sgv_inputs exist and adapt make the index
-        depend on SGV. The 
-        """
+    # whizard_options: should return a list of whizard option entries,
+    # where one entry is for each process to generate
+    whizard_options:Optional[list[WhizardOption]] = None
+    
+    def sgv_requires(self, sgv_task: 'FastSimSGV'):
         result = []
         
+        if isinstance(self.whizard_options, Callable):
+            # when using Whizard, we require fast sim
+            if not isinstance(self.sgv_inputs, Callable):
+                raise Exception('sgv_inputs must be defined when generating whizard events')
+            
+            from analysis.tasks_generator import WhizardEventGeneration
+            event_gen_task = WhizardEventGeneration.req(sgv_task)
+            result.append(event_gen_task)
+        
+        return result
+    
+    sgv_inputs:Optional[Callable[['FastSimSGV'], tuple[list[str], list[SGVOptions|None]]]] = None
+
+    def index_requires(self, raw_index_task: 'RawIndex'):
+        """If sgv_inputs is not None, we will run SGV before
+        creating the ProcessIndex.
+        """
+        result = []
+             
         if isinstance(self.sgv_inputs, Callable):
              from analysis.tasks_reco import FastSimSGV
              fast_sim_task = FastSimSGV.req(raw_index_task)

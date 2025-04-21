@@ -22,11 +22,7 @@ class RawIndex(BaseTask):
     index: Optional[ProcessIndex] = None
     
     def requires(self):
-        config = zhh_configs.get(str(self.tag))
-        if config.index_requires is not None:
-            return config.index_requires(self)
-        else:
-            return []
+        return zhh_configs.get(str(self.tag)).index_requires(self)
     
     def slcio_files(self) -> list[str]:
         config = zhh_configs.get(str(self.tag))

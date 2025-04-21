@@ -161,7 +161,7 @@ class ShellTask(BaseTask):
                     raise e
             finally:
                 if tmp_dir is not None:
-                    if len(errors) == 0 or self.cleanup_tmp_on_error:
+                    if (len(errors) == 0 or self.cleanup_tmp_on_error) and not 'keep_cwd' in kwargs:
                         clear_path(cast(str, tmp_dir.path))
 
         self.post_run_command()

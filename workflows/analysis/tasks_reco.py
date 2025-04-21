@@ -6,12 +6,15 @@ from .utils.types import SGVOptions
 
 class FastSimSGV(FastSimSGVExternalReadJob):
     branch_data: tuple[str, SGVOptions]
+    
+    def requires(self):
+        return zhh_configs.get(str(self.tag)).sgv_requires(self)
           
     def create_branch_map(self):
         config = zhh_configs.get(str(self.tag))
         assert(isinstance(config.sgv_inputs, Callable))
         
-        input_files, input_options = config.sgv_inputs()
+        input_files, input_options = config.sgv_inputs(self)
         assert(len(input_files) == len(input_options))
         
         return { k: [file, options] for (k, file, options) in zip(
