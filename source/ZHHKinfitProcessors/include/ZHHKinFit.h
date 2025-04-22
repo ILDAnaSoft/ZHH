@@ -12,6 +12,7 @@
 #include <EVENT/ReconstructedParticle.h>
 #include "TLorentzVector.h"
 #include "DDMarlinCED.h"
+#include "v4.h"
 
 #include <GeometryUtil.h>
 #include <CLHEP/Vector/LorentzVector.h>
@@ -179,12 +180,16 @@ private:
   float m_HHMassBeforeFit{};
   float m_ZHHMassBeforeFit{};
   float m_ISREnergyBeforeFit{};
+  float	m_p1stBeforeFit{};
+	float m_cos1stBeforeFit{};
   float m_ZMassAfterFit{};
   float m_H1MassAfterFit{};
   float m_H2MassAfterFit{};
   float m_HHMassAfterFit{};
   float m_ZHHMassAfterFit{};
   float m_ISREnergyAfterFit{};
+  float	m_p1stAfterFit{};
+	float m_cos1stAfterFit{};
   float m_FitProbability{};
   float m_FitChi2{};
   std::vector<int> m_perm{};

@@ -299,12 +299,17 @@ void ZHHKinFit::init()
   m_pTTree->Branch( "HHMassBeforeFit" , &m_HHMassBeforeFit , "HHMassBeforeFit/F" );
   m_pTTree->Branch( "ZHHMassBeforeFit" , &m_ZHHMassBeforeFit , "ZHHMassBeforeFit/F" );
   m_pTTree->Branch( "ISREnergyBeforeFit" , &m_ISREnergyBeforeFit , "ISREnergyBeforeFit/F" );
+  m_pTTree->Branch( "p1stBeforeFit" , &m_p1stBeforeFit , "p1stBeforeFit/F" );
+  m_pTTree->Branch( "cosThBeforeFit" , &m_cos1stBeforeFit , "cosThBeforeFit/F" );
+
   m_pTTree->Branch( "ZMassAfterFit" , &m_ZMassAfterFit , "ZMassAfterFit/F" );
   m_pTTree->Branch( "H1MassAfterFit" , &m_H1MassAfterFit , "H1MassAfterFit/F" );
   m_pTTree->Branch( "H2MassAfterFit" , &m_H2MassAfterFit , "H2MassAfterFit/F" );
   m_pTTree->Branch( "HHMassAfterFit" , &m_HHMassAfterFit , "HHMassAfterFit/F" );
   m_pTTree->Branch( "ZHHMassAfterFit" , &m_ZHHMassAfterFit , "ZHHMassAfterFit/F" );
   m_pTTree->Branch( "ISREnergyAfterFit" , &m_ISREnergyAfterFit , "ISREnergyAfterFit/F" );
+  m_pTTree->Branch( "p1stAfterFit" , &m_p1stAfterFit , "p1stAfterFit/F" );
+  m_pTTree->Branch( "cosThAfterFit" , &m_cos1stAfterFit , "cosThAfterFit/F" );
   m_pTTree->Branch( "FitProbability" , &m_FitProbability , "FitProbability/F" );
   m_pTTree->Branch( "FitChi2" , &m_FitChi2 , "FitChi2/F" );
   m_pTTree->Branch( "perm" , &m_perm );
@@ -353,12 +358,16 @@ void ZHHKinFit::Clear()
   m_HHMassBeforeFit = 0.0;
   m_ZHHMassBeforeFit = 0.0;
   m_ISREnergyBeforeFit = 0.0;
+  m_p1stBeforeFit = 0.0;
+  m_cos1stBeforeFit = 0.0;
   m_ZMassAfterFit = 0.0;
   m_H1MassAfterFit = 0.0;
   m_H2MassAfterFit = 0.0;
   m_HHMassAfterFit = 0.0;
   m_ZHHMassAfterFit = 0.0;
   m_ISREnergyAfterFit = 0.0;
+  m_p1stAfterFit = 0.0;
+  m_cos1stAfterFit = 0.0;
   m_FitProbability = 0.0;
   m_FitChi2 = 0.0;
   m_perm.clear();
@@ -854,28 +863,41 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     streamlog_out(MESSAGE1) << "fit chi2 = " << bestFitResult.fitter->getChi2()<< endl;
     streamlog_out(MESSAGE) << "Getting constraints now... ";
     auto constraints = bestFitResult.constraints;
+    ROOT::Math::PxPyPzEVector temp_v4;
+    
     streamlog_out(MESSAGE) << "Fitter contains " << constraints->size() << " constraints : ";
     for (auto it = constraints->begin(); it != constraints->end(); ++it) {
-      streamlog_out(MESSAGE) << (*it)->getName() << " ";
-      if (strcmp((*it)->getName(), "z mass")==0) {
+      const char *constraint_name = (*it)->getName();
+      bool is_boson1 = strcmp(constraint_name, "z mass")==0;
+      bool is_boson2 = strcmp(constraint_name, "h1 mass")==0;
+      bool is_boson3 = strcmp(constraint_name, "h2 mass")==0;
+
+      streamlog_out(MESSAGE) << constraint_name << " ";
+      if (is_boson1) {
 	auto mc = dynamic_pointer_cast<MassConstraint>(*it);
 	m_ZMassAfterFit = mc->getMass();
-      }
-      if (strcmp((*it)->getName(), "h1 mass")==0) {
+      } else if (is_boson2) {
 	auto mc = dynamic_pointer_cast<MassConstraint>(*it);
 	m_H1MassAfterFit = mc->getMass();
-      }
-      if (strcmp((*it)->getName(), "h2 mass")==0) {
+      } else if (is_boson3) {
 	auto mc = dynamic_pointer_cast<MassConstraint>(*it);
 	m_H2MassAfterFit = mc->getMass();
-      }
-      if (strcmp((*it)->getName(), "hh mass")==0) {
+      } else if (strcmp((*it)->getName(), "hh mass")==0) {
 	auto mc = dynamic_pointer_cast<MassConstraint>(*it);
 	m_HHMassAfterFit = mc->getMass();
-      }
-      if (strcmp((*it)->getName(), "zhh mass")==0) {
+      } else if (strcmp((*it)->getName(), "zhh mass")==0) {
 	auto mc = dynamic_pointer_cast<MassConstraint>(*it);
 	m_ZHHMassAfterFit = mc->getMass();
+      }
+
+      if (is_boson1 || is_boson2 || is_boson3) {
+        auto mc = dynamic_pointer_cast<MassConstraint>(*it);
+        temp_v4 = v4(mc.get());
+  
+        if (temp_v4.P() > m_p1stAfterFit) {
+          m_p1stAfterFit = temp_v4.P();
+          m_cos1stAfterFit = cos(temp_v4.Theta());
+        }
       }
     }
     streamlog_out(MESSAGE) << endl;
@@ -2329,6 +2351,21 @@ std::vector<double> ZHHKinFit::calculateInitialMasses(pfoVector jets, pfoVector 
     masses.push_back(h2->getMass(1));
     masses.push_back(hh->getMass(1));
     masses.push_back(zhh->getMass(1));
+
+    std::vector<ROOT::Math::PxPyPzEVector> dijetMomenta = { v4(z.get()), v4(h1.get()), v4(h2.get()) };
+    float p1st = 0;
+    float cos1st = 0;
+
+    for (ROOT::Math::PxPyPzEVector fourMom: dijetMomenta) {
+      if (fourMom.P() > p1st) {
+        p1st = fourMom.P();
+        cos1st = cos(fourMom.Theta());
+      }
+    }
+
+    m_p1stBeforeFit = p1st;
+    m_cos1stBeforeFit = cos1st;
+
     return masses;
 }
 
