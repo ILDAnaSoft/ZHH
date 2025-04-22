@@ -115,7 +115,7 @@ class ShellTask(BaseTask):
     @law.decorator.notify
     @law.decorator.localize
     """
-    def run(self, **kwargs):
+    def run(self, keep_cwd:bool=False, **kwargs):
         # execute pre_run_command
         self.pre_run_command(**kwargs)
         
@@ -160,8 +160,8 @@ class ShellTask(BaseTask):
                 else:
                     raise e
             finally:
-                if tmp_dir is not None:
-                    if (len(errors) == 0 or self.cleanup_tmp_on_error) and not 'keep_cwd' in kwargs:
+                if tmp_dir is not None and not keep_cwd:
+                    if len(errors) == 0 or self.cleanup_tmp_on_error:
                         clear_path(cast(str, tmp_dir.path))
 
         self.post_run_command()

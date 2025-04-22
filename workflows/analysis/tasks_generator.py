@@ -10,10 +10,10 @@ import subprocess, law, luigi
 class WhizardEventGeneration(ShellTask, HTCondorWorkflow, law.LocalWorkflow):    
     def create_branch_map(self)->dict[int, dict]:        
         config = zhh_configs.get(str(self.tag))        
-        assert(isinstance(config.whizard_options, Callable))
+        assert(config.whizard_options is not None and len(config.whizard_options))
         
         whiz_ver = subprocess.check_output(['source $REPO_ROOT/setup.sh 2>&1 >/dev/null && whizard --version'], shell=True).split()[1].decode('utf-8')
-        whizard_options = config.whizard_options()
+        whizard_options = config.whizard_options
         
         branch_map = {}
         branch = 0        
@@ -55,7 +55,7 @@ class WhizardEventGeneration(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
             self.local_directory_target(self.outputBasename()),
         ]
     
-    def build_command(self):
+    def build_command(self, **kwargs):
         # prepare inputs
         output_file, output_dir = self.output()
         BaseTask.touch_parent(output_file)
@@ -63,15 +63,15 @@ class WhizardEventGeneration(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         
         branch_data = cast(dict[str, str], self.branch_data)
         
-        TEMPLATE_DIR = branch_data['TEMPLATE_DIR']
-        SINDARIN_FILE = branch_data['SINDARIN_FILE']  
+        TEMPLATE_DIR = osp.expandvars(branch_data['TEMPLATE_DIR'])
+        SINDARIN_FILE = branch_data['SINDARIN_FILE']
         
         # prepare sindarin file
         sindarin = ''
         with open(osp.join(TEMPLATE_DIR, SINDARIN_FILE), 'r') as f:
             sindarin += f.read()
         
-        sindarin = sindarin.replace('$OUTPUT_NAME', f'{self.outputBasename()}.slcio')
+        sindarin = sindarin.replace('$OUTPUT_NAME', self.outputBasename())
         for prop in branch_data:
             sindarin = sindarin.replace(f'${prop}', branch_data[prop])
         
@@ -79,13 +79,17 @@ class WhizardEventGeneration(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
             f.write(sindarin)
         
         cmd =f"""source $REPO_ROOT/setup.sh
-cp -R {TEMPLATE_DIR}/* .
-rm -f {SINDARIN_FILE}
-echo "Starting Whizard at $(date)"'
-./whizard ./process.sin
-mv {self.outputBasename()}.slcio {output_file.path}""".replace('\n', ' && ')
+rm -f "{output_file.path}"
+rm -f *.mod *.log *.smod *.lo *.f90 default* *.o
+cp -R "{TEMPLATE_DIR}/." .
+echo "Starting Whizard at $(date)"
+whizard ./process.sin
+echo "Finished Whizard at $(date)"
+mv "{self.outputBasename()}.slcio" "{output_file.path}" """.replace('\n', ' && ')
+
+        print('Executing command', cmd)
         
         return cmd
     
     def run(self, **kwargs):
-        ShellTask.run(self, cwd=self.get_temp_dir(), keep_cwd=True, **kwargs)
+        ShellTask.run(self, cwd=self.output()[1].path, keep_cwd=True, **kwargs)
