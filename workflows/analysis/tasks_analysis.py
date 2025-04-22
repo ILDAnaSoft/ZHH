@@ -22,8 +22,8 @@ class AnalysisAbstract(MarlinJob):
     
     check_output_root_ttrees = [
         ('zhh_AIDA.root', 'EventObservablesLL'),
-        ('zhh_AIDA.root', 'KinFitLLZHH'),
-        ('zhh_AIDA.root', 'KinFitLLZZH'),
+        #('zhh_AIDA.root', 'KinFitLLZHH'),
+        #('zhh_AIDA.root', 'KinFitLLZZH'),
         ('zhh_AIDA.root', 'FinalStates')
     ]
     
@@ -82,7 +82,7 @@ class AnalysisAbstract(MarlinJob):
             for branch in scs['branch'].tolist():
                 branch_map[branch] = (
                     scs['location'][branch],
-                    scs['n_chunks'][branch],
+                    scs['n_chunk_in_sample'][branch],
                     scs['n_chunks_in_sample'][branch],
                     scs['chunk_start'][branch],
                     scs['chunk_size'][branch],
@@ -119,13 +119,12 @@ class AnalysisAbstract(MarlinJob):
 
     @workflow_condition.output
     def output(self):
-        branch_value = cast(MarlinBranchValue, self.branch_value)
+        output_name = self.output_name()
         
-        sample_filename = osp.basename(branch_value[0])
-        n_chunk = branch_value[1]
-        n_chunks_in_sample = branch_value[2]
-        
-        return self.local_target(f'{osp.splitext(sample_filename)[0]}-{n_chunk}-{n_chunks_in_sample}.slcio')
+        return [
+            self.local_directory_target(output_name),
+            self.local_target(f'{output_name}.slcio')
+        ]
         
         #return self.local_directory_target(self.branch)
 

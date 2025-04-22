@@ -82,7 +82,7 @@ class CreateAnalysisChunks(BaseTask):
         config = zhh_configs.get(str(self.tag))
         
         SAMPLE_INDEX = self.input()[0][1].path
-        DATA_ROOT = osp.dirname(self.input()[1]['collection'][0].path)
+        DATA_ROOT = osp.dirname(self.input()[1]['collection'][0][0].path)
         
         processes = np.load(self.input()[0][0].path)
         samples = np.load(SAMPLE_INDEX)

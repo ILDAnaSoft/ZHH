@@ -174,7 +174,7 @@ class AnalysisConfiguration:
         # if any other case, slcio_files must be implemented manually
         
         if self.sgv_inputs is not None and self.slcio_files is None:
-            def slcio_files(self, raw_index_task: 'RawIndex'):        
+            def slcio_files(raw_index_task: 'RawIndex'):        
                 input_targets = raw_index_task.input()[0]['collection'].targets.values()
 
                 return [f.path for f in input_targets]

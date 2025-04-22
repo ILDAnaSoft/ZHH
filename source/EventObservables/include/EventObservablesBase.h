@@ -102,6 +102,8 @@ class EventObservablesBase: public Processor
 
 		static const std::vector<std::vector<unsigned short>> dijetPerms4;
 		static const std::vector<std::vector<unsigned short>> dijetPerms6;
+
+		static void getPermutationIndex(std::vector<int> input_perm, int size, short &perm_idx);
 		
 	protected:
 		// common properties for all channels
@@ -128,6 +130,8 @@ class EventObservablesBase: public Processor
 		std::string m_inputLepPairCollection{};
 		std::string m_inputJetCollection{};
 		std::string m_inputPfoCollection{};
+		std::string m_inputJetKinFitZHHCollection{};
+		std::string m_inputJetKinFitZZHCollection{};
 		std::string m_outputFile{};
 		std::string m_whichPreselection{};
 		std::string m_cutDefinitionsJSONFile{};
@@ -337,27 +341,15 @@ class EventObservablesBase: public Processor
 
 		void setJetMomenta();
 
-		/*  old variables for preselection (to be done in post)
-		most are now calculated by the Kinfit processors
-		float m_dileptonMassPrePairing{};
-		float m_dileptonMass{};
-		float m_dileptonMassDiff{};
-		float m_chi2min{};
-		int m_ndijets{};
-		
-		std::vector<int> m_dijetPairing{};
-		std::vector<float> m_dijetMass{};
-		std::vector<float> m_dijetMassDiff{};
-		float m_dihiggsMass{};
+		// jet matching from kinfit
+		std::vector<int> m_JMK_ZHH{};
+		std::vector<int> m_JMK_ZZH{};
 
-		std::vector<int>  m_preselsPassedVec{};
-		size_t m_preselsPassedAll{};
-		int m_preselsPassedConsec{};
-		int m_nbjets{};
-		int m_isPassed{};
-		*/
+		short m_JMK_ZHH_perm_idx{};
+		short m_JMK_ZZH_perm_idx{};
 
-		std::string m_jetMatchingParamName{};
+		double m_lcme_jmk_zhh_log{};
+		double m_lcme_jmk_zzh_log{};
 
 };
 

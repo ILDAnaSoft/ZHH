@@ -1,29 +1,32 @@
-import json
+import json, os
 import numpy as np
 from glob import glob
 from dateutil import parser
 from typing import Union, Optional
 
+def get_dirs(path:str):
+    return [ f.path for f in os.scandir(path) if f.is_dir() ]
+
 def evaluate_runtime(DATA_ROOT:str,
-                     branch:Union[int,str],
+                     bname:str,
                      WITH_EXIT_STATUS:bool=False):
     """_summary_
 
     Args:
         DATA_ROOT (str): _description_
-        branch (Union[int,str]): _description_
+        bname (str): base name of the result
         WITH_EXIT_STATUS (bool, optional): Requires --transfer-logs to be used when the law command is run. Defaults to False.
 
     Returns:
         _type_: _description_
     """
     
-    branch = int(branch)
+    branch = int(bname.split('-')[-1])
     
-    with open(f'{DATA_ROOT}/{branch}/Source.txt') as file:
+    with open(f'{DATA_ROOT}/{bname}/Source.txt') as file:
         src_path = file.read().strip()
         
-    with open(f'{DATA_ROOT}/{branch}/zhh_FinalStateMeta.json') as metafile:
+    with open(f'{DATA_ROOT}/{bname}/zhh_FinalStateMeta.json') as metafile:
         branch_meta = json.load(metafile)
         n_proc, process = branch_meta['nEvtSum'], branch_meta['processName']
         tEnd, tStart = branch_meta['tEnd'], branch_meta['tStart']
@@ -75,6 +78,7 @@ def get_runtime_analysis(DATA_ROOT:Optional[str]=None,
                 meta = json.load(file)
         
         jobs = meta['jobs']
+        dirs = get_dirs(DATA_ROOT)
     
         dtype += [('tStart', 'f')]
         dtype += [('tEnd', 'f')]
@@ -83,7 +87,10 @@ def get_runtime_analysis(DATA_ROOT:Optional[str]=None,
         for job_key in jobs:
             branch = jobs[job_key]['branches'][0]
             if jobs[job_key]['status'] == 'finished':
-                ev = evaluate_runtime(DATA_ROOT=DATA_ROOT, branch=branch, WITH_EXIT_STATUS=WITH_EXIT_STATUS)
+                dir = list(filter(lambda a: a.endswith('-' + str(branch)), dirs))
+                assert(len(dir) == 1)
+                
+                ev = evaluate_runtime(DATA_ROOT=DATA_ROOT, bname=os.path.basename(dir[0]), WITH_EXIT_STATUS=WITH_EXIT_STATUS)
                 results.append(ev)
     else:
         raise Exception('No data source given')

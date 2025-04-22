@@ -14,9 +14,6 @@
         <!-- Use these variables to study specific channels only
         In the job submission script, all channels are run
         -->
-        <constant name="Runllbbbb" value="True" />
-        <constant name="Runvvbbbb" value="False" />
-        <constant name="Runqqbbbb" value="False" />
         <constant name="RunTruthRecoComparison" value="False" />
 
         <!-- These variables should be constant -->
@@ -27,7 +24,7 @@
         <constant name="DetectorModel" value="ILD_l5_o1_v02" />
         <constant name="CompactFile" value="${lcgeo_DIR}/ILD/compact/${DetectorModel}/${DetectorModel}.xml" />
         <constant name="OutputDirectory" value="." />
-        <constant name="OutputBaseName" value="zhh" />
+        <constant name="OutputBaseName" value="FT_compare" />
         <constant name="OutputRootFile" value="${OutputBaseName}.root" />
         <constant name="NumberOfHiggs" value="2" />
         <constant name="MCParticleCollectionName" value="MCParticlesSkimmed" />
@@ -40,79 +37,15 @@
     <execute>
         <processor name="MyAIDAProcessor" />
         <processor name="InitDD4hep" />
-
         <processor name="MyAddNeutralPFOCovMatLite" />
         <processor name="MyChargedPFOCorrection" />
-
-        <!-- These two do some classification using truth information -->
-        <processor name="MyHdecayMode" />
-        <processor name="MyFinalStateRecorder" />
-
-        <!-- Overlay removal so far cheated -->
-        <!-- <processor name="MyFastJetProcessor" /> -->
         <processor name="MyCheatedMCOverlayRemoval" />
-        <processor name="MyThrust" />
-
-        <!-- Isolated lepton tagging and lepton pairing with BS/FSR recovery is run to separate llbbbb from vv/qqbbbb -->
         <processor name="MyIsolatedLeptonTaggingProcessor" />
         <processor name="MyLeptonPairing" />
-        <!-- <processor name="MyMergePIDProcessor" /> -->
         <processor name="MyPatchCollections" />
-
-        <!-- JC, SLD CORR AND ERROR FLOW FOR 2,4,5,6 JETS -->
-        <processor name="JC2FT" />
         <processor name="JC4FT" />
-        <processor name="JC5FT" />
-        <processor name="JC6FT" />
-
-        <processor name="MySLDCorrection2J" />
-        <processor name="MyErrorFlow2J" />
-
-        <processor name="MySLDCorrection4J" />
-        <processor name="MyErrorFlow4J" />
-
-        <processor name="MySLDCorrection5J" />
-        <processor name="MyErrorFlow5J" />
-
-        <processor name="MySLDCorrection6J" />
-        <processor name="MyErrorFlow6J" />
-
-        <!-- lepton channel -->
-        <if condition="${Runllbbbb}">
-            <processor name="MyZHHKinFitLL_ZHH" />
-            <!-- <processor name="MyZHHKinFitLL_ZHHv1" /> -->
-            <processor name="MyZHHKinFitLL_ZZH" />
-            <!-- <processor name="MyZHHKinFitLL_ZZZ" /> -->
-            <processor name="MyEventObservablesLL" />
-        </if>
-
-        <!-- neutrino channel -->
-        <if condition="${Runvvbbbb}">
-            <processor name="MyZHHKinFitVV_ZHH" />
-            <processor name="MyZHHKinFitVV_ZZH" />
-            <!-- <processor name="MyZHHKinFitVV_ZZZ" /> -->
-            <processor name="MyEventObservablesVV" /> 
-        </if>
-
-        <!-- hadron channel -->
-        <if condition="${Runqqbbbb}">
-            <processor name="MyZHHKinFitQQ_ZHH" />
-            <processor name="MyZHHKinFitQQ_ZZH" />
-            <!-- <processor name="MyZHHKinFitQQ_ZZZ" /> -->
-            <processor name="MyEventObservablesQQ" />
-        </if>
-
-        <!-- <if condition="${RunTruthRecoComparison}">
-            <processor name="MyTruthRecoComparison" />
-        </if> -->
-
-        <!--
-        <if condition="MyHdecayMode.GoodEvent">
-        <processor name="MyTrueJet"/>
-        <processor name="MyMisclustering"/>
-        </if>
-        -->
-
+        <processor name="MyJetTaggingComparison" />
+        <processor name="MyFinalStateRecorder" />
         <processor name="MyLCIOOutputProcessor" />
     </execute>
 
@@ -138,6 +71,16 @@
         <!-- optionally limit the collections that are read from the input file: -->
         <!--parameter name="LCIOReadCollectionNames">MCParticle PandoraPFOs</parameter-->
     </global>
+
+    <processor name="MyJetTaggingComparison" type="JetTaggingComparison">
+        <parameter name="Collection" type="string" lcioInType="ReconstructedParticle"> RefinedJets4 </parameter>
+        <parameter name="PIDAlgorithm1" type="string"> weaver </parameter>
+        <parameter name="PIDAlgorithm2" type="string"> lcfiplus </parameter>
+        <parameter name="PIDParameters1" type="StringVev"> mc_b mc_c </parameter>
+        <parameter name="PIDParameters2" type="StringVev"> BTag CTag </parameter>
+        <parameter name="RootFile" type="string"></parameter>
+        <parameter name="Verbosity" type="string"> DEBUG </parameter>
+    </processor>
 
     <processor name="MyAIDAProcessor" type="AIDAProcessor">
         <!--Processor that handles AIDA files. Creates on directory per processor.  Processors only need to create and fill the histograms,clouds and tuples. Needs to be the first ActiveProcessor-->

@@ -74,7 +74,16 @@ class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         return steering
     
     def get_temp_dir(self):
-        return f'{self.htcondor_output_directory().path}/TMP-{self.branch}-{str(uuid.uuid4())}'
+        return f'{self.htcondor_output_directory().path}/TMP-{self.output_name()}'
+    
+    def output_name(self):
+        branch_data = cast(MarlinBranchValue, self.branch_data)
+        
+        sample_filename = osp.basename(branch_data[0])
+        n_chunk = branch_data[1]
+        n_chunks_in_sample = branch_data[2]
+        
+        return f'{osp.splitext(sample_filename)[0]}-{n_chunk}-{n_chunks_in_sample}-{str(self.branch)}'
     
     def parse_marlin_globals(self) -> str:
         globals = filter(lambda tup: tup[0] not in ['MaxRecordNumber', 'LCIOInputFiles', 'SkipNEvents'], self.globals)
@@ -83,7 +92,7 @@ class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     def parse_marlin_constants(self) -> str:
         return ' '.join([f'--constant.{key}="{value}"' for key, value in self.constants])
     
-    def build_command(self, fallback_level):
+    def build_command(self, **kwargs):
         steering = self.get_steering_parameters()
         
         input_file = steering['input_file']
@@ -108,15 +117,24 @@ class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         
         if self.check_output_root_ttrees is not None:
             for name, ttree in self.check_output_root_ttrees:
-                cmd += f' && ( is_root_readable ./{name} {ttree} && echo "Success: TTree <{ttree}> in file <{name}> exists" ) '
+                cmd += f' && ( echo "Info: Checking if TTree <{ttree}> exists" && is_root_readable ./{name} {ttree} && echo "Success: TTree <{ttree}> in file <{name}> exists" ) '
                 
         if self.check_output_files_exist is not None:
             for name in self.check_output_files_exist:
-                cmd += f' && [[ -f ./{name} ]] && echo "Success: File <{name}> exists"'
+                cmd += f' && echo "Info: Checking if file <{name}> exists" && [[ -f ./{name} ]] && echo "Success: File <{name}> exists"'
         
-        cmd += f' && cd .. && mv "{self.output_file}" "{self.output().path}" )'
+        cmd += f' && mv "{self.output_file}" "{self.output()[1].path}" && cd .. && mv "{temp}" "{self.output()[0].path}" )'
 
         return cmd
+    
+    def output(self):
+        return [
+            self.local_directory_target(str(self.branch)),
+            self.local_target(f'{self.branch}.slcio')
+        ]
+        
+    def run(self, **kwargs):
+        ShellTask.run(self, keep_cwd=True, **kwargs)
 
 
 class FastSimSGVExternalReadJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
@@ -211,12 +229,8 @@ class FastSimSGVExternalReadJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         cmd += f' && echo "Moving from worker node to destination"'
         cmd += f' && mv "{self.sgv_output}" "{target_path}"'
         cmd += f' )'
-        #cmd += f' && rm -rf "" ) '
         
         return cmd
-    
-    def output(self):
-        return self.local_target(f'{self.branch}.slcio')
     
     def run(self, **kwargs):
         ShellTask.run(self, cwd=self.get_temp_dir(), **kwargs)

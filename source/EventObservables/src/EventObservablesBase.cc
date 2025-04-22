@@ -80,6 +80,20 @@ EventObservablesBase::EventObservablesBase(const std::string &name) : Processor(
             std::string("PandoraPFOs")
             );
 
+	registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
+			"JetsKinFitZHH",
+			"Name of the Jet collection of the ZHH kinfit",
+			m_inputJetKinFitZHHCollection,
+			std::string("")
+			);
+
+	registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
+			"JetsKinFitZZH",
+			"Name of the Jet collection of the ZZH kinfit",
+			m_inputJetKinFitZZHCollection,
+			std::string("")
+			);
+
 	registerProcessorParameter("whichPreselection",
             "Which set of cuts to use in the preselection. This will overwrite any input preselection values.",
             m_whichPreselection,
@@ -353,6 +367,9 @@ void EventObservablesBase::prepareBaseTree()
 
 			ttree->Branch("me_zhh_log", &m_lcme_zhh_log, "me_zhh_log/D");
 			ttree->Branch("me_zzh_log", &m_lcme_zzh_log, "me_zzh_log/D");
+
+			ttree->Branch("me_jmk_zhh_log", &m_lcme_jmk_zhh_log, "me_jmk_zhh_log/D");
+			ttree->Branch("me_jmk_zzh_log", &m_lcme_jmk_zzh_log, "me_jmk_zzh_log/D");
 		}
 
 		/* old variables for pre selection
@@ -538,6 +555,9 @@ void EventObservablesBase::clearBaseValues()
 	m_lcme_zhh_log = 0.;
 	m_lcme_zzh_log = 0.;
 
+	m_lcme_jmk_zhh_log = 0.;
+	m_lcme_jmk_zzh_log = 0.;
+
 	m_lcme_weights.clear();
 	m_lcme_zhh_raw.clear();
 	m_lcme_zzh_raw.clear();
@@ -586,6 +606,13 @@ void EventObservablesBase::clearBaseValues()
 	m_ej4  = 0.;
 	m_qj4  = 0.;
 	m_qdj4 = 0.;
+
+	// jet matching
+	m_JMK_ZHH.clear();
+	m_JMK_ZZH.clear();
+
+	m_JMK_ZHH_perm_idx = -1;
+	m_JMK_ZZH_perm_idx = -1;
 }
 
 void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
@@ -813,7 +840,42 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
     	streamlog_out(MESSAGE) << exc.what();
 		m_statusCode = 30;
 	}
+
+	// jet matching from kinfit; so far, only for 4 jet case
+	assert(m_nAskedJets() == 4);
+
+	try {
+		LCCollection *inputJKF_ZHHCollection = pLCEvent->getCollection( m_inputJetKinFitZHHCollection );
+		LCCollection *inputJKF_ZZHCollection = pLCEvent->getCollection( m_inputJetKinFitZZHCollection );
+
+		inputJKF_ZHHCollection->parameters().getIntVals("permutation", m_JMK_ZHH);
+		inputJKF_ZZHCollection->parameters().getIntVals("permutation", m_JMK_ZZH);
+
+		if (m_JMK_ZHH.size() >= m_nAskedJets())
+			getPermutationIndex(m_JMK_ZHH, m_nAskedJets(), m_JMK_ZHH_perm_idx);
+		
+		if (m_JMK_ZZH.size() >= m_nAskedJets())
+			getPermutationIndex(m_JMK_ZZH, m_nAskedJets(), m_JMK_ZZH_perm_idx);
+
+	} catch(DataNotAvailableException &e) {
+		streamlog_out(MESSAGE) << "processEvent : Input collections not found in event " << m_nEvt << std::endl;
+		m_statusCode += 100;
+	}
 };
+
+void EventObservablesBase::getPermutationIndex(std::vector<int> input_perm, int size, short &perm_idx) {
+	assert(size == 4);
+	
+	for (size_t i = 0; i < dijetPerms4.size(); i++) {
+		if (dijetPerms4[i][0] == input_perm[0] &&
+			dijetPerms4[i][1] == input_perm[1] &&
+			dijetPerms4[i][2] == input_perm[2] &&
+			dijetPerms4[i][3] == input_perm[3]) {
+				perm_idx = i;
+				return;
+			}
+	}
+}
 
 void EventObservablesBase::init(){
     printParameters();
@@ -999,7 +1061,7 @@ void EventObservablesBase::calculateMatrixElements(
 	TLorentzVector jet3, TLorentzVector jet4, // from h
 	bool permute_from_z
 ){
-	unsigned short nperms = 24;
+	unsigned short nperms = 6;
 	float default_weight = 1./nperms;
 	std::vector<float> weights (nperms, default_weight);
 
@@ -1019,7 +1081,6 @@ void EventObservablesBase::calculateMatrixElements(
 	m_lcmezhh->SetZDecayMode(m_pdg_to_lcme_mode[b1_decay_pdg]);
 	m_lcmezzh->SetZDecayMode(m_pdg_to_lcme_mode[b1_decay_pdg], m_pdg_to_lcme_mode[b2_decay_pdg]);
 
-	std::vector<unsigned short> idx = { 0, 1, 2, 3 }; // nperms !(idx.size())
 	TLorentzVector vecs_jet [4] = { jet1, jet2, jet3, jet4 };
 
 	double result_zhh = 0.;
@@ -1029,24 +1090,26 @@ void EventObservablesBase::calculateMatrixElements(
 	streamlog_out(DEBUG) << "LCME Debug: E, Px, Py, Pz" << std::endl
 						 << "  Z_1: " << from_z_1.E() << " " << from_z_1.Px() << " " << from_z_1.Py() << " " << from_z_1.Pz() << std::endl
 						 << "  Z_2: " << from_z_2.E() << " " << from_z_2.Px() << " " << from_z_2.Py() << " " << from_z_2.Pz() << std::endl
-						 << "  J_1: " << vecs_jet[idx[0]].E() << " " << vecs_jet[idx[0]].Px() << " " << vecs_jet[idx[0]].Py() << " " << vecs_jet[idx[0]].Pz() << std::endl
-						 << "  J_2: " << vecs_jet[idx[1]].E() << " " << vecs_jet[idx[1]].Px() << " " << vecs_jet[idx[1]].Py() << " " << vecs_jet[idx[1]].Pz() << std::endl
-						 << "  J_3: " << vecs_jet[idx[2]].E() << " " << vecs_jet[idx[2]].Px() << " " << vecs_jet[idx[2]].Py() << " " << vecs_jet[idx[2]].Pz() << std::endl
-						 << "  J_4: " << vecs_jet[idx[3]].E() << " " << vecs_jet[idx[3]].Px() << " " << vecs_jet[idx[3]].Py() << " " << vecs_jet[idx[3]].Pz() << std::endl;
+						 << "  J_1: " << vecs_jet[0].E() << " " << vecs_jet[0].Px() << " " << vecs_jet[0].Py() << " " << vecs_jet[0].Pz() << std::endl
+						 << "  J_2: " << vecs_jet[1].E() << " " << vecs_jet[1].Px() << " " << vecs_jet[1].Py() << " " << vecs_jet[1].Pz() << std::endl
+						 << "  J_3: " << vecs_jet[2].E() << " " << vecs_jet[2].Px() << " " << vecs_jet[2].Py() << " " << vecs_jet[2].Pz() << std::endl
+						 << "  J_4: " << vecs_jet[3].E() << " " << vecs_jet[3].Px() << " " << vecs_jet[3].Py() << " " << vecs_jet[3].Pz() << std::endl;
 
 	/*
-	std::cout << "  TOT: " << from_z_1.E() + from_z_2.E() + vecs_jet[idx[0]].E() + vecs_jet[idx[1]].E() + vecs_jet[idx[2]].E() + vecs_jet[idx[3]].E() << " "
-							<< from_z_1.Px() + from_z_2.Px() + vecs_jet[idx[0]].Px() + vecs_jet[idx[1]].Px() + vecs_jet[idx[2]].Px() + vecs_jet[idx[3]].Px() << " "
-							<< from_z_1.Py() + from_z_2.Py() + vecs_jet[idx[0]].Py() + vecs_jet[idx[1]].Py() + vecs_jet[idx[2]].Py() + vecs_jet[idx[3]].Py() << " "
-							<< from_z_1.Pz() + from_z_2.Pz() + vecs_jet[idx[0]].Pz() + vecs_jet[idx[1]].Pz() + vecs_jet[idx[2]].Pz() + vecs_jet[idx[3]].Pz()
+	std::cout << "  TOT: " << from_z_1.E() + from_z_2.E() + vecs_jet[0].E() + vecs_jet[1].E() + vecs_jet[2].E() + vecs_jet[3].E() << " "
+							<< from_z_1.Px() + from_z_2.Px() + vecs_jet[0].Px() + vecs_jet[1].Px() + vecs_jet[2].Px() + vecs_jet[3].Px() << " "
+							<< from_z_1.Py() + from_z_2.Py() + vecs_jet[0].Py() + vecs_jet[1].Py() + vecs_jet[2].Py() + vecs_jet[3].Py() << " "
+							<< from_z_1.Pz() + from_z_2.Pz() + vecs_jet[0].Pz() + vecs_jet[1].Pz() + vecs_jet[2].Pz() + vecs_jet[3].Pz()
 							<< std::endl;
 	*/
 
 	std::vector<std::vector<unsigned short>> perms_from_z = {{ 0, 1 }};
 	if (permute_from_z) {
+		throw EVENT::Exception("permute_from_z=true encountered. Removed.");
 		perms_from_z.push_back({1, 0});
 		nperms = nperms * 2;
 	}
+	assert(nperms == dijetPerms4.size());
 	TLorentzVector vecs_from_z [2] = { from_z_1, from_z_2 };
 
 	// TODO: only calculating 12 is necessary, as H -> a+b is symmetric with respect to a <-> b
@@ -1057,10 +1120,10 @@ void EventObservablesBase::calculateMatrixElements(
 
 	streamlog_out(DEBUG) << "ME^2 (ZHH; ZZH) =" << std::endl;
 	for (auto perm_from_z: perms_from_z) {
-		do {
+		for (size_t perm_idx = 0; perm_idx < dijetPerms4.size(); perm_idx++) {
 			if (weights[nperm] != 0) {
-				TLorentzVector zhh_inputs [4] = { vecs_from_z[perm_from_z[0]], vecs_from_z[perm_from_z[1]], vecs_jet[idx[0]] + vecs_jet[idx[1]], vecs_jet[idx[2]] + vecs_jet[idx[3]] };
-				TLorentzVector zzh_inputs [5] = { vecs_from_z[perm_from_z[0]], vecs_from_z[perm_from_z[1]], vecs_jet[idx[0]] , vecs_jet[idx[1]], vecs_jet[idx[2]] + vecs_jet[idx[3]] };
+				TLorentzVector zhh_inputs [4] = { vecs_from_z[perm_from_z[0]], vecs_from_z[perm_from_z[1]], vecs_jet[dijetPerms4[perm_idx][0]] + vecs_jet[dijetPerms4[perm_idx][1]], vecs_jet[dijetPerms4[perm_idx][2]] + vecs_jet[dijetPerms4[perm_idx][3]] };
+				TLorentzVector zzh_inputs [5] = { vecs_from_z[perm_from_z[0]], vecs_from_z[perm_from_z[1]], vecs_jet[dijetPerms4[perm_idx][0]] , vecs_jet[dijetPerms4[perm_idx][1]], vecs_jet[dijetPerms4[perm_idx][2]] + vecs_jet[dijetPerms4[perm_idx][3]] };
 
 				m_lcmezhh->SetMomentumFinal(zhh_inputs);
 				m_lcmezzh->SetMomentumFinal(zzh_inputs);
@@ -1078,11 +1141,17 @@ void EventObservablesBase::calculateMatrixElements(
 			}
 
 			nperm += 1;
-		} while (std::next_permutation(idx.begin(), idx.end()));
+		}
 	}
 
 	m_lcme_zhh_log = std::log(result_zhh);
 	m_lcme_zzh_log = std::log(result_zzh);
+
+	if (m_JMK_ZHH_perm_idx != -1)
+		m_lcme_jmk_zhh_log = std::log(m_lcme_zhh_raw[m_JMK_ZHH_perm_idx]);
+
+	if (m_JMK_ZZH_perm_idx != -1)
+		m_lcme_jmk_zzh_log = std::log(m_lcme_zzh_raw[m_JMK_ZZH_perm_idx]);
 
 	streamlog_out(MESSAGE) << " log(LCMEZHH)=" << m_lcme_zhh_log << std::endl;
 	streamlog_out(MESSAGE) << " log(LCMEZZH)=" << m_lcme_zzh_log << std::endl;
