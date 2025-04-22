@@ -7,6 +7,14 @@ from .utils.types import SGVOptions
 from zhh import ProcessIndex
 from .utils import ShellTask, BaseTask, RealTimeLoggedTask
 
+MarlinBranchValue = tuple[str, int, int, int, int, str]
+# [0]: input file
+# [1]: chunk index of the given input file
+# [2]: total number of chunks for the file
+# [3]: n_events_skip
+# [4]: n_events_max
+# [5]: mcp_col_name
+
 class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     """Abstract class for Marlin jobs
     
@@ -27,13 +35,15 @@ class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     
     steering_file:str = '$REPO_ROOT/scripts/prod.xml'
     
+    output_file:str = 'zhh_AIDA.root'
+    
     # Optional: list of tuples of structure (file-name.root, TTree-name)
     check_output_root_ttrees:Optional[list[tuple[str,str]]] = None 
     
     # Optional: list of files
     check_output_files_exist:Optional[list[str]] = None
     
-    def get_steering_parameters(self) -> dict:
+    def get_steering_parameters(self)->dict:
         """The branch map self.branch_map is a dictionary
         branch => value where value has one of the following form:
         
@@ -44,17 +54,13 @@ class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
             dict: _description_
         """
         
-        branch_value = self.branch_map[self.branch]
+        branch_value = cast(MarlinBranchValue, self.branch_map[self.branch])
+        assert isinstance(branch_value, tuple)
         
-        if isinstance(branch_value, tuple):
-            input_file, n_events_skip, n_events_max, mcp_col_name = branch_value
-        elif isinstance(branch_value, dict):
-            n_events_skip, n_events_max = self.n_events_skip, self.n_events_max
-            
-            input_file = branch_value['location']
-            mcp_col_name = branch_value['mcp_col_name']
-        else:
-            raise Exception('Invalid format of branch value')
+        input_file, n_chunk_of_sample, n_chunks_in_sample, n_events_skip, n_events_max, mcp_col_name = branch_value
+        
+        n_events_skip = n_events_skip if n_events_skip > -1 else self.n_events_skip
+        n_events_max  = n_events_max  if n_events_max  > -1 else self.n_events_max
         
         steering = {
             'executable': self.executable,
@@ -67,11 +73,8 @@ class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         
         return steering
     
-    def get_target_and_temp(self):
-        return (
-            f'{self.htcondor_output_directory().path}/{self.branch}',
-            f'{self.htcondor_output_directory().path}/{self.branch}-{str(uuid.uuid4())}'
-        )
+    def get_temp_dir(self):
+        return f'{self.htcondor_output_directory().path}/TMP-{self.branch}-{str(uuid.uuid4())}'
     
     def parse_marlin_globals(self) -> str:
         globals = filter(lambda tup: tup[0] not in ['MaxRecordNumber', 'LCIOInputFiles', 'SkipNEvents'], self.globals)
@@ -83,14 +86,13 @@ class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     def build_command(self, fallback_level):
         steering = self.get_steering_parameters()
         
-        executable = steering['executable']
-        steering_file = steering['steering_file']
         input_file = steering['input_file']
         n_events_skip = steering['n_events_skip']
         n_events_max = steering['n_events_max']
+        executable = steering['executable']
+        steering_file = steering['steering_file']
         
-        target, temp = self.get_target_and_temp()
-        os.makedirs(osp.dirname(target), exist_ok=True)
+        temp = self.get_temp_dir()
         
         cmd =  f'source $REPO_ROOT/setup.sh'
         cmd += f' && echo "Starting Marlin at $(date)"'
@@ -112,12 +114,10 @@ class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
             for name in self.check_output_files_exist:
                 cmd += f' && [[ -f ./{name} ]] && echo "Success: File <{name}> exists"'
         
-        cmd += f' && cd .. && mv "{temp}" "{target}" )'
+        cmd += f' && cd .. && mv "{self.output_file}" "{self.output().path}" )'
 
         return cmd
-    
-    def output(self):
-        return self.local_directory_target(self.branch)
+
 
 class FastSimSGVExternalReadJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     """Abstract class for fast simulation jobs using SGV, reading in

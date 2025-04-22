@@ -87,8 +87,6 @@ whizard ./process.sin
 echo "Finished Whizard at $(date)"
 mv "{self.outputBasename()}.slcio" "{output_file.path}" """.replace('\n', ' && ')
 
-        print('Executing command', cmd)
-        
         return cmd
     
     def run(self, **kwargs):

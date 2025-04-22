@@ -69,6 +69,10 @@ struct PROCESS_ID {
 		f4_zzorww_h = 3583,
 		f4_szeorsw_l = 3202,
 
+		// TEST llbb, eebb
+		f4_llbb_sl0 = 3195,
+		f4_eebb_sl0 = 3196,
+
 		// fffff
 		p5_ae_eeevv = 9101,
 		p5_ea_eyyyy = 9102,

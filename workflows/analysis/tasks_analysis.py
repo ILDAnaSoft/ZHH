@@ -1,9 +1,10 @@
-from analysis.tasks_abstract import MarlinJob
+from analysis.tasks_abstract import MarlinJob, MarlinBranchValue
 from typing import Union, Optional, cast
 from collections.abc import Callable
 from law.util import flatten
 from analysis.framework import zhh_configs
 import numpy as np
+import os.path as osp
 import law
 
 class AnalysisAbstract(MarlinJob):
@@ -13,19 +14,17 @@ class AnalysisAbstract(MarlinJob):
         ('ILDConfigDir', '$ILD_CONFIG_DIR'), # read from environment variable
         ('ZHH_REPO_ROOT', '$REPO_ROOT'),
         ('Runllbbbb', 'True'),
-        ('Runvvbbbb', 'True'),
-        ('Runqqbbbb', 'True'),
-        ('RunKinfit', 'True'),
+        ('Runvvbbbb', 'False'),
+        ('Runqqbbbb', 'False'),
         ('RunTruthRecoComparison', 'False'),
         ('OutputDirectory', '.')
     ]
     
     check_output_root_ttrees = [
-        ('zhh_PreSelection_llHH.root', 'PreSelection'),
-        ('zhh_PreSelection_vvHH.root', 'PreSelection'),
-        ('zhh_PreSelection_qqHH.root', 'PreSelection'),
-        #('zhh_TruthRecoComparison.root', 'TruthRecoComparison'),
-        ('zhh_FinalStates.root', 'FinalStates')
+        ('zhh_AIDA.root', 'EventObservablesLL'),
+        ('zhh_AIDA.root', 'KinFitLLZHH'),
+        ('zhh_AIDA.root', 'KinFitLLZZH'),
+        ('zhh_AIDA.root', 'FinalStates')
     ]
     
     check_output_files_exist = [
@@ -71,44 +70,64 @@ class AnalysisAbstract(MarlinJob):
     # for all workflows which require a branch map conditioned on the
     # output of a previous task (in this case, RawIndex)
     @workflow_condition.create_branch_map
-    def create_branch_map(self) -> Union[
-        dict[int, dict],
-        dict[int, tuple[str, int, int, str]]
-        ]:
+    def create_branch_map(self) -> dict[int, MarlinBranchValue]:
+        branch_map:dict[int, MarlinBranchValue] = {}
+        
         samples = np.load(self.input()['raw_index'][1].path)
         
         if not self.debug:
             # The calculated chunking is used
             scs = np.load(self.input()['preselection_chunks'][0].path)
-            branch_map = { k: v for k, v in zip(
-                scs['branch'].tolist(),
-                zip(scs['location'],
-                    scs['chunk_start'],
-                    scs['chunk_size'],
-                    samples['mcp_col_name'][scs['sid']])) }
+            
+            for branch in scs['branch'].tolist():
+                branch_map[branch] = (
+                    scs['location'][branch],
+                    scs['n_chunks'][branch],
+                    scs['n_chunks_in_sample'][branch],
+                    scs['chunk_start'][branch],
+                    scs['chunk_size'][branch],
+                    samples['mcp_col_name'][samples['location'] == scs['location'][branch]][0]
+                )
+                
+            #branch_map = { k: v for k, v in zip(
+            #    scs['branch'].tolist(),
+            #    zip(scs['location'],
+            #        scs['chunk_start'],
+            #        scs['chunk_size'],
+            #        samples['mcp_col_name'][scs['sid']])) }
         else:
+            
             # A debug run. The default settings
             # from the steering file are used
             selection = samples[np.lexsort((samples['location'], samples['proc_pol']))]
-            branch_map = {}
+            
             i = 0
             
             for proc_pol in np.unique(selection['proc_pol']):
                 for entry in selection[selection['proc_pol'] == proc_pol][:3]:
-                    branch_map[i] = {
-                        'location': entry['location'],
-                        'mcp_col_name': entry['mcp_col_name'] 
-                    }
+                    branch_map[i] = (
+                        entry['location'],
+                        0,
+                        1,
+                        -1,
+                        -1,
+                        entry['mcp_col_name'] 
+                    )
                     i += 1
-        
-        temp = {  }
-        temp[0] = branch_map[0]
         
         return branch_map
 
     @workflow_condition.output
     def output(self):
-        return self.local_directory_target(self.branch)
+        branch_value = cast(MarlinBranchValue, self.branch_value)
+        
+        sample_filename = osp.basename(branch_value[0])
+        n_chunk = branch_value[1]
+        n_chunks_in_sample = branch_value[2]
+        
+        return self.local_target(f'{osp.splitext(sample_filename)[0]}-{n_chunk}-{n_chunks_in_sample}.slcio')
+        
+        #return self.local_directory_target(self.branch)
 
 class AnalysisRuntime(AnalysisAbstract):
     """Generates a runtime analysis for each proc_pol combination, essentially by running in debug mode

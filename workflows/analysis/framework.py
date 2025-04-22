@@ -13,6 +13,8 @@ import os, luigi, law, law.util, law.contrib, law.contrib.htcondor, law.job.base
 from typing import Optional, Union, cast, TYPE_CHECKING, Any
 from collections.abc import Callable
 from .utils.types import SGVOptions, WhizardOption
+from law import Task
+
 if TYPE_CHECKING:
     from analysis.tasks import RawIndex
     from analysis.tasks_reco import FastSimSGV
@@ -39,6 +41,12 @@ class HTCondorWorkflow(law.contrib.htcondor.HTCondorWorkflow):
         default=True,
         significant=False,
         description="transfer job logs to the output directory; default: True",
+    )
+    
+    initial_run_with_higher_requirements = luigi.BoolParameter(
+        default=False,
+        significant=False,
+        description="whether or not to run with increased RAM and time requirements for the first run; default: False",
     )
     
     rerun_with_higher_requirements = luigi.BoolParameter(
@@ -87,13 +95,13 @@ class HTCondorWorkflow(law.contrib.htcondor.HTCondorWorkflow):
             if key == 'initialdir':
                 name = os.path.basename(os.path.dirname(value))
         
-        if name is not None and name in session_submissions and self.rerun_with_higher_requirements:
-            print(f'Re-Running task {name} with increased requirements')
+        if self.initial_run_with_higher_requirements or (name is not None and name in session_submissions and self.rerun_with_higher_requirements):
+            print(f'(Re-)Running task {name} with increased requirements')
             
             config.custom_content.append(('request_memory', f'{self.higher_req_ram_mb} Mb'))
             config.custom_content.append(("request_runtime", math.floor(self.higher_req_time_hours * 3600)))
             
-            session_submissions[name] += 1
+            session_submissions[name] = 0 if name not in session_submissions else session_submissions[name] + 1
         else:
             # Default config: 4GB RAM and 3h of runtime
             config.custom_content.append(('request_memory', '4000 Mb'))
@@ -114,19 +122,14 @@ class AnalysisConfiguration:
     # where one entry is for each process to generate
     whizard_options:Optional[list[WhizardOption]] = None
     
-    def sgv_requires(self, sgv_task: 'FastSimSGV'):
-        result = []
-        
-        if isinstance(self.whizard_options, Callable):
+    def sgv_requires(self, sgv_task: 'FastSimSGV', requirements:dict[str, Task]):        
+        if self.whizard_options is not None:
             # when using Whizard, we require fast sim
             if not isinstance(self.sgv_inputs, Callable):
                 raise Exception('sgv_inputs must be defined when generating whizard events')
             
-            from analysis.tasks_generator import WhizardEventGeneration
-            event_gen_task = WhizardEventGeneration.req(sgv_task)
-            result.append(event_gen_task)
-        
-        return result
+            from analysis.tasks_generator import WhizardEventGeneration            
+            requirements['whizard_event_generation'] = WhizardEventGeneration.req(sgv_task)
     
     sgv_inputs:Optional[Callable[['FastSimSGV'], tuple[list[str], list[SGVOptions|None]]]] = None
 

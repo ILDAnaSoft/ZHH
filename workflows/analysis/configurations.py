@@ -3,10 +3,10 @@ from zhh import get_raw_files
 from glob import glob
 from typing import TYPE_CHECKING
 from .utils.types import SGVOptions, WhizardOption
+from law import Task
 
 if TYPE_CHECKING:
     from analysis.tasks import RawIndex
-    from analysis.tasks_reco import FastSimSGV
 
 # Define the configurations for the analysis
 class Config_500_all_full(AnalysisConfiguration):
@@ -28,7 +28,7 @@ class Config_500_all_full(AnalysisConfiguration):
 class Config_550_hh_fast(AnalysisConfiguration):
     tag = '550-hh-fast'
     
-    def sgv_inputs(self):
+    def sgv_inputs(self, fast_sim_task):
         input_files = glob('/pnfs/desy.de/ilc/prod/ilc/mc-2020/generated/550-Test/hh/*.slcio')
         input_files.sort()
         input_options = [{
@@ -44,7 +44,7 @@ class Config_550_hh_fast(AnalysisConfiguration):
 class Config_550_hh_fast_perf(AnalysisConfiguration):
     tag = '550-hh-fast-perf'
     
-    def sgv_inputs(self):
+    def sgv_inputs(self, fast_sim_task):
         input_files:list[str] = []
         input_options:list[dict] = []
         
@@ -116,7 +116,7 @@ class Config_550_llhh_fast_perf(AnalysisConfiguration):
     
     marlin_globals = {  }
     marlin_constants = { 'CMSEnergy': 550 }
-    
+   
 class Config_550_llbb_fast_perf(AnalysisConfiguration):
     tag = '550-llbb-fast-perf'
     
@@ -125,29 +125,66 @@ class Config_550_llbb_fast_perf(AnalysisConfiguration):
         { 'process_name': 'llbb_sl0', 'process_definition': '', 'template_dir': '$REPO_ROOT/workflows/resources/whizard_template', 'sindarin_file': 'whizard.base.sin' }
     ]
     
-    def sgv_inputs(self, fast_sim_task: 'FastSimSGV'):
+    def sgv_inputs(self, fast_sim_task):
+        from analysis.tasks_reco import FastSimSGV
+        assert(isinstance(fast_sim_task, FastSimSGV))
+        
+        sgv_inputs = fast_sim_task.input()
+        assert('whizard_event_generation' in sgv_inputs)
+        
+        whiz_outputs = sgv_inputs['whizard_event_generation']['collection']
+        
         input_files:list[str] = []
-        input_options:list[dict] = []
+        for i in range(len(whiz_outputs)):
+            input_files.append(whiz_outputs[i][0].path)
         
-        print(fast_sim_task.input())
-        raise Exception('Not implemented')
+        input_options = [{
+            'global_steering.MAXEV': 999999,
+            'global_generation_steering.CMS_ENE': 550,
+            'external_read_generation_steering.GENERATOR_INPUT_TYPE': 'LCIO',
+            'external_read_generation_steering.INPUT_FILENAMES': 'input.slcio',
+            'analysis_steering.CALO_TREATMENT': 'PERF'
+        }] * len(input_files)
         
-        for cms_energy, sgv_input_format, file_ending in [
-            (550, 'LCIO', 'slcio'),
-        ]:
-            sgv_options:SGVOptions = {
-                'global_steering.MAXEV': 999999,
-                'global_generation_steering.CMS_ENE': cms_energy,
-                'external_read_generation_steering.GENERATOR_INPUT_TYPE': sgv_input_format,
-                'external_read_generation_steering.INPUT_FILENAMES': f'input.{file_ending}',
-                'analysis_steering.CALO_TREATMENT': 'PERF'
-            }
-            files = glob(source_glob)
-            files.sort()
-            
-            for file in files:
-                input_files.append(file)
-                input_options.append(sgv_options)
+        return input_files, input_options
+    
+    marlin_globals = {  }
+    marlin_constants = { 'CMSEnergy': 550 }
+
+class Config_550_2l4q_fast_perf(AnalysisConfiguration):
+    tag = '550-2l4q-fast-perf'
+    
+    def sgv_inputs(self, fast_sim_task):
+        process_mask_2l4q = [
+            '6f_xxvlyx',
+            '6f_yyxyev',
+            '6f_llxxxx',
+            '6f_llxyyx',
+            '6f_eexxxx',
+            '6f_yyveyx',
+            '6f_vvxxxx',
+            '6f_xxxylv',
+            '6f_yyvlyx',
+            '6f_eeyyyy',
+            '6f_vvyyyy',
+            '6f_xxxyev',
+            '6f_yyxylv',
+            '6f_xxveyx',
+            '6f_eexyyx',
+            '6f_vvxyyx',
+            '6f_llyyyy']
+        
+        input_files:list[str] = []
+        for process_mask in process_mask_2l4q:
+            input_files += glob(f'/pnfs/desy.de/ilc/prod/ilc/mc-2025/generated/550-TDR_ws/6f/*{process_mask}*.slcio')
+        
+        input_options = [{
+            'global_steering.MAXEV': 999999,
+            'global_generation_steering.CMS_ENE': 550,
+            'external_read_generation_steering.GENERATOR_INPUT_TYPE': 'LCIO',
+            'external_read_generation_steering.INPUT_FILENAMES': 'input.slcio',
+            'analysis_steering.CALO_TREATMENT': 'PERF'
+        }] * len(input_files)
         
         return input_files, input_options
     
@@ -163,4 +200,4 @@ zhh_configs.add(Config_550_hh_fast_perf())
 # llHH
 zhh_configs.add(Config_550_llhh_fast_perf())
 zhh_configs.add(Config_550_llbb_fast_perf())
-#zhh_configs.add(Config_550_2l4q_fast_perf())
+zhh_configs.add(Config_550_2l4q_fast_perf())

@@ -1,15 +1,15 @@
 #!/bin/bash
 
 function zhh_install_venv() {
-    echo "Checking python venv installation with name <$ZHH_VENV_NAME>..."
+    zhh_echo "Checking python venv installation with name <$ZHH_VENV_NAME>..."
     
     if [[ -z $REPO_ROOT || ! -d "$REPO_ROOT" ]]; then
-        echo "REPO_ROOT is not set or does not point to a valid directory"
+        zhh_echo "REPO_ROOT is not set or does not point to a valid directory"
         return 1
     fi
 
     if [[ -z $ZHH_VENV_NAME ]]; then
-        echo "ZHH_VENV_NAME is not set. Please set it to the desired name of the virtual environment."
+        zhh_echo "ZHH_VENV_NAME is not set. Please set it to the desired name of the virtual environment."
         return 1
     fi
 
@@ -33,7 +33,7 @@ function zhh_install_venv() {
                 source $REPO_ROOT/$ZHH_VENV_NAME/bin/activate 
                 pip install ipykernel
                 python -m ipykernel install --user --name=$ZHH_VENV_NAME
-            ) && echo "Success: IPython kernel installed" || echo "Error: IPython kernel installation failed"
+            ) && zhh_echo "Success: IPython kernel installed" || zhh_echo "Error: IPython kernel installation failed"
         fi
 
         # Replace the python executable with a shim so it is guaranteed
@@ -55,16 +55,16 @@ setupwrapper && source \$REPO_ROOT/$ZHH_VENV_NAME/bin/activate && exec python.ex
 EOF
         chmod 755 $PYLOC
     else
-        echo "Python venv <$ZHH_VENV_NAME> already exists. If you want to redo the setup, delete the directory <$REPO_ROOT/$ZHH_VENV_NAME>."
+        zhh_echo "Python venv <$ZHH_VENV_NAME> already exists. If you want to redo the setup, delete the directory <$REPO_ROOT/$ZHH_VENV_NAME>."
     fi
 }
 
 function zhh_install_deps() {
     local INSTALL_DIR="$1"
-    echo "Installing ZHH dependencies to $INSTALL_DIR"
+    zhh_echo "Installing ZHH dependencies to $INSTALL_DIR"
 
     if [[ -z $REPO_ROOT || ! -d "$REPO_ROOT" ]]; then
-        echo "REPO_ROOT is not set or does not point to a valid directory"
+        zhh_echo "REPO_ROOT is not set or does not point to a valid directory"
         return 1
     fi
 
@@ -72,7 +72,7 @@ function zhh_install_deps() {
         get_input_arg "install-dir <$INSTALL_DIR> is not empty. Do you wish to continue with the existing contents? (y) " yn y
         
         if [[ "$yn" != "" && "$yn" != "y" ]]; then
-            echo "Aborting."
+            zhh_echo "Aborting."
             return 1
         fi
     fi
@@ -89,7 +89,7 @@ function zhh_install_deps() {
     fi
 
     if [[ ! -d $MarlinMLFlavorTagging || ! -d $FlavorTagging_ML || ! -d $ILD_CONFIG_DIR || ! -d $MarlinReco || ! -d $MarlinKinfit || ! -d $LCFIPlusConfig || ! -d $LCFIPlus || ! -d $Physsim ]]; then
-        echo "At least one of the dependencies could not be found. Retrieving them..."
+        zhh_echo "At least one of the dependencies could not be found. Retrieving them..."
 
         local repositories=(
             https://gitlab.desy.de/bryan.bliewert/MarlinMLFlavorTagging.git
@@ -124,41 +124,41 @@ function zhh_install_deps() {
                     install_dir="$INSTALL_DIR/$dirnamecur"
 
                     if [[ ! -d "$install_dir" ]]; then
-                        echo "Cloning to $INSTALL_DIR/$dirnamecur"
+                        zhh_echo "Cloning to $INSTALL_DIR/$dirnamecur"
                         git clone -b ${branchnames[$i]} --recurse-submodules ${repositories[$i]} "$install_dir"
 
                         if [[ $commitcur != "latest" ]]; then
-                            echo "Checking out commit $commitcur"
+                            zhh_echo "Checking out commit $commitcur"
                             ( cd "$install_dir" && git checkout $commitcur && cd $cwd )
                         fi
                     else
-                        echo "Directory $install_dir already exists. Assume it's correct."
+                        zhh_echo "Directory $install_dir already exists. Assume it's correct."
                     fi
                 else
                     if [[ -d $ypath ]]; then
                         install_dir="$ypath"
-                        echo "Using user-supplied path $ypath for dependency $dependency"
+                        zhh_echo "Using user-supplied path $ypath for dependency $dependency"
                     else
-                        echo "Path $ypath does not exist. Aborting..."
+                        zhh_echo "Path $ypath does not exist. Aborting..."
                         return 1
                     fi
                 fi
 
-                echo "Setting variable $dependency to <$install_dir>"
+                zhh_echo "Setting variable $dependency to <$install_dir>"
                 export $dependency="$install_dir"
                 echo "$dependency=$install_dir" >> $REPO_ROOT/.env
 
             else
-                echo "Dependency $dependency already found."
+                zhh_echo "Dependency $dependency already found."
             fi
         done
     fi
 
     # Unpack LCFIPlus weights
     if [[ -f "${ILD_CONFIG_DIR}/LCFIPlusConfig/lcfiweights/6q500_v04_p00_ildl5_c0_bdt.class.C" ]]; then
-        echo "Skipping LCFIPlus weights (already exist)"
+        zhh_echo "Skipping LCFIPlus weights (already exist)"
     else
-        echo "Unpacking LCFIPlus weights..."
+        zhh_echo "Unpacking LCFIPlus weights..."
         (
             cd "${ILD_CONFIG_DIR}/LCFIPlusConfig/lcfiweights" && tar -xvzf 6q500_v04_p00_ildl5.tar.gz
         )
@@ -168,20 +168,33 @@ function zhh_install_deps() {
     echo "$FlavorTagging_ML" >> "$(realpath $REPO_ROOT/$ZHH_VENV_NAME/lib/python*/site-packages)/FlavorTag.pth"
 
     # Set DATA_PATH
-    local default_data_dir="/data/dust/user/$(whoami)/zhh"
-    if [[ ! -z $DATA_PATH ]]; then
-        default_data_dir=$DATA_PATH
+    local default_data_dir=""
+    local ZHH_INSTALL_USE_DEFAULT_PRE=$ZHH_INSTALL_USE_DEFAULT
+
+    if [ -d /data/dust/user ]; then
+        local default_data_dir="/data/dust/user/$(whoami)/zhh"
+        if [ ! -z $DATA_PATH ]; then
+            default_data_dir=$DATA_PATH
+        fi
+    else
+        # Force a user prompt, even when using the --auto option
+        export ZHH_INSTALL_USE_DEFAULT=""
     fi
 
     get_input_arg "Where do you want to store analysis results for batch processing? ($default_data_dir) " data_dir "$default_data_dir"
-    mkdir -p "$data_dir"
+
+    if [ ! -z $data_dir ]; then
+        mkdir -p "$data_dir"
+    fi
+
+    export ZHH_INSTALL_USE_DEFAULT="$ZHH_INSTALL_USE_DEFAULT_PRE"
 
     # install SGV
     local default_sgv_dir="$REPO_ROOT/dependencies/sgv"
     get_input_arg "Where do you want to install SGV? ($default_sgv_dir) " sgv_dir "$default_sgv_dir"
 
     if [[ -d $sgv_dir ]]; then  
-        echo "SGV_DIR <$sgv_dir> already exists. Skipping..."
+        zhh_echo "SGV_DIR <$sgv_dir> already exists. Skipping..."
     else
         source "$REPO_ROOT/shell/sgv_install.sh" $sgv_dir
     fi

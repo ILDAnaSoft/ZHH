@@ -284,6 +284,9 @@ void FinalStateRecorder::init()
 	this->register_process(new vvqq_sznu());
 	this->register_process(new llvv_szeorsw());
 
+	this->register_process(new llbb_sl0());
+	this->register_process(new eebb_sl0());
+
 	// 5f
 	this->register_process(new p5_ae_eeevv());
 	this->register_process(new p5_ea_eyyyy());

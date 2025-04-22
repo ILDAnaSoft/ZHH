@@ -11,13 +11,13 @@ If you wish to use your own local copies of the repositories, create (or edit, i
 
 ### Fresh install
 
-The easiest way to setup the whole Python and C++ environment automatically uses a key4hep stack from CVMFS. If the latter is available, you may use 
+The easiest way to setup the whole Python and C++ environment automatically uses a key4hep stack from CVMFS. If the latter is available, you may *in bash* use 
 
 ```shell
-source install.sh [--auto]
+source install.sh --auto
 ```
 
-where `--auto` is a switch to use sensible default values. Please use bash, not zsh for the initial setup. This will download all necessary dependencies into a `dependencies` directory inside the working directory of the `ZHH` repo, compile them, extract LCFIPlus weights for ILDConfig, setup a Python 3.11 virtual environment (with name `zhhvenv`) and install all required Python packages defined in the `requirements.txt` file. Finally, all Marlin processors inside `source` are compiled and a copy of the fast-sim tool SGV is installed.
+where `--auto` is a switch to use default values where possible. Please do not use zsh shell for the initial setup. The script will download all necessary dependencies into a `dependencies` directory inside the working directory of the `ZHH` repo, compile them, extract LCFIPlus weights for ILDConfig, setup a Python 3.11 virtual environment (with name `zhhvenv`) and install all required Python packages defined in the `requirements.txt` file. Finally, all Marlin processors inside `source` are compiled and a copy of the fast-sim tool SGV is installed.
 
 To test if the setup succeeded, call `MarlinZHH --global.LCIOInputFiles=<SomeLCIOFile>` where `SomeLCIOFile` points to a new (mc2020+) DST file. This will run Marlin with the `prod.xml` steering file (scripts directory). On DESY NAF, a valid default is given for `LCIOInputFiles`, so a simple `MarlinZHH` suffices.
 

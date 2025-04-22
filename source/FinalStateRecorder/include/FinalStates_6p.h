@@ -35,9 +35,9 @@ class p6: public FinalStateResolver {
         // in case of generated final state leptons they will be copied once with genstat
         // ISR photons will not have genstat 5
         void on_first_event(LCCollection *mcp_collection) {
-            shift_pos = 2;
-
             if (((MCParticle*)mcp_collection->getElementAt(1))->getGeneratorStatus() == 4) {
+                shift_pos = 2;
+                
                 m_isr_indices[0] += shift_pos;
                 m_isr_indices[1] += shift_pos;
             }

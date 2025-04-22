@@ -16,27 +16,55 @@ class p4: public FinalStateResolver {
         // Set process ID and event category
         p4( string process_name, int process_id, int event_category, vector<int> decay_filter ):
             FinalStateResolver( process_name, process_id, event_category, 4, 0, vector<int> {4,5} ),
-            m_final_state_filter {decay_filter} {};
+            m_final_state_filter {decay_filter},
+            m_first_event_check(false) {};
         
         p4( string process_name, int process_id, int event_category, int n_fermions, int n_higgs, vector<int> isr_particles, vector<int> decay_filter ):
             FinalStateResolver( process_name, process_id, event_category, n_fermions, n_higgs, isr_particles ),
-            m_final_state_filter {decay_filter} {};
+            m_final_state_filter {decay_filter},
+            m_first_event_check(false) {};
+
+        // for compatability with new samples; see FinalStates_p6.h for explanation
+        void on_first_event(LCCollection *mcp_collection) {
+            if (((MCParticle*)mcp_collection->getElementAt(1))->getGeneratorStatus() == 4) {
+                m_shift_pos = 2;
+                
+                m_isr_indices[0] += m_shift_pos;
+                m_isr_indices[1] += m_shift_pos;
+            }
+        };
+        bool m_first_event_check{};
+        int m_shift_pos = 0;
+        int m_nZ = 0;
 
         vector<MCParticle*> resolve_fs_particles(LCCollection *mcp_collection, bool resolve_higgs = false) {
             (void) resolve_higgs;
 
             vector<MCParticle*> fs_particles;
+            m_nZ = 0;
 
-            // Get fermions
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(6 ));
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(7 ));
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(8 ));
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(9 ));
+            if (m_process_id == PROCESS_ID::f4_llbb_sl0 || m_process_id == PROCESS_ID::f4_eebb_sl0) {                
+                if (((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 6 ))->getPDG() == 23)
+                    m_nZ++;
+
+                if (((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 7 ))->getPDG() == 23)
+                    m_nZ++;
+            }
+
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 6 + m_nZ ));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 7 + m_nZ ));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 8 + m_nZ ));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 9 + m_nZ ));
 
             return fs_particles;
         }
 
         vector<int> resolve(LCCollection *mcp_collection) {
+            if (!m_first_event_check) {
+                on_first_event(mcp_collection);
+                m_first_event_check = true;
+            }
+
             // Get fermions
             vector<MCParticle*> fs_particles = resolve_fs_particles(mcp_collection);
 
@@ -45,6 +73,8 @@ class p4: public FinalStateResolver {
                 vec_contains(m_final_state_filter, abs(fs_particles[1]->getPDG())) &&
                 vec_contains(m_final_state_filter, abs(fs_particles[2]->getPDG())) &&
                 vec_contains(m_final_state_filter, abs(fs_particles[3]->getPDG())), RESOLVER_ERRORS::UNALLOWED_VALUES);
+            
+            std::cerr << "Added " << fs_particles[0]->getPDG() << " " << fs_particles[1]->getPDG() << " " << fs_particles[2]->getPDG() << " " << fs_particles[3]->getPDG() << std::endl;
 
             return vector<int>{
                 fs_particles[0]->getPDG(),
@@ -130,5 +160,10 @@ class vvqq_sznu : public p4 {
 class llvv_szeorsw : public p4 {
     public: llvv_szeorsw(): p4( "4f_szeorsw_l", PROCESS_ID::f4_szeorsw_l, EVENT_CATEGORY_TRUE::llvv, vector{11,12,13,14,15,16} ) {}; };
 
+class llbb_sl0 : public p4 {
+    public: llbb_sl0(): p4( "llbb_sl0", PROCESS_ID::f4_llbb_sl0, EVENT_CATEGORY_TRUE::llqq, vector{13,15,5} ) {}; };
+
+class eebb_sl0 : public p4 {
+    public: eebb_sl0(): p4( "eebb_sl0", PROCESS_ID::f4_eebb_sl0, EVENT_CATEGORY_TRUE::llqq, vector{11,5} ) {}; };
 
 #endif

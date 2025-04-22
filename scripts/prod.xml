@@ -15,9 +15,8 @@
         In the job submission script, all channels are run
         -->
         <constant name="Runllbbbb" value="True" />
-        <constant name="Runvvbbbb" value="True" />
-        <constant name="Runqqbbbb" value="True" />
-        <constant name="RunKinfit" value="True" />
+        <constant name="Runvvbbbb" value="False" />
+        <constant name="Runqqbbbb" value="False" />
         <constant name="RunTruthRecoComparison" value="False" />
 
         <!-- These variables should be constant -->
@@ -83,7 +82,7 @@
             <processor name="MyZHHKinFitLL_ZHH" />
             <!-- <processor name="MyZHHKinFitLL_ZHHv1" /> -->
             <processor name="MyZHHKinFitLL_ZZH" />
-            <processor name="MyZHHKinFitLL_ZZZ" />
+            <!-- <processor name="MyZHHKinFitLL_ZZZ" /> -->
             <processor name="MyEventObservablesLL" />
         </if>
 
@@ -91,7 +90,7 @@
         <if condition="${Runvvbbbb}">
             <processor name="MyZHHKinFitVV_ZHH" />
             <processor name="MyZHHKinFitVV_ZZH" />
-            <processor name="MyZHHKinFitVV_ZZZ" />
+            <!-- <processor name="MyZHHKinFitVV_ZZZ" /> -->
             <processor name="MyEventObservablesVV" /> 
         </if>
 
@@ -99,7 +98,7 @@
         <if condition="${Runqqbbbb}">
             <processor name="MyZHHKinFitQQ_ZHH" />
             <processor name="MyZHHKinFitQQ_ZZH" />
-            <processor name="MyZHHKinFitQQ_ZZZ" />
+            <!-- <processor name="MyZHHKinFitQQ_ZZZ" /> -->
             <processor name="MyEventObservablesQQ" />
         </if>
 
