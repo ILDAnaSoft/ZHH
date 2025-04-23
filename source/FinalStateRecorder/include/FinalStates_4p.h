@@ -35,26 +35,28 @@ class p4: public FinalStateResolver {
         };
         bool m_first_event_check{};
         int m_shift_pos = 0;
-        int m_nZ = 0;
+        int m_nZorH = 0;
 
         vector<MCParticle*> resolve_fs_particles(LCCollection *mcp_collection, bool resolve_higgs = false) {
             (void) resolve_higgs;
 
             vector<MCParticle*> fs_particles;
-            m_nZ = 0;
+            m_nZorH = 0;
 
             if (m_process_id == PROCESS_ID::f4_llbb_sl0 || m_process_id == PROCESS_ID::f4_eebb_sl0) {                
-                if (((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 6 ))->getPDG() == 23)
-                    m_nZ++;
+                if (((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 6 ))->getPDG() == 23 ||
+                    ((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 6 ))->getPDG() == 25)
+                    m_nZorH++;
 
-                if (((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 7 ))->getPDG() == 23)
-                    m_nZ++;
+                if (((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 7 ))->getPDG() == 23 ||
+                    ((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 7 ))->getPDG() == 25)
+                    m_nZorH++;
             }
 
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 6 + m_nZ ));
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 7 + m_nZ ));
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 8 + m_nZ ));
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 9 + m_nZ ));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 6 + m_nZorH ));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 7 + m_nZorH ));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 8 + m_nZorH ));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 9 + m_nZorH ));
 
             return fs_particles;
         }
@@ -68,13 +70,13 @@ class p4: public FinalStateResolver {
             // Get fermions
             vector<MCParticle*> fs_particles = resolve_fs_particles(mcp_collection);
 
+            //std::cerr << "Added " << fs_particles[0]->getPDG() << " " << fs_particles[1]->getPDG() << " " << fs_particles[2]->getPDG() << " " << fs_particles[3]->getPDG() << std::endl;
+
             assert_true(
                 vec_contains(m_final_state_filter, abs(fs_particles[0]->getPDG())) &&
                 vec_contains(m_final_state_filter, abs(fs_particles[1]->getPDG())) &&
                 vec_contains(m_final_state_filter, abs(fs_particles[2]->getPDG())) &&
                 vec_contains(m_final_state_filter, abs(fs_particles[3]->getPDG())), RESOLVER_ERRORS::UNALLOWED_VALUES);
-            
-            std::cerr << "Added " << fs_particles[0]->getPDG() << " " << fs_particles[1]->getPDG() << " " << fs_particles[2]->getPDG() << " " << fs_particles[3]->getPDG() << std::endl;
 
             return vector<int>{
                 fs_particles[0]->getPDG(),
