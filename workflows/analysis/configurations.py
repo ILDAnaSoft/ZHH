@@ -89,28 +89,21 @@ class Config_550_hh_full(AnalysisConfiguration):
 class Config_550_llhh_fast_perf(AnalysisConfiguration):
     tag = '550-llhh-fast-perf'
     
-    def sgv_inputs(self):
-        input_files:list[str] = []
-        input_options:list[dict] = []
+    def sgv_inputs(self, fast_sim_task):
+        input_files:list[str] = sum(map(glob, [
+            '/pnfs/desy.de/ilc/prod/ilc/mc-2020/generated/550-Test/hh/*Pe1e1*.slcio',
+            '/pnfs/desy.de/ilc/prod/ilc/mc-2020/generated/550-Test/hh/*Pe2e2*.slcio',
+            '/pnfs/desy.de/ilc/prod/ilc/mc-2020/generated/550-Test/hh/*Pe3e3*.slcio'
+        ]), [])
+        input_files.sort()
         
-        for cms_energy, sgv_input_format, source_glob, file_ending in [
-            (550, 'LCIO', '/pnfs/desy.de/ilc/prod/ilc/mc-2020/generated/550-Test/6f-test/*Pe1e1*.slcio', 'slcio'),
-            (550, 'LCIO', '/pnfs/desy.de/ilc/prod/ilc/mc-2020/generated/550-Test/6f-test/*Pe2e2*.slcio', 'slcio'),
-            (550, 'LCIO', '/pnfs/desy.de/ilc/prod/ilc/mc-2020/generated/550-Test/6f-test/*Pe3e3*.slcio', 'slcio'),
-        ]:
-            sgv_options:SGVOptions = {
-                'global_steering.MAXEV': 999999,
-                'global_generation_steering.CMS_ENE': cms_energy,
-                'external_read_generation_steering.GENERATOR_INPUT_TYPE': sgv_input_format,
-                'external_read_generation_steering.INPUT_FILENAMES': f'input.{file_ending}',
-                'analysis_steering.CALO_TREATMENT': 'PERF'
-            }
-            files = glob(source_glob)
-            files.sort()
-            
-            for file in files:
-                input_files.append(file)
-                input_options.append(sgv_options)
+        input_options = [{
+            'global_steering.MAXEV': 999999,
+            'global_generation_steering.CMS_ENE': 550,
+            'external_read_generation_steering.GENERATOR_INPUT_TYPE': 'LCIO',
+            'external_read_generation_steering.INPUT_FILENAMES': 'input.slcio',
+            'analysis_steering.CALO_TREATMENT': 'PERF'
+        }] * len(input_files)
         
         return input_files, input_options
     

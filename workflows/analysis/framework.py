@@ -50,7 +50,7 @@ class HTCondorWorkflow(law.contrib.htcondor.HTCondorWorkflow):
     )
     
     rerun_with_higher_requirements = luigi.BoolParameter(
-        default=True,
+        default=False,
         significant=False,
         description="whether or not to run with increased RAM and time requirements if the job is failing; default: True",
     )
@@ -95,7 +95,7 @@ class HTCondorWorkflow(law.contrib.htcondor.HTCondorWorkflow):
             if key == 'initialdir':
                 name = os.path.basename(os.path.dirname(value))
         
-        if self.initial_run_with_higher_requirements or (name is not None and name in session_submissions and self.rerun_with_higher_requirements):
+        if self.initial_run_with_higher_requirements or (self.rerun_with_higher_requirements and name is not None and name in session_submissions):
             print(f'(Re-)Running task {name} with increased requirements')
             
             config.custom_content.append(('request_memory', f'{self.higher_req_ram_mb} Mb'))
