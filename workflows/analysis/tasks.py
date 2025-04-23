@@ -108,7 +108,7 @@ class CreateAnalysisChunks(BaseTask):
         np.savetxt(osp.join(osp.dirname(str(self.output()[2].path)), 'time_per_event.csv'), atpe, delimiter=',', fmt='%s')
         np.savetxt(osp.join(osp.dirname(str(self.output()[3].path)), 'normalization.csv'), pn, delimiter=',', fmt='%s')
         
-        self.publish_message(f'Compiled analysis chunks')
+        self.publish_message(f'Compiled analysis with {len(chunk_splits)} chunks!')
     
 
 class AnalysisSummary(BaseTask, HTCondorWorkflow):
