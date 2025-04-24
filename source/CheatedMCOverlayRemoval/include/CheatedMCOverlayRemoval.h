@@ -13,14 +13,7 @@
 #include "UTIL/PIDHandler.h"
 #include "UTIL/LCRelationNavigator.h"
 #include <string>
-#include <TFile.h>
-#include <TTree.h>
 #include <vector>
-class TFile;
-class TH1F;
-class TH1I;
-class TH2I;
-class TTree;
 
 using namespace lcio ;
 using namespace marlin ;
@@ -62,6 +55,9 @@ class CheatedMCOverlayRemoval : public Processor
 		std::string                             _mcTruthRecoLink{};
 		std::string				_OutputPfoCollection{};
 		std::string                             _OutputOverlayCollection{};
+
+		bool m_PIDAlgoSync{};
+		std::vector<std::string> m_PIDAlgorithmsToKeep{};
 };
 
 #endif

@@ -27,6 +27,11 @@ HdecayMode::HdecayMode() :
 	m_ISR2Px(0.f),
 	m_ISR2Py(0.f),
 	m_ISR2Pz(0.f),
+	m_nRun(0),
+	m_nEvt(0),
+	m_nHdecayTob(0),
+	m_nZdecayTob(0),
+	m_pTFile(NULL)
 {
 
 	_description = "HdecayMode identifies Higgs decay mode and finds ISR in generator level" ;
@@ -75,10 +80,11 @@ void HdecayMode::init()
 
 	m_nRun = 0;
 	m_nEvt = 0;
-
-	m_pTFile = new TFile(m_outputFile.c_str(),"recreate");
-	m_pTTree = new TTree("eventTree","eventTree");
-	m_pTTree->SetDirectory(m_pTFile);
+	
+	if (m_outputFile.size()) {
+		m_pTFile = new TFile(m_outputFile.c_str(),"recreate");
+		m_pTTree->SetDirectory(m_pTFile);
+	}
 
 	m_pTTree->Branch("run", &m_nRun, "run/I");
 	m_pTTree->Branch("event", &m_nEvt, "event/I");
@@ -225,10 +231,16 @@ void HdecayMode::check()
 
 void HdecayMode::end()
 {
-	m_pTFile->cd();
+	if (m_pTFile != NULL) {
+		m_pTFile->cd();
+	}
+	
 	m_pTTree->Write();
-	m_pTFile->Close();
-	delete m_pTFile;
+
+	if (m_pTFile != NULL) {
+		m_pTFile->Close();
+		delete m_pTFile;
+	}
 }
 
 

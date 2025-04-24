@@ -64,7 +64,7 @@ class HdecayMode : public Processor
 		int m_nZdecayTob;
 
 		TFile *m_pTFile{};
-        TTree *m_pTTree{};
+        TTree *m_pTTree = new TTree("HdecayMode", "HdecayMode");
 };
 
 #endif

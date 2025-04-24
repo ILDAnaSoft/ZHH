@@ -2,7 +2,7 @@ import json
 import numpy as np
 import uproot as ur
 from math import floor, ceil
-from typing import Optional, List, Iterable
+from typing import Optional, List, Iterable, cast
 from .PreselectionAnalysis import sample_weight
 
 def get_process_normalization(
@@ -76,7 +76,7 @@ def get_sample_chunk_splits(
         process_normalization (np.ndarray): _description_.
         custom_statistics (Optional[List[tuple]], optional): list of entries of either (fraction:float, processes:list[str]) or
             (fraction:float, processes:list[str], reference:str<'total', 'expected'>)
-        existing_chunks (Optional[np.ndarray], optional): _description_. Defaults to None.
+        existing_chunks (Optional[np.ndarray], optional): Deprecated. Defaults to None.
         MAXIMUM_TIME_PER_JOB (int, optional): For splitting jobs, in seconds. Defaults to 5400 (1.5h).
 
     Returns:
@@ -91,6 +91,8 @@ def get_sample_chunk_splits(
         ('location', '<U512'),
         
         ('n_chunks', 'I'),
+        ('n_chunk_in_sample', 'I'),
+        ('n_chunks_in_sample', 'I'),
         ('chunk_start', 'I'),
         ('chunk_size', 'I'),
     ]
@@ -134,6 +136,9 @@ def get_sample_chunk_splits(
                 
                 n_accounted = np.sum(existing_chunks['chunk_size'][mask])
                 n_chunks = np.max(existing_chunks['n_chunks'][mask]) + 1
+                
+                raise Exception('Deprecated.')
+                n_chunks_in_sample = 0
                 n_sample = len(np.unique(existing_chunks['location'][mask]))
             else:
                 n_accounted = 0
@@ -143,6 +148,7 @@ def get_sample_chunk_splits(
             while n_sample < len(c_samples) and n_accounted < n_target:
                 sample = c_samples[n_sample]
                 
+                n_chunks_in_sample = 0
                 n_accounted_sample = 0
                 n_tot_sample = sample['n_events']
                 
@@ -154,18 +160,22 @@ def get_sample_chunk_splits(
                     
                 while n_accounted < n_target and n_accounted_sample < n_tot_sample:
                     c_chunk_size = min(min(n_tot_sample - n_accounted_sample, max_chunk_size), n_target - n_accounted)
-                    c_chunks.append((n_chunks_tot, sample['sid'], p['process'], p['proc_pol'], sample['location'], n_chunks, n_accounted_sample, c_chunk_size))
+                    c_chunks.append((n_chunks_tot, sample['sid'], p['process'], p['proc_pol'], sample['location'], n_chunks, n_chunks_in_sample, 0, n_accounted_sample, c_chunk_size))
                     
                     n_accounted += c_chunk_size
                     n_accounted_sample += c_chunk_size
     
                     n_chunks += 1
+                    n_chunks_in_sample += 1
                     n_chunks_tot += 1
                     
                 n_sample += 1
                     
-            if len(c_chunks) > 0:
-                results = np.append(results, np.array(c_chunks, dtype=dtype))
+                if len(c_chunks) > 0:
+                    results = np.append(results, np.array(c_chunks, dtype=dtype))
+                    results['n_chunks_in_sample'][results['sid'] == sample['sid']] = n_chunks_in_sample
+                    
+                    c_chunks.clear()
     
     return results
 
@@ -198,7 +208,7 @@ def get_chunks_factual(DATA_ROOT:str, chunks_in:np.ndarray, attach_time:bool=Fal
                 if attach_time:
                     raise Exception('Not possible with attach_time=True')
                 
-                with ur.open(f'{DATA_ROOT}/{branch}/zhh_FinalStates.root') as rf:
+                with cast(ur.WritableFile, ur.open(f'{DATA_ROOT}/{branch}/zhh_FinalStates.root')) as rf:
                     n_events = len(rf['event'].array())
                     
                 chunks['chunk_size_factual'][chunks['branch'] == branch] = n_events

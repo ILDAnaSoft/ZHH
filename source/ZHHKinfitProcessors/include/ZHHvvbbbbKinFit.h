@@ -19,7 +19,6 @@
 #include "LeptonFitObject.h"
 #include "ISRPhotonFitObject.h"
 #include "ZinvisibleFitObject.h"
-#include "ZinvisibleFitObjectNew.h"
 #include "MomentumConstraint.h"
 #include "OPALFitterGSL.h"
 #include "NewFitterGSL.h"
@@ -149,8 +148,6 @@ class ZHHvvbbbbKinFit : public Processor , public TrueJet_Parser
 		float					m_SigmaInvPtScaleFactor{};
 		float					m_SigmaEnergyScaleFactor{};
 		float					m_SigmaAnglesScaleFactor{};
-                float                                   m_ZinvisiblePxPyError{};
-                float                                   m_ZinvisiblePzError{};
 		double					b{};
 		double					ISRPzMaxB{};
 		TFile					*m_pTFile{};

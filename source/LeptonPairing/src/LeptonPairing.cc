@@ -46,8 +46,8 @@ LeptonPairing::LeptonPairing():
   m_nRun(0),
   m_nEvt(0),
   m_IsoLepsInvMass{},
-  m_RecoLepsInvMass{}
-
+  m_RecoLepsInvMass{},
+  m_pTFile(NULL)
 {
   _description = "LeptonPairing pairs isolated leptons of opposite charge and adds additional leptons to the list of PFOs or rejects the event" ;
 
@@ -108,7 +108,7 @@ LeptonPairing::LeptonPairing():
   registerProcessorParameter("RootFile",
 			     "Name of the output root file",
 			     m_rootFile,
-			     string("Output.root")
+			     string("")
 			     );
 }
 
@@ -117,9 +117,12 @@ void LeptonPairing::init() {
   printParameters();
   if ( m_fillRootTree ) {
     streamlog_out(DEBUG0) << "      Creating root file/tree/histograms" << endl ;
-    m_pTFile = new TFile(m_rootFile.c_str(), "recreate");
-    m_pTTree = new TTree("LeptonPairing", "LeptonPairing");
-    m_pTTree->SetDirectory(m_pTFile);
+
+    if (m_rootFile.size()) {
+      m_pTFile = new TFile(m_rootFile.c_str(), "recreate");
+      m_pTTree->SetDirectory(m_pTFile);
+    }
+
     m_pTTree->Branch("event", &m_nEvt, "event/I");
     m_pTTree->Branch("IsoLepsInvMass", &m_IsoLepsInvMass);
     m_pTTree->Branch("RecoLepsInvMass", &m_RecoLepsInvMass);
@@ -139,7 +142,7 @@ void LeptonPairing::Clear() {
 }
 
 void LeptonPairing::processRunHeader( LCRunHeader* run ) { 
-
+  (void) run;
 } 
 
 void LeptonPairing::processEvent( EVENT::LCEvent *pLCEvent ) {
@@ -177,6 +180,8 @@ void LeptonPairing::processEvent( EVENT::LCEvent *pLCEvent ) {
   if (m_doPhotonRecovery) fCosFSRCut = 0.99;
   else fCosFSRCut = 99.;
 
+  IntVec paired_lep_idx(2, 0);
+
   if (InIsoLeps == 2) {
     ReconstructedParticle* lepton1 = static_cast<ReconstructedParticle*>( IsoLepCollection->getElementAt( 0 ) );
     ReconstructedParticle* lepton2 = static_cast<ReconstructedParticle*>( IsoLepCollection->getElementAt( 1 ) );
@@ -204,6 +209,8 @@ void LeptonPairing::processEvent( EVENT::LCEvent *pLCEvent ) {
 	  if (delta > mindelta) continue;
 	  mindelta = delta;  
 	  LeptonPair = {lepton1, lepton2};
+    paired_lep_idx[0] = i_lep1;
+    paired_lep_idx[1] = i_lep2;
 	  _lep_type = lepton1->getType();
 	} 
       }
@@ -231,6 +238,7 @@ void LeptonPairing::processEvent( EVENT::LCEvent *pLCEvent ) {
     m_LepPairCol->addElement(recoLepton1);
     m_LepPairCol->addElement(recoLepton2);
 
+    m_LepPairCol->parameters().setValues("PairedLeptonIDx", paired_lep_idx);
     m_LepPairCol->parameters().setValue("IsoLepsInvMass", m_IsoLepsInvMass[0]);
     m_LepPairCol->parameters().setValue("RecoLepsInvMass", m_RecoLepsInvMass[0]);
   }
@@ -261,16 +269,21 @@ void LeptonPairing::processEvent( EVENT::LCEvent *pLCEvent ) {
 }
 
 void LeptonPairing::check(EVENT::LCEvent *pLCEvent) {
-  // nothing to check here - could be used to fill checkplots in reconstruction processor
+  (void) pLCEvent;
 }
 
 
 void LeptonPairing::end() {
   if ( m_fillRootTree ) {
-    m_pTFile->cd();
+    if (m_pTFile != NULL) {
+      m_pTFile->cd();
+    }
     m_pTTree->Write();
-    m_pTFile->Close();
-    delete m_pTFile;
+
+    if (m_pTFile != NULL) {
+      m_pTFile->Close();
+      delete m_pTFile;
+    }
   }
 
 }

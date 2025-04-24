@@ -58,11 +58,16 @@ def per_chunk(q:Queue, file_paths:List[str]):
         reader = IOIMPL.LCFactory.getInstance().createLCReader()
         reader.open(location)
         
-        event = reader.readNextEvent()
-        
-        file_meta = SampleMeta.fromevent(event, reader.getNumberOfEvents(), event.getRunNumber())
-        
-        q.put(file_meta)
+        # treat case where number of events = 0; calls to readNextEvent() fails in this case
+        # relevant when WhizardEventGeneration produces samples with no contribution
+        if reader.getNumberOfEvents() > 0:
+            event = reader.readNextEvent()
+            
+            file_meta = SampleMeta.fromevent(event, reader.getNumberOfEvents(), event.getRunNumber())
+            
+            q.put(file_meta)
+        else:
+            q.put(None)
 
 class ProcessIndex:
     process_index: str = 'processes.json'
@@ -137,7 +142,11 @@ class ProcessIndex:
             
             j = 0
             while not q.empty():
-                meta:SampleMeta = q.get()
+                meta:SampleMeta|None = q.get()
+                if meta is None:
+                    j += 1
+                    continue
+                
                 location = chunk[j]
                 
                 if meta.beamPol1 != 0 or meta.beamPol2 != 0:

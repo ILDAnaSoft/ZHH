@@ -1,25 +1,41 @@
-from .tasks_abstract import FastSimSGVExternalReadJob
-from analysis.framework import zhh_configs
-from glob import glob
 import os.path as osp
+import law
+from analysis.framework import zhh_configs
+from typing import Callable, cast
+from .tasks_abstract import FastSimSGVExternalReadJob
+from .utils.types import SGVOptions
+from law.util import flatten
 
-class FastSimSGV(FastSimSGVExternalReadJob):    
-    @property
-    def sgv_input_files(self)->list[str]:
-        if not '__sgv_input_files' in self:
-            raise ValueError('No SGV input files attached')
+class FastSimSGV(FastSimSGVExternalReadJob):
+    branch_data: tuple[str, SGVOptions]
+    
+    initial_run_with_higher_requirements = False
+    
+    def workflow_requires(self):
+        reqs = super().workflow_requires()
+        zhh_configs.get(str(self.tag)).sgv_requires(self, reqs) # call to inject dynamic workflow requirements
         
-        return self.__sgv_input_files
-
-    @sgv_input_files.setter
-    def sgv_input_files(self, input_files:list[str]):
-        self.__sgv_input_files = input_files
+        return reqs
+    
+    @law.dynamic_workflow_condition
+    def workflow_condition(self):
+        return all(cast(law.FileSystemTarget, elem).exists() for elem in flatten(self.input()))
         
+    @workflow_condition.create_branch_map
     def create_branch_map(self):
-        files = self.sgv_input_files
-        files.sort()
-
-        return { k: v for k, v in zip(list(range(len(files))), files) }
+        config = zhh_configs.get(str(self.tag))
+        assert(isinstance(config.sgv_inputs, Callable))
         
+        input_files, input_options = config.sgv_inputs(self)
+        assert(len(input_files) == len(input_options))
+        
+        return { k: [file, options] for (k, file, options) in zip(
+            list(range(len(input_files))),
+            input_files,
+            input_options
+        )}
+    
+    @workflow_condition.output
     def output(self):
-        return self.local_target(osp.basename(str(self.branch_map[self.branch])))
+        # output filename = input filename but extension changed to 'slcio'; necessary for stdhep input
+        return self.local_target(f'{osp.splitext(osp.basename(self.branch_data[0]))[0]}.slcio')

@@ -5,17 +5,12 @@
 #include <vector>
 #include <map>
 #include <algorithm>
+#include <utility>
+#include "EventCategory.h"
 
 // If the final state is a ZHH (with H -> bbar), the channel is given by the decay channel of the Z boson (else OTHER)
 // NONE is for initialization only and should not occur in practice
-struct EVENT_CATEGORY_ZHH {
-	enum Values: int {
-		OTHER = 0,
-		LEPTONIC = 11,
-		NEUTRINO = 21,
-		HADRONIC = 31
-	};
-};
+// see EVENT_CATEGORY in EventCategory.h
 
 // Map processes to integers
 struct PROCESS_ID {
@@ -36,6 +31,15 @@ struct PROCESS_ID {
 		n1n1qqh = 2341,
 		n23n23qqh = 2342,
 		qqqqh = 2520,
+
+		// ffh
+		e1e1h = 1011,
+		e2e2h = 1012,
+		e3e3h = 1013,
+		
+		n1n1h = 1014,
+		n23n23h = 1015,
+		qqh = 1016,
 
 		// ff
 		f2_z_l = 3170,
@@ -64,6 +68,10 @@ struct PROCESS_ID {
 		f4_zzorww_l = 3185,
 		f4_zzorww_h = 3583,
 		f4_szeorsw_l = 3202,
+
+		// TEST llbb, eebb
+		f4_llbb_sl0 = 3195,
+		f4_eebb_sl0 = 3196,
 
 		// fffff
 		p5_ae_eeevv = 9101,
@@ -125,18 +133,63 @@ struct PROCESS_ID {
 		p5_ea_lvvvv = 9157,
 
 		// ffffff
-		f6_ttbar_yycyyc = 7001,
-		f6_ttbar_yyvlyx = 7002,
-		f6_ttbar_yyxylv = 7003,
-		f6_ttbar_yyuyyu = 7004,
-		f6_ttbar_yyuyyc = 7005,
-		f6_ttbar_yyxyev = 7006,
-		f6_ttbar_yyvllv = 7007,
-		f6_ttbar_yyvelv = 7008,
-		f6_ttbar_yycyyu = 7009,
-		f6_ttbar_yyveyx = 7010,
-		f6_ttbar_yyvlev = 7011,
-		f6_ttbar_yyveev = 7012,
+		f6_yycyyc = 7001,
+		f6_yyvlyx = 7002,
+		f6_yyxylv = 7003,
+		f6_yyuyyu = 7004,
+		f6_yyuyyc = 7005,
+		f6_yyxyev = 7006,
+		f6_yyvllv = 7007,
+		f6_yyvelv = 7008,
+		f6_yycyyu = 7009,
+		f6_yyveyx = 7010,
+		f6_yyvlev = 7011,
+		f6_yyveev = 7012,
+
+		f6_eeeexx = 7021,
+		f6_eeeeyy = 7022,
+		f6_eeevxy = 7023,
+		f6_eelvxy = 7024,
+		f6_eeveyx = 7025,
+		f6_eevlyx = 7026,
+		f6_eexxxx = 7027,
+		f6_eexyyx = 7028,
+		f6_eeyyyy = 7029,
+		f6_lleexx = 7030,
+		f6_lleeyy = 7031,
+		f6_llevxy = 7032,
+		f6_llllll = 7033,
+		f6_llllxx = 7034,
+		f6_llllyy = 7035,
+		f6_llveyx = 7036,
+		f6_llvllv = 7037,
+		f6_llxxxx = 7038,
+		f6_llxyyx = 7039,
+		f6_llyyyy = 7040,
+		f6_veevxx = 7041,
+		f6_veevyy = 7042,
+		f6_velvxx = 7043,
+		f6_velvyy = 7044,
+		f6_vlevxx = 7045,
+		f6_vlevyy = 7046,
+		f6_vllvxx = 7047,
+		f6_vllvyy = 7048,
+		f6_vvevxy = 7049,
+		f6_vvlvxy = 7050,
+		f6_vvveyx = 7051,
+		f6_vvvllv = 7052,
+		f6_vvvlyx = 7053,
+		f6_vvvvvv = 7054,
+		f6_vvvvxx = 7055,
+		f6_vvvvyy = 7056,
+		f6_vvxxxx = 7057,
+		f6_vvxyyx = 7058,
+		f6_vvyyyy = 7059,
+		f6_xxveyx = 7060,
+		f6_xxvlyx = 7061,
+		f6_xxxyev = 7062,
+		f6_xxxylv = 7063,
+
 		f6_yyyyZ_yyyyee = 9501,
 		f6_yyyyZ_eeeexx = 9502,
 		f6_yyyyZ_eeeell = 9503,
@@ -189,6 +242,12 @@ struct PROCESS_ID {
 		f6_llWW_llxyev = 2206,
 		f6_llWW_llxyyx = 2207,
 		f6_llWW_llvllv = 2208,
+
+		f6_ftag_uuuuuu = 5001,
+		f6_ftag_dddddd = 5002,
+		f6_ftag_ssssss = 5003,
+		f6_ftag_cccccc = 5004,
+		f6_ftag_bbbbbb = 5005,
 	};
 };
 
@@ -198,7 +257,12 @@ int PROCESS_INVALID = -999;
 struct EVENT_CATEGORY_TRUE {
 	enum Values: int {
 		OTHER = 0,
-		
+
+		// single Higgs
+		llH = 1,
+		vvH = 2,
+		qqH = 3,
+
 		// LEPTONIC
 		OTHER_LL = 10,
 		llHH = 11, // llbbbb (ZHH signal)
@@ -274,6 +338,7 @@ struct EVENT_CATEGORY_TRUE {
 		f6_yyyyZ = 95,
 		f6_xxWW = 96,
 		f6_xxxxZ = 97,
+		OTHER_F6 = 98,
 	};
 };
 

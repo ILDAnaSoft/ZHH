@@ -279,6 +279,9 @@ void ZinvisibleErrorAnalysis::end()
 streamlog_out(MESSAGE) << "writing root file" << endl;
   m_pTFile->cd();
   m_pTTree->Write();
-  m_pTFile->Close();
-  delete m_pTFile;
+
+  if (m_pTFile != NULL) {
+    m_pTFile->Close();
+    delete m_pTFile;
+  }
 }

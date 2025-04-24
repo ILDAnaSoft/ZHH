@@ -98,7 +98,7 @@ class TruthRecoComparison : public Processor
 
 		// Output ROOT file
 		TFile *m_pTFile{};
-		TTree *m_pTTree{};
+		TTree *m_pTTree = new TTree("TruthRecoComparison", "TruthRecoComparison");;
 
 		// Truth kinematics
 		EVENT::ReconstructedParticle* getLinkedPFO( EVENT::MCParticle *mcParticle , LCRelationNavigator RecoMCParticleNav , LCRelationNavigator MCParticleRecoNav , bool getChargedPFO , bool getNeutralPFO , float &weightPFOtoMCP , float &weightMCPtoPFO );

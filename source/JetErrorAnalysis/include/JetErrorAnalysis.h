@@ -19,12 +19,6 @@
 #include "TLorentzVector.h"
 #include <TFile.h>
 #include <TTree.h>
-class TFile;
-class TH1F;
-class TH1I;
-class TH2I;
-class TH2F;
-class TTree;
 
 using namespace lcio;
 using namespace marlin;
@@ -109,7 +103,7 @@ class JetErrorAnalysis : public Processor , public TrueJet_Parser
   int m_matchMethod{};
   string m_outputFile{};
   TFile *m_pTFile{};
-  TTree *m_pTTree{};
+  TTree *m_pTTree = new TTree("JetErrorAnalysis", "JetErrorAnalysis");
 };
 
 #endif

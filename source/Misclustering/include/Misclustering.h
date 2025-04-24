@@ -120,7 +120,7 @@ class Misclustering : public Processor , public TrueJet_Parser
   vector<float> m_regionXX_ICNs{};
 
   TFile *m_pTFile{};
-  TTree *m_pTTree{};
+  TTree *m_pTTree = new TTree("Misclustering", "Misclustering");
 
 
  private:

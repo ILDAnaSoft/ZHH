@@ -34,37 +34,60 @@ JetTaggingComparison::JetTaggingComparison():
   registerProcessorParameter("PIDAlgorithm2",
 			  "Name of the second PID Handler",
 			  m_pidAlgorithm2,
-			  string("particlenet")
+			  string("")
 			  );
 
-  registerProcessorParameter("PIDParameter1",
-			  "Name of the argument in the first PID Handler",
-			  m_pidParameter1,
-			  string("BTag")
+  registerProcessorParameter("PIDAlgorithm3",
+			  "Name of the second PID Handler",
+			  m_pidAlgorithm3,
+			  string("")
 			  );
 
-  registerProcessorParameter("PIDParameter2",
-			  "Name of the argument in the second PID Handler",
-			  m_pidParameter2,
-			  string("BTag")
+  registerProcessorParameter("PIDParameters1",
+			  "Names of parameters to read for the first PID Handler",
+			  m_pidParameters1,
+			  std::vector<std::string>{"BTag"}
 			  );
 
-  registerProcessorParameter("RootFile", "Name of the output root file", m_rootFile, string("JetTaggingComparison.root"));
+  registerProcessorParameter("PIDParameters2",
+			  "Names of parameters to read for the second PID Handler",
+			  m_pidParameters2,
+			  std::vector<std::string>{}
+			  );
+
+  registerProcessorParameter("PIDParameters3",
+			  "Names of parameters to read for the third PID Handler",
+			  m_pidParameters3,
+			  std::vector<std::string>{}
+			  );
+
+  registerProcessorParameter("RootFile", "Name of the output root file. set to empty, this will output to AIDA", m_rootFile, string(""));
 }
 
 void JetTaggingComparison::init() {
   streamlog_out(DEBUG0) << "   init called  " << endl ;
   printParameters();
 
-  m_pTFile = new TFile(m_rootFile.c_str(), "recreate");
-  m_pTTree = new TTree("JetTaggingComparison", "JetTaggingComparison");
+  if (m_rootFile.size()) {
+    m_pTFile = new TFile(m_rootFile.c_str(), "recreate");
+    m_pTTree->SetDirectory(m_pTFile);
+  }
 
-  m_pTTree->SetDirectory(m_pTFile);
   m_pTTree->Branch("event", &m_n_evt);
   m_pTTree->Branch("run", &m_n_run);
   m_pTTree->Branch("njet", &m_n_jet);
-  m_pTTree->Branch("tag1", &m_tag1);
-  m_pTTree->Branch("tag2", &m_tag2);
+  m_pTTree->Branch("energy", &m_jet_energy);
+
+  m_read_algo2 = m_pidAlgorithm2 != "";
+  m_read_algo3 = m_pidAlgorithm3 != "";
+
+  m_pTTree->Branch("tags1", &m_tags1);
+
+  if (m_read_algo2)
+    m_pTTree->Branch("tags2", &m_tags2);
+
+  if (m_read_algo3)
+    m_pTTree->Branch("tags3", &m_tags3);
 
   this->Clear();
 
@@ -78,12 +101,17 @@ void JetTaggingComparison::Clear() {
   streamlog_out(DEBUG) << "   Clear called  " << endl;
 
   m_n_jet = 0;
-  m_tag1 = 0.;
-  m_tag2 = 0.;
+  m_tags1.clear();
+  m_tags2.clear();
+  m_tags3.clear();
+
+  m_parametersIDs1.clear();
+  m_parametersIDs2.clear();
+  m_parametersIDs3.clear();
 }
 
 void JetTaggingComparison::processRunHeader( LCRunHeader* run ) { 
-
+  (void) run;
 } 
 
 void JetTaggingComparison::processEvent( EVENT::LCEvent *pLCEvent ) {
@@ -108,24 +136,57 @@ void JetTaggingComparison::processEvent( EVENT::LCEvent *pLCEvent ) {
     PIDHandler PIDh(inputCollection);
 
     int algorithm1IDx = PIDh.getAlgorithmID(m_pidAlgorithm1);
-		int parameter1IDx = PIDh.getParameterIndex(algorithm1IDx, m_pidParameter1);
+    for (size_t i = 0; i < m_pidParameters1.size(); i++)
+      m_parametersIDs1.push_back(PIDh.getParameterIndex(algorithm1IDx, m_pidParameters1[i]));
 
-    int algorithm2IDx = PIDh.getAlgorithmID(m_pidAlgorithm2);
-		int parameter2IDx = PIDh.getParameterIndex(algorithm2IDx, m_pidParameter2);
+    int algorithm2IDx = -1;
+    int algorithm3IDx = -1;
 
-    for (size_t j = 0; j < inputCollection->getNumberOfElements(); j++) {
-      ReconstructedParticle* object = (ReconstructedParticle*) inputCollection->getElementAt(j);
+    if (m_read_algo2) {
+      algorithm2IDx = PIDh.getAlgorithmID(m_pidAlgorithm2);
+      for (size_t i = 0; i < m_pidParameters2.size(); i++)
+        m_parametersIDs2.push_back(PIDh.getParameterIndex(algorithm2IDx, m_pidParameters2[i]));
+    }
+
+    if (m_read_algo3) {
+      algorithm3IDx = PIDh.getAlgorithmID(m_pidAlgorithm3);
+      for (size_t i = 0; i < m_pidParameters3.size(); i++)
+        m_parametersIDs3.push_back(PIDh.getParameterIndex(algorithm3IDx, m_pidParameters3[i]));
+    }
+
+    for (int j = 0; j < inputCollection->getNumberOfElements(); j++) {
+      ReconstructedParticle* jet = (ReconstructedParticle*) inputCollection->getElementAt(j);
       
-      const ParticleIDImpl& pid1 = dynamic_cast<const ParticleIDImpl&>(PIDh.getParticleID(object, algorithm1IDx));
+      const ParticleIDImpl& pid1 = dynamic_cast<const ParticleIDImpl&>(PIDh.getParticleID(jet, algorithm1IDx));
       const FloatVec& pid1Params = pid1.getParameters();
-      m_tag1 = pid1Params[parameter1IDx];
+      for (size_t i = 0; i < m_parametersIDs1.size(); i++) {
+        m_tags1.push_back(pid1Params[m_parametersIDs1[i]]);
+      }
 
-      const ParticleIDImpl& pid2 = dynamic_cast<const ParticleIDImpl&>(PIDh.getParticleID(object, algorithm2IDx));
-      const FloatVec& pid2Params = pid2.getParameters();
-      m_tag2 = pid2Params[parameter2IDx];
+      if (algorithm2IDx != -1) {
+        const ParticleIDImpl& pid2 = dynamic_cast<const ParticleIDImpl&>(PIDh.getParticleID(jet, algorithm2IDx));
+        const FloatVec& pid2Params = pid2.getParameters();
+        for (size_t i = 0; i < m_parametersIDs2.size(); i++) {
+          m_tags2.push_back(pid2Params[m_parametersIDs2[i]]);
+        }
+      }
 
+      if (algorithm3IDx != -1) {
+        const ParticleIDImpl& pid3 = dynamic_cast<const ParticleIDImpl&>(PIDh.getParticleID(jet, algorithm3IDx));
+        const FloatVec& pid3Params = pid3.getParameters();
+        for (size_t i = 0; i < m_parametersIDs3.size(); i++) {
+          m_tags3.push_back(pid3Params[m_parametersIDs3[i]]);
+        }
+      }
+      
+      m_jet_energy = jet->getEnergy();
       m_pTTree->Fill();
+
       m_n_jet++;
+
+      m_tags1.clear();
+      m_tags2.clear();
+      m_tags3.clear();
 		}
   } catch( DataNotAvailableException &e ) {
     streamlog_out(MESSAGE) << "     Input collection not found in event " << m_n_evt << endl;
@@ -134,12 +195,19 @@ void JetTaggingComparison::processEvent( EVENT::LCEvent *pLCEvent ) {
 
 void JetTaggingComparison::check(EVENT::LCEvent *pLCEvent) {
   // nothing to check here - could be used to fill checkplots in reconstruction processor
+  (void) pLCEvent;
 }
 
 
 void JetTaggingComparison::end() {
-  m_pTFile->cd();
+  if (m_rootFile.size()) {
+    m_pTFile->cd();
+  }
+  
   m_pTTree->Write();
-  m_pTFile->Close();
-  delete m_pTFile;
+  
+  if (m_rootFile.size()) {
+    m_pTFile->Close();
+    delete m_pTFile;
+  }
 }

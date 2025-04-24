@@ -1,58 +1,88 @@
 #!/bin/bash
-# If called with the keyword keep (source compile_from_scratch.sh keep), only make install will be called on the processors
+
+# Usage: source compile_from_scratch.sh [keep] [debug] [offline] [skipdeps]
+#        - keep: only make install will be called on the processors; if ommitted, the build directory will be deleted and cmake will be called again
+#        - debug: make install output will be printed to the console
+#        - offline: do not pull the latest code from git for ZHH and all to-be-compiled dependencies
+#        - skipdeps: only compile the source code, do not compile dependencies
 
 action(){
     local RED='\033[0;31m'
     local GREEN='\033[0;32m'
+    local BLUE='\033[0;34m'
     local NC='\033[0m'
     local module_to_compile    
-    local delete_existing=$( [[ "$1" == "keep" || "$2" == "keep" ]] && echo "False" || echo "True" )
+    local delete_existing=$( [[ "$1" == "keep" || "$2" == "keep" || "$3" == "keep" || "$4" == "keep" ]] && echo "False" || echo "True" )
+    local isdebug=$( [[ "$1" == "debug" || "$2" == "debug" || "$3" == "debug" || "$4" == "debug" ]] && echo "True" || echo "False" )
+    local startdir=$(pwd)
+    local offline=$( [[ "$1" == "offline" || "$2" == "offline" || "$3" == "offline" || "$4" == "offline" ]] && echo "True" || echo "False" )
+    local skipdeps=$( [[ "$1" == "skipdeps" || "$2" == "skipdeps" || "$3" == "skipdeps" || "$4" == "skipdeps" ]] && echo "True" || echo "False" )
+    local modules
+
+    if [[ $skipdeps == "True" ]]; then
+        modules=("source")
+    else
+        modules=("$MarlinMLFlavorTagging $MarlinReco $MarlinKinfit $LCFIPlus $Physsim source")
+    fi
 
     compile_pkg ()
-    {
-        echo "Compiling $1..."
-        cd $1
-        if [[ $delete_existing = "True" ]]; then
-            echo "Deleting any existing build directory..."
-            rm -rf build
-        fi
+    {        
+        (
+            cd $1
+            if [[ $delete_existing = "True" ]]; then
+                echo "Deleting any existing build directory..."
+                rm -rf build
+            fi
 
-        mkdir -p build
-        cd build
+            if [[ $offline != "True" ]]; then
+                git pull
+            fi
 
-        if [[ $delete_existing = "True" || ! -f Makefile  ]]; then
-            cmake -DCMAKE_CXX_STANDARD=17 ..
-        fi
-        
-        make install || { cd ../.. ; return 1; }
-        cd ../..
+            mkdir -p build
+            cd build
+
+            if [[ $delete_existing = "True" || ! -f Makefile  ]]; then
+                cmake ..
+            fi
+            
+            if [[ $isdebug = "True" ]]; then
+                make install -j 4 || exit $?
+            else
+                rm -f build.log
+                make install -j 4 &> build.log
+            
+                local retval=$?
+
+                if [[ $retval -ne 0 ]]; then
+                    echo -e "$RED!!! Error [$retval] while trying to compile $1 !!!$NC"
+
+                    cat build.log
+                    rm -f build.log
+
+                    exit $retval
+                fi
+
+                rm -f build.log
+            fi
+            
+            cd ../..
+        )
     }
 
-    cd source
-
-    for module_to_compile in AddNeutralPFOCovMat ChargedPFOCorrection CheatedMCOverlayRemoval FinalStateRecorder HdecayMode JetErrorAnalysis JetTaggingComparison LeptonErrorAnalysis LeptonPairing Misclustering PreSelection TruthRecoComparison ZHHKinfitProcessors
+    for module_to_compile in ${modules[@]};
     do
-        compile_pkg $module_to_compile && echo "${GREEN}+++ Successfully compiled $module_to_compile +++${NC}" || { echo "${RED}!!! Error [$?] while trying to compile $module_to_compile !!!${NC}"; cd $start_dir; return 1; }
-    done
-    cd $start_dir
-
-    echo "${GREEN}+++ Successfully compiled ZHH projects +++${NC}"
-
-    echo "Compiling ZHH dependencies..."
-
-    for module_to_compile in "$VariablesForDeepMLFlavorTagger" "$BTaggingVariables" "$MarlinML"
-    do
+        echo -e "$BLUE+++ Compiling $(basename $module_to_compile)... +++$NC"
         if [[ -d $module_to_compile ]]; then
-            compile_pkg $module_to_compile && echo "${GREEN}+++ Successfully compiled $module_to_compile +++${NC}" || { echo "${RED}!!! Error [$?] while trying to compile $module_to_compile !!!${NC}"; cd $start_dir; return 1; }
+            compile_pkg $module_to_compile && echo -e "$GREEN+++ Successfully compiled $module_to_compile +++$NC" || { echo -e "$RED!!! Error [$?] while trying to compile $module_to_compile !!!$NC" && cd $start_dir && return 1; }
         else
-            echo "${RED}!!! Error: $module_to_compile not found !!!${NC}"
+            echo -e "$RED!!! Error: $module_to_compile not found !!!$NC"
         fi
     done
 
-    echo "${GREEN}+++ Successfully compiled ZHH dependencies +++${NC}"
+    echo -e "$GREEN+++ Successfully compiled ZHH and dependencies +++$NC"
 
     unset compile_pkg
 
     return 0
 }
-action $1
+action $@

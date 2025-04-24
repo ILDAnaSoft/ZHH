@@ -138,16 +138,6 @@ eB(0.0)
 				        m_SigmaAnglesScaleFactor,
 				        float(1.0f));
 
-	registerProcessorParameter(     "ZinvisiblePxPyError" ,
-                                        "Error on px and py for Z->invisible fit object",
-                                        m_ZinvisiblePxPyError,
-                                        float(10.0f));
-
-	registerProcessorParameter(     "ZinvisiblePzError" ,
-                                        "Error on pz for Z->invisible fit object",
-                                        m_ZinvisiblePzError,
-                                        float(10.0f));
-	
 	registerProcessorParameter(	"includeISR",
 					"Include ISR in fit hypothesis; false: without ISR , true: with ISR",
 					m_fitISR,
@@ -1037,9 +1027,8 @@ ZHHvvbbbbKinFit::FitResult ZHHvvbbbbKinFit::performFIT( pfoVector jets,
   for (unsigned int i_jet = 0; i_jet < m_nJets; i_jet++) {
     seenFourMomentum += ROOT::Math::PxPyPzEVector(jets[ i_jet ]->getMomentum()[0],jets[ i_jet ]->getMomentum()[1],jets[ i_jet ]->getMomentum()[2], jets[ i_jet ]->getEnergy());
   }
-  ROOT::Math::PxPyPzMVector ZinvFourMomentum(-seenFourMomentum.Px(), -seenFourMomentum.Py(), -seenFourMomentum.Pz(),91.1880); // M_Z PDG average in 2024 review
-  //shared_ptr<ZinvisibleFitObject> zfo = make_shared<ZinvisibleFitObject> (ZinvFourMomentum.E(), ZinvFourMomentum.Theta(), ZinvFourMomentum.Phi(), 1.0, 0.1, 0.1,91.1880);
-  shared_ptr<ZinvisibleFitObjectNew> zfo = make_shared<ZinvisibleFitObjectNew> (ZinvFourMomentum.Px(), ZinvFourMomentum.Py(), ZinvFourMomentum.Pz(), 10.0, 10.0, 0.0, 91.1880);
+  ROOT::Math::PxPyPzMVector ZinvFourMomentum(-seenFourMomentum.Px(), -seenFourMomentum.Pz(), -seenFourMomentum.Pz(),91.1880); // M_Z PDG average in 2024 review
+  shared_ptr<ZinvisibleFitObject> zfo = make_shared<ZinvisibleFitObject> (ZinvFourMomentum.E(), ZinvFourMomentum.Theta(), ZinvFourMomentum.Phi(), 1.0, 0.1, 0.1,91.1880);
   zfo->setName("Zinvisible");
   
   const int NJETS = 4;
@@ -1076,8 +1065,7 @@ ZHHvvbbbbKinFit::FitResult ZHHvvbbbbKinFit::performFIT( pfoVector jets,
     streamlog_out(MESSAGE) << " iperm = " << iperm << std::endl ;
 
     shared_ptr<vector<shared_ptr<JetFitObject>>> jfo_perm = make_shared<vector<shared_ptr<JetFitObject>>>();
-    //shared_ptr<vector<shared_ptr<ZinvisibleFitObject>>> zfo_perm = make_shared<vector<shared_ptr<ZinvisibleFitObject>>>();
-    shared_ptr<vector<shared_ptr<ZinvisibleFitObjectNew>>> zfo_perm = make_shared<vector<shared_ptr<ZinvisibleFitObjectNew>>>();
+    shared_ptr<vector<shared_ptr<ZinvisibleFitObject>>> zfo_perm = make_shared<vector<shared_ptr<ZinvisibleFitObject>>>();
     
     // important: (re-)set fitjets array!
     // keep track of newly created heap particles
@@ -1090,8 +1078,7 @@ ZHHvvbbbbKinFit::FitResult ZHHvvbbbbKinFit::performFIT( pfoVector jets,
     }
     streamlog_out(MESSAGE) << std::endl ;
     for(int i = 0; i < NZINVISIBLES; ++i) {
-      //auto zsp = make_shared<ZinvisibleFitObject>(*zfo);
-      auto zsp = make_shared<ZinvisibleFitObjectNew>(*zfo);
+      auto zsp = make_shared<ZinvisibleFitObject>(*zfo);
       zfo_perm->push_back(zsp);
     }
     for(auto j : *jfo_perm) fos->push_back(j);
@@ -1491,8 +1478,7 @@ std::vector<double> ZHHvvbbbbKinFit::calculateInitialMasses(pfoVector jets, pfoV
     seenFourMomentum += ROOT::Math::PxPyPzEVector(jets[ i_jet ]->getMomentum()[0],jets[ i_jet ]->getMomentum()[1],jets[ i_jet ]->getMomentum()[2], jets[ i_jet ]->getEnergy());
   }
   ROOT::Math::PxPyPzMVector ZinvFourMomentum(-seenFourMomentum.Px(), -seenFourMomentum.Pz(), -seenFourMomentum.Pz(),91.1880); // M_Z PDG average in 2024 review    
-  //shared_ptr<ZinvisibleFitObject> zfo = make_shared<ZinvisibleFitObject> (ZinvFourMomentum.E(), ZinvFourMomentum.Theta(), ZinvFourMomentum.Phi(), 1.0, 0.1, 0.1,91.1880);
-  shared_ptr<ZinvisibleFitObjectNew> zfo = make_shared<ZinvisibleFitObjectNew> (ZinvFourMomentum.Px(), ZinvFourMomentum.Py(), ZinvFourMomentum.Pz(), 1.0, 1.0, 1.0,91.1880);
+  shared_ptr<ZinvisibleFitObject> zfo = make_shared<ZinvisibleFitObject> (ZinvFourMomentum.E(), ZinvFourMomentum.Theta(), ZinvFourMomentum.Phi(), 1.0, 0.1, 0.1,91.1880);
   zfo->setName("Zinvisible");
 
   shared_ptr<MassConstraint> h1 = make_shared<MassConstraint>(125.);
