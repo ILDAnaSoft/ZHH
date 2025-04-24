@@ -10,7 +10,7 @@ and only needs to be defined once per user / group / etc.
 
 import law.contrib.htcondor.workflow
 import os, luigi, law, law.util, law.contrib, law.contrib.htcondor, law.job.base, math
-from typing import Optional, Union, cast, TYPE_CHECKING, Any
+from typing import Optional, Union, cast, TYPE_CHECKING, Any, Literal
 from collections.abc import Callable
 from .utils.types import SGVOptions, WhizardOption
 from law import Task
@@ -111,12 +111,13 @@ class HTCondorWorkflow(law.contrib.htcondor.HTCondorWorkflow):
             session_submissions[name] = 0
         
         config.custom_content.append(('requirements', 'Machine =!= LastRemoteHost'))
-        config.custom_content.append(('materialize_max_idle', 1000))
+        config.custom_content.append(('max_idle', 1000))
 
         return config
 
-class AnalysisConfiguration:    
+class AnalysisConfiguration:
     tag:str
+    cuts:Literal['llbbbb', 'vvbbbb', 'qqbbbb']
 
     # whizard_options: should return a list of whizard option entries,
     # where one entry is for each process to generate
@@ -147,7 +148,7 @@ class AnalysisConfiguration:
         return result
     
     """All SLCIO files that should be included in the analysis"""
-    slcio_files:Optional[Union[list[str], Callable]] = None
+    slcio_files:Optional[Union[list[str], Callable[['FastSimSGV'], list[str]]]] = None
     
     """Fration of available events that will be used for all channels
     """
@@ -182,25 +183,53 @@ class AnalysisConfiguration:
             self.slcio_files = slcio_files
         
 
-class AnalysisConfigurationRegistry:
-    definitions:dict[str,AnalysisConfiguration] = {}
+class Registry():
+    definitions:dict = {}
     
-    def add(self, config:AnalysisConfiguration):
+    def __init__(self, cls:Callable):
+        self._cls = cls
+    
+    def add(self, config):
         if config.tag == '':
             raise ValueError(f'Tag must be defined for configuration')
         
         if config.tag in self.definitions:
             raise ValueError(f'Configuration with tag <{config.tag}> already exists')
         
+        #if not isinstance(config, self._cls):
+        #    raise ValueError(f'Configuration with tag <{config.tag}> is not of type <{self._cls.__name__}>')
+        
         self.definitions[config.tag] = config
         
-    def get(self, tag:str)->AnalysisConfiguration:
+    def get(self, tag:str):
         if not tag in self.definitions:
             raise ValueError(f'Tag <{tag}> not a known configuration. Check configurations.py')
         
         return self.definitions[tag]
+    
+
+class AnalysisConfigurationRegistry(Registry):
+    def __init__(self):
+        super().__init__(AnalysisConfiguration)
+        
+    def add(self, config:AnalysisConfiguration):
+        super().add(config)
+    
+    def get(self, tag:str)->AnalysisConfiguration:
+        return super().get(tag)
+
+class AggregateAnalysisConfig:
+    tag: str
+    sub_tags:list[str]
+    cuts: str
+        
+class AggregateAnalysisConfigurationRegistry(Registry):
+    def __init__(self):
+        super().__init__(AggregateAnalysisConfig)
+    
 
 # Create the registry and load the configurations
 zhh_configs = AnalysisConfigurationRegistry()
+aa_configs = AggregateAnalysisConfigurationRegistry()
 
 import analysis.configurations

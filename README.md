@@ -11,7 +11,7 @@ If you wish to use your own local copies of the repositories, create (or edit, i
 
 ### Fresh install
 
-The easiest way to setup the whole Python and C++ environment automatically uses a key4hep stack from CVMFS. If the latter is available, you may *in bash* use 
+The easiest way to setup the whole Python and C++ environment automatically is by using a key4hep stack from CVMFS. If you have `/cvmfs/sw.hsf.org` available, you may *in bash* use 
 
 ```shell
 source install.sh --auto
@@ -19,9 +19,9 @@ source install.sh --auto
 
 where `--auto` is a switch to use default values where possible. Please do not use zsh shell for the initial setup. The script will download all necessary dependencies into a `dependencies` directory inside the working directory of the `ZHH` repo, compile them, extract LCFIPlus weights for ILDConfig, setup a Python 3.11 virtual environment (with name `zhhvenv`) and install all required Python packages defined in the `requirements.txt` file. Finally, all Marlin processors inside `source` are compiled and a copy of the fast-sim tool SGV is installed.
 
-To test if the setup succeeded, call `MarlinZHH --global.LCIOInputFiles=<SomeLCIOFile>` where `SomeLCIOFile` points to a new (mc2020+) DST file. This will run Marlin with the `prod.xml` steering file (scripts directory). On DESY NAF, a valid default is given for `LCIOInputFiles`, so a simple `MarlinZHH` suffices.
+To test if the setup succeeded, call `MarlinZHH --global.LCIOInputFiles=<SomeLCIOFile>` where `SomeLCIOFile` points to a new (mc2020+) DST file. This will run Marlin with the default `prod.xml` steering file (scripts directory). On DESY NAF, a valid default is given for `LCIOInputFiles`, so a simple `MarlinZHH` call suffices.
 
-After that, the framework is setup for both the analysis of individual files and the submission of batch jobs using `law` (see [here](#For-production)). 
+After that, the framework is setup for both the analysis of individual files and the submission of batch jobs using `law` (see [here](#For-production)). As of April 2025, we use key4hep version ```2025-01-28``` and the whole fresh install takes approx. 3.3GB.
 
 ### Using an existing setup
 
@@ -29,11 +29,13 @@ After that, the framework is setup for both the analysis of individual files and
 source setup.sh
 ```
 
-After running `source install.sh`, a `setup.sh` file will be created. If you want to re-create `setup.sh`, run `source install.sh --setup`
+After the initial setup, the file `setup.sh` file will be created, which can be sourced to load all correct dependencies. **When you update the `ZHH` repo** or want to re-create `setup.sh`, **run `source install.sh --setup`**.
 
 ### List of required dependencies
 
-Either you or `source setup.sh --install` should make sure the following environment variables exist. If you want to specify values yourself, please use the `.env` file with the `KEY="VALUE"` syntax for compatability.
+The setup script requires various environment variables to produce a working environment. If you've used ```source install.sh --auto```, they are automatically set for you.
+
+If you want to specify values yourself, please use the `.env` file with the `KEY="VALUE"` syntax for compatability.
 
 | Environment variable           | Target / Description   |
 |--------------------------------|------------------------|
@@ -53,11 +55,17 @@ Either you or `source setup.sh --install` should make sure the following environ
 (*) autodiscovered from the key4hep-stack. Necessary for ParticleNet.
 (**) hardwired for each key4hep stack release at the moment (see `zhh_install.sh`)
 
-### Comments on the fixed versions
+### Comments on custom repositories
 
-With the current key4hep stack version, SLDCorrection fails before other processors (e.g. FinalStateRecorder) can complete. This is temporarily fixed either by setting `fillRootTree=false` in the steering file or using a fixed version of SLDCorrection, see [here](https://github.com/nVentis/MarlinReco). In the latter case, create a `zhh_post_setup` function in `.env.sh` that updates `MARLIN_DLL` to point to your MarlinReco library.
+For LCFIPlus, MarlinReco and MarlinKinfit, custom repositories are used instead of the default ones. Their respective Marlin processor paths are replaced in `setup.sh`.
 
-In the fixed version of LCFIPlus, logging can be changed or completely deactivated more rigorously as before. Also, it is (as a temporary solution) possible to point to the ONNX runtime via the ONNXRUNTIMEPATH environment variable.
+In the fixed version of LCFIPlus, logging can be changed or completely deactivated more rigorously as before. Also, it includes the latest version supporting ParT inference, and includes a path to point to the ONNX runtime via the ONNXRUNTIMEPATH environment variable. 
+
+The fixed version of MarlinReco includes multiple bugfixes to SLDCorrection.
+
+MarlinKinfit has been extended to allow
+
+PRs are intended to be filed once the analysis has been completed and no more issues are found.
 
 ### Compiling and installing processors
 

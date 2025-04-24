@@ -83,9 +83,9 @@ set(sources
 add_library(ZHHProcessors SHARED ${sources})
 target_link_libraries(ZHHProcessors PRIVATE
   ${Marlin_LIBRARIES}
-  ${MarlinKinfit_LIBRARIES}
   ${MarlinUtil_LIBRARIES}
   ${AIDA_LIBRARIES}
+  ${MarlinKinfit_LIBRARIES}
   ${CLHEP_LIBRARIES}
   ${GSL_LIBRARIES}
   Physsim::Physsim
@@ -95,10 +95,10 @@ target_link_libraries(ZHHProcessors PRIVATE
 )
 target_include_directories(ZHHProcessors PRIVATE
   ${Marlin_INCLUDE_DIRS}
-  ${MarlinKinfit_INCLUDE_DIRS}
   ${MarlinUtil_INCLUDE_DIRS}
-  ${LCFIVertex_INCLUDE_DIRS}
   ${AIDA_INCLUDE_DIRS}
+  ${MarlinKinfit_INCLUDE_DIRS}
+  ${LCFIVertex_INCLUDE_DIRS}
   ${CLHEP_LIBRARIES}
   ${GSL_INCLUDE_DIRS}
   ${ROOT_INCLUDE_DIRS}

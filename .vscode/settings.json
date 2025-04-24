@@ -90,7 +90,7 @@
         "TMVAClassification.C": "cpp",
         "*.ipp": "cpp"
     },
-    "cmake.cmakePath": "/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-almalinux9-gcc11.3.1-opt/cmake/3.27.9-4qfmfr/bin/cmake",
+    "cmake.cmakePath": "/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/cmake/3.30.2-wpukto/bin/cmake",
     "cmake.preferredGenerators": [
         "Unix Makefiles"
     ],

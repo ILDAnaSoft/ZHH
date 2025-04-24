@@ -7,7 +7,7 @@
 
 #include "marlin/Processor.h"
 #include "lcio.h"
-#include "TrueJet_Parser.h"
+#include <UTIL/LCRelationNavigator.h>
 #include <EVENT/Vertex.h>
 #include <EVENT/ReconstructedParticle.h>
 #include "TLorentzVector.h"
@@ -45,7 +45,7 @@ using namespace lcio ;
 using namespace marlin ;
 using namespace std;
 
-class ZHHKinFit : public Processor , public TrueJet_Parser
+class ZHHKinFit : public Processor
 {
   
 public:

@@ -123,7 +123,7 @@ class AnalysisAbstract(MarlinJob):
         
         return [
             self.local_directory_target(output_name),
-            self.local_target(f'{output_name}.slcio')
+            self.local_target(f'{output_name}.root')
         ]
         
         #return self.local_directory_target(self.branch)

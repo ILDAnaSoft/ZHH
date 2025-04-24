@@ -8,3 +8,4 @@ from .Normalization import get_sample_chunk_splits, get_process_normalization, g
 from .Cuts import Cut, EqualCut, WindowCut, GreaterThanEqualCut, LessThanEqualCut, CutTypes, apply_cuts
 from .ZHHCuts import zhh_cuts
 from .PreselectionSummary import PreselectionSummary
+from .AnalysisChannel import AnalysisChannel

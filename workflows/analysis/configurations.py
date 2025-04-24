@@ -1,4 +1,5 @@
-from analysis.framework import AnalysisConfiguration, AnalysisConfigurationRegistry, zhh_configs
+from analysis.framework import AnalysisConfiguration, zhh_configs, \
+    AggregateAnalysisConfig, aa_configs
 from zhh import get_raw_files
 from glob import glob
 from typing import TYPE_CHECKING
@@ -194,3 +195,12 @@ zhh_configs.add(Config_550_hh_fast_perf())
 zhh_configs.add(Config_550_llhh_fast_perf())
 zhh_configs.add(Config_550_llbb_fast_perf())
 zhh_configs.add(Config_550_2l4q_fast_perf())
+
+class llbbbb(AggregateAnalysisConfig):
+    tag = 'llbbbb'
+    sub_tags = ['550-llhh-fast-perf',
+               '550-2l4q-fast-perf',
+               '550-llbb-fast-perf']
+    cuts = 'llhh'
+
+aa_configs.add(llbbbb)
