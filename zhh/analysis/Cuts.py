@@ -15,7 +15,7 @@ class Cut():
     def __call__(self, arg):
         raise NotImplementedError('Method __call__ not implemented')
     
-    def formula(self):
+    def formula(self, unit:Optional[str]=None):
         raise NotImplementedError('Method formula not implemented')
     
     def __repr__(self):

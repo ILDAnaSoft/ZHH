@@ -117,7 +117,7 @@ void EventObservablesQQ::updateChannelValues(EVENT::LCEvent *pLCEvent) {
     LCCollection *inputJetCollection = pLCEvent->getCollection( m_inputJetCollection ); // -> m_jets
     LCCollection *input4JetCollection = pLCEvent->getCollection( m_input4JetCollection ); // -> m_4jets
     
-    if ( m_jets.size() == m_nAskedJets() ) {
+    if ( static_cast<int>(m_jets.size()) == m_nAskedJets() ) {
         // NPFOS MIN/MAX
         std::tie(m_npfosmin6j, m_npfosmax6j, std::ignore) = nPFOsMinMax(inputJetCollection);
 

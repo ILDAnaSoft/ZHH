@@ -50,8 +50,14 @@ void EventObservablesLL::prepareChannelTree() {
         ttree->Branch("cosJ1Z_2Jets", &m_cosJ1Z_2Jets, "cosJ1Z_2Jets/F");
         ttree->Branch("cosJ2Z_2Jets", &m_cosJ2Z_2Jets, "cosJ2Z_2Jets/F");
 
+        ttree->Branch("ptjmin2", &m_ptjmin2, "ptjmin2/F");
+        ttree->Branch("pjmin2", &m_pjmin2, "pjmin2/F");
+
         ttree->Branch("ptjmax2", &m_ptjmax2, "ptjmax2/F");
         ttree->Branch("pjmax2", &m_pjmax2, "pjmax2/F");
+
+        ttree->Branch("yminus2", &m_yMinus2, "yminus2/F");
+        ttree->Branch("yplus2", &m_yPlus2, "yplus2/F");
 
         // 4 jets
         ttree->Branch("mbmax12", &m_mbmax12, "mbmax12/F");
@@ -83,6 +89,9 @@ void EventObservablesLL::clearChannelValues() {
 	m_mzll_pre_pairing = 0.;
 
     // 2 jets
+    m_ptjmin2 = 0.;
+    m_pjmin2 = 0.;
+
     m_ptjmax2 = 0.;
     m_pjmax2 = 0.;
 
@@ -91,6 +100,9 @@ void EventObservablesLL::clearChannelValues() {
     m_cosJ12_2Jets = 0.;
     m_cosJ1Z_2Jets = 0.;
     m_cosJ2Z_2Jets = 0.;
+
+    m_yMinus2 = 0.;
+    m_yPlus2 = 0.;
 
     // 4 jets
     m_mbmax12 = 0.;
@@ -147,19 +159,33 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         ROOT::Math::PxPyPzEVector p4J1_2Jets = v4(jets_2Jets[0]);
         ROOT::Math::PxPyPzEVector p4J2_2Jets = v4(jets_2Jets[1]);
 
+        double pJ1_2Jets = p4J1_2Jets.P();
+        double pJ2_2Jets = p4J1_2Jets.P();
+
+        m_ptjmin2 = std::min(p4J1_2Jets.Pt(), p4J2_2Jets.Pt());
+        m_pjmin2 = std::min(pJ1_2Jets, pJ2_2Jets);
+
         m_ptjmax2 = std::max(p4J1_2Jets.Pt(), p4J2_2Jets.Pt());
-        m_pjmax2 = std::max(p4J1_2Jets.P(), p4J2_2Jets.P());
+        m_pjmax2 = std::max(pJ1_2Jets, pJ2_2Jets);
 
         TVector3 momentum1_2Jets = jets_2Jets[0]->getMomentum();
         TVector3 momentum2_2Jets = jets_2Jets[1]->getMomentum();
-        Double_t pJ1_2Jets = momentum1_2Jets.Mag();
-        Double_t pJ2_2Jets = momentum2_2Jets.Mag();
 
         m_cosJ1_2Jets = momentum1_2Jets.CosTheta();
         m_cosJ2_2Jets = momentum2_2Jets.CosTheta();
         m_cosJ12_2Jets = momentum1_2Jets.Dot(momentum2_2Jets)/pJ1_2Jets/pJ2_2Jets;
         m_cosJ1Z_2Jets = momentum1_2Jets.Dot(momentumZ)/pJ1_2Jets/momentumZ.Mag();
         m_cosJ2Z_2Jets = momentum2_2Jets.Dot(momentumZ)/pJ2_2Jets/momentumZ.Mag();
+
+        PIDHandler jet2PIDh(input2JetCollection);
+
+        int algo_y = jet2PIDh.getAlgorithmID("yth");
+        const ParticleID & ythID = jet2PIDh.getParticleID(jets_2Jets[0], algo_y); // same arguments for all jets
+
+        FloatVec params_y = ythID.getParameters();
+        m_yMinus2 = params_y[jet2PIDh.getParameterIndex(algo_y, "y12")];
+        m_yPlus2 = params_y[jet2PIDh.getParameterIndex(algo_y, "y34")];
+
         // END EVALUATE 2 JET COLLECTION
 
         // TREAT 4 JET COLELCTION

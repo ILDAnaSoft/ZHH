@@ -75,41 +75,16 @@ def plot_preselection_by_event_category(presel_results:np.ndarray, processes:np.
         
     return all_figs
 
-def plot_preselection_by_event_categories(presel_results:np.ndarray, processes:np.ndarray, weights:np.ndarray,
-                                          hypothesis:str, quantity:str, weighted:bool=True,
-                                          categories_selected:list=[11, 16, 12, 13, 14],
-                                          categories_additional:Optional[int]=3,
-                                        unit:str='GeV', xlabel:Optional[str]=None,
-                                        bins:int=100, xlim:Optional[tuple]=None,
-                                        plot_flat:bool=True, yscale:Optional[str]=None,
-                                        ild_style_kwargs:dict={})->List[Figure]:
-    
-    if xlabel is None:
-        xlabel = quantity
-        
-    calc_dics = calc_preselection_by_event_categories(
-        presel_results, processes, weights,
-        quantity=quantity,
-        categories_selected=categories_selected,
-        categories_additional=categories_additional,
-        xlim=xlim)
-    
-    return plot_preselection_by_calc_dict(calc_dics[0],
-                                              hypothesis=hypothesis,
-                                              xlabel=xlabel,
-                                              xunit=unit, bins=bins, xlim=xlim,
-                                              title_label=rf'events', plot_flat=plot_flat, yscale=yscale,
-                                              ild_style_kwargs=ild_style_kwargs)
-
-def plot_preselection_by_calc_dict(calc_dict, hypothesis:str, xlabel:str, xunit:Optional[str]=None,
+def plot_preselection_by_calc_dict(calc_dict, hypothesis:str, xlabel:str, plot_context:PlotContext,
+                                   xunit:Optional[str]=None,
                                  bins:int=100, xlim:Optional[Iterable]=None, title_label:str='events',
-                                 plot_flat:bool=False, yscale:Optional[str]=None,
-                                 ild_style_kwargs:dict={}, plot_hist_kwargs:dict={},
-                                 plot_context:Optional[PlotContext]=None)->List[Figure]:
+                                 yscale:Optional[str]=None,
+                                 ild_style_kwargs:dict={},
+                                 plot_hist_kwargs:dict={},
+                                 plot_hist_kwargs_overwrite:dict={},
+                                 ax:Optional[Axes]=None):
     
     from phc import plot_hist
-    
-    all_figs = []
     
     plot_dict = {}
     plot_weights = []
@@ -120,54 +95,50 @@ def plot_preselection_by_calc_dict(calc_dict, hypothesis:str, xlabel:str, xunit:
         
     fig_plot_hist_kwargs = {
         'stacked': True,
+        'custom_styling': True,
         'colorpalette': None if plot_context is None else plot_context.getColorPalette(list(plot_dict.keys()))
-    } | plot_hist_kwargs
+    }
     
-    fig1, _, counts_wt = plot_hist(plot_dict, xlim=xlim, bins=bins, custom_styling=True, weights=plot_weights, return_hist=True, **fig_plot_hist_kwargs)
+    fig_plot_hist_kwargs = fig_plot_hist_kwargs | plot_hist_kwargs
     
-    if plot_flat:
-        fig2, _, counts_flat = plot_hist(plot_dict, xlim=xlim, bins=bins, custom_styling=True, return_hist=True, **fig_plot_hist_kwargs)
+    if ax is not None:
+        fig_plot_hist_kwargs['ax'] = ax
     
-    if yscale is None:
-        if plot_flat:
-            counts_flat = counts_flat[0]
-            counts_flat = counts_flat[counts_flat > 0]
-            yscale_flat = 'log' if (np.max(counts_flat)/np.min(counts_flat) > 100) else 'linear'
-            
+    fig, _, counts_wt = plot_hist(plot_dict, xlim=xlim, bins=bins, weights=plot_weights, return_hist=True,
+                                  hist_kwargs_overwrite=plot_hist_kwargs_overwrite, **fig_plot_hist_kwargs)
+    
+    if ax is None:
+        ax = fig.get_axes()[0]
+    
+    if yscale is None:            
         counts_wt = counts_wt[0]
         counts_wt = counts_wt[counts_wt > 0]
         yscale_wt = 'log' if (np.max(counts_wt)/np.min(counts_wt) > 100) else 'linear'
     else:
-        yscale_flat = yscale_wt = yscale
+        yscale_wt = yscale
     
     if xlim is None:
-        xlim = fig1.get_axes()[0].get_xlim()
+        xlim = ax.get_xlim()
     
-    weighted = True
-    for fig in ([fig1, fig2] if plot_flat else [fig1]):       
-        fig_ild_kwargs = {
-            'xunit': xunit,
-            'xlabel': xlabel,
-            'yscale': yscale_wt if weighted else yscale_flat,
-            'ild_offset_x': 0.,
-            'ylabel_prefix': 'wt. ' if weighted else '',
-            'title_postfix': '',
-            'title': rf'ZHH → {hypothesis} analysis ('+ (r"wt. " if weighted else "") + (rf"{title_label}") + ')',
-            'legend_kwargs': {'loc': 'lower right'}
-        } | ild_style_kwargs
-        
-        legend_labels = []
-        for key, value in plot_dict.items():
-            if len(value) > 0:
-                legend_labels.append(key)
-                
-        fig = fig_ild_style(fig, xlim, bins, legend_labels=legend_labels, **fig_ild_kwargs)
-        
-        all_figs.append(fig)
-        
-        weighted = False
-        
-    return all_figs
+    fig_ild_kwargs = {
+        'xunit': xunit,
+        'xlabel': xlabel,
+        'yscale': yscale_wt,
+        'ild_offset_x': 0.,
+        'ylabel_prefix': 'wt. ',
+        'title_postfix': '',
+        'title': rf'ZHH → {hypothesis} analysis ('+ (r"wt. ") + (rf"{title_label}") + ')',
+        'legend_kwargs': {'loc': 'lower right'}
+    } | ild_style_kwargs
+    
+    legend_labels = []
+    for key, value in plot_dict.items():
+        if len(value) > 0:
+            legend_labels.append(key)
+            
+    fig = fig_ild_style(ax, xlim, bins, legend_labels=legend_labels, colorpalette=list(map(plot_context.getColorByKey, plot_dict.keys())), **fig_ild_kwargs)
+    
+    return fig
 
 def annotate_cut(ax:Axes, cut:Cut, spancolor:str='red', alpha:float=0.7):
     if isinstance(cut, WindowCut):

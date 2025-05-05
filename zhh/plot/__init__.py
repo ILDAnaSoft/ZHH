@@ -1,5 +1,4 @@
 from .plot_preselection import plot_preselection_by_event_category, \
-    plot_preselection_by_event_categories, \
     plot_preselection_by_calc_dict, \
     annotate_cut, \
     plot_cut_efficiencies, plot_total_efficiency

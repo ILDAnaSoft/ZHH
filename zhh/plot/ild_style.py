@@ -1,6 +1,7 @@
 from matplotlib.ticker import AutoMinorLocator, LogLocator, Locator, MultipleLocator
 from matplotlib.patches import Patch
 from matplotlib.figure import Figure
+from matplotlib.axes import Axes
 from matplotlib.legend_handler import HandlerTuple
 from typing import Optional, List, Iterable, Union, Tuple, Literal
 from ..util.get_matplotlib_fonts import resolve_fonts
@@ -18,7 +19,7 @@ ild_style_defaults = {
     'polarization_em': -0.8
 }
 
-def fig_ild_style(fig:Figure, xlim:Union[List[float], Tuple[float,float]], bins:Union[Iterable,int],
+def fig_ild_style(fig_or_ax:Figure|Axes, xlim:Union[List[float], Tuple[float,float]], bins:Union[Iterable,int],
                   xscale:str='linear', xunit:Optional[str]='GeV', xlabel:str='m',
                   yscale:str='linear', yunit:Optional[str]='events', ylabel_prefix:str='',
                   xlocator:Optional[Locator]=None, ylocator:Optional[Locator]=None,
@@ -35,10 +36,20 @@ def fig_ild_style(fig:Figure, xlim:Union[List[float], Tuple[float,float]], bins:
                   ild_status:str=ild_style_defaults['ild_status'],
                   show_binning_on_y_scale:bool=True)->Figure:
     
+    if isinstance(fig_or_ax, Axes):
+        fig = fig_or_ax.figure
+        ax = fig_or_ax
+    elif isinstance(fig_or_ax, Figure):
+        fig = fig_or_ax
+        ax = fig.get_axes()[ax_index]
+    else:
+        raise TypeError('fig_or_ax must be a Figure or Axes instance')
+    
+    use_facecolor = True
     if colorpalette is None:
         #from phc import get_colorpalette
         #colorpalette = get_colorpalette()
-        n_patches = len(fig.axes[0].patches)
+        n_patches = len(ax.patches)
         
         if plot_context is not None:
             if hasattr(fig, 'columns'):
@@ -46,7 +57,8 @@ def fig_ild_style(fig:Figure, xlim:Union[List[float], Tuple[float,float]], bins:
             else:
                 raise Exception('Could not get colors for legend. Assign the .columns attribute to the figure.')
         else:
-            colorpalette = [fig.axes[0].patches[n_patches -1 - i].get_facecolor() for i in range(n_patches)]
+            use_facecolor = ax.patches[0].get_facecolor() != (1,1,1,0)
+            colorpalette = [getattr(ax.patches[(n_patches -1 - i) if use_facecolor else i], 'get_facecolor' if use_facecolor else 'get_edgecolor')() for i in range(n_patches)]
     
     if yunit is None or yunit =='':
         yunit = '1'
@@ -59,30 +71,27 @@ def fig_ild_style(fig:Figure, xlim:Union[List[float], Tuple[float,float]], bins:
         
     if ild_offset_x == 0 and ild_offset_y == 0:
         if ild_text_position == 'upper left':
-            ild_offset_x = 0.15
-            ild_offset_y = 0.83
+            ild_offset_x = 0.1
+            ild_offset_y = 0.89
         elif ild_text_position == 'upper right':
             ild_offset_x = 0.7
-            ild_offset_y = 0.83
+            ild_offset_y = 0.89
     
     if isinstance(fontname, list):
         fontname = resolve_fonts(fontname)
     
-    fig.text(ild_offset_x, ild_offset_y, f'ILD {ild_status}', fontsize=12, weight='bold', fontname=fontname)
+    ax.text(ild_offset_x, ild_offset_y, f'ILD {ild_status}', fontsize=12, weight='bold', fontname=fontname, transform=ax.transAxes)
     
     if beam_spec:
-        fig.text(ild_offset_x, ild_offset_y-.035, rf'$\sqrt{{s}} = {beam_energy}$ GeV, $L_{{int}} = {ild_style_defaults["luminosity_inv_ab"]}$ab$^{{-1}}$', fontsize=8, fontname=fontname)
-        fig.text(ild_offset_x, ild_offset_y-.065, rf'$P(e^{{+}}, e^{{-}}) = ({ild_style_defaults["polarization_ep"]:+.1}, {ild_style_defaults["polarization_em"]:+.1})$', fontsize=8, fontname=fontname)
+        ax.text(ild_offset_x, ild_offset_y-.035, rf'$\sqrt{{s}} = {beam_energy}$ GeV, $L_{{int}} = {ild_style_defaults["luminosity_inv_ab"]}$ab$^{{-1}}$', fontsize=8, fontname=fontname, transform=ax.transAxes)
+        ax.text(ild_offset_x, ild_offset_y-.065, rf'$P(e^{{+}}, e^{{-}}) = ({ild_style_defaults["polarization_ep"]:+.1}, {ild_style_defaults["polarization_em"]:+.1})$', fontsize=8, fontname=fontname, transform=ax.transAxes)
     
-    for ax in fig.get_axes():
-        for label in ax.get_xticklabels():
-            label.update({'fontname': fontname})
-            
-        for label in ax.get_yticklabels():
-            label.update({'fontname': fontname})
-            
-    ax = fig.get_axes()[ax_index]
-    
+    for label in ax.get_xticklabels():
+        label.set_fontname(fontname)
+        
+    for label in ax.get_yticklabels():
+        label.set_fontname(fontname)
+        
     if xscale =='linear':
         if xminor is not None:
             ax.xaxis.set_minor_locator(AutoMinorLocator(xminor))
@@ -129,11 +138,11 @@ def fig_ild_style(fig:Figure, xlim:Union[List[float], Tuple[float,float]], bins:
     if legend_labels is not None:
         legend_handles = []
         
-        for i in range(len(legend_labels)):
+        for i in reversed(range(len(legend_labels))):
             process_name = legend_labels[i]
             legend_handles.append([Patch(facecolor=colorpalette[i], edgecolor=colorpalette[i], label=process_name)])
             
-        ax.legend(handles=legend_handles, labels=legend_labels, fontsize=10, handler_map={list: HandlerTuple(ndivide=len(legend_labels), pad=0)}, **legend_kwargs)
+        ax.legend(handles=legend_handles, labels=list(reversed(legend_labels)), fontsize=10, handler_map={list: HandlerTuple(ndivide=len(legend_labels), pad=0)}, **legend_kwargs)
         
     return fig
 

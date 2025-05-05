@@ -70,6 +70,9 @@ class EventObservablesLL : public EventObservablesBase {
 		int m_paired_lep_type{};
 
 		// 2 jet
+		float m_ptjmin2{};
+		float m_pjmin2{};
+
 		float m_ptjmax2{};
 		float m_pjmax2{};
 
@@ -78,6 +81,9 @@ class EventObservablesLL : public EventObservablesBase {
         float m_cosJ12_2Jets{};
         float m_cosJ1Z_2Jets{};
         float m_cosJ2Z_2Jets{};
+
+		float m_yMinus2{};
+		float m_yPlus2{};
 
 		// 4 jet
 		float m_mbmax12{};

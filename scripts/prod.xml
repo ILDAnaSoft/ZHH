@@ -61,21 +61,22 @@
 
         <!-- JC, SLD CORR AND ERROR FLOW FOR 2,4,5,6 JETS -->
         <processor name="JC2FT" />
-        <processor name="JC4FT" />
-        <processor name="JC5FT" />
-        <processor name="JC6FT" />
-
         <processor name="MySLDCorrection2J" />
         <processor name="MyErrorFlow2J" />
 
+        <processor name="JC4FT" />
         <processor name="MySLDCorrection4J" />
         <processor name="MyErrorFlow4J" />
 
+        <!--    
+        <processor name="JC5FT" />
         <processor name="MySLDCorrection5J" />
         <processor name="MyErrorFlow5J" />
 
+        <processor name="JC6FT" />
         <processor name="MySLDCorrection6J" />
         <processor name="MyErrorFlow6J" />
+        -->
 
         <!-- lepton channel -->
         <if condition="${Runllbbbb}">

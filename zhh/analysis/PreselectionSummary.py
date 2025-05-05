@@ -1,8 +1,7 @@
 from ..util.LazyTablelike import MixedLazyTablelike
 import numpy as np
 import uproot as ur
-from .PreselectionAnalysis import fs_columns
-from typing import TypedDict
+from dataclasses import dataclass
 
 dtypes = {
     'id': 'I',
@@ -46,9 +45,11 @@ dtypes = {
 
 
 class PreselectionSummary(MixedLazyTablelike):
-    def __init__(self, tree:ur.TTree, preselection:str, final_states:bool=True, prop_prefix:str=''):
+    cache:dict[str, np.ndarray] = {}
+    
+    def __init__(self, tree:ur.TTree, preselection:str, final_states:bool=True, prop_prefix:str='', cached:bool=False):
         r_size = tree.num_entries
-        super().__init__(r_size)        
+        super().__init__(r_size)
         
         presel = preselection[:2]
         
@@ -56,11 +57,22 @@ class PreselectionSummary(MixedLazyTablelike):
             if loc is None:
                 loc = key
                 
-            return np.array(tree[loc].array(), dtype=dtypes[key])
+            if cached:
+                if key in self.cache:
+                    return self.cache[key]
+                else:
+                    self.cache[key] = np.array(tree[loc].array(), dtype=dtypes[key])
+                    return self.cache[key]                
+            else:
+                return np.array(tree[loc].array(), dtype=dtypes[key])
         
         # writable
         self['id'] = np.arange(r_size, dtype=dtypes['id'])
         self['event_category'] = np.array(tree['event_category'].array(), dtype='B')
+        
+        # writable; attached by AnalysisChannel.weight()
+        self['pid'] = np.nan*np.ones(r_size, dtype='I')
+        self['weight'] = np.nan*np.ones(r_size, dtype='f')
         
         # readonly
         self['process'] = lambda: fetch('process')
@@ -69,12 +81,25 @@ class PreselectionSummary(MixedLazyTablelike):
         self['event'] = lambda: np.array(tree['event'].array(), dtype='I')
             
         if final_states:
-            fs_counts = lambda: tree['final_state_counts'][1].array()
+            from .PreselectionAnalysis import fs_columns
+            
             self['Nb_from_H'] = lambda: fetch('n_b_from_higgs')
             
+            def fs_counts(column:int|None):
+                if column is not None:
+                    return np.array(tree['final_state_counts'][1].array()[:, column], dtype='B')
+                else:
+                    return np.array(tree['final_state_counts'][1].array(), dtype='B')
+            
+            def attach_fs_counts(obj, attr, column:int):
+                obj[attr] = lambda: fs_counts(column)
+            
             for i in range(len(fs_columns)):
-                self[fs_columns[i]] = lambda: np.array(fs_counts()[:, i], dtype='B')
-        
+                attach_fs_counts(self, fs_columns[i], i)
+            
+            # final state counts
+            self['fsc'] = lambda: fs_counts(None)
+            
         self['thrust'] = lambda: fetch('thrust', f'{prop_prefix}thrust')
         self['e_vis'] = lambda: fetch('e_vis', f'{prop_prefix}evis')
         self['pt_miss'] = lambda: fetch('pt_miss', f'{prop_prefix}ptmiss')
@@ -110,3 +135,71 @@ class PreselectionSummary(MixedLazyTablelike):
         self[f'{presel}_bmax2'] = lambda: self['bmax2']
         self[f'{presel}_bmax3'] = lambda: self['bmax3']
         self[f'{presel}_bmax4'] = lambda: self['bmax4']
+
+@dataclass
+class FinalStateCounts:
+    n_d: np.ndarray
+    n_u: np.ndarray
+    n_s: np.ndarray
+    n_c: np.ndarray
+    n_b: np.ndarray
+    n_t: np.ndarray
+    n_q: np.ndarray
+    
+    n_ve: np.ndarray
+    n_vmu: np.ndarray
+    n_vtau: np.ndarray
+    n_neutral_lep: np.ndarray
+    
+    n_e: np.ndarray
+    n_mu: np.ndarray
+    n_tau: np.ndarray
+    n_charged_lep: np.ndarray
+    
+    n_b_from_higgs: np.ndarray
+
+def parse_final_state_counts(presel:PreselectionSummary)->FinalStateCounts:
+    from zhh import PDG2FSC
+    
+    presel.resetView()
+    fsc = presel['fsc']
+    n_b_from_higgs = presel['Nb_from_H']
+    
+    n_d = fsc[:, PDG2FSC.d]
+    n_u = fsc[:, PDG2FSC.u]
+    n_s = fsc[:, PDG2FSC.s]
+    n_c = fsc[:, PDG2FSC.c]
+    n_b = fsc[:, PDG2FSC.b]
+    n_t = fsc[:, PDG2FSC.t]
+    n_q = n_d + n_u + n_s + n_c + n_b + n_t
+    
+    n_ve = fsc[:, PDG2FSC.v1]
+    n_vmu = fsc[:, PDG2FSC.v2]
+    n_vtau = fsc[:, PDG2FSC.v3]
+    n_neutral_lep = n_ve + n_vmu + n_vtau
+    
+    n_e = fsc[:, PDG2FSC.e1]
+    n_mu = fsc[:, PDG2FSC.e2]
+    n_tau = fsc[:, PDG2FSC.e3]
+    n_charged_lep = n_e + n_mu + n_tau
+    
+    return FinalStateCounts(
+        n_d=n_d,
+        n_u=n_u,
+        n_s=n_s,
+        n_c=n_c,
+        n_b=n_b,
+        n_t=n_t,
+        n_q=n_q,
+        
+        n_ve=n_ve,
+        n_vmu=n_vmu,
+        n_vtau=n_vtau,
+        n_neutral_lep=n_neutral_lep,
+        
+        n_e=n_e,
+        n_mu=n_mu,
+        n_tau=n_tau,
+        n_charged_lep=n_charged_lep,
+        n_b_from_higgs=n_b_from_higgs
+    )

@@ -20,6 +20,7 @@ process llbb_sl0 =     e1,E1 => (taus,taus,bq,bq) +
 
 process eebb_sl0 =     e1,E1 => (ele,ele,bq,bq) { $omega_flags =  "-model:constant_width" }
 
+process bbbb_sl0 =     e1,E1 => (bq,bq,bq,bq) { $omega_flags =  "-model:constant_width" }
 
 ! these cuts are OK for most cases, but *not* for gamma-gamma etc.
 ! They become more complicated in such processes

@@ -253,6 +253,9 @@ class EventObservablesBase: public Processor
 		
 		int m_nJets{};
 		int m_nIsoLeps{};
+		int m_nIsoElectrons{};
+		int m_nIsoMuons{};
+		int m_nIsoTaus{};
 		int m_npfos{};
 		std::vector<int> m_lep_types{};
 
@@ -260,7 +263,7 @@ class EventObservablesBase: public Processor
 		float m_yPlus{};
 		
 		// jets and jet matching to ZHH hypothesis
-		std::vector<ReconstructedParticle*> m_jets;
+		std::vector<ReconstructedParticle*> m_jets{};
 
 		std::vector<unsigned short> m_zhh_jet_matching{};
 		float m_zhh_mz{};
