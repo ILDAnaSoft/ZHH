@@ -1219,7 +1219,7 @@ ZHHKinFit::FitResult ZHHKinFit::performllbbbbFIT( pfoVector jets, pfoVector lept
   double bestChi2 = 9999999999999.;
   FitResult bestFitResult;
 
-  assert(NJETS==4);
+  assert(jets.size()==4);
   vector<vector<unsigned int>> perms;
   if (m_fithypothesis == "ZZH" || m_fithypothesis == "ZZHsoft" || m_fithypothesis == "MH") {
     perms = {
@@ -1562,7 +1562,7 @@ ZHHKinFit::FitResult ZHHKinFit::performvvbbbbFIT( pfoVector jets, bool traceEven
   double bestChi2 = 9999999999999.;
   FitResult bestFitResult;
 
-  assert(NJETS==4);
+  assert(jets.size()==4);
   vector<vector<unsigned int>> perms;
   if (m_fithypothesis == "ZZH" || m_fithypothesis == "ZZHsoft" || m_fithypothesis == "MH") {
     perms = {
@@ -1871,7 +1871,7 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
   double bestChi2 = 9999999999999.;
   FitResult bestFitResult;
 
-  assert(NJETS==6);
+  assert(jets.size()==6);
   vector<vector<unsigned int>> perms;
   if (m_fithypothesis == "ZZH" || m_fithypothesis == "ZZHsoft" || m_fithypothesis == "MH" || m_fithypothesis == "ZHH" || m_fithypothesis == "EQM") {
     //TO DO: redo permutations for each hypothesis

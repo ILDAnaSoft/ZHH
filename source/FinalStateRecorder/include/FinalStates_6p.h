@@ -160,7 +160,7 @@ class p6: public FinalStateResolver {
             } else if (m_final_state_counts[PDG::b] == 4) {
                 if (neutrinos == 2)
                     return EVENT_CATEGORY_TRUE::vvbbbb;
-                else if (charged_leps + neutrinos == 2)
+                else if (charged_leps == 2 && neutrinos == 0)
                     return EVENT_CATEGORY_TRUE::llbbbb;
                 else if (non_b == 2)
                     return EVENT_CATEGORY_TRUE::qqbbbb;
@@ -366,6 +366,7 @@ class p6_llWW_llvllv : public p6 {
     public: p6_llWW_llvllv(): p6( "llvllv", PROCESS_ID::f6_llWW_llvllv, EVENT_CATEGORY_TRUE::llWW ) {}; };
 
 // NEW mc-2025 inclusive productions
+// 2l4q
 class p6_inclusive_eeeexx : public p6 {
     public: p6_inclusive_eeeexx(): p6( "P6f_eeeexx", PROCESS_ID::f6_eeeexx, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
     
@@ -507,6 +508,22 @@ class p6_inclusive_yyxyev : public p6 {
 class p6_inclusive_yyxylv : public p6 {
     public: p6_inclusive_yyxylv(): p6( "P6f_yyxylv", PROCESS_ID::f6_yyxylv, EVENT_CATEGORY_TRUE::OTHER_F6 ) {}; };
 
+// 6q
+class p6_inclusive_xxxxxx : public p6 {
+    public: p6_inclusive_xxxxxx(): p6( "P6f_xxxxxx", PROCESS_ID::f6_xxxxxx, EVENT_CATEGORY_TRUE::OTHER_F6 ) { }; };
+class p6_inclusive_xxxyyx : public p6 {
+    public: p6_inclusive_xxxyyx(): p6( "P6f_xxxyyx", PROCESS_ID::f6_xxxyyx, EVENT_CATEGORY_TRUE::OTHER_F6 ) { }; };
+class p6_inclusive_yycyyc : public p6 {
+    public: p6_inclusive_yycyyc(): p6( "P6f_yycyyc", PROCESS_ID::f6_yycyyc, EVENT_CATEGORY_TRUE::OTHER_F6 ) { }; };
+class p6_inclusive_yycyyu : public p6 {
+    public: p6_inclusive_yycyyu(): p6( "P6f_yycyyu", PROCESS_ID::f6_yycyyu, EVENT_CATEGORY_TRUE::OTHER_F6 ) { }; };
+class p6_inclusive_yyuyyc : public p6 {
+    public: p6_inclusive_yyuyyc(): p6( "P6f_yyuyyc", PROCESS_ID::f6_yyuyyc, EVENT_CATEGORY_TRUE::OTHER_F6 ) { }; };
+class p6_inclusive_yyuyyu : public p6 {
+    public: p6_inclusive_yyuyyu(): p6( "P6f_yyuyyu", PROCESS_ID::f6_yyuyyu, EVENT_CATEGORY_TRUE::OTHER_F6 ) { }; };
+class p6_inclusive_yyyyyy : public p6 {
+    public: p6_inclusive_yyyyyy(): p6( "P6f_yyyyyy", PROCESS_ID::f6_yyyyyy, EVENT_CATEGORY_TRUE::OTHER_F6 ) { }; };
+    
 // FLAVOR TAG
 
 class p6_ftag_uuuuuu : public p6 {
