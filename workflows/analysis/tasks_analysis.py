@@ -10,13 +10,12 @@ import law
 class AnalysisAbstract(MarlinJob):
     debug = True
     
+    # controls how many files are processed in debug mode (e.g. AnalysisRuntime). if None, all files are processed
+    debug_n_files_to_process:int|None = 3
+    
     constants = [
         ('ILDConfigDir', '$ILD_CONFIG_DIR'), # read from environment variable
         ('ZHH_REPO_ROOT', '$REPO_ROOT'),
-        ('Runllbbbb', 'True'),
-        ('Runvvbbbb', 'False'),
-        ('Runqqbbbb', 'False'),
-        ('RunTruthRecoComparison', 'False'),
         ('OutputDirectory', '.')
     ]
     
@@ -34,6 +33,10 @@ class AnalysisAbstract(MarlinJob):
     # Attach MCParticleCollectionName and constants/globals for Marlin
     def pre_run_command(self, **kwargs):
         config = zhh_configs.get(str(self.tag))
+        
+        if 'MarlinJob' in config.task_kwargs:
+            for prop, value in config.task_kwargs['MarlinJob'].items():
+                setattr(self, prop, value)
  
         mcp_col_name:str = self.get_steering_parameters()['mcp_col_name']
         
@@ -73,6 +76,11 @@ class AnalysisAbstract(MarlinJob):
     def create_branch_map(self) -> dict[int, MarlinBranchValue]:
         branch_map:dict[int, MarlinBranchValue] = {}
         
+        config = zhh_configs.get(str(self.tag))
+        if 'MarlinJob' in config.task_kwargs:
+            for prop, value in config.task_kwargs['MarlinJob'].items():
+                setattr(self, prop, value)
+        
         samples = np.load(self.input()['raw_index'][1].path)
         
         if not self.debug:
@@ -104,7 +112,11 @@ class AnalysisAbstract(MarlinJob):
             i = 0
             
             for proc_pol in np.unique(selection['proc_pol']):
-                for entry in selection[selection['proc_pol'] == proc_pol][:3]:
+                items = selection[selection['proc_pol'] == proc_pol]
+                if self.debug_n_files_to_process is not None and self.debug_n_files_to_process > 0:
+                    items = items[:self.debug_n_files_to_process]
+                
+                for entry in items:
                     branch_map[i] = (
                         entry['location'],
                         0,

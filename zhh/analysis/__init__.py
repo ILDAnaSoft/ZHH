@@ -9,5 +9,13 @@ from .Cuts import Cut, EqualCut, WindowCut, GreaterThanEqualCut, LessThanEqualCu
 from .ZHHCuts import zhh_cuts
 from .PreselectionSummary import PreselectionSummary, FinalStateCounts, parse_final_state_counts
 from .AnalysisChannel import AnalysisChannel
-from .PreselectionProcessor import PreselectionProcessor
-from .preselection_plot_options import preselection_plot_options
+from .PreselectionProcessor import PreselectionProcessor, cutflowPlots, cutflowTable
+from .preselection_figure_parameters import preselection_plot_options, preselection_table_options
+from .FinalStateDefinitions import define_eebb, define_μμbb, define_ττbb, \
+    define_lvqqqq, define_lvbbqq, define_evbbqq, define_µvbbqq, define_τvbbqq, \
+    define_lvbbbb, define_llqqqq, define_llbbqq, define_llbbbb, \
+    define_vvqqqq, define_vvbbqq, \
+    define_bbqqqq, define_bbbbqq, define_bbbbbb, \
+    define_llhh, define_eeHHbbbb, define_µµHHbbbb, define_ττHHbbbb, \
+    define_llhh_llbbbb, define_llqqh, \
+    FinalStateDefinition

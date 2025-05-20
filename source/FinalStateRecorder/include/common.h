@@ -342,7 +342,7 @@ struct EVENT_CATEGORY_TRUE {
 		f6_yyyyZ = 95,
 		f6_xxWW = 96,
 		f6_xxxxZ = 97,
-		OTHER_F6 = 98,
+		F6_OTHER = 98,
 	};
 };
 

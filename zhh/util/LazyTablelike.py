@@ -55,7 +55,11 @@ class MixedLazyTablelike(LazilyLoadedObject):
     
     def maskAppend(self, mask:np.ndarray):
         self._masks.append(mask)
-        self._mask = self.masksResolve(self._masks)
+        if self._mask is None:
+            self._mask = mask
+        else:
+            self._mask = self.masksResolve(self._masks)
+            
         self._length = int(np.sum(self._mask))
         
     def masksResolve(self, masks:list[np.ndarray]):

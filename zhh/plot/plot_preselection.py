@@ -1,4 +1,4 @@
-from typing import Optional, List, Tuple, Iterable
+from typing import Optional, List, Tuple, Iterable, cast
 from collections.abc import Sequence
 from tqdm.auto import tqdm
 from .ild_style import fig_ild_style
@@ -11,69 +11,6 @@ from matplotlib.axes import Axes
 from ..analysis.Cuts import Cut, EqualCut, WindowCut, GreaterThanEqualCut, LessThanEqualCut
 from ..analysis.ZHHCuts import zhh_cuts
 from ..util.PlotContext import PlotContext
-
-# For a given final state, plots the most important processes
-def plot_preselection_by_event_category(presel_results:np.ndarray, processes:np.ndarray, weights:np.ndarray,
-                                        hypothesis:str, event_categories:list=[17], quantity:str='ll_mz',
-                                        unit:str='GeV', xlim:Optional[Iterable]=None, nbins:int=100, xlabel:Optional[str]=None,
-                                        yscale:Optional[str]=None, ild_style_kwargs:dict={})->List[Figure]:
-    """Plot the preselection results for a given hypothesis by event categories
-
-    Args:
-        presel_results (np.ndarray): _description_
-        weights (np.ndarray): _description_
-        hypothesis (str): _description_
-        event_categories (list, optional): _description_. Defaults to [17].
-
-    Returns:
-        _type_: _description_
-    """
-    
-    if xlabel is None:
-        xlabel = quantity
-    
-    all_figs = []
-    hypothesis_key = hypothesis[:2]
-    
-    for category in event_categories:
-        calc_dict_all  = {}
-        calc_dict_pass = {}
-        
-        covered_processes = []
-
-        mask = (presel_results['event_category'] == category) & (presel_results[quantity] > 0)
-        pids = np.unique(presel_results['pid'][mask])
-        
-        # Collect contributions from all proc_pol combinations of a process
-        for pid in (pbar := tqdm(pids)):
-            process_name = processes['process'][processes['pid'] == pid][0]
-            
-            if process_name in covered_processes:
-                continue
-            else:
-                covered_processes.append(process_name)
-            
-            #print(process_name)
-            mask_process = np.zeros(len(mask), dtype='?')
-            
-            for pidc in processes['pid'][processes['process'] == process_name]:
-                #print(f"> {processes['proc_pol'][processes['pid'] == pidc][0]}")
-                mask_process = mask_process | (presel_results['pid'] == pidc)
-
-            mask_process = mask_process & mask
-            mask_process_pass = mask_process & presel_results[f'{hypothesis_key}_pass']
-            
-            # Assumes indices of weights = weights['pid']
-            calc_dict_all [process_name] = (presel_results[quantity][mask_process], weights['weight'][presel_results['pid'][mask_process]])
-            calc_dict_pass[process_name] = (presel_results[quantity][mask_process_pass], weights['weight'][presel_results['pid'][mask_process_pass]])
-        
-        # Sort by number of entries
-        figs_all  = plot_preselection_by_calc_dict(calc_dict_all , hypothesis, xlabel, unit, nbins=nbins, xlim=xlim, yscale=yscale, title_label=rf'events', ild_style_kwargs=ild_style_kwargs)
-        figs_pass = plot_preselection_by_calc_dict(calc_dict_pass, hypothesis, xlabel, unit, nbins=nbins, xlim=xlim, yscale=yscale, title_label=rf'events passing {hypothesis}', ild_style_kwargs=ild_style_kwargs)
-        
-        all_figs += figs_all + figs_pass
-        
-    return all_figs
 
 def plot_preselection_by_calc_dict(calc_dict, hypothesis:str, xlabel:str, plot_context:PlotContext,
                                    xunit:Optional[str]=None,
@@ -119,7 +56,7 @@ def plot_preselection_by_calc_dict(calc_dict, hypothesis:str, xlabel:str, plot_c
     
     if xlim is None:
         xlim = ax.get_xlim()
-    
+        
     fig_ild_kwargs = {
         'xunit': xunit,
         'xlabel': xlabel,
@@ -128,7 +65,9 @@ def plot_preselection_by_calc_dict(calc_dict, hypothesis:str, xlabel:str, plot_c
         'ylabel_prefix': 'wt. ',
         'title_postfix': '',
         'title': rf'ZHH → {hypothesis} analysis ('+ (r"wt. ") + (rf"{title_label}") + ')',
-        'legend_kwargs': {'loc': 'lower right'}
+        'legend_kwargs': {'loc': 'lower right'},
+        'int_bins': plot_hist_kwargs['int_bins'] if 'int_bins' in plot_hist_kwargs else False,
+        'plot_context': plot_context
     } | ild_style_kwargs
     
     legend_labels = []
@@ -141,26 +80,40 @@ def plot_preselection_by_calc_dict(calc_dict, hypothesis:str, xlabel:str, plot_c
     return fig
 
 def annotate_cut(ax:Axes, cut:Cut, spancolor:str='red', alpha:float=0.7):
-    if isinstance(cut, WindowCut):
+    from zhh import CutTypes
+    
+    if cut.type == CutTypes.CUT_WINDOW:
+        cut = cast(WindowCut, cut)
+        
         ax.axvspan(cut.lower, cut.upper, .97,  color=spancolor, alpha=alpha, hatch='*')
         ax.axvline(x=cut.lower, linewidth=1.5, color=spancolor)
         ax.axvline(x=cut.upper, linewidth=1.5, color=spancolor)
-        
     else:
-        if isinstance(cut, GreaterThanEqualCut) or isinstance(cut, LessThanEqualCut):
-            value = cut.lower if isinstance(cut, GreaterThanEqualCut) else cut.upper
+        if cut.type in [CutTypes.CUT_GTE, CutTypes.CUT_LTE]:
+            is_gte = cut.type == CutTypes.CUT_GTE
+            value = None
+            if is_gte:
+                cut = cast(GreaterThanEqualCut, cut)
+                value = cut.lower
+            else:
+                cut = cast(LessThanEqualCut, cut)
+                value = cut.upper
+            
+            assert(value is not None)
+            
             xlim = ax.get_xlim()
             
             if isinstance(value, int):
-                offset = 0.5 if isinstance(cut, GreaterThanEqualCut) else -0.5
+                offset = 0.5 if is_gte else -0.5
             else:
                 offset = 0
                 
-            xlimspan = (value, xlim[1] + offset) if isinstance(cut, GreaterThanEqualCut) else (xlim[0] + offset, value)            
+            xlimspan = (value, xlim[1] + offset) if is_gte else (xlim[0] + offset, value)            
             
             ax.axvspan(xlimspan[0], xlimspan[1], .97, alpha=alpha, color=spancolor, hatch='*')
-            ax.axvline(x=xlimspan[0 if isinstance(cut, GreaterThanEqualCut) else 1] - offset, linewidth=1.5, color=spancolor)
-        elif isinstance(cut, EqualCut):
+            ax.axvline(x=xlimspan[0 if is_gte else 1] - offset, linewidth=1.5, color=spancolor)
+        elif cut.type == CutTypes.CUT_EQ:
+            cut = cast(EqualCut, cut)
             value = cut.value
         else:
             raise ValueError(f'Unknown cut type {type(cut)}')

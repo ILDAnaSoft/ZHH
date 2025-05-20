@@ -513,28 +513,8 @@ void EventObservablesBase::clearBaseValues()
 	m_cmax3 = 0.;
 	m_cmax4 = 0.;
 
-	m_bmax1 = 0.;
-	m_bmax2 = 0.;
-	m_bmax3 = 0.;
-	m_bmax4 = 0.;
-
-	m_cmax1 = 0.;
-	m_cmax2 = 0.;
-	m_cmax3 = 0.;
-	m_cmax4 = 0.;
-
 	std::fill(m_bTagValues2.begin(), m_bTagValues2.end(), -1.);
 	std::fill(m_cTagValues2.begin(), m_cTagValues2.end(), -1.);
-
-	m_bmax12 = 0.;
-	m_bmax22 = 0.;
-	m_bmax32 = 0.;
-	m_bmax42 = 0.;
-
-	m_cmax12 = 0.;
-	m_cmax22 = 0.;
-	m_cmax32 = 0.;
-	m_cmax42 = 0.;
 
 	m_bmax12 = 0.;
 	m_bmax22 = 0.;

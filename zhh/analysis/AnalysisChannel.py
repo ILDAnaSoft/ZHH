@@ -4,6 +4,7 @@ from .ZHHCuts import zhh_cuts
 from .PreselectionAnalysis import fetch_preselection_data, sample_weight, get_pol_key
 from .PreselectionSummary import PreselectionSummary
 from zhh.processes import parse_polarization_code, ProcessCategories
+from zhh.analysis.PreselectionSummary import FinalStateCounts
 
 import uproot as ur
 import os.path as osp
@@ -42,14 +43,20 @@ class AnalysisChannel:
         self._define_sig = define_sig
         self._cuts = cuts
         
-        # combine
+        # combine()
         self._rf:ur.WritableFile|None = None
         
-        # fetchPreselection
+        # fetchPreselection()
         self._preselection:PreselectionSummary|None = None
         
-        # weight
+        # weight()
         self._processes:np.ndarray|None = None
+        self._lumi_inv_ab:float = 0.
+        
+        # registerEventCategory(): event selection masks
+        self._event_categories:dict[str, tuple[np.ndarray, int|None]] = {}
+        self._event_category_resolvers:dict[str, tuple[Callable, int|None]] = {}
+        self._evalutatedEventCategories = False
     
     def __repr__(self)->str:
         return f'AnalysisChannel<name={self._name}>'
@@ -146,6 +153,12 @@ class AnalysisChannel:
         
         return self._preselection
     
+    def plotFinalStateCounts(self):
+        assert(self._rf is not None)
+        from zhh import plot_final_state_counts
+        
+        return plot_final_state_counts(self._rf['Merged'])
+    
     def weight(self, lumi_inv_ab:float=2.)->tuple[np.ndarray,np.ndarray]:
         """Extracts cross-sections and number of generated events for each
         polarization-process combination. Then calculates weights for each
@@ -168,6 +181,8 @@ class AnalysisChannel:
         """
         
         assert(self._rf is not None and self._preselection is not None)
+        
+        self._lumi_inv_ab = lumi_inv_ab
         
         tree = self._rf['Merged']
                 
@@ -241,6 +256,17 @@ class AnalysisChannel:
                 
         return weight_data, processes
     
+    def getIntegratedLuminosity(self)->float:
+        """Returns the luminosity in ab^-1.
+
+        Returns:
+            float: luminosity
+        """
+        
+        assert(self._lumi_inv_ab > 0.)
+        
+        return self._lumi_inv_ab
+    
     def getProcesses(self)->np.ndarray:
         """Returns the processes array.
 
@@ -252,24 +278,137 @@ class AnalysisChannel:
         
         return self._processes
     
-    def presel(self):
-        assert(self._rf is not None)
+    def getFinalStateCounts(self)->FinalStateCounts:
+        """Returns the final state counts array.
+
+        Returns:
+            np.ndarray: final state counts
+        """
         
-        self.masks = masks = []
-        # efficiencies
+        from .PreselectionSummary import parse_final_state_counts
         
-        mask = np.ones(self._rf['FinalStates'].num_entries, dtype=bool)
+        assert(self._preselection is not None)
         
+        return parse_final_state_counts(self.getPreselection())
+    
+    def registerEventCategory(self, name:str, mask_or_func:Callable|np.ndarray, category:int|None, overwrite:bool=False):
+        if (name in self._event_categories or name in self._event_category_resolvers) and not overwrite:
+            print(f'Event category {name} already registered. Doing nothing.')
+        else:
+            if name in self._event_categories:
+                del self._event_categories[name]
+            
+            if isinstance(mask_or_func, np.ndarray):
+                self._event_categories[name] = (mask_or_func, category)
+            elif callable(mask_or_func):
+                self._event_category_resolvers[name] = (mask_or_func, category)
+        
+        return self
+    
+    def evalutateEventCategories(self, default_category:int|None, force:bool=False, order:Optional[list[str]]=None)->'AnalysisChannel':
+        """Evaluates event category definitions and saves them as numpy masks.
+        default_category is assigned to all events first, if not None.
+        After that, all categories for which the category paraemter in the
+        registerEventCategory() call was not None, are assigned. If order is
+        an empty array, nothing is changed after the default category is assigned.  
+
+        Args:
+            default_category (int | None): _description_
+            force (bool, optional): _description_. Defaults to False.
+            order (Optional[list[str]], optional): if None, all categories are considered in the order they were registered. Defaults to None.
+
+        Returns:
+            AnalysisChannel: _description_
+        """
+        from .PreselectionSummary import parse_final_state_counts
+        
+        if not self._evalutatedEventCategories or force:
+            print(f'Evaluating event categories for {self._name}...')
+            
+            presel = self.getPreselection()
+            fsc = parse_final_state_counts(presel)
+
+            for name, (mask_func, category) in self._event_category_resolvers.items():
+                mask = mask_func(self, fsc)
+                self._event_categories[name] = (mask, category)
+            
+            if order is None:
+                order = list(self._event_categories.keys())
+            
+            if default_category is not None:
+                presel['event_category'][:] = default_category
+                print(f' Assigned default event category (ID={default_category}) to all {len(presel["event_category"]):d} events')
+            else:
+                print(f' No default event category assigned')
+            
+            mask_sum = np.zeros(len(self._event_categories[next(iter(self._event_categories))][0]), dtype='B')
+            
+            for i, category_name in enumerate(order):
+                mask, replace = self._event_categories[category_name]
+                
+                print(f' Assigned event category {category_name} (ID={replace}) to {np.sum(mask):d} events with weight {np.sum(presel["weight"][mask]):3g}')
+                if replace is not None:
+                    presel['event_category'][mask] = replace
+                
+                collision = np.logical_and(mask_sum > 0, mask)
+                n_collisions = np.sum(collision)
+                if n_collisions > 0:
+                    print(f'  Warning: Event category {category_name} is not orthogonal to previous selection. Found {n_collisions} collisions')
+                
+                mask_sum += mask
+            
+            n_assigned = np.sum(mask_sum > 0)
+            
+            print(f' Total: Event categories assigned to {n_assigned:d} events ({(n_assigned / len(mask_sum)):.2%})')
+                
+            self._evalutatedEventCategories = True
+        
+        return self
+    
+    def getCategoryMask(self, name:str):
+        if name not in self._event_categories:
+            if name in self._event_category_resolvers:
+                from .PreselectionSummary import parse_final_state_counts
+                
+                mask_func, category = self._event_category_resolvers[name]
+                mask = mask_func(self, parse_final_state_counts(self.getPreselection()))
+                self._event_category_resolvers[name] = (mask, category)
+            raise ValueError(f'Event category {name} not registered.')
+        
+        return self._event_categories[name][0]
+    
+    def containsProcess(self, process:str):
+        """Checks if the process is in the processes array.
+
+        Args:
+            process (str): process name
+
+        Returns:
+            bool: True if process is in processes array
+        """
+        
+        assert(self._processes is not None)
+        return process in self._processes['process']
+    
+    def containsFinalState(self, name:str):
+        """Checks if the final state is in the processes array.
+
+        Args:
+            name (str): final state name
+
+        Returns:
+            bool: True if final state is in processes array
+        """
+        
+        assert(self._processes is not None)
+        return (name in self._event_categories or name in self._event_category_resolvers)
+    
     def run_tmva(self, properties:list[str], train_test_ratio:float=0.2):
         self._properties = properties
         self._train_test_ratio = train_test_ratio
         
         self._mask_presel = None
-    
-    def prepare(self, root_file:ur.ReadOnlyFile):
-        self._mask_sig:np.ndarray = self._define_sig(root_file)
-        self._mask_bkg:np.ndarray = self._define_bkg(root_file)
         
-llhh1_lvbbqq = AnalysisChannel('llhh_lvbbqq', zhh_cuts('llhh'),# + [EqualCut('ll_dilepton_type', 11)],
-                               define_bkg=lambda a: True,
-                               define_sig=lambda b: True)
+#llhh1_lvbbqq = AnalysisChannel('llhh_lvbbqq', zhh_cuts('llhh'),# + [EqualCut('ll_dilepton_type', 11)],
+#                               define_bkg=lambda a: True,
+#                               define_sig=lambda b: True)
