@@ -47,7 +47,7 @@ function zhh_recompile() {
     }
 
     # Compile the ML and helper libraries
-    for module_to_compile in "$MarlinML" "$VariablesForDeepMLFlavorTagger" "$BTaggingVariables" "$MarlinReco" "$MarlinKinfit"
+    for module_to_compile in "$MarlinML" "$VariablesForDeepMLFlavorTagger" "$BTaggingVariables" "$MarlinReco" "$MarlinKinfit" "$LCFIPlus" 
     do
         compile_pkg $module_to_compile && zhh_echo "+++ Successfully compiled $module_to_compile +++" || { zhh_echo "!!! Error [$?] while trying to compile $module_to_compile !!!"; cd $REPO_ROOT; return 1; }
     done
