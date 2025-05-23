@@ -39,5 +39,6 @@ def render_table(lines:list[list[str]|str], col_sep:str='8pt', row_sep:float=1.2
     return rf"""\setlength{{\tabcolsep}}{{ {col_sep} }}
 \renewcommand{{\arraystretch}}{{ {row_sep} }}
 \begin{{tabular}}{{ {'r' * len(lines[0])} }}
-\hline{content}\hline
+\hline
+{content}\hline
 \end{{tabular}}"""

@@ -20,6 +20,9 @@ m_JMP("best_perm_ll") {
 void EventObservablesLL::prepareChannelTree() {
     TTree* ttree = getTTree();
 
+    m_bTagValues_2Jets  = std::vector<double>(2, -1.);
+    m_bTagValues_2Jets2 = std::vector<double>(2, -1.);
+
 	if (m_write_ttree) {
         ttree->Branch("npfosmin4j", &m_npfosmin4j, "npfosmin4j/I");
 		ttree->Branch("npfosmax4j", &m_npfosmax4j, "npfosmax4j/I");
@@ -49,6 +52,7 @@ void EventObservablesLL::prepareChannelTree() {
         ttree->Branch("cosJ12_2Jets", &m_cosJ12_2Jets, "cosJ12_2Jets/F");
         ttree->Branch("cosJ1Z_2Jets", &m_cosJ1Z_2Jets, "cosJ1Z_2Jets/F");
         ttree->Branch("cosJ2Z_2Jets", &m_cosJ2Z_2Jets, "cosJ2Z_2Jets/F");
+        ttree->Branch("cosJZMax_2Jets", &m_cosJZMax_2Jets, "cosJZMax_2Jets/F");
 
         ttree->Branch("ptjmin2", &m_ptjmin2, "ptjmin2/F");
         ttree->Branch("pjmin2", &m_pjmin2, "pjmin2/F");
@@ -100,9 +104,13 @@ void EventObservablesLL::clearChannelValues() {
     m_cosJ12_2Jets = 0.;
     m_cosJ1Z_2Jets = 0.;
     m_cosJ2Z_2Jets = 0.;
+    m_cosJZMax_2Jets = 0.;
 
     m_yMinus2 = 0.;
     m_yPlus2 = 0.;
+
+    m_bTagValues_2Jets.clear();
+    m_bTagValues_2Jets2.clear();
 
     // 4 jets
     m_mbmax12 = 0.;
@@ -160,7 +168,7 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         ROOT::Math::PxPyPzEVector p4J2_2Jets = v4(jets_2Jets[1]);
 
         double pJ1_2Jets = p4J1_2Jets.P();
-        double pJ2_2Jets = p4J1_2Jets.P();
+        double pJ2_2Jets = p4J2_2Jets.P();
 
         m_ptjmin2 = std::min(p4J1_2Jets.Pt(), p4J2_2Jets.Pt());
         m_pjmin2 = std::min(pJ1_2Jets, pJ2_2Jets);
@@ -176,6 +184,7 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         m_cosJ12_2Jets = momentum1_2Jets.Dot(momentum2_2Jets)/pJ1_2Jets/pJ2_2Jets;
         m_cosJ1Z_2Jets = momentum1_2Jets.Dot(momentumZ)/pJ1_2Jets/momentumZ.Mag();
         m_cosJ2Z_2Jets = momentum2_2Jets.Dot(momentumZ)/pJ2_2Jets/momentumZ.Mag();
+        m_cosJZMax_2Jets = std::max(m_cosJ1Z_2Jets, m_cosJ2Z_2Jets);
 
         PIDHandler jet2PIDh(input2JetCollection);
 
@@ -185,6 +194,41 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         FloatVec params_y = ythID.getParameters();
         m_yMinus2 = params_y[jet2PIDh.getParameterIndex(algo_y, "y12")];
         m_yPlus2 = params_y[jet2PIDh.getParameterIndex(algo_y, "y34")];
+
+        // flavor tagging
+        int _FTAlgoID = jet2PIDh.getAlgorithmID(m_JetTaggingPIDAlgorithm);
+		int _FTAlgoID2 = m_use_tags2 ? jet2PIDh.getAlgorithmID(m_JetTaggingPIDAlgorithm2) : -1;
+
+        int BTagID = jet2PIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterB);
+        int CTagID = jet2PIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterC);
+
+        int BTagID2 = m_use_tags2 ? jet2PIDh.getParameterIndex(_FTAlgoID2, m_JetTaggingPIDParameterB2) : -1;
+        int CTagID2 = m_use_tags2 ? jet2PIDh.getParameterIndex(_FTAlgoID2, m_JetTaggingPIDParameterC2) : -1;
+
+        // extract flavor tag values
+        for (int i=0; i<2; ++i) {
+            const ParticleIDImpl& jet2PIDhImpl = dynamic_cast<const ParticleIDImpl&>(jet2PIDh.getParticleID(jets_2Jets[i], algo_y));
+            const FloatVec& jet2PIDhPara = jet2PIDhImpl.getParameters();
+
+            m_bTagValues_2Jets[i] = jet2PIDhPara[jet2PIDh.getParameterIndex(algo_y, m_JetTaggingPIDParameterB)];
+
+            if (m_use_tags2) {
+                const ParticleIDImpl& FTImpl2 = dynamic_cast<const ParticleIDImpl&>(jet2PIDh.getParticleID(jets_2Jets[i], _FTAlgoID2));
+                const FloatVec& FTPara2 = FTImpl2.getParameters();
+
+                m_bTagValues_2Jets2[i] = FTPara2[BTagID2];
+            }
+        }
+
+        m_bmax1_2jets = std::max(m_bTagValues_2Jets[0], m_bTagValues_2Jets[1]);
+        m_bmax2_2jets = std::min(m_bTagValues_2Jets[0], m_bTagValues_2Jets[1]);
+
+        if (m_use_tags2) {
+            m_bmax12 = std::max(m_bTagValues_2Jets2[0], m_bTagValues_2Jets2[1]);
+            m_bmax22 = std::min(m_bTagValues_2Jets2[0], m_bTagValues_2Jets2[1]);
+        }
+
+        
 
         // END EVALUATE 2 JET COLLECTION
 

@@ -142,19 +142,45 @@ class PreselectionProcessor:
         
         return self._masks[-1]
     
-    def cutflowPlots(self):
+    def getFinalEventMaskByName(self, source_name:str)->np.ndarray:
+        """Return the post-preselection event mask for a given source name.
+
+        Args:
+            source_name (str): name of the source
+
+        Raises:
+            ValueError: if source name not found in preselection masks
+
+        Returns:
+            np.ndarray: the post-preselection event mask for the given source name
+        """
+        post_presel_mask = None
+        
+        for name, mask in self.getFinalEventMasks():
+            if name == source_name:
+                post_presel_mask = mask
+        
+        if post_presel_mask is None:
+            raise ValueError(f"Source {source_name} not found in preselection masks.")
+        
+        return post_presel_mask
+    
+    def cutflowPlots(self, display:bool=True):
         """Creates plots for signal/background separation
         after each cut. When return_last_calc_dict is True, a separate plot showing the event
         count per category after the last cut is created. Uses signal_categories (list[int])
-        given to process().
+        given to process(). Create multiple PDF files with the plots.
+        
+        Args:
+            display (bool, optional): whether to display the created plots. Defaults to True.
+        
         """
         
-        result = cutflowPlots(self)
+        result = cutflowPlots(self, display)
         self._plot_context = result[0]
         
         return result
         
-    
     def cutflowTable(self, final_state_labels_and_names_or_processes:list[tuple[str,str]|tuple[str,str,str]]):
         return cutflowTable(self, final_state_labels_and_names_or_processes)
     
@@ -169,7 +195,7 @@ class PreselectionProcessor:
         
         return self._plot_context
 
-def cutflowPlots(pp:PreselectionProcessor):
+def cutflowPlots(pp:PreselectionProcessor, display:bool=True):
     assert(pp._signal_categories is not None and pp._masks is not None and pp._calc_dicts is not None and pp._max_before is not None)
     
     return cutflowPlotsFn(pp._signal_categories,
@@ -178,15 +204,17 @@ def cutflowPlots(pp:PreselectionProcessor):
         pp._max_before,
         pp._hypothesis,
         pp._cmap,
-        pp._plot_options)
+        pp._plot_options,
+        display)
 
 def cutflowPlotsFn(signal_categories:list[int],
                  cuts:Sequence[Cut],
                  calc_dicts:list[dict[str, tuple[np.ndarray, np.ndarray]]],
-                 max_before:np.ndarray,
+                 max_before_all:np.ndarray,
                  hypothesis:str,
                  cmap,
-                 plot_options:dict[str, list[dict]]):
+                 plot_options:dict[str, list[dict]],
+                 display:bool):
     
     from zhh import plot_preselection_by_calc_dict, annotate_cut, EventCategories, deepmerge
     
@@ -196,9 +224,9 @@ def cutflowPlotsFn(signal_categories:list[int],
     context = PlotContext(cmap)
     signal_category_names = [EventCategories.inverted[cat] for cat in signal_categories]
     
-    for i, cut in enumerate(cuts[:1]):
+    for i, cut in enumerate(cuts):
         calc_dict = calc_dicts[i]
-        max_before = max_before[i]
+        max_before = max_before_all[i]
         
         plot_kwargs = {
             'bins': 100,
@@ -220,7 +248,12 @@ def cutflowPlotsFn(signal_categories:list[int],
         fig2, axes = plt.subplots(nrows=3, ncols=3, figsize=(18, 18))
         flattened_axes = axes.flatten()
         
-        for j, key in enumerate(list(set(calc_dict.keys()) - set(signal_category_names))[:9]):    
+        categories = list(calc_dict.keys())
+        for sig_cat in signal_category_names:
+            if sig_cat in categories:
+                categories.remove(sig_cat)
+
+        for j, key in enumerate(list(reversed(categories))[:9]):    
             ax = flattened_axes[j]
         
             hist_kwargs_overwrite = {}
@@ -253,6 +286,10 @@ def cutflowPlotsFn(signal_categories:list[int],
             plot_preselection_by_calc_dict(plot_dict, hypothesis=hypothesis, plot_hist_kwargs_overwrite=hist_kwargs_overwrite, **plot_kwargs);
         
         figs_sigvbkg.append(fig2)
+        
+        if not display:
+            plt.close(fig1)
+            plt.close(fig2)
     
     export_figures('cuts.pdf', figs_stacked)
     export_figures('cuts_separate.pdf', figs_sigvbkg)
@@ -295,6 +332,9 @@ def cutflowPlotsFn(signal_categories:list[int],
     update_plot(ax, x_label=None, y_label='Event count', title='Events after full preselection', context=context)
     
     export_figures('after_preselection.pdf', [fig])
+    
+    if not display:
+        plt.close(fig)
     
     return context, figs_stacked, figs_sigvbkg, fig
 

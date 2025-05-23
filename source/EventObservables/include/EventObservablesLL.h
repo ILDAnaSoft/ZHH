@@ -81,9 +81,19 @@ class EventObservablesLL : public EventObservablesBase {
         float m_cosJ12_2Jets{};
         float m_cosJ1Z_2Jets{};
         float m_cosJ2Z_2Jets{};
+		float m_cosJZMax_2Jets{};
 
 		float m_yMinus2{};
 		float m_yPlus2{};
+
+		std::vector<double> m_bTagValues_2Jets{};
+		std::vector<double> m_bTagValues_2Jets2{};
+
+		float m_bmax1_2jets{};
+		float m_bmax2_2jets{};
+
+		float m_bmax12_2jets{};
+		float m_bmax22_2jets{};
 
 		// 4 jet
 		float m_mbmax12{};
