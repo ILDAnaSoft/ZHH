@@ -74,6 +74,7 @@ function zhh_attach_marlin_dlls() {
 	"$REPO_ROOT/source/JetErrorAnalysis/install/lib/libJetErrorAnalysis.so" 
 	"$REPO_ROOT/source/LeptonErrorAnalysis/install/lib/libLeptonErrorAnalysis.so" 
 	"$REPO_ROOT/source/Misclustering/lib/libMisclustering.so"
+	"$REPO_ROOT/source/SwitchCovMat/install/lib/libSwitchCovMat.so"
         #"$MarlinML/lib64/libJetTaggers.so"
         #"$VariablesForDeepMLFlavorTagger/lib/libVariablesForDeepMLFlavorTagger.so"
         #"$BTaggingVariables/lib/libBTaggingVariables.so"

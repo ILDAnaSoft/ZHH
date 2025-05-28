@@ -34,6 +34,7 @@
     <processor name="MyAIDAProcessor" condition="" />
     <processor name="MyAddNeutralPFOCovMatLite" condition="${useneutralpfocorrection}" />
     <processor name="MyChargedPFOCorrection" />
+    <processor name="MySwitchCovMat" />
     <processor name="MyHdecayMode" condition="" />
     <processor name="MyFinalStateRecorder" />
     <processor name="MyCheatedMCOverlayRemoval" />
@@ -106,6 +107,23 @@
     <parameter name="inputPfoCollection" type="string" lcioInType="RECONSTRUCTEDPARTICLE">PandoraPFOs</parameter>
     <!--Names of the Output PFO collection-->
     <parameter name="outputPfoCollection" type="string" lcioOutType="RECONSTRUCTEDPARTICLE">PandoraPFO_updatedNeutralPFOs</parameter>
+    <!--true: Neutral PFOs are taken massive, false: Neutral PFOs are taken massless-->
+    <parameter name="AssumeNeutralPFOMassive" type="bool">true</parameter>
+    <!--true: the cluster energy is interpreted as kinetic energy of PFO, false: the cluster energy is interpreted as momentum magnitude of PFO-->
+    <parameter name="isClusterEnergyKinEnergy" type="bool">false</parameter>
+    <!--true: Update 4-momentum of PFOs, false: set 4-momentum for PFOs same as input PFO-->
+    <parameter name="updatePFO4Momentum" type="bool">false</parameter>
+    <!--true: Use (mathematically) true Jacobian for the option E_cluster = |p|, false: for the option E_cluster = |p|, Use the same jacobian as the option E_cluster = E_kinetic-->
+    <parameter name="useTrueJacobian" type="bool">false</parameter>
+    <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
+    <parameter name="Verbosity" type="string">SILENT</parameter>
+  </processor>
+
+  <processor name="MySwitchCovMat" type="SwitchCovMat">
+    <!--Name of the Input PFO Collection-->
+    <parameter name="inputPfoCollection" type="string" lcioInType="RECONSTRUCTEDPARTICLE">PandoraPFOs</parameter>
+    <!--Names of the Output PFO collection-->
+    <parameter name="outputPfoCollection" type="string" lcioOutType="RECONSTRUCTEDPARTICLE">PandoraPFO_switchcovmat</parameter>
     <!--true: Neutral PFOs are taken massive, false: Neutral PFOs are taken massless-->
     <parameter name="AssumeNeutralPFOMassive" type="bool">true</parameter>
     <!--true: the cluster energy is interpreted as kinetic energy of PFO, false: the cluster energy is interpreted as momentum magnitude of PFO-->
@@ -562,7 +580,7 @@
    <!--parameter name="JetPullsOutputColection" type="string" lcioOutType="LCFloatVec">JetPulls</parameter-->
    <!--parameter name="StartOutputCollection" type="string" lcioOutType="ReconstructedParticle">StartReco</parameter-->
    <!-- verbosity level - DEBUG only works if compiled in debug mode! -->
-   <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> DEBUG </parameter>
+   <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> SILENT </parameter>
  </processor>
 
  <processor name="MyZHHKinFit_zzh" type="ZHHKinFit">
@@ -609,7 +627,7 @@
    <!--parameter name="JetPullsOutputColection" type="string" lcioOutType="LCFloatVec">JetPulls</parameter-->
    <!--parameter name="StartOutputCollection" type="string" lcioOutType="ReconstructedParticle">StartReco</parameter-->
    <!-- verbosity level - DEBUG only works if compiled in debug mode! -->
-   <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> DEBUG </parameter>
+   <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> SILENT </parameter>
  </processor>
  
  <processor name="MyErrorFlow" type="ErrorFlow">
