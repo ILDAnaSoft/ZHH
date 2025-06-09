@@ -2,6 +2,7 @@
 
 # Helper file to submit any batch job
 # must be defined in a sub directory
+# example: ./submit 250-ftag-2025-sgv-perf
 
 JOB_NAME=$1
 START_DIR=$(pwd)
