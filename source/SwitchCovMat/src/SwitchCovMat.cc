@@ -108,10 +108,12 @@ void SwitchCovMat::processEvent( EVENT::LCEvent *pLCEvent )
 	}
 	n_PFO = inputPfoCollection->getNumberOfElements();
 	if ( n_PFO == -1 ) streamlog_out(MESSAGE7) << "	Input PFO collection (" << m_inputPfoCollection << ") has no element (PFO) " << std::endl;
-	streamlog_out(MESSAGE7) << "	Total Number of PFOs: " << n_PFO << std::endl;
+	//streamlog_out(MESSAGE7) << "	Total Number of PFOs: " << n_PFO << std::endl;
 	for (int i_pfo = 0; i_pfo < n_PFO ; ++i_pfo) {
 	  ReconstructedParticleImpl* outputPFO = dynamic_cast<ReconstructedParticleImpl*>( inputPfoCollection->getElementAt( i_pfo ) );
-	  if (outputPFO->getCovMatrix()[9] < 10e10) continue; 
+	  //if (outputPFO->getCovMatrix()[9] < 10e10) continue; 
+	  if (outputPFO->getCovMatrix()[0] < 50 || outputPFO->getCovMatrix()[2] < 50 || outputPFO->getCovMatrix()[5] < 50) continue;
+	  if (( outputPFO->getClusters()).size() == 0 ) continue;
 	  streamlog_out(MESSAGE6) << "" << std::endl;
 	  streamlog_out(MESSAGE6) << "	-------------------------------------------------------" << std::endl;
 	  streamlog_out(MESSAGE6) << "	Processing PFO at index " << i_pfo << std::endl;
@@ -156,13 +158,21 @@ void SwitchCovMat::processEvent( EVENT::LCEvent *pLCEvent )
 	  outputPFOMomentum[ 2 ] = pfoFourMomentum.Pz();
 	  pfoE = pfoFourMomentum.E();
 	  
+	  //Trace of cov mat from track
+	  float tracefromtrack = outputPFO->getCovMatrix()[0]+outputPFO->getCovMatrix()[2]+outputPFO->getCovMatrix()[5]+outputPFO->getCovMatrix()[9];
+	  //Trace of cov mat from cluster
+	  float tracefromcluster = outputCovMatrix[0]+outputCovMatrix[2]+outputCovMatrix[5]+outputCovMatrix[9];
+	  //compare traces and set cov mat with the better trace
+	  streamlog_out(MESSAGE) << "Trace from track   = " << tracefromtrack << std::endl;
+	  streamlog_out(MESSAGE) << "Trace from cluster = " << tracefromcluster << std::endl;
+	  //Also change pfo 4-mom based on cluster?
 	  
 	  // outputPFO->setType(outputPFO->getType());
 	  // outputPFO->setMomentum( outputPFOMomentum );
 	  // outputPFO->setEnergy( pfoE );
 	  // outputPFO->setMass( outputPFO->getMass() );
 	  // outputPFO->setCharge(outputPFO->getCharge());
-	  outputPFO->setCovMatrix( outputCovMatrix );
+	  if (tracefromcluster < tracefromtrack) outputPFO->setCovMatrix( outputCovMatrix );
 	  /* outputPFO->setReferencePoint(outputPFO->getReferencePoint());
 	     for (unsigned int j=0; j<outputPFO->getParticleIDs().size(); ++j) {
 	     ParticleIDImpl* inPID = dynamic_cast<ParticleIDImpl*>(outputPFO->getParticleIDs()[j]);
@@ -348,9 +358,9 @@ void SwitchCovMat::check(EVENT::LCEvent *pLCEvent)
 	{
 		inputPfoCollection = pLCEvent->getCollection(m_inputPfoCollection);
 		outputPfoCollection = pLCEvent->getCollection(m_outputPfoCollection);
-		int n_inputPFOs = inputPfoCollection->getNumberOfElements();
-		int n_outputPFOs = outputPfoCollection->getNumberOfElements();
-		streamlog_out(MESSAGE) << " CHECK : processed event: " << pLCEvent->getEventNumber() << " (Number of inputPFOS: " << n_inputPFOs << " , Number of outputPFOs: " << n_outputPFOs <<")" << std::endl;
+		//int n_inputPFOs = inputPfoCollection->getNumberOfElements();
+		//int n_outputPFOs = outputPfoCollection->getNumberOfElements();
+		//streamlog_out(MESSAGE) << " CHECK : processed event: " << pLCEvent->getEventNumber() << " (Number of inputPFOS: " << n_inputPFOs << " , Number of outputPFOs: " << n_outputPFOs <<")" << std::endl;
 	}
 	catch(DataNotAvailableException &e)
         {
