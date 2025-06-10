@@ -382,7 +382,7 @@
 
     <processor name="JC2FT" type="LcfiplusProcessor">
         <!-- run primary and secondary vertex finders -->
-        <parameter name="Algorithms" type="stringVec"> JetClustering JetVertexRefiner </parameter>
+        <parameter name="Algorithms" type="stringVec"> JetClustering JetVertexRefiner FlavorTag ReadMVA MLInferenceWeaver </parameter>
         <parameter name="Verbosity" type="string">SILENT</parameter>
 
         <!-- general parameters -->
@@ -439,6 +439,74 @@
         <parameter name="JetVertexRefiner.minz0sigSingle" type="double" value="5." />
         <parameter name="JetVertexRefiner.OneVertexProbThreshold" type="double" value="0.001" />
         <parameter name="JetVertexRefiner.MaxCharmFlightLengthPerJetEnergy" type="double" value="0.1" />
+
+        <!-- FlavorTag parameters -->
+        <parameter name="PrimaryVertexCollectionName" type="string" value="PrimaryVertex" />
+        <parameter name="FlavorTag.JetCollectionName" type="string" value="RefinedJets2" />
+        <parameter name="MakeNtuple.AuxiliaryInfo" type="int" value="-1" />
+
+        <!--parameter name="FlavorTag.WeightsDirectory" type="string" value="/afs/desy.de/user/s/skawada/sonas_work/mini-DST/lcfiweights"/--> <!-- e.g. lcfiweights/lcfiweights_6q500_v04_p00_ildl5 -->
+        <!--parameter name="FlavorTag.WeightsPrefix" type="string" value="6q500_v04_p00_ildl5" /--> <!-- e.g. 6q500_v04_p00_ildl5 -->
+        <parameter name="FlavorTag.WeightsDirectory" type="string" value="${ILDConfigDir}/LCFIPlusConfig/lcfiweights"/>
+        <parameter name="FlavorTag.WeightsPrefix" type="string" value="6q500_v04_p00_ildl5" />
+        <parameter name="FlavorTag.BookName" type="string" value="bdt" />
+        <parameter name="FlavorTag.PIDAlgo" type="string" value="lcfiplus" />
+        <!--parameter name="FlavorTag.D0ProbFileName" type="string" value="/afs/desy.de/user/s/skawada/sonas_work/mini-DST/vtxprob/d0probv2_ildl5_6q500.root"/--> <!-- vtxprob/d0probv2_ildl5_6q500.root -->
+        <!--parameter name="FlavorTag.Z0ProbFileName" type="string" value="/afs/desy.de/user/s/skawada/sonas_work/mini-DST/vtxprob/z0probv2_ildl5_6q500.root"/--> <!-- vtxprob/z0probv2_ildl5_6q500.root -->
+        <parameter name="FlavorTag.D0ProbFileName" type="string" value="${ILDConfigDir}/LCFIPlusConfig/vtxprob/d0probv2_ildl5_6q500.root"/>
+        <parameter name="FlavorTag.Z0ProbFileName" type="string" value="${ILDConfigDir}/LCFIPlusConfig/vtxprob/z0probv2_ildl5_6q500.root"/>
+
+        <parameter name="FlavorTag.CategoryDefinition1" type="string">nvtx==0</parameter>
+        <parameter name="FlavorTag.CategoryPreselection1" type="string">trk1d0sig!=0</parameter>
+        <parameter name="FlavorTag.CategoryVariables1" type="stringVec">
+        trk1d0sig trk2d0sig trk1z0sig trk2z0sig trk1pt_jete trk2pt_jete jprobr25sigma jprobz25sigma
+        d0bprob2 d0cprob2 d0qprob2 z0bprob2 z0cprob2 z0qprob2 nmuon nelectron trkmass
+        </parameter>
+        <parameter name="FlavorTag.CategorySpectators1" type="stringVec">
+        aux nvtx
+        </parameter>
+
+        <parameter name="FlavorTag.CategoryDefinition2" type="string">nvtx==1&&nvtxall==1</parameter>
+        <parameter name="FlavorTag.CategoryPreselection2" type="string">trk1d0sig!=0</parameter>
+        <parameter name="FlavorTag.CategoryVariables2" type="stringVec">
+        trk1d0sig trk2d0sig trk1z0sig trk2z0sig trk1pt_jete trk2pt_jete jprobr2 jprobz2
+        vtxlen1_jete vtxsig1_jete vtxdirang1_jete vtxmom1_jete vtxmass1 vtxmult1 vtxmasspc vtxprob
+        d0bprob2 d0cprob2 d0qprob2 z0bprob2 z0cprob2 z0qprob2
+        trkmass nelectron nmuon
+        </parameter>
+        <parameter name="FlavorTag.CategorySpectators2" type="stringVec">
+        aux nvtx
+        </parameter>
+
+        <parameter name="FlavorTag.CategoryDefinition3" type="string">nvtx==1&&nvtxall==2</parameter>
+        <parameter name="FlavorTag.CategoryPreselection3" type="string">trk1d0sig!=0</parameter>
+        <parameter name="FlavorTag.CategoryVariables3" type="stringVec">
+        trk1d0sig trk2d0sig trk1z0sig trk2z0sig trk1pt_jete trk2pt_jete jprobr2 jprobz2
+        vtxlen1_jete vtxsig1_jete vtxdirang1_jete vtxmom1_jete vtxmass1 vtxmult1 vtxmasspc vtxprob
+        1vtxprob vtxlen12all_jete vtxmassall
+        </parameter>
+        <parameter name="FlavorTag.CategorySpectators3" type="stringVec">
+        aux nvtx
+        </parameter>
+
+        <parameter name="FlavorTag.CategoryDefinition4" type="string">nvtx>=2</parameter>
+        <parameter name="FlavorTag.CategoryPreselection4" type="string">trk1d0sig!=0</parameter>
+        <parameter name="FlavorTag.CategoryVariables4" type="stringVec">
+        trk1d0sig trk2d0sig trk1z0sig trk2z0sig trk1pt_jete trk2pt_jete jprobr2 jprobz2
+        vtxlen1_jete vtxsig1_jete vtxdirang1_jete vtxmom1_jete vtxmass1 vtxmult1 vtxmasspc vtxprob
+        vtxlen2_jete vtxsig2_jete vtxdirang2_jete vtxmom2_jete vtxmass2 vtxmult2
+        vtxlen12_jete vtxsig12_jete vtxdirang12_jete vtxmom_jete vtxmass vtxmult
+        1vtxprob
+        </parameter>
+        <parameter name="FlavorTag.CategorySpectators4" type="stringVec">
+        aux nvtx
+        </parameter>
+
+        <parameter name="MLInferenceWeaver.JetCollectionName" type="string" value="RefinedJets2" />
+        <parameter name="MLInferenceWeaver.OutputParameterName" type="string" value="weaver" />
+
+        <parameter name="MLInferenceWeaver.JsonFileName" type="string" value="${LCFIPlusML_JSON}" />
+        <parameter name="MLInferenceWeaver.OnnxFileName" type="string" value="${LCFIPlusML_ONNX}" />
     </processor>
 
     <processor name="MySLDCorrection2J" type="SLDCorrection">

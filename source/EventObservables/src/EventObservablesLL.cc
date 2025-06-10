@@ -47,6 +47,16 @@ void EventObservablesLL::prepareChannelTree() {
         
 
         // 2 jets
+        ttree->Branch("pxj1_2Jets", &m_pxj1_2Jets, "pxj1_2Jets/F");
+		ttree->Branch("pyj1_2Jets", &m_pyj1_2Jets, "pyj1_2Jets/F");
+		ttree->Branch("pzj1_2Jets", &m_pzj1_2Jets, "pzj1_2Jets/F");
+		ttree->Branch("ej1_2Jets", &m_ej1_2Jets, "ej1_2Jets/F");
+
+		ttree->Branch("pxj2_2Jets", &m_pxj2_2Jets, "pxj2_2Jets/F");
+		ttree->Branch("pyj2_2Jets", &m_pyj2_2Jets, "pyj2_2Jets/F");
+		ttree->Branch("pzj2_2Jets", &m_pzj2_2Jets, "pzj2_2Jets/F");
+		ttree->Branch("ej2_2Jets", &m_ej2_2Jets, "ej2_2Jets/F");
+
         ttree->Branch("cosJ1_2Jets", &m_cosJ1_2Jets, "cosJ1_2Jets/F");
         ttree->Branch("cosJ2_2Jets", &m_cosJ2_2Jets, "cosJ2_2Jets/F");
         ttree->Branch("cosJ12_2Jets", &m_cosJ12_2Jets, "cosJ12_2Jets/F");
@@ -60,8 +70,23 @@ void EventObservablesLL::prepareChannelTree() {
         ttree->Branch("ptjmax2", &m_ptjmax2, "ptjmax2/F");
         ttree->Branch("pjmax2", &m_pjmax2, "pjmax2/F");
 
+        ttree->Branch("m_inv_2Jets", &m_m_inv_2Jets, "m_inv_2Jets/F");
+
         ttree->Branch("yminus2", &m_yMinus2, "yminus2/F");
         ttree->Branch("yplus2", &m_yPlus2, "yplus2/F");
+
+        ttree->Branch("bmax1_2Jets", &m_bmax1_2Jets, "bmax1_2Jets/F");
+        ttree->Branch("bmax2_2Jets", &m_bmax2_2Jets, "bmax2_2Jets/F");
+
+        ttree->Branch("bTagValues_2Jets", &m_bTagValues_2Jets);
+
+        if (m_use_tags2) {
+            ttree->Branch("bmax12_2Jets", &m_bmax12_2Jets, "bmax12_2Jets/F");
+            ttree->Branch("bmax22_2Jets", &m_bmax22_2Jets, "bmax22_2Jets/F");
+
+            ttree->Branch("bTagValues_2Jets2", &m_bTagValues_2Jets2);
+        }
+        
 
         // 4 jets
         ttree->Branch("mbmax12", &m_mbmax12, "mbmax12/F");
@@ -93,11 +118,23 @@ void EventObservablesLL::clearChannelValues() {
 	m_mzll_pre_pairing = 0.;
 
     // 2 jets
+    m_pxj1_2Jets = 0.;
+	m_pyj1_2Jets = 0.;
+	m_pzj1_2Jets = 0.;
+	m_ej1_2Jets  = 0.;
+
+    m_pxj2_2Jets = 0.;
+	m_pyj2_2Jets = 0.;
+	m_pzj2_2Jets = 0.;
+	m_ej2_2Jets  = 0.;
+
     m_ptjmin2 = 0.;
     m_pjmin2 = 0.;
 
     m_ptjmax2 = 0.;
     m_pjmax2 = 0.;
+
+    m_m_inv_2Jets = 0.;
 
     m_cosJ1_2Jets = 0.;
 	m_cosJ2_2Jets = 0.;
@@ -167,6 +204,16 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         ROOT::Math::PxPyPzEVector p4J1_2Jets = v4(jets_2Jets[0]);
         ROOT::Math::PxPyPzEVector p4J2_2Jets = v4(jets_2Jets[1]);
 
+        m_pxj1_2Jets = p4J1_2Jets.X();
+        m_pyj1_2Jets = p4J1_2Jets.Y();
+        m_pzj1_2Jets = p4J1_2Jets.Z();
+        m_ej1_2Jets  = p4J1_2Jets.E();
+
+        m_pxj2_2Jets = p4J2_2Jets.X();
+        m_pyj2_2Jets = p4J2_2Jets.Y();
+        m_pzj2_2Jets = p4J2_2Jets.Z();
+        m_ej2_2Jets  = p4J2_2Jets.E();
+
         double pJ1_2Jets = p4J1_2Jets.P();
         double pJ2_2Jets = p4J2_2Jets.P();
 
@@ -175,6 +222,8 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
 
         m_ptjmax2 = std::max(p4J1_2Jets.Pt(), p4J2_2Jets.Pt());
         m_pjmax2 = std::max(pJ1_2Jets, pJ2_2Jets);
+
+        m_m_inv_2Jets = (p4J1_2Jets + p4J2_2Jets).M();
 
         TVector3 momentum1_2Jets = jets_2Jets[0]->getMomentum();
         TVector3 momentum2_2Jets = jets_2Jets[1]->getMomentum();
@@ -193,24 +242,24 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
 
         FloatVec params_y = ythID.getParameters();
         m_yMinus2 = params_y[jet2PIDh.getParameterIndex(algo_y, "y12")];
-        m_yPlus2 = params_y[jet2PIDh.getParameterIndex(algo_y, "y34")];
+        m_yPlus2 = params_y[jet2PIDh.getParameterIndex(algo_y, "y23")];
 
         // flavor tagging
         int _FTAlgoID = jet2PIDh.getAlgorithmID(m_JetTaggingPIDAlgorithm);
 		int _FTAlgoID2 = m_use_tags2 ? jet2PIDh.getAlgorithmID(m_JetTaggingPIDAlgorithm2) : -1;
 
         int BTagID = jet2PIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterB);
-        int CTagID = jet2PIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterC);
+        //int CTagID = jet2PIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterC);
 
         int BTagID2 = m_use_tags2 ? jet2PIDh.getParameterIndex(_FTAlgoID2, m_JetTaggingPIDParameterB2) : -1;
-        int CTagID2 = m_use_tags2 ? jet2PIDh.getParameterIndex(_FTAlgoID2, m_JetTaggingPIDParameterC2) : -1;
+        //int CTagID2 = m_use_tags2 ? jet2PIDh.getParameterIndex(_FTAlgoID2, m_JetTaggingPIDParameterC2) : -1;
 
         // extract flavor tag values
         for (int i=0; i<2; ++i) {
-            const ParticleIDImpl& jet2PIDhImpl = dynamic_cast<const ParticleIDImpl&>(jet2PIDh.getParticleID(jets_2Jets[i], algo_y));
-            const FloatVec& jet2PIDhPara = jet2PIDhImpl.getParameters();
+            const ParticleIDImpl& FTImpl = dynamic_cast<const ParticleIDImpl&>(jet2PIDh.getParticleID(jets_2Jets[i], _FTAlgoID));
+            const FloatVec& FTPara = FTImpl.getParameters();
 
-            m_bTagValues_2Jets[i] = jet2PIDhPara[jet2PIDh.getParameterIndex(algo_y, m_JetTaggingPIDParameterB)];
+            m_bTagValues_2Jets[i] = FTPara[BTagID];
 
             if (m_use_tags2) {
                 const ParticleIDImpl& FTImpl2 = dynamic_cast<const ParticleIDImpl&>(jet2PIDh.getParticleID(jets_2Jets[i], _FTAlgoID2));
@@ -220,12 +269,12 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
             }
         }
 
-        m_bmax1_2jets = std::max(m_bTagValues_2Jets[0], m_bTagValues_2Jets[1]);
-        m_bmax2_2jets = std::min(m_bTagValues_2Jets[0], m_bTagValues_2Jets[1]);
+        m_bmax1_2Jets = std::max(m_bTagValues_2Jets[0], m_bTagValues_2Jets[1]);
+        m_bmax2_2Jets = std::min(m_bTagValues_2Jets[0], m_bTagValues_2Jets[1]);
 
         if (m_use_tags2) {
-            m_bmax12 = std::max(m_bTagValues_2Jets2[0], m_bTagValues_2Jets2[1]);
-            m_bmax22 = std::min(m_bTagValues_2Jets2[0], m_bTagValues_2Jets2[1]);
+            m_bmax12_2Jets = std::max(m_bTagValues_2Jets2[0], m_bTagValues_2Jets2[1]);
+            m_bmax22_2Jets = std::min(m_bTagValues_2Jets2[0], m_bTagValues_2Jets2[1]);
         }
 
         
@@ -240,8 +289,8 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
 
         std::tie(m_zhh_jet_matching, zhh_masses, m_zhh_chi2) = pairJetsByMass(jet_v4, { 25, 25 });
 
-        m_zhh_mh1 = zhh_masses[0];
-        m_zhh_mh2 = zhh_masses[1];
+        m_zhh_mh1 = std::min(zhh_masses[0], zhh_masses[1]);
+        m_zhh_mh2 = std::max(zhh_masses[0], zhh_masses[1]);
         m_zhh_mhh = (jet_v4[0] + jet_v4[1] + jet_v4[2] + jet_v4[3]).M();
 
         std::vector<ROOT::Math::PxPyPzEVector> dijets = {
