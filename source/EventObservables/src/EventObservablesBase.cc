@@ -272,8 +272,11 @@ void EventObservablesBase::prepareBaseTree()
 		ttree->Branch("pjmax", &m_pjmax, "pjmax/F");
 		ttree->Branch("cosjmax", &m_cosjmax, "cosjmax/F");
 
-		ttree->Branch("njets",&m_nJets,"njets/I");
-		ttree->Branch("nisoleptons",&m_nIsoLeps,"nisoleptons/I");
+		ttree->Branch("njets", &m_nJets, "njets/I");
+		ttree->Branch("nisoleptons", &m_nIsoLeps, "nisoleptons/I");
+		ttree->Branch("nisoelectrons", &m_nIsoElectrons, "nisoelectrons/I");
+		ttree->Branch("nisomuons", &m_nIsoMuons, "nisomuons/I");
+		ttree->Branch("nisotaus", &m_nIsoTaus, "nisotaus/I");
 		ttree->Branch("npfos", &m_npfos, "npfos/I");
 		ttree->Branch("lep_types", &m_lep_types);
 
@@ -479,6 +482,9 @@ void EventObservablesBase::clearBaseValues()
 
 	m_nJets = 0;
 	m_nIsoLeps = 0;
+	m_nIsoElectrons = 0;
+	m_nIsoMuons = 0;
+	m_nIsoTaus = 0;
 	m_npfos = 0;
 	m_lep_types.clear();
 
@@ -507,28 +513,8 @@ void EventObservablesBase::clearBaseValues()
 	m_cmax3 = 0.;
 	m_cmax4 = 0.;
 
-	m_bmax1 = 0.;
-	m_bmax2 = 0.;
-	m_bmax3 = 0.;
-	m_bmax4 = 0.;
-
-	m_cmax1 = 0.;
-	m_cmax2 = 0.;
-	m_cmax3 = 0.;
-	m_cmax4 = 0.;
-
 	std::fill(m_bTagValues2.begin(), m_bTagValues2.end(), -1.);
 	std::fill(m_cTagValues2.begin(), m_cTagValues2.end(), -1.);
-
-	m_bmax12 = 0.;
-	m_bmax22 = 0.;
-	m_bmax32 = 0.;
-	m_bmax42 = 0.;
-
-	m_cmax12 = 0.;
-	m_cmax22 = 0.;
-	m_cmax32 = 0.;
-	m_cmax42 = 0.;
 
 	m_bmax12 = 0.;
 	m_bmax22 = 0.;
@@ -633,6 +619,20 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 
 		// ---------- NUMBER OF ISOLATED LEPTONS and PFOs ----------
 		m_nIsoLeps = inputLeptonCollection->getNumberOfElements();
+		for (int i = 0; i < m_nIsoLeps; i++) {
+			ReconstructedParticle* iso_lepton = (ReconstructedParticle*) inputLeptonCollection->getElementAt(i);
+			int type = abs(iso_lepton->getType());
+
+			switch (type) {
+				case 11: m_nIsoElectrons++; break;
+				case 13: m_nIsoMuons++; break;
+				case 15: m_nIsoTaus++; break;
+				default:
+					streamlog_out(WARNING) << "Unknown lepton type: " << type << std::endl;
+					break;
+			}
+		}
+
 		m_npfos = inputPfoCollection->getNumberOfElements();
 
 		// ---------- MISSING PT ----------
@@ -851,10 +851,10 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 		inputJKF_ZHHCollection->parameters().getIntVals("permutation", m_JMK_ZHH);
 		inputJKF_ZZHCollection->parameters().getIntVals("permutation", m_JMK_ZZH);
 
-		if (m_JMK_ZHH.size() >= m_nAskedJets())
+		if (static_cast<int>(m_JMK_ZHH.size()) >= m_nAskedJets())
 			getPermutationIndex(m_JMK_ZHH, m_nAskedJets(), m_JMK_ZHH_perm_idx);
 		
-		if (m_JMK_ZZH.size() >= m_nAskedJets())
+		if (static_cast<int>(m_JMK_ZZH.size()) >= m_nAskedJets())
 			getPermutationIndex(m_JMK_ZZH, m_nAskedJets(), m_JMK_ZZH_perm_idx);
 
 	} catch(DataNotAvailableException &e) {
@@ -1024,7 +1024,7 @@ std::tuple<std::vector<unsigned short>, vector<float>, float> EventObservablesBa
 	}
 
 	return pairJetsByMass(jets, target_masses, target_resolutions, [](
-		const std::vector<ROOT::Math::PxPyPzEVector> jets,
+		const std::vector<ROOT::Math::PxPyPzEVector> jets_in,
 		const std::vector<unsigned short> perm,
 		std::vector<float> &masses,
 		std::vector<float> targets,
@@ -1033,7 +1033,7 @@ std::tuple<std::vector<unsigned short>, vector<float>, float> EventObservablesBa
 			float result = 0;
 			
 			for (size_t i=0; i < masses.size(); i++) {
-				masses[i] = inv_mass(jets[perm[i*2]], jets[perm[i*2 + 1]]);
+				masses[i] = inv_mass(jets_in[perm[i*2]], jets_in[perm[i*2 + 1]]);
 				result += std::pow((masses[i] - targets[i])/resolutions[i], 2);
 			}
 
@@ -1187,7 +1187,7 @@ std::tuple<float, float> EventObservablesBase::jetCharge(ReconstructedParticle* 
 
 	EVENT::ReconstructedParticleVec jetConstituents = jet->getParticles();
 	
-	for (int i=0; i < jetConstituents.size(); i++) {
+	for (size_t i=0; i < jetConstituents.size(); i++) {
 		ReconstructedParticle* pfo = dynamic_cast<ReconstructedParticle*>(jetConstituents[i]);
 
 		// only consider hadronic pfos

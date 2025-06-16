@@ -215,7 +215,7 @@ python $REPO_ROOT/zhh/cli/merge_root_files.py "{output_dirn}" "{",".join(ttrees)
 echo Success""".replace('\n', '  &&  ')
 
 
-class AnalysisCombine_AA(BaseTask, HTCondorWorkflow):
+class AnalysisCombineAA(BaseTask, HTCondorWorkflow):
     dtype = cast(str, luigi.Parameter(default='numpy'))
     
     def workflow_requires(self):

@@ -18,43 +18,51 @@
 
 namespace ZHH {
 
-void doPhotonRecovery(ReconstructedParticle *electron, LCCollection *colPFO, ReconstructedParticleImpl *recoElectron, Double_t fCosFSRCut, 
-		      Int_t lepType, std::vector<lcio::ReconstructedParticle*> &photons) {
-  //streamlog_out(MESSAGE) << "Ladida hfskdafk" << std::endl;
+void doPhotonRecovery(ReconstructedParticle *lepton, LCCollection *colPFO, ReconstructedParticleImpl *recoLepton, Double_t fCosFSRCut, 
+  Int_t lepType, std::vector<lcio::ReconstructedParticle*> &photons) {
+  
   // recover the BS and FSR photons
-  TLorentzVector lortzElectron = TLorentzVector(electron->getMomentum(),electron->getEnergy());
-  std::vector<float> electronCovMat = electron->getCovMatrix();
-  recoElectron->addParticle(electron);
+  TLorentzVector lortzLepton = TLorentzVector(lepton->getMomentum(), lepton->getEnergy());
+  std::vector<float> leptonCovMat = lepton->getCovMatrix();
+  recoLepton->addParticle(lepton);
   Int_t nPFOs = colPFO->getNumberOfElements();
-  for (Int_t i=0;i<nPFOs;i++) {
+
+  for (Int_t i=0; i<nPFOs; i++) {
     ReconstructedParticle *recPart = dynamic_cast<ReconstructedParticle*>(colPFO->getElementAt(i));
-    if (recPart == electron) continue;
-    if (isolep::isFoundInVector(recPart,photons)) continue;
-    Bool_t isFSR = isolep::getFSRTag(electron,recPart,fCosFSRCut);
-    if (! isFSR) continue;
+    if (recPart == lepton)
+      continue;
+
+    if (isolep::isFoundInVector(recPart, photons))
+      continue;
+    
+    Bool_t isFSR = isolep::getFSRTag(lepton, recPart, fCosFSRCut);
+    if (!isFSR)
+      continue;
+
     photons.push_back(recPart);
-    recoElectron->addParticle(recPart);
+    recoLepton->addParticle(recPart);
     if (lepType == 11) {
       // do split algorithm only for electron
-      Bool_t isSplit = isolep::getSplitTag(electron,recPart);
+      Bool_t isSplit = isolep::getSplitTag(lepton, recPart);
       if (isSplit) continue;
     }
-    else if (lepType == 13) {
-    }
-    lortzElectron += TLorentzVector(recPart->getMomentum(),recPart->getEnergy());
-    std::transform(electronCovMat.begin(), electronCovMat.end(), recPart->getCovMatrix().begin(), 
-		   electronCovMat.begin(), std::plus<float>());
+    lortzLepton += TLorentzVector(recPart->getMomentum(), recPart->getEnergy());
+    
+    std::transform(leptonCovMat.begin(), leptonCovMat.end(), recPart->getCovMatrix().begin(), 
+      leptonCovMat.begin(), std::plus<float>());
   }
-  Double_t energy = lortzElectron.E();
-  Double_t mass   = lortzElectron.M();
-  Double_t momentum[3] = {lortzElectron.Px(),lortzElectron.Py(),lortzElectron.Pz()};
-  Double_t charge = electron->getCharge();
-  recoElectron->setMomentum(momentum);
-  recoElectron->setEnergy(energy);
-  recoElectron->setMass(mass);
-  recoElectron->setCharge(charge);
-  recoElectron->setType(94);
-  recoElectron->setCovMatrix(electronCovMat);
+
+  Double_t energy = lortzLepton.E();
+  Double_t mass   = lortzLepton.M();
+  Double_t momentum[3] = {lortzLepton.Px(), lortzLepton.Py(), lortzLepton.Pz()};
+  Double_t charge = lepton->getCharge();
+  recoLepton->setMomentum(momentum);
+  recoLepton->setEnergy(energy);
+  recoLepton->setMass(mass);
+  recoLepton->setCharge(charge);
+  recoLepton->setType(lepType);
+  recoLepton->setCovMatrix(leptonCovMat);
+  
 }
 
 } // namespace mylib

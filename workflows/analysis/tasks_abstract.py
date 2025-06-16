@@ -106,8 +106,8 @@ class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         cmd =  f'source $REPO_ROOT/setup.sh'
         cmd += f' && echo "Starting Marlin at $(date)"'
         cmd += f' && mkdir -p "{temp}" && cd "{temp}"'
-            
-        str_max_record_number = f' --global.MaxRecordNumber={str(n_events_max)}' if (n_events_max is not None and n_events_max != 0)  else ''
+        
+        str_max_record_number = f' --global.MaxRecordNumber={str(n_events_max)}' if n_events_max is not None else ''
         str_skip_n_events = f' --global.SkipNEvents={str(n_events_skip)}' if (n_events_skip is not None and n_events_skip != 0) else ''
         
         cmd += f' && ( {executable} {steering_file} {self.parse_marlin_constants()} {self.parse_marlin_globals()}{str_max_record_number}{str_skip_n_events} --global.LCIOInputFiles={input_file} || true )'

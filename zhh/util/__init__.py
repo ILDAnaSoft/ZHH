@@ -5,3 +5,4 @@ from .OptionDict import OptionDict
 from .PlotContext import PlotContext
 from .get_matplotlib_fonts import get_matplotlib_fonts, resolve_fonts
 from .LazyTablelike import LazyTablelike, MixedLazyTablelike
+from .deepmerge import deepmerge

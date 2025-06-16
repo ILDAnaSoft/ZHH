@@ -118,7 +118,11 @@ class HTCondorWorkflow(law.contrib.htcondor.HTCondorWorkflow):
 class AnalysisConfiguration:
     tag:str
     cuts:Literal['llbbbb', 'vvbbbb', 'qqbbbb']
-
+    
+    # possible entries: MarlinJob
+    # e.g. 'MarlinJob': { 'analysis_runtime_n_files_to_process': 0, 'steering_file': 'some path.xml' }
+    task_kwargs:dict[str, dict] = {}
+    
     # whizard_options: should return a list of whizard option entries,
     # where one entry is for each process to generate
     whizard_options:Optional[list[WhizardOption]] = None

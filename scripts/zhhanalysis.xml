@@ -23,6 +23,8 @@
     <constant name="WhichSignature" value="llbbbb"/>
     <constant name="MCParticleCollectionName" value="MCParticlesSkimmed" />
     <constant name="errorflowconfusion" value="true" />
+    <constant name="propagateerrorflowconfusion" value="true" />
+    <constant name="useneutralpfocorrection" value="True"/>
     <constant name="displayEvent" value="false" />
     <constant name="Verbosity" value="DEBUG"/>
   </constants>
@@ -30,8 +32,9 @@
   <execute>
     <processor name="InitDD4hep" condition="" />
     <processor name="MyAIDAProcessor" condition="" />
-    <processor name="MyAddNeutralPFOCovMatLite" condition="" />
+    <processor name="MyAddNeutralPFOCovMatLite" condition="${useneutralpfocorrection}" />
     <processor name="MyChargedPFOCorrection" />
+    <processor name="MySwitchCovMat" />
     <processor name="MyHdecayMode" condition="" />
     <processor name="MyFinalStateRecorder" />
     <processor name="MyCheatedMCOverlayRemoval" />
@@ -44,15 +47,16 @@
       <processor name="MySLDCorrection" condition="" />
       <processor name="MyErrorFlow"/>
       <if condition="MyHdecayMode.GoodEvent">
+	<processor name="MyZHHKinFit_nmc" />
 	<processor name="MyZHHKinFit_solveNu" />
 	<processor name="MyZHHKinFit_zhh" />
 	<processor name="MyZHHKinFit_zzh" />
-	<!--processor name="MyTrueJet"/> 
-	<processor name="MyMisclustering" />
-	<processor name="MyJetErrorAnalysis" condition="" />
+	<!--processor name="MyTrueJet"/--> 
+	<!--processor name="MyMisclustering" /-->
+	<!--processor name="MyJetErrorAnalysis" condition="" />
 	<processor name="MyJetwNuErrorAnalysis" condition="" />
-	<processor name="MyLeptonErrorAnalysis" condition="" />	
-	<processor name="MyZinvisibleErrorAnalysis"/-->
+	<processor name="MyLeptonErrorAnalysis" condition="" /-->	
+	<!--processor name="MyZinvisibleErrorAnalysis"/-->
       </if>
     </if>
     <processor name="MyPreSelection"/>
@@ -115,9 +119,27 @@
     <parameter name="Verbosity" type="string">SILENT</parameter>
   </processor>
 
+  <processor name="MySwitchCovMat" type="SwitchCovMat">
+    <!--Name of the Input PFO Collection-->
+    <parameter name="inputPfoCollection" type="string" lcioInType="RECONSTRUCTEDPARTICLE">PandoraPFOs</parameter>
+    <!--Names of the Output PFO collection-->
+    <parameter name="outputPfoCollection" type="string" lcioOutType="RECONSTRUCTEDPARTICLE">PandoraPFO_switchcovmat</parameter>
+    <!--true: Neutral PFOs are taken massive, false: Neutral PFOs are taken massless-->
+    <parameter name="AssumeNeutralPFOMassive" type="bool">true</parameter>
+    <!--true: the cluster energy is interpreted as kinetic energy of PFO, false: the cluster energy is interpreted as momentum magnitude of PFO-->
+    <parameter name="isClusterEnergyKinEnergy" type="bool">false</parameter>
+    <!--true: Update 4-momentum of PFOs, false: set 4-momentum for PFOs same as input PFO-->
+    <parameter name="updatePFO4Momentum" type="bool">false</parameter>
+    <!--true: Use (mathematically) true Jacobian for the option E_cluster = |p|, false: for the option E_cluster = |p|, Use the same jacobian as the option E_cluster = E_kinetic-->
+    <parameter name="useTrueJacobian" type="bool">false</parameter>
+    <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
+    <parameter name="Verbosity" type="string">SILENT</parameter>
+  </processor>
+
   <processor name="MyChargedPFOCorrection" type="ChargedPFOCorrection">
     <!--Name of the Input PFO Collection-->
     <parameter name="PfoCollection" type="string" lcioInType="RECONSTRUCTEDPARTICLE">PandoraPFOs</parameter>
+    <parameter name="Verbosity" type="string">SILENT</parameter>
   </processor>
   
   <processor name="MyHdecayMode" type="HdecayMode">
@@ -126,17 +148,17 @@
     <parameter name="HdecayModeCollection" type="string" lcioOutType="MCParticle">HdecayMode </parameter>
     <!--Number of Higgs decays (default: 2) -->
     <parameter name="nHiggs" type="int"> ${NumberOfHiggs} </parameter>
-    <parameter name="outputFilename" type="string">${OutputDirectory}/${OutputBaseName}_HdecayMode.root</parameter>
+    <parameter name="outputFilename" type="string">${OutputDirectory}/HdecayMode/${OutputBaseName}_HdecayMode.root</parameter>
     <parameter name="Verbosity" type="string">MESSAGE </parameter>
   </processor>
 
   <processor name="MyFinalStateRecorder" type="FinalStateRecorder">
     <!--MyFinalStateRecorder identified events that have passed the preselection-->
     <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
-    <parameter name="outputRootFilename" type="string">${OutputDirectory}/${OutputBaseName}_FinalStates.root</parameter>
-    <parameter name="outputJsonFilename" type="string">${OutputDirectory}/${OutputBaseName}_FinalStateMeta.json</parameter>  
+    <parameter name="outputRootFilename" type="string">${OutputDirectory}/FinalStates/${OutputBaseName}_FinalStates.root</parameter>
+    <parameter name="outputJsonFilename" type="string">${OutputDirectory}/FinalStateMeta/${OutputBaseName}_FinalStateMeta.json</parameter>  
     <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-    <parameter name="Verbosity" type="string">DEBUG</parameter>
+    <parameter name="Verbosity" type="string">SILENT</parameter>
   </processor>
 
   <processor name="MyTrueJet" type="TrueJet">
@@ -207,7 +229,7 @@
      <parameter name="PandoraPFOsWithoutLepPair" type="string" lcioOutType="ReconstructedParticle">PandoraPFOsWithoutLepPair</parameter>
      <parameter name="IsoLeptonPair" type="string" lcioOutType="ReconstructedParticle">IsoLeptonPair</parameter>
      <parameter name="fillRootTree" type="bool">true</parameter>
-    <parameter name="RootFile" type="string">${OutputDirectory}/${OutputBaseName}_LeptonPairing.root</parameter>
+    <parameter name="RootFile" type="string">${OutputDirectory}/LeptonPairing/${OutputBaseName}_LeptonPairing.root</parameter>
     <parameter name="Verbosity" type="string">MESSAGE</parameter>
   </processor>
 
@@ -357,9 +379,9 @@
     <!--predefined preselection available for llbbbb, vvbbbb, and qqbbbb-->
     <parameter name="whichPreselection"> ${WhichSignature} </parameter>
     <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
-    <parameter name="outputFilename" type="string">${OutputDirectory}/${OutputBaseName}_PreSelection.root</parameter>
+    <parameter name="outputFilename" type="string">${OutputDirectory}/PreSelection/${OutputBaseName}_PreSelection.root</parameter>
     <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-    <parameter name="Verbosity" type="string">DEBUG0</parameter>
+    <parameter name="Verbosity" type="string">SILENT</parameter>
   </processor>
   
   
@@ -411,13 +433,60 @@
     <parameter name="sigmaAlphaNu" type="float">0.100</parameter>
     <parameter name="sigmaENu" type="float">4.00</parameter>
     <parameter name="displayEvent" type="bool">false</parameter>
-    <parameter name="fillRootTree" type="bool">true</parameter>
-    <parameter name="RootFile" type="string">${OutputDirectory}/${OutputBaseName}_SLDCorrection.root</parameter>
+    <parameter name="fillRootTree" type="bool">false</parameter>
+    <parameter name="RootFile" type="string">${OutputDirectory}/SLDCorrection/${OutputBaseName}_SLDCorrection.root</parameter>
     <parameter name="BSLDMode" type="int">1</parameter>
     <parameter name="CSLDMode" type="int">1</parameter>
    <parameter name="TSLDMode" type="int">1</parameter>
    <parameter name="SLDMode" type="int">1</parameter>
-   <parameter name="Verbosity" type="string">DEBUG</parameter>
+   <parameter name="Verbosity" type="string">SILENT</parameter>
+ </processor>
+ 
+ <processor name="MyZHHKinFit_nmc" type="ZHHKinFit">
+   <!--ZHHKinFit does a fit on ZHH events with 4-momentum conservation and possiblity for mass constraints-->
+   <!--Name of the input collections: leptons, jets, SLD vertices, Jet-SLDvertex relations, and SLDvertex-neutrino relations -->
+   <parameter name="LeptonCollectionName" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
+   <parameter name="JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets</parameter>
+   <parameter name="SLDVertexCollection" type="string" lcioInType="Vertex">SemiLeptonicDecayVertex</parameter>
+   <parameter name="JetSLDRelationCollection" type="string" lcioInType="LCRelation">JetSLDLink</parameter>
+   <parameter name="SLDNeutrinoRelationCollection" type="string" lcioInType="LCRelation">SLDNuLink</parameter>
+   <parameter name="recoNumcNuLinkName" type="string" lcioInType="LCRelation">recoNumcNuLink</parameter>
+   <parameter name="whichSignature" type="string"> ${WhichSignature} </parameter>
+   <!-- center-of-mass energy (default: 500.) -->
+   <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
+   <!-- maximum energy (=|p_z|) for a single ISR photon  (default: 125.6) -->
+   <parameter name="ISRPzMax" type="float"> ${ISRPzMax} </parameter>
+   <!-- include ISR in fit hypothesis?    0: false >0: true (default) -->
+   <parameter name="includeISR" type="bool">true</parameter>
+   <!-- solve nu correction? -->
+   <parameter name="solveNuCorrection" type="bool">false</parameter>
+   <!-- 0 = OPALFitter, 1 = NewFitter, 2 = NewtonFitter (default: 0) -->
+   <parameter name="fitter" type="int"> 1 </parameter>
+   <!-- name of fit hypothesis: MH, ZHH, ZZH, equal mass (default), NMC (no mass constraint) -->
+   <parameter name="fithypothesis">NMC</parameter>
+   <!-- name of Output root file -->
+   <parameter name="outputFilename">${OutputDirectory}/Kinfit_nmc/${OutputBaseName}_Kinfit_nmc.root</parameter>
+   <!-- Factor for scaling up inverse pT error for leptons (default: 1)-->
+   <parameter name="SigmaInvPtScaleFactor" type="float"> 1.1 </parameter>
+   <!-- Factor for scaling up energy error for jets (default: 1)-->
+   <parameter name="SigmaEnergyScaleFactor" type="float"> 1.4 </parameter>
+   <!-- Factor for scaling up angular errors jets (default: 1)-->
+   <parameter name="SigmaAnglesScaleFactor" type="float"> 1.4 </parameter>
+   <!-- set true if every event should be traced in DEBUG mode (default: false) -->
+   <parameter name="traceall" type="bool"> false </parameter>
+   <!-- number of individual event to be traced (default: -1) -->
+   <parameter name="ievttrace" type="int"> -1 </parameter>
+   <!-- Matching true jet with reco jet: TRUE = jets with closest angle are matched , FALSE = jets containing same leading particle are matched-->
+   <!-- Name of output collection-->
+   <parameter name="outputLeptonCollection" type="string" lcioOutType="ReconstructedParticle">LeptonsKinFit_nmc</parameter>
+   <parameter name="outputJetCollection" type="string" lcioOutType="ReconstructedParticle">JetsKinFit_nmc</parameter>
+   <parameter name="outputStartLeptonCollection" type="string" lcioOutType="ReconstructedParticle">LeptonsPreFit_nmc</parameter>
+   <parameter name="outputStartJetCollection" type="string" lcioOutType="ReconstructedParticle">JetsPreFit_nmc</parameter>
+   <!--parameter name="LeptonPullsOutputColection" type="string" lcioOutType="LCFloatVec">LeptonPulls</parameter-->
+   <!--parameter name="JetPullsOutputColection" type="string" lcioOutType="LCFloatVec">JetPulls</parameter-->
+   <!--parameter name="StartOutputCollection" type="string" lcioOutType="ReconstructedParticle">StartReco</parameter-->
+   <!-- verbosity level - DEBUG only works if compiled in debug mode! -->
+   <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> SILENT </parameter>
  </processor>
  
  <processor name="MyZHHKinFit_solveNu" type="ZHHKinFit">
@@ -443,7 +512,7 @@
    <!-- name of fit hypothesis: MH, ZHH, ZZH, equal mass (default), NMC (no mass constraint) -->
    <parameter name="fithypothesis">NMC</parameter>
    <!-- name of Output root file -->
-   <parameter name="outputFilename">${OutputDirectory}/${OutputBaseName}_Kinfit_solveNu.root</parameter>
+   <parameter name="outputFilename">${OutputDirectory}/Kinfit_solveNu/${OutputBaseName}_Kinfit_solveNu.root</parameter>
    <!-- Factor for scaling up inverse pT error for leptons (default: 1)-->
    <parameter name="SigmaInvPtScaleFactor" type="float"> 1.1 </parameter>
    <!-- Factor for scaling up energy error for jets (default: 1)-->
@@ -490,7 +559,7 @@
    <!-- name of fit hypothesis: MH, ZHH, ZZH, equal mass (default), NMC (no mass constraint) -->
    <parameter name="fithypothesis">ZHH</parameter>
    <!-- name of Output root file -->
-   <parameter name="outputFilename">${OutputDirectory}/${OutputBaseName}_Kinfit_zhh.root</parameter>
+   <parameter name="outputFilename">${OutputDirectory}/Kinfit_zhh/${OutputBaseName}_Kinfit_zhh.root</parameter>
    <!-- Factor for scaling up inverse pT error for leptons (default: 1)-->
    <parameter name="SigmaInvPtScaleFactor" type="float"> 1.1 </parameter>
    <!-- Factor for scaling up energy error for jets (default: 1)-->
@@ -511,7 +580,7 @@
    <!--parameter name="JetPullsOutputColection" type="string" lcioOutType="LCFloatVec">JetPulls</parameter-->
    <!--parameter name="StartOutputCollection" type="string" lcioOutType="ReconstructedParticle">StartReco</parameter-->
    <!-- verbosity level - DEBUG only works if compiled in debug mode! -->
-   <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> DEBUG </parameter>
+   <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> SILENT </parameter>
  </processor>
 
  <processor name="MyZHHKinFit_zzh" type="ZHHKinFit">
@@ -537,7 +606,7 @@
    <!-- name of fit hypothesis: MH, ZHH, ZZH, equal mass (default), NMC (no mass constraint) -->
    <parameter name="fithypothesis">ZZH</parameter>
    <!-- name of Output root file -->
-   <parameter name="outputFilename">${OutputDirectory}/${OutputBaseName}_Kinfit_zzh.root</parameter>
+   <parameter name="outputFilename">${OutputDirectory}/Kinfit_zzh/${OutputBaseName}_Kinfit_zzh.root</parameter>
    <!-- Factor for scaling up inverse pT error for leptons (default: 1)-->
    <parameter name="SigmaInvPtScaleFactor" type="float"> 1.1 </parameter>
    <!-- Factor for scaling up energy error for jets (default: 1)-->
@@ -567,7 +636,7 @@
    <parameter name="OutputPFOCollection" type="string" lcioOutType="ReconstructedParticle">OutputErrorFlowJets</parameter>
    <parameter name="useFullCovMatforNeutrals" type="bool">true</parameter>
    <parameter name="EnableConfusionTerm" type="bool">${errorflowconfusion}</parameter>
-   <parameter name="PropagateConfusion2Mom" type="bool">true</parameter>
+   <parameter name="PropagateConfusion2Mom" type="bool">${propagateerrorflowconfusion}</parameter>
     <parameter name="CovMatFactorPhotons" type="double">1.3</parameter>
     <parameter name="CovMatFactorNeutralHadrons" type="double">1.8</parameter>
     <parameter name="Verbosity" type="string">MESSAGE</parameter>
@@ -576,7 +645,7 @@
   <processor name="MyMisclustering" type="Misclustering">
     <parameter name="RecoJetCollection" type="string" lcioInType="ReconstructedParticle">RefinedJets</parameter>
     <parameter name="matchMethod" type="int">0</parameter>
-    <parameter name="outputFilename" type="string">${OutputDirectory}/${OutputBaseName}_Misclustering.root</parameter>
+    <parameter name="outputFilename" type="string">${OutputDirectory}/Misclustering/${OutputBaseName}_Misclustering.root</parameter>
     <parameter name="Verbosity" type="string">SILENT</parameter>
   </processor>
 
@@ -585,10 +654,10 @@
     <parameter name="RecoJetCollection" type="string" lcioInType="ReconstructedParticle">RefinedJets</parameter>
     <parameter name="matchMethod" type="int">0</parameter>
     <!--Name of the output collections-->
-    <parameter name="outputFilename" type="string">${OutputDirectory}/${OutputBaseName}_JetErrorAnalysis.root</parameter>
+    <parameter name="outputFilename" type="string">${OutputDirectory}/JetErrorAnalysis/${OutputBaseName}_JetErrorAnalysis.root</parameter>
     <parameter name="JetResidualsOutputCollection" type="string" lcioOutType="LCFloatVec">JetResiduals </parameter>
     <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-    <parameter name="Verbosity" type="string">MESSAGE</parameter>
+    <parameter name="Verbosity" type="string">SILENT</parameter>
   </processor>
 
   <processor name="MyJetwNuErrorAnalysis" type="JetErrorAnalysis">
@@ -596,10 +665,10 @@
     <parameter name="RecoJetCollection" type="string" lcioInType="ReconstructedParticle">JetsPreFit_solveNu</parameter>
     <parameter name="matchMethod" type="int">0</parameter>
     <!--Name of the output collections-->
-    <parameter name="outputFilename" type="string">${OutputDirectory}/${OutputBaseName}_JetwNuErrorAnalysis.root</parameter>
+    <parameter name="outputFilename" type="string">${OutputDirectory}/JetwNuErrorAnalysis/${OutputBaseName}_JetwNuErrorAnalysis.root</parameter>
     <parameter name="JetResidualsOutputCollection" type="string" lcioOutType="LCFloatVec">JetwNuResiduals </parameter>
     <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-    <parameter name="Verbosity" type="string">MESSAGE</parameter>
+    <parameter name="Verbosity" type="string">SILENT</parameter>
   </processor>
   
   <processor name="MyLeptonErrorAnalysis" type="LeptonErrorAnalysis">
@@ -610,10 +679,10 @@
     <parameter name="TrackMCTruthLinkCollection" type="string" lcioInType="LCRelation">MarlinTrkTracksMCTruthLink</parameter>
     <parameter name="MCTruthTrackLinkCollection" type="string" lcioInType="LCRelation">MCTruthMarlinTrkTracksLink</parameter>
     <!--Name of the output collections-->
-    <parameter name="outputFilename" type="string">${OutputDirectory}/${OutputBaseName}_LeptonErrorAnalysis.root</parameter>
+    <parameter name="outputFilename" type="string">${OutputDirectory}/LeptonErrorAnalysis/${OutputBaseName}_LeptonErrorAnalysis.root</parameter>
     <parameter name="LeptonResidualsOutputCollection" type="string" lcioOutType="LCFloatVec">LeptonResiduals</parameter>
     <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-    <parameter name="Verbosity" type="string">MESSAGE</parameter>
+    <parameter name="Verbosity" type="string">SILENT</parameter>
   </processor>
   
   <processor name="MyZinvisibleErrorAnalysis" type="ZinvisibleErrorAnalysis">
@@ -621,9 +690,9 @@
     <parameter name="InputJetCollection" type="string" lcioInType="ReconstructedParticle">RefinedJets</parameter>
     <parameter name="RecoParticleCollection" type="string" lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
     <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
-    <parameter name="outputFilename" type="string">${OutputDirectory}/${OutputBaseName}_ZinvisibleErrorAnalysis.root</parameter>
+    <parameter name="outputFilename" type="string">${OutputDirectory}/ZinvisibleErrorAnalysis/${OutputBaseName}_ZinvisibleErrorAnalysis.root</parameter>
     <parameter name="ZinvisibleResidualsOutputCollection" type="string" lcioOutType="LCFloatVec">ZinvisibleResiduals</parameter>
-    <parameter name="Verbosity" type="string">DEBUG</parameter>
+    <parameter name="Verbosity" type="string">SILENT</parameter>
   </processor>
 
   <processor name="MyLCIOOutputProcessor" type="LCIOOutputProcessor">
@@ -637,7 +706,7 @@
     <!--force keep of the named collections - overrules DropCollectionTypes (and DropCollectionNames)-->
     <parameter name="KeepCollectionNames" type="StringVec"> BuildUpVertex BuildUpVertex_RP BuildUpVertex_V0 BuildUpVertex_V0_RP recoNeutrinos SemiLeptonicDecay_RP SemiLeptonicDecayVertex PandoraClusters MarlinTrkTracks MarlinTrkTracksKaon MarlinTrkTracksProton JetSLDLink SLDJetLink mcNurecoNuLink recoNumcNuLink NuSLDLink SLDNuLink PandoraPFOs PFOsWithoutOverlay IsolatedLeptons ISOLeptons PandoraPFOsWithoutLepPair PandoraPFOsWithoutIsoLep RefinedJets PreSelection TrueJets FinalColourNeutrals InitialColourNeutrals TrueJetPFOLink TrueJetMCParticleLink FinalElementonLink InitialElementonLink FinalColourNeutralLink InitialColourNeutralLink HdecayMode </parameter>
     <!-- name of output file -->
-    <parameter name="LCIOOutputFile" type="string">${OutputDirectory}/${OutputBaseName}.slcio</parameter>
+    <parameter name="LCIOOutputFile" type="string">${OutputDirectory}/slcio/${OutputBaseName}.slcio</parameter>
     <!--write mode for output file:  WRITE_APPEND or WRITE_NEW-->
     <parameter name="LCIOWriteMode" type="string">WRITE_NEW</parameter>
     <!--will split output file if size in kB exceeds given value - doesn't work with APPEND and NEW-->

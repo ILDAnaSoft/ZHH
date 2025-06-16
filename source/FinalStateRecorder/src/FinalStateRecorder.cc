@@ -412,6 +412,14 @@ void FinalStateRecorder::init()
 	this->register_process(new p6_llWW_llxyyx());
 	this->register_process(new p6_llWW_llvllv());
 
+	this->register_process(new p6_inclusive_xxxxxx());
+	this->register_process(new p6_inclusive_xxxyyx());
+	this->register_process(new p6_inclusive_yycyyc());
+	this->register_process(new p6_inclusive_yycyyu());
+	this->register_process(new p6_inclusive_yyuyyc());
+	this->register_process(new p6_inclusive_yyuyyu());
+	this->register_process(new p6_inclusive_yyyyyy());
+
 	// inclusive 6f mc-2025 production
 	this->register_process(new p6_inclusive_eeeexx());
 	this->register_process(new p6_inclusive_eeeeyy());

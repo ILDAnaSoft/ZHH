@@ -11,11 +11,15 @@ class Cut():
     def __init__(self, quantity:str, label:Optional[str]=None):
         self.quantity = quantity
         self.label = quantity if label is None else label
+        self.type:int|None = None
         
     def __call__(self, arg):
         raise NotImplementedError('Method __call__ not implemented')
     
-    def formula(self):
+    def raw(self, arg):
+        raise NotImplementedError('Method raw not implemented')
+    
+    def formula(self, unit:Optional[str]=None):
         raise NotImplementedError('Method formula not implemented')
     
     def __repr__(self):
@@ -29,7 +33,10 @@ class EqualCut(Cut):
         self.type = CutTypes.CUT_EQ
     
     def __call__(self, arg):
-        return arg[self.quantity] == self.value
+        return self.raw(arg[self.quantity])
+    
+    def raw(self, arg):
+        return arg == self.value
     
     def formula(self, unit:Optional[str]=None):
         return f"{self.label}{'' if unit is None else ('/' + unit)} = {self.value}"
@@ -41,16 +48,21 @@ class WindowCut(Cut):
         super().__init__(quantity, **cut_kwargs)
         
         if center:
-            self.lower = val1 - val2/2
-            self.upper = val1 + val2/2
-        else:
-            self.lower = val1
-            self.upper = val2
+            self.lower = val1 - val2 / 2
+            self.upper = val1 + val2 / 2
+        else:        
+            self.lower = min(val1, val2)
+            self.upper = max(val1, val2)
+            
+        assert(self.upper > self.lower)
             
         self.type = CutTypes.CUT_WINDOW
     
     def __call__(self, arg):
-        return (self.lower <= arg[self.quantity]) & (arg[self.quantity] <= self.upper)
+        return self.raw(arg[self.quantity])
+    
+    def raw(self, arg):
+        return (self.lower <= arg) & (arg <= self.upper)
     
     def formula(self, unit:Optional[str]=None):
         return f"{self.lower} <= {self.label}{'' if unit is None else ('/' + unit)} <= {self.upper}"
@@ -63,7 +75,10 @@ class GreaterThanEqualCut(Cut):
         self.type = CutTypes.CUT_GTE
         
     def __call__(self, arg):
-        return self.lower <= arg[self.quantity]
+        return self.raw(arg[self.quantity])
+
+    def raw(self, arg):
+        return self.lower <= arg
     
     def formula(self, unit:Optional[str]=None):
         return f"{self.label}{'' if unit is None else ('/' + unit)} >= {self.lower}"
@@ -76,7 +91,10 @@ class LessThanEqualCut(Cut):
         self.type = CutTypes.CUT_LTE
         
     def __call__(self, arg):
-        return arg[self.quantity] <= self.upper
+        return self.raw(arg[self.quantity])
+    
+    def raw(self, arg):
+        return arg <= self.upper
     
     def formula(self, unit:Optional[str]=None):
         return f"{self.label}{'' if unit is None else ('/' + unit)} <= {self.upper}"

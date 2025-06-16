@@ -146,6 +146,10 @@ struct PROCESS_ID {
 		f6_yyvlev = 7011,
 		f6_yyveev = 7012,
 
+		f6_xxxxxx = 7013,
+		f6_xxxyyx = 7014,
+		f6_yyyyyy = 7015,
+
 		f6_eeeexx = 7021,
 		f6_eeeeyy = 7022,
 		f6_eeevxy = 7023,
@@ -338,7 +342,7 @@ struct EVENT_CATEGORY_TRUE {
 		f6_yyyyZ = 95,
 		f6_xxWW = 96,
 		f6_xxxxZ = 97,
-		OTHER_F6 = 98,
+		F6_OTHER = 98,
 	};
 };
 

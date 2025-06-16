@@ -293,6 +293,10 @@ void ZHHKinFit::init()
   m_pTTree->Branch("BSEnergyTrue",&m_BSEnergyTrue,"BSEnergyTrue/F") ;
   m_pTTree->Branch("HHMassHardProcess",&m_HHMassHardProcess,"HHMassHardProcess/F") ;
   m_pTTree->Branch( "FitErrorCode" , &m_FitErrorCode , "FitErrorCode/I" );
+  m_pTTree->Branch( "pxcstartvalue", &m_pxcstartvalue, "pxcstartvalue/F" );
+  m_pTTree->Branch( "pycstartvalue", &m_pycstartvalue, "pycstartvalue/F" );
+  m_pTTree->Branch( "pzcstartvalue", &m_pzcstartvalue, "pzcstartvalue/F" );
+  m_pTTree->Branch( "ecstartvalue", &m_ecstartvalue, "ecstartvalue/F" );
   m_pTTree->Branch( "ZMassBeforeFit" , &m_ZMassBeforeFit , "ZMassBeforeFit/F" );
   m_pTTree->Branch( "H1MassBeforeFit" , &m_H1MassBeforeFit , "H1MassBeforeFit/F" );
   m_pTTree->Branch( "H2MassBeforeFit" , &m_H2MassBeforeFit , "H2MassBeforeFit/F" );
@@ -313,6 +317,8 @@ void ZHHKinFit::init()
   m_pTTree->Branch( "FitProbability" , &m_FitProbability , "FitProbability/F" );
   m_pTTree->Branch( "FitChi2" , &m_FitChi2 , "FitChi2/F" );
   m_pTTree->Branch( "perm" , &m_perm );
+  m_pTTree->Branch( "PrefitJetFourMomentum", &m_PrefitJetFourMomentum);
+  m_pTTree->Branch( "PostfitJetFourMomentum", &m_PostfitJetFourMomentum);
   m_pTTree->Branch( "pullJetEnergy" , &m_pullJetEnergy );
   m_pTTree->Branch( "pullJetTheta" , &m_pullJetTheta );
   m_pTTree->Branch( "pullJetPhi" , &m_pullJetPhi );
@@ -352,6 +358,10 @@ void ZHHKinFit::Clear()
   m_BSEnergyTrue = 0.0;
   m_HHMassHardProcess = 0.0;
   m_FitErrorCode = 1;
+  m_pxcstartvalue = 0.0;
+  m_pycstartvalue = 0.0;
+  m_pzcstartvalue = 0.0;
+  m_ecstartvalue = 0.0;
   m_ZMassBeforeFit = 0.0;
   m_H1MassBeforeFit = 0.0;
   m_H2MassBeforeFit = 0.0;
@@ -371,6 +381,8 @@ void ZHHKinFit::Clear()
   m_FitProbability = 0.0;
   m_FitChi2 = 0.0;
   m_perm.clear();
+  m_PrefitJetFourMomentum.clear();
+  m_PostfitJetFourMomentum.clear();
   m_pullJetEnergy.clear();
   m_pullJetTheta.clear();
   m_pullJetPhi.clear();
@@ -621,13 +633,19 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
       m_perm.push_back((int)((string)(*it)->getName()).back()-48);
     }
     streamlog_out(MESSAGE) << endl;
-    
-    vector<double> startmasses = calculateInitialMasses(Jets, Leptons, m_perm);
+
+    std::pair<vector<double>,vector<double>> startvalues = calculateInitialValues(Jets, Leptons, m_perm);
+    vector<double> startmasses = startvalues.first;
     m_ZMassBeforeFit  = startmasses[0];
     m_H1MassBeforeFit = startmasses[1];
     m_H2MassBeforeFit = startmasses[2];
     m_HHMassBeforeFit = startmasses[3];
     m_ZHHMassBeforeFit = startmasses[4];
+
+    m_pxcstartvalue = startvalues.second[0];
+    m_pycstartvalue = startvalues.second[1];
+    m_pzcstartvalue = startvalues.second[2];
+    m_ecstartvalue = startvalues.second[3];
     
     streamlog_out(MESSAGE1) << "Z mass prefit = " << m_ZMassBeforeFit << endl;
     streamlog_out(MESSAGE1) << "H1 mass prefit = " << m_H1MassBeforeFit << endl;
@@ -655,6 +673,8 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     for (int i = 0; i < m_nJets; ++i) {   
       //set pre fit objects
       ReconstructedParticleImpl* startjet = new ReconstructedParticleImpl;
+      ROOT::Math::PxPyPzEVector startFourMomentum(Jets[i]->getMomentum()[0], Jets[i]->getMomentum()[1], Jets[i]->getMomentum()[2], Jets[i]->getEnergy());
+      m_PrefitJetFourMomentum.push_back(startFourMomentum);
       startjet->setMomentum(Jets[i]->getMomentum());
       startjet->setEnergy(Jets[i]->getEnergy());
       startjet->setType(Jets[i]->getType());
@@ -673,6 +693,7 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
       std::shared_ptr<JetFitObject> castfitjet =  std::dynamic_pointer_cast<JetFitObject>(*fitjet);
       ReconstructedParticleImpl* fittedjet = new ReconstructedParticleImpl;
       ROOT::Math::PxPyPzEVector FourMomentum(castfitjet->getPx(), castfitjet->getPy(), castfitjet->getPz(), castfitjet->getE());
+      m_PostfitJetFourMomentum.push_back(FourMomentum);
       float momentum[3] = {castfitjet->getPx(), castfitjet->getPy(), castfitjet->getPz()};
       fittedjet->setMomentum(momentum);
       fittedjet->setEnergy(FourMomentum.E());
@@ -916,13 +937,20 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     streamlog_out(MESSAGE1) << "ladida checking permutations: "; 
     for (auto idx: m_perm) streamlog_out(MESSAGE1) << idx << " ";
     streamlog_out(MESSAGE1) << endl;
-    
-    vector<double> startmasses = calculateInitialMasses(bestJets, Leptons, m_perm);
+
+
+    std::pair<vector<double>,vector<double>> startvalues = calculateInitialValues(Jets, Leptons, m_perm);
+    vector<double> startmasses = startvalues.first;
     m_ZMassBeforeFit  = startmasses[0];
     m_H1MassBeforeFit = startmasses[1];
     m_H2MassBeforeFit = startmasses[2];
     m_HHMassBeforeFit = startmasses[3];
     m_ZHHMassBeforeFit = startmasses[4];
+
+    m_pxcstartvalue = startvalues.second[0];
+    m_pycstartvalue = startvalues.second[1];
+    m_pzcstartvalue = startvalues.second[2];
+    m_ecstartvalue = startvalues.second[3];
     
     streamlog_out(MESSAGE1) << "Z mass prefit = " << m_ZMassBeforeFit << endl;
     streamlog_out(MESSAGE1) << "H1 mass prefit = " << m_H1MassBeforeFit << endl;
@@ -952,6 +980,8 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     startleptons.clear();
     fittedjets.clear();
     fittedleptons.clear();
+    m_PrefitJetFourMomentum.clear();
+    m_PostfitJetFourMomentum.clear();
     m_pullJetEnergy.clear();
     m_pullJetTheta.clear();
     m_pullJetPhi.clear();
@@ -962,6 +992,8 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     for (int i = 0; i < m_nJets; ++i) {   
       //set pre fit objects
       ReconstructedParticleImpl* startjet = new ReconstructedParticleImpl;
+      ROOT::Math::PxPyPzEVector startFourMomentum(Jets[i]->getMomentum()[0], Jets[i]->getMomentum()[1], Jets[i]->getMomentum()[2], Jets[i]->getEnergy());
+      m_PrefitJetFourMomentum.push_back(startFourMomentum);
       startjet->setMomentum(bestJets[i]->getMomentum());
       startjet->setEnergy(bestJets[i]->getEnergy());
       startjet->setType(bestJets[i]->getType());
@@ -980,6 +1012,7 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
       std::shared_ptr<JetFitObject> castfitjet =  std::dynamic_pointer_cast<JetFitObject>(*fitjet);
       ReconstructedParticleImpl* fittedjet = new ReconstructedParticleImpl;
       ROOT::Math::PxPyPzEVector FourMomentum(castfitjet->getPx(), castfitjet->getPy(), castfitjet->getPz(), castfitjet->getE());
+      m_PostfitJetFourMomentum.push_back(FourMomentum);
       float momentum[3] = {castfitjet->getPx(), castfitjet->getPy(), castfitjet->getPz()};
       fittedjet->setMomentum(momentum);
       fittedjet->setEnergy(FourMomentum.E());
@@ -1219,7 +1252,7 @@ ZHHKinFit::FitResult ZHHKinFit::performllbbbbFIT( pfoVector jets, pfoVector lept
   double bestChi2 = 9999999999999.;
   FitResult bestFitResult;
 
-  assert(NJETS==4);
+  assert(jets.size()==4);
   vector<vector<unsigned int>> perms;
   if (m_fithypothesis == "ZZH" || m_fithypothesis == "ZZHsoft" || m_fithypothesis == "MH") {
     perms = {
@@ -1562,7 +1595,7 @@ ZHHKinFit::FitResult ZHHKinFit::performvvbbbbFIT( pfoVector jets, bool traceEven
   double bestChi2 = 9999999999999.;
   FitResult bestFitResult;
 
-  assert(NJETS==4);
+  assert(jets.size()==4);
   vector<vector<unsigned int>> perms;
   if (m_fithypothesis == "ZZH" || m_fithypothesis == "ZZHsoft" || m_fithypothesis == "MH") {
     perms = {
@@ -1871,7 +1904,7 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
   double bestChi2 = 9999999999999.;
   FitResult bestFitResult;
 
-  assert(NJETS==6);
+  assert(jets.size()==6);
   vector<vector<unsigned int>> perms;
   if (m_fithypothesis == "ZZH" || m_fithypothesis == "ZZHsoft" || m_fithypothesis == "MH" || m_fithypothesis == "ZHH" || m_fithypothesis == "EQM") {
     //TO DO: redo permutations for each hypothesis
@@ -2266,9 +2299,10 @@ void ZHHKinFit::getLeptonParameters( ReconstructedParticle* lepton , float (&par
   streamlog_out(DEBUG6) << "			SigmaPhi	= " << errors[ 2 ] << std::endl ;
 }
 
-std::vector<double> ZHHKinFit::calculateInitialMasses(pfoVector jets, pfoVector leptons, vector<int> perm)
+std::pair<std::vector<double>,std::vector<double>> ZHHKinFit::calculateInitialValues(pfoVector jets, pfoVector leptons, vector<int> perm)
 {
   std::vector<double> masses;
+  std::vector<double> fourmomentum;
   shared_ptr<vector<shared_ptr<JetFitObject>>> jfo = make_shared<vector<shared_ptr<JetFitObject>>>();
   shared_ptr<vector<shared_ptr<LeptonFitObject>>> lfo= make_shared<vector<shared_ptr<LeptonFitObject>>>();
   //Set JetFitObjects
@@ -2305,6 +2339,36 @@ std::vector<double> ZHHKinFit::calculateInitialMasses(pfoVector jets, pfoVector 
   ROOT::Math::PxPyPzMVector ZinvFourMomentum(-seenFourMomentum.Px(), -seenFourMomentum.Pz(), -seenFourMomentum.Pz(),91.1880); // M_Z PDG average in 2024 review    
   shared_ptr<ZinvisibleFitObjectNew> zfo = make_shared<ZinvisibleFitObjectNew> (ZinvFourMomentum.Px(), ZinvFourMomentum.Py(), ZinvFourMomentum.Pz(), 1.0, 1.0, 1.0,91.1880);
   zfo->setName("Zinvisible");
+
+  float target_p_due_crossing_angle = m_ECM * 0.007; // crossing angle = 14 mrad                                                                                                                                 
+  shared_ptr<MomentumConstraint> pxc = make_shared<MomentumConstraint>( 0 , 1 , 0 , 0 , target_p_due_crossing_angle);//Factor for: (energy sum, px sum, py sum,pz sum,target value of sum)                       
+  pxc->setName("sum(p_x)");
+  for (auto j : *jfo_perm) pxc->addToFOList(*j);
+  for (auto l : *lfo) pxc->addToFOList(*l);
+  if (m_signature == "vvbbbb") pxc->addToFOList(*zfo);
+  
+  shared_ptr<MomentumConstraint> pyc = make_shared<MomentumConstraint>(0, 0, 1, 0, 0);
+  pyc->setName("sum(p_y)");
+  for (auto j : *jfo_perm) pyc->addToFOList(*j);
+  for (auto l : *lfo) pyc->addToFOList(*l); 
+  if (m_signature == "vvbbbb") pyc->addToFOList(*zfo);
+ 
+  shared_ptr<MomentumConstraint> pzc = make_shared<MomentumConstraint>(0, 0, 0, 1, 0);
+  pzc->setName("sum(p_z)");
+  for (auto j : *jfo_perm) pzc->addToFOList(*j);
+  for (auto l : *lfo) pzc->addToFOList(*l);
+  if (m_signature == "vvbbbb") pzc->addToFOList(*zfo);
+  
+  double E_lab = 2 * sqrt( std::pow( 0.548579909e-3 , 2 ) + std::pow( m_ECM / 2 , 2 ) + std::pow( target_p_due_crossing_angle , 2 ) + 0. + 0.); //TODO: check equation                                           
+  shared_ptr<MomentumConstraint> ec = make_shared<MomentumConstraint>(1, 0, 0, 0, E_lab);
+  ec->setName("sum(E)");
+  for (auto j : *jfo_perm) ec->addToFOList(*j);
+  for (auto l : *lfo) ec->addToFOList(*l);
+  if (m_signature == "vvbbbb") ec->addToFOList(*zfo);
+  fourmomentum.push_back(pxc->getValue());
+  fourmomentum.push_back(pyc->getValue());
+  fourmomentum.push_back(pzc->getValue());
+  fourmomentum.push_back(ec->getValue());
   
     shared_ptr<MassConstraint> h1 = make_shared<MassConstraint>(125.);
     h1->addToFOList (*jfo_perm->at(0), 1);
@@ -2366,7 +2430,7 @@ std::vector<double> ZHHKinFit::calculateInitialMasses(pfoVector jets, pfoVector 
     m_p1stBeforeFit = p1st;
     m_cos1stBeforeFit = cos1st;
 
-    return masses;
+    return make_pair(masses,fourmomentum);
 }
 
 std::vector<double> ZHHKinFit::calculateMassesFromSimpleChi2Pairing(pfoVector jets, pfoVector leptons) 
