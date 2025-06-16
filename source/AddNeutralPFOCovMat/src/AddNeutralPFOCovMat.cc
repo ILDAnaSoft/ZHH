@@ -115,7 +115,9 @@ void AddNeutralPFOCovMat::processEvent( EVENT::LCEvent *pLCEvent )
 			streamlog_out(MESSAGE6) << "	-------------------------------------------------------" << std::endl;
 			streamlog_out(MESSAGE6) << "	Processing PFO at index " << i_pfo << std::endl;
 			streamlog_out(MESSAGE5) << *outputPFO << std::endl;
-			float pfoMass = outputPFO->getMass();
+			//float pfoMass = outputPFO->getMass();
+			float pfoMass = 0.0;
+			if (outputPFO->getMass()>0.0) pfoMass = 0.939565; //reset to neutron mass as in full sim
 			TVector3 clusterPosition( 0.0 , 0.0 , 0.0 );
 			TLorentzVector pfoFourMomentum( 0.0 , 0.0 , 0.0 , 0.0 );
 			double outputPFOMomentum[3]{0., 0., 0.};
