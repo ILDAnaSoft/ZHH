@@ -54,7 +54,10 @@
         <processor name="MyThrust" />
 
         <!-- Isolated lepton tagging and lepton pairing with BS/FSR recovery is run to separate llbbbb from vv/qqbbbb -->
-        <processor name="MyIsolatedLeptonTaggingProcessor" />
+        <processor name="IsolatedMuonTagging"/>
+        <processor name="IsolatedElectronTagging"/>
+        <!-- <processor name="IsolatedTauTagging"/> -->
+
         <processor name="MyLeptonPairing" />
         <!-- <processor name="MyMergePIDProcessor" /> -->
         <processor name="MyPatchCollections" />
@@ -314,63 +317,153 @@
         <parameter name="Verbosity" type="string">SILENT</parameter>
     </processor>
 
-    <processor name="MyIsolatedLeptonTaggingProcessor" type="IsolatedLeptonTaggingProcessor">
+    <processor name="IsolatedMuonTagging" type="IsolatedLeptonTaggingProcessor">
         <!--IsolatedLeptonTaggingProcessor does whatever it does ...-->
         <!--cosine of the larger cone-->
-        <parameter name="CosConeLarge" type="float">0.95</parameter>
+        <parameter name="CosConeLarge" type="float">0.95 </parameter>
         <!--cosine of the smaller cone-->
-        <parameter name="CosConeSmall" type="float">0.98</parameter>
+        <parameter name="CosConeSmall" type="float">0.98 </parameter>
         <!--Cut on the mva output of isolated electron selection-->
-        <parameter name="CutOnTheISOElectronMVA" type="float">0.5</parameter>
+        <parameter name="CutOnTheISOElectronMVA" type="float"> 2 </parameter>
         <!--Cut on the mva output of isolated muon selection-->
-        <parameter name="CutOnTheISOMuonMVA" type="float">0.7</parameter>
+        <parameter name="CutOnTheISOMuonMVA" type="float">0.7 </parameter>
         <!--Directory of Weights for the Isolated Electron MVA Classification-->
-        <parameter name="DirOfISOElectronWeights" type="string">/cvmfs/ilc.desy.de/sw/x86_64_gcc82_centos7/v02-02-02/MarlinReco/v01-31/Analysis/IsolatedLeptonTagging/example/isolated_electron_weights</parameter>
+        <parameter name="DirOfISOElectronWeights" type="string">${ILDConfigDir}/IsolatedLeptonTagging/weights/e1e1h_gg_qqqq_250</parameter>
         <!--Directory of Weights for the Isolated Muon MVA Classification-->
-        <parameter name="DirOfISOMuonWeights" type="string">/cvmfs/ilc.desy.de/sw/x86_64_gcc82_centos7/v02-02-02/MarlinReco/v01-31/Analysis/IsolatedLeptonTagging/example/isolated_muon_weights_woYoke </parameter>
+        <parameter name="DirOfISOMuonWeights" type="string">${ILDConfigDir}/IsolatedLeptonTagging/weights/e2e2h_gg_qqqq_250</parameter>
         <!--Name of the PandoraPFOs collection-->
-        <parameter name="InputPandoraPFOsCollection" type="string" lcioInType="ReconstructedParticle">${PFOsWithoutOverlayCollection}</parameter>
+        <parameter name="InputPandoraPFOsCollection" type="string" lcioInType="ReconstructedParticle"> PandoraPFOs </parameter>
         <!--Name of the Primary Vertex collection-->
-        <parameter name="InputPrimaryVertexCollection" type="string" lcioInType="Vertex">PrimaryVertex</parameter>
+        <parameter name="InputPrimaryVertexCollection" type="string" lcioInType="ReconstructedParticle"> PrimaryVertex </parameter>
         <!--flag to select one most like isolated lepton-->
-        <parameter name="IsSelectingOneIsoLep" type="bool">false</parameter>
+        <parameter name="IsSelectingOneIsoLep" type="bool"> false </parameter>
         <!--Maximum d0 significance for electron-->
-        <parameter name="MaxD0SigForElectron" type="float">50</parameter>
+        <parameter name="MaxD0SigForElectron" type="float">50 </parameter>
         <!--Maximum D0 significance for muon-->
-        <parameter name="MaxD0SigForMuon" type="float">20</parameter>
+        <parameter name="MaxD0SigForMuon" type="float">20 </parameter>
         <!--Maximum ratio of energy in calorimeters over momentum for electron-->
-        <parameter name="MaxEOverPForElectron" type="float">1.3</parameter>
+        <parameter name="MaxEOverPForElectron" type="float">1.3 </parameter>
         <!--Maximum ratio of energy in calorimeters over momentum for muon-->
-        <parameter name="MaxEOverPForMuon" type="float">0.3</parameter>
+        <parameter name="MaxEOverPForMuon" type="float">0.3 </parameter>
         <!--Maximum Z0 significance for electron-->
-        <parameter name="MaxZ0SigForElectron" type="float">50</parameter>
+        <parameter name="MaxZ0SigForElectron" type="float">50 </parameter>
         <!--Maximum Z0 significance for muon-->
-        <parameter name="MaxZ0SigForMuon" type="float">20</parameter>
+        <parameter name="MaxZ0SigForMuon" type="float">20 </parameter>
         <!--minimum ratio of energy in calorimeters over momentum for electron-->
-        <parameter name="MinEOverPForElectron" type="float">0.5</parameter>
+        <parameter name="MinEOverPForElectron" type="float">0.5 </parameter>
         <!--minimum ratio of energy in ecal over energy in ecal+hcal-->
-        <parameter name="MinEecalOverTotEForElectron" type="float">0.9</parameter>
-        <!--Minimum energy in yoke for electron-->
-        <parameter name="MinEyokeForMuon" type="float">1.2</parameter>
-        <!--Minimum momentum for electron-->
-        <parameter name="MinPForElectron" type="float">5</parameter>
-        <!--Minimum momentum for muon-->
-        <parameter name="MinPForMuon" type="float">5</parameter>
-        <!--Name of collection with the selected isolated lepton-->
-        <parameter name="OutputIsoLeptonsCollection" type="string" lcioOutType="ReconstructedParticle">ISOLeptons</parameter>
-        <!--Name of the new PFOs collection without isolated lepton-->
-        <parameter name="OutputPFOsWithoutIsoLepCollection" type="string" lcioOutType="ReconstructedParticle">PandoraPFOsWithoutIsoLep</parameter>
+        <parameter name="MinEecalOverTotEForElectron" type="float">0.9 </parameter>
         <!--use yoke for muon ID-->
-        <parameter name="UseYokeForMuonID" type="bool">false</parameter>
+        <parameter name="UseYokeForMuonID" type="bool"> true </parameter>
+        <!--Minimum energy in yoke for electron-->
+        <parameter name="MinEyokeForMuon" type="float">1.2 </parameter>
+        <!--Minimum momentum for electron-->
+        <parameter name="MinPForElectron" type="float">5 </parameter>
+        <!--Minimum momentum for muon-->
+        <parameter name="MinPForMuon" type="float">5 </parameter>
+        <!--use impact parameters-->
+        <parameter name="UseIP" type="bool"> true </parameter>
+        <!--Name of collection with the selected isolated lepton-->
+        <parameter name="OutputIsoLeptonsCollection" type="string" lcioOutType="ReconstructedParticle"> ISOMuons </parameter>
+        <!--Name of the new PFOs collection without isolated lepton-->
+        <parameter name="OutputPFOsWithoutIsoLepCollection" type="string" lcioOutType="ReconstructedParticle"> PFOsMinusMuons </parameter>
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">SILENT</parameter>
+        <parameter name="Verbosity" type="string"> SILENT </parameter>
     </processor>
 
-    <processor name="MyLeptonPairing" type="LeptonPairing">
-        <parameter name="ISOLeptons" type="string" lcioInType="ReconstructedParticle">ISOLeptons</parameter>
-        <parameter name="PandoraPFOsWithoutIsoLep" type="string" lcioInType="ReconstructedParticle">PandoraPFOsWithoutIsoLep</parameter>
+    <processor name="IsolatedElectronTagging" type="IsolatedLeptonTaggingProcessor">
+        <!--IsolatedLeptonTaggingProcessor does whatever it does ...-->
+        <!--cosine of the larger cone-->
+        <parameter name="CosConeLarge" type="float">0.95 </parameter>
+        <!--cosine of the smaller cone-->
+        <parameter name="CosConeSmall" type="float">0.98 </parameter>
+        <!--Cut on the mva output of isolated electron selection-->
+        <parameter name="CutOnTheISOElectronMVA" type="float"> 0.5 </parameter>
+        <!--Cut on the mva output of isolated muon selection-->
+        <parameter name="CutOnTheISOMuonMVA" type="float"> 2 </parameter>
+        <!--Directory of Weights for the Isolated Electron MVA Classification-->
+        <parameter name="DirOfISOElectronWeights" type="string">${ILDConfigDir}/IsolatedLeptonTagging/weights/e1e1h_gg_qqqq_250</parameter>
+        <!--Directory of Weights for the Isolated Muon MVA Classification-->
+        <parameter name="DirOfISOMuonWeights" type="string">${ILDConfigDir}/IsolatedLeptonTagging/weights/e2e2h_gg_qqqq_250</parameter>
+        <!--Name of the PandoraPFOs collection-->
+        <parameter name="InputPandoraPFOsCollection" type="string" lcioInType="ReconstructedParticle"> PFOsMinusMuons </parameter>
+        <!--Name of the Primary Vertex collection-->
+        <parameter name="InputPrimaryVertexCollection" type="string" lcioInType="ReconstructedParticle"> PrimaryVertex </parameter>
+        <!--flag to select one most like isolated lepton-->
+        <parameter name="IsSelectingOneIsoLep" type="bool"> false </parameter>
+        <!--Maximum d0 significance for electron-->
+        <parameter name="MaxD0SigForElectron" type="float"> 10 </parameter>
+        <!--Maximum D0 significance for muon-->
+        <parameter name="MaxD0SigForMuon" type="float"> 10 </parameter>
+        <!--Maximum ratio of energy in calorimeters over momentum for electron-->
+        <parameter name="MaxEOverPForElectron" type="float">1.3 </parameter>
+        <!--Maximum ratio of energy in calorimeters over momentum for muon-->
+        <parameter name="MaxEOverPForMuon" type="float">0.3 </parameter>
+        <!--Maximum Z0 significance for electron-->
+        <parameter name="MaxZ0SigForElectron" type="float"> 10 </parameter>
+        <!--Maximum Z0 significance for muon-->
+        <parameter name="MaxZ0SigForMuon" type="float"> 10 </parameter>
+        <!--minimum ratio of energy in calorimeters over momentum for electron-->
+        <parameter name="MinEOverPForElectron" type="float">0.5 </parameter>
+        <!--minimum ratio of energy in ecal over energy in ecal+hcal-->
+        <parameter name="MinEecalOverTotEForElectron" type="float">0.9 </parameter>
+        <!--use yoke for muon ID-->
+        <parameter name="UseYokeForMuonID" type="bool"> true </parameter>
+        <!--Minimum energy in yoke for electron-->
+        <parameter name="MinEyokeForMuon" type="float">1.2 </parameter>
+        <!--Minimum momentum for electron-->
+        <parameter name="MinPForElectron" type="float">5 </parameter>
+        <!--Minimum momentum for muon-->
+        <parameter name="MinPForMuon" type="float">5 </parameter>
+        <!--use impact parameters-->
+        <parameter name="UseIP" type="bool"> true </parameter>
+        <!--Name of collection with the selected isolated lepton-->
+        <parameter name="OutputIsoLeptonsCollection" type="string" lcioOutType="ReconstructedParticle"> ISOElectrons </parameter>
+        <!--Name of the new PFOs collection without isolated lepton; enable when using tau tagging! -->
+        <!-- <parameter name="OutputPFOsWithoutIsoLepCollection" type="string" lcioOutType="ReconstructedParticle"> PFOsMinusMuonsElectrons </parameter> -->
+        <parameter name="OutputPFOsWithoutIsoLepCollection" type="string" lcioOutType="ReconstructedParticle"> PFOsMinusIsolatedLeptons </parameter>
+
+        <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
+        <parameter name="Verbosity" type="string"> SILENT </parameter>
+    </processor>
+
+    <processor name="IsolatedTauTagging" type="TaJetClustering">
+        <!--Input PFO collection-->
+        <parameter name="PFOCollection" type="string" lcioInType="ReconstructedParticle"> PFOsMinusMuonsElectrons </parameter>
+        <!--Tau output collection-->
+        <parameter name="OutputTauCollection" type="string" lcioOutType="ReconstructedParticle"> ISOTaus </parameter>
+        <!--Remained PFO collection not clustered-->
+        <parameter name="RemainPFOCollection" type="string" lcioOutType="ReconstructedParticle"> PFOsMinusIsolatedLeptons </parameter>
+        <!--Tau mass for tau clustering [GeV]-->
+        <parameter name="TauMass" type="double">2 </parameter>
+        <!--Allowed cosine angle to be clustered-->
+        <parameter name="TauCosAngle" type="double">0.98 </parameter>
+        <!-- Skip ANY Primary and Cone cuts if true: should be only used in lepton-only final states! -->
+        <parameter name="NoSelection" type="int">0 </parameter>
+        <!--Primary cut include IMPLICIT selection of accepting only 1 or 3 tracks in jets: this loosen the counting of low energy tracks-->
+        <parameter name="AcceptFlexibleLowEnergyTrack" type="int">1 </parameter>
+        <!--Minimum jet energy to be accepted as taus-->
+        <parameter name="MinimumJetEnergy" type="double">3 </parameter>
+        <!--Minimum track energy to be accepted as taus-->
+        <parameter name="MinimumTrackEnergy" type="double">2 </parameter>
+        <!--Minimum track energy to be counted-->
+        <parameter name="MinimumTrackEnergyAssoc" type="double">2 </parameter>
+        <!--Minimum cosine angle for cone-->
+        <parameter name="ConeMinCosAngle" type="double">0.9 </parameter>
+        <!--Maximum cosine angle for cone-->
+        <parameter name="ConeMaxCosAngle" type="double">1 </parameter>
+        <!--Energy fraction of cone compared to central-->
+        <parameter name="ConeMaxEnergyFrac" type="double">0.1 </parameter>
+    </processor>
+
+    <processor name="MyLeptonPairing" type="LeptonPairingCombined">
+        <parameter name="IsoElectronCollection" type="string" lcioInType="ReconstructedParticle">ISOElectrons</parameter>
+        <parameter name="IsoMuonCollection" type="string" lcioInType="ReconstructedParticle">ISOMuons</parameter>
+        <parameter name="IsoTauCollection" type="string" lcioInType="ReconstructedParticle">ISOTaus</parameter>
+        <parameter name="PFOsWOIsoLepCollection" type="string" lcioInType="ReconstructedParticle">PFOsMinusIsolatedLeptons</parameter>
+        
         <parameter name="LeptonPair" type="string" lcioOutType="ReconstructedParticle">LeptonPair</parameter>
-        <parameter name="PandoraPFOsWithoutLepPair" type="string" lcioOutType="ReconstructedParticle">PandoraPFOsWithoutLepPair</parameter>
+        <parameter name="PFOsWOLepPairCollection" type="string" lcioOutType="ReconstructedParticle">PandoraPFOsWithoutLepPair</parameter>
         <parameter name="fillRootTree" type="bool">true</parameter>
 
         <!-- empty to write to AIDA -->

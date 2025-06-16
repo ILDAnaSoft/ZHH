@@ -61,6 +61,7 @@ set(sources
   LeptonPairing/src/Utilities.cc
   LeptonPairing/src/ZHHUtilities.cc
   LeptonPairing/src/LeptonPairing.cc
+  LeptonPairing/src/LeptonPairingCombined.cc
   MergePIDProcessor/src/MergePIDProcessor.cc
   Misclustering/src/Misclustering.cc
   EventObservables/src/EventObservablesFromZZ.cc

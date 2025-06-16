@@ -17,7 +17,7 @@ using namespace lcio ;
 
 namespace ZHH{
 
-  void doPhotonRecovery(ReconstructedParticle *electron, LCCollection *colPFO, ReconstructedParticleImpl *recoElectron, Double_t fCosFSRCut, 
+  void doPhotonRecovery(ReconstructedParticle *lepton, LCCollection *colPFO, ReconstructedParticleImpl *recoLepton, Double_t fCosFSRCut, 
 			Int_t lepType, std::vector<lcio::ReconstructedParticle*> &photons);
 
 
