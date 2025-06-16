@@ -102,7 +102,7 @@ public:
   FitResult performqqbbbbFIT( pfoVector jets,bool traceEvent);	    
   virtual void	getJetParameters( ReconstructedParticle* jet , float (&parameters)[ 3 ] , float (&errors)[ 3 ] );
   virtual void	getLeptonParameters( ReconstructedParticle* lepton , float (&parameters)[ 3 ] , float (&errors)[ 3 ] );
-  std::vector<double> calculateInitialMasses(pfoVector jets, pfoVector leptons, vector<int> perm);
+  std::pair<std::vector<double>,std::vector<double>> calculateInitialValues(pfoVector jets, pfoVector leptons, vector<int> perm);
   std::vector<double> calculateMassesFromSimpleChi2Pairing(pfoVector jets, pfoVector leptons);
   std::vector<double> calculatePulls(std::shared_ptr<ParticleFitObject> fittedobject, ReconstructedParticle* startobject, int type);
   double calcChi2(shared_ptr<vector<shared_ptr<BaseFitObject>>> fitobjects);
@@ -174,6 +174,10 @@ private:
   float m_BSEnergyTrue{};
   float m_HHMassHardProcess{};
   int m_FitErrorCode{};
+  float m_pxcstartvalue{};
+  float m_pycstartvalue{};
+  float m_pzcstartvalue{};
+  float m_ecstartvalue{};
   float m_ZMassBeforeFit{};
   float m_H1MassBeforeFit{};
   float m_H2MassBeforeFit{};
@@ -193,6 +197,8 @@ private:
   float m_FitProbability{};
   float m_FitChi2{};
   std::vector<int> m_perm{};
+  std::vector<ROOT::Math::PxPyPzEVector> m_PrefitJetFourMomentum{};
+  std::vector<ROOT::Math::PxPyPzEVector> m_PostfitJetFourMomentum{};
   std::vector<float> m_pullJetEnergy{};
   std::vector<float> m_pullJetTheta{};
   std::vector<float> m_pullJetPhi{};

@@ -1,4 +1,4 @@
-#include "AddNeutralPFOCovMat.h"
+#include "SwitchCovMat.h"
 #include <iostream>
 #include <EVENT/LCCollection.h>
 #include "EVENT/LCCollection.h"
@@ -11,7 +11,6 @@
 #include "IMPL/ParticleIDImpl.h"
 #include "UTIL/PIDHandler.h"
 #include "marlin/VerbosityLevels.h"
-#include "TLorentzVector.h"
 #include "TVector3.h"
 #include "TFile.h"
 #include "TH1F.h"
@@ -23,11 +22,11 @@ using namespace lcio ;
 using namespace marlin ;
 using namespace std ;
 
-AddNeutralPFOCovMat aAddNeutralPFOCovMat;
+SwitchCovMat aSwitchCovMat;
 
-AddNeutralPFOCovMat::AddNeutralPFOCovMat() :
+SwitchCovMat::SwitchCovMat() :
 
-Processor("AddNeutralPFOCovMat")
+Processor("SwitchCovMat")
 {
 	_description = "Set the convariance matrix in (P,E) for all pfos (charged particles, neutral hadrons and photons)";
 
@@ -70,7 +69,7 @@ Processor("AddNeutralPFOCovMat")
 
 }
 
-void AddNeutralPFOCovMat::init()
+void SwitchCovMat::init()
 {
 
 	streamlog_out(MESSAGE) << "   init called  " << std::endl;
@@ -78,17 +77,17 @@ void AddNeutralPFOCovMat::init()
 
 }
 
-void AddNeutralPFOCovMat::Clear()
+void SwitchCovMat::Clear()
 {
 
 }
 
-void AddNeutralPFOCovMat::processRunHeader()
+void SwitchCovMat::processRunHeader()
 {
 
 }
 
-void AddNeutralPFOCovMat::processEvent( EVENT::LCEvent *pLCEvent )
+void SwitchCovMat::processEvent( EVENT::LCEvent *pLCEvent )
 {
 
 	LCCollection *inputPfoCollection{};
@@ -102,115 +101,111 @@ void AddNeutralPFOCovMat::processEvent( EVENT::LCEvent *pLCEvent )
 	streamlog_out(MESSAGE) << "	////////////////////	Processing event 	" << pLCEvent->getEventNumber() << "	////////////////////" << std::endl;
 	streamlog_out(MESSAGE) << "	////////////////////////////////////////////////////////////////////////////" << std::endl;
 
-	try
-	{
-		inputPfoCollection = pLCEvent->getCollection(m_inputPfoCollection);
-		n_PFO = inputPfoCollection->getNumberOfElements();
-		if ( n_PFO == -1 ) streamlog_out(MESSAGE7) << "	Input PFO collection (" << m_inputPfoCollection << ") has no element (PFO) " << std::endl;
-		streamlog_out(MESSAGE7) << "	Total Number of PFOs: " << n_PFO << std::endl;
-		for (int i_pfo = 0; i_pfo < n_PFO ; ++i_pfo)
-		{
-			ReconstructedParticleImpl* outputPFO = dynamic_cast<ReconstructedParticleImpl*>( inputPfoCollection->getElementAt( i_pfo ) );
-			streamlog_out(MESSAGE6) << "" << std::endl;
-			streamlog_out(MESSAGE6) << "	-------------------------------------------------------" << std::endl;
-			streamlog_out(MESSAGE6) << "	Processing PFO at index " << i_pfo << std::endl;
-			streamlog_out(MESSAGE5) << *outputPFO << std::endl;
-			float pfoMass = outputPFO->getMass();
-			TVector3 clusterPosition( 0.0 , 0.0 , 0.0 );
-			TLorentzVector pfoFourMomentum( 0.0 , 0.0 , 0.0 , 0.0 );
-			//double outputPFOMomentum[3]{0., 0., 0.};
-			std::vector<float> outputCovMatrix( 10 , 0.0 );
-			if ( ( outputPFO->getTracks() ).size() == 0 )
-			{
-				if ( !m_AssumeNeutralPFOMassive ) pfoMass = 0.0;
-				float clusterX		= ( outputPFO->getClusters()[0] )->getPosition()[0];
-				float clusterY		= ( outputPFO->getClusters()[0] )->getPosition()[1];
-				float clusterZ		= ( outputPFO->getClusters()[0] )->getPosition()[2];
-				clusterPosition	= TVector3( clusterX , clusterY , clusterZ );
-				float clusterDistance	= sqrt( pow( clusterX , 2 ) + pow( clusterY , 2 ) + pow( clusterZ , 2 ) );
-				float pfoMomentumMag	= 0;
-				float pfoEnergy	= outputPFO->getEnergy();
-				float pfoE;
-				pfoMomentumMag = ( m_isClusterEnergyKinEnergy ? sqrt( pow( pfoEnergy , 2 ) + 2 * pfoMass * pfoEnergy ) : pfoEnergy );
-				float pfoPx;
-				float pfoPy;
-				float pfoPz;
-				if ( m_updatePFO4Momentum )
-				{
-					pfoPx	= pfoMomentumMag * clusterX / clusterDistance;
-					pfoPy	= pfoMomentumMag * clusterY / clusterDistance;
-					pfoPz	= pfoMomentumMag * clusterZ / clusterDistance;
-					pfoE = ( m_isClusterEnergyKinEnergy ? pfoEnergy + pfoMass : sqrt( pow( pfoMomentumMag , 2 ) + pow( pfoMass , 2 ) ) );
-				}
-				else
-				{
-					pfoPx	= outputPFO->getMomentum()[ 0 ];
-					pfoPy	= outputPFO->getMomentum()[ 1 ];
-					pfoPz	= outputPFO->getMomentum()[ 2 ];
-					pfoE	= outputPFO->getEnergy();
-				}
-				std::vector<float> clusterPositionError = ( outputPFO->getClusters()[0] )->getPositionError();
-				float clusterEnergyError = ( outputPFO->getClusters()[0] )->getEnergyError();
-				TVector3 pfoMomentum( pfoPx , pfoPy , pfoPz );
-				pfoFourMomentum	= TLorentzVector( pfoMomentum , pfoE );
-				streamlog_out(WARNING) << "Type = " << outputPFO->getType() << std::endl;
-				outputCovMatrix	= getNeutralCovMat( clusterPosition , pfoEnergy , pfoMass , clusterPositionError , clusterEnergyError );
-
-				//outputPFOMomentum[ 0 ] = pfoFourMomentum.Px();
-				//outputPFOMomentum[ 1 ] = pfoFourMomentum.Py();
-				//outputPFOMomentum[ 2 ] = pfoFourMomentum.Pz();
-				pfoE = pfoFourMomentum.E();
-
-
-//				outputPFO->setType(outputPFO->getType());
-//				outputPFO->setMomentum( outputPFOMomentum );
-//				outputPFO->setEnergy( pfoE );
-//				outputPFO->setMass( outputPFO->getMass() );
-//				outputPFO->setCharge(outputPFO->getCharge());
-				outputPFO->setCovMatrix( outputCovMatrix );
-/*				outputPFO->setReferencePoint(outputPFO->getReferencePoint());
-				for (unsigned int j=0; j<outputPFO->getParticleIDs().size(); ++j)
-				{
-					ParticleIDImpl* inPID = dynamic_cast<ParticleIDImpl*>(outputPFO->getParticleIDs()[j]);
-				        ParticleIDImpl* outPID = new ParticleIDImpl;
-				        outPID->setType(inPID->getType());
-				        outPID->setPDG(inPID->getPDG());
-				        outPID->setLikelihood(inPID->getLikelihood());
-				        outPID->setAlgorithmType(inPID->getAlgorithmType()) ;
-				        for (unsigned int k=0; k<inPID->getParameters().size()  ; ++k) outPID->addParameter(inPID->getParameters()[k]) ;
-				        outputPFO->addParticleID(outPID);
-				}
-				outputPFO->setParticleIDUsed(outputPFO->getParticleIDUsed());
-				outputPFO->setGoodnessOfPID(outputPFO->getGoodnessOfPID());
-				for (unsigned int j=0; j< outputPFO->getParticles().size(); ++j)
-				{
-					outputPFO->addParticle(outputPFO->getParticles()[j]);
-				}
-				for (unsigned int j=0; j<outputPFO->getClusters().size(); ++j)
-				{
-					outputPFO->addCluster(outputPFO->getClusters()[j]);
-				}
-				for (unsigned int j=0; j<outputPFO->getTracks().size(); ++j)
-				{
-					outputPFO->addTrack(outputPFO->getTracks()[j]);
-				}
-				outputPFO->setStartVertex(outputPFO->getStartVertex());
-*/
-				streamlog_out(MESSAGE6) << "	Updated PFO:" << std::endl;
-				streamlog_out(MESSAGE5) << *outputPFO << std::endl;
-			}
-			outputPfoCollection->addElement( outputPFO );
-		}
-		pLCEvent->addCollection( outputPfoCollection , m_outputPfoCollection );
+	try {
+	  inputPfoCollection = pLCEvent->getCollection(m_inputPfoCollection);
+	} catch(DataNotAvailableException &e) {
+	  streamlog_out(MESSAGE) << "Input collection not found in event " << pLCEvent->getEventNumber() << std::endl;
 	}
-	catch(DataNotAvailableException &e)
-	{
-		streamlog_out(MESSAGE) << "Input collection not found in event " << pLCEvent->getEventNumber() << std::endl;
+	n_PFO = inputPfoCollection->getNumberOfElements();
+	if ( n_PFO == -1 ) streamlog_out(MESSAGE7) << "	Input PFO collection (" << m_inputPfoCollection << ") has no element (PFO) " << std::endl;
+	//streamlog_out(MESSAGE7) << "	Total Number of PFOs: " << n_PFO << std::endl;
+	for (int i_pfo = 0; i_pfo < n_PFO ; ++i_pfo) {
+	  ReconstructedParticleImpl* outputPFO = dynamic_cast<ReconstructedParticleImpl*>( inputPfoCollection->getElementAt( i_pfo ) );
+	  //if (outputPFO->getCovMatrix()[9] < 10e10) continue; 
+	  if (outputPFO->getCovMatrix()[0] < 50 || outputPFO->getCovMatrix()[2] < 50 || outputPFO->getCovMatrix()[5] < 50) continue;
+	  if (( outputPFO->getClusters()).size() == 0 ) continue;
+	  streamlog_out(MESSAGE6) << "" << std::endl;
+	  streamlog_out(MESSAGE6) << "	-------------------------------------------------------" << std::endl;
+	  streamlog_out(MESSAGE6) << "	Processing PFO at index " << i_pfo << std::endl;
+	  streamlog_out(MESSAGE5) << *outputPFO << std::endl;
+	  float pfoMass = outputPFO->getMass();
+	  TVector3 clusterPosition( 0.0 , 0.0 , 0.0 );
+	  ROOT::Math::PxPyPzEVector pfoFourMomentum( 0.0 , 0.0 , 0.0 , 0.0 );
+	  double outputPFOMomentum[3]{0., 0., 0.};
+	  std::vector<float> outputCovMatrix( 10 , 0.0 );
+	  if ( !m_AssumeNeutralPFOMassive ) pfoMass = 0.0;
+	  float clusterX = ( outputPFO->getClusters()[0] )->getPosition()[0];
+	  float clusterY = ( outputPFO->getClusters()[0] )->getPosition()[1];
+	  float clusterZ = ( outputPFO->getClusters()[0] )->getPosition()[2];
+	  clusterPosition	= TVector3( clusterX , clusterY , clusterZ );
+	  float clusterDistance	= sqrt( pow( clusterX , 2 ) + pow( clusterY , 2 ) + pow( clusterZ , 2 ) );
+	  float pfoMomentumMag	= 0;
+	  float pfoEnergy	= outputPFO->getEnergy();
+	  float pfoE;
+	  pfoMomentumMag = ( m_isClusterEnergyKinEnergy ? sqrt( pow( pfoEnergy , 2 ) + 2 * pfoMass * pfoEnergy ) : pfoEnergy );
+	  float pfoPx;
+	  float pfoPy;
+	  float pfoPz;
+	  if ( m_updatePFO4Momentum ) {
+	      pfoPx	= pfoMomentumMag * clusterX / clusterDistance;
+	      pfoPy	= pfoMomentumMag * clusterY / clusterDistance;
+	      pfoPz	= pfoMomentumMag * clusterZ / clusterDistance;
+	      pfoE = ( m_isClusterEnergyKinEnergy ? pfoEnergy + pfoMass : sqrt( pow( pfoMomentumMag , 2 ) + pow( pfoMass , 2 ) ) );
+	  } else {
+	    pfoPx	= outputPFO->getMomentum()[ 0 ];
+	    pfoPy	= outputPFO->getMomentum()[ 1 ];
+	    pfoPz	= outputPFO->getMomentum()[ 2 ];
+	    pfoE	= outputPFO->getEnergy();
+	  }
+	  std::vector<float> clusterPositionError = ( outputPFO->getClusters()[0] )->getPositionError();
+	  float clusterEnergyError = ( outputPFO->getClusters()[0] )->getEnergyError();
+	  pfoFourMomentum	= ROOT::Math::PxPyPzEVector(  pfoPx , pfoPy , pfoPz , pfoE );
+	  streamlog_out(WARNING) << "Type = " << outputPFO->getType() << std::endl;
+	  outputCovMatrix	= getNeutralCovMat( clusterPosition , pfoEnergy , pfoMass , clusterPositionError , clusterEnergyError );
+	  
+	  outputPFOMomentum[ 0 ] = pfoFourMomentum.Px();
+	  outputPFOMomentum[ 1 ] = pfoFourMomentum.Py();
+	  outputPFOMomentum[ 2 ] = pfoFourMomentum.Pz();
+	  pfoE = pfoFourMomentum.E();
+	  
+	  //Trace of cov mat from track
+	  float tracefromtrack = outputPFO->getCovMatrix()[0]+outputPFO->getCovMatrix()[2]+outputPFO->getCovMatrix()[5]+outputPFO->getCovMatrix()[9];
+	  //Trace of cov mat from cluster
+	  float tracefromcluster = outputCovMatrix[0]+outputCovMatrix[2]+outputCovMatrix[5]+outputCovMatrix[9];
+	  //compare traces and set cov mat with the better trace
+	  streamlog_out(MESSAGE) << "Trace from track   = " << tracefromtrack << std::endl;
+	  streamlog_out(MESSAGE) << "Trace from cluster = " << tracefromcluster << std::endl;
+	  //Also change pfo 4-mom based on cluster?
+	  
+	  // outputPFO->setType(outputPFO->getType());
+	  // outputPFO->setMomentum( outputPFOMomentum );
+	  // outputPFO->setEnergy( pfoE );
+	  // outputPFO->setMass( outputPFO->getMass() );
+	  // outputPFO->setCharge(outputPFO->getCharge());
+	  if (tracefromcluster < tracefromtrack) outputPFO->setCovMatrix( outputCovMatrix );
+	  /* outputPFO->setReferencePoint(outputPFO->getReferencePoint());
+	     for (unsigned int j=0; j<outputPFO->getParticleIDs().size(); ++j) {
+	     ParticleIDImpl* inPID = dynamic_cast<ParticleIDImpl*>(outputPFO->getParticleIDs()[j]);
+	     ParticleIDImpl* outPID = new ParticleIDImpl;
+	     outPID->setType(inPID->getType());
+	     outPID->setPDG(inPID->getPDG());
+	     outPID->setLikelihood(inPID->getLikelihood());
+	     outPID->setAlgorithmType(inPID->getAlgorithmType()) ;
+	     for (unsigned int k=0; k<inPID->getParameters().size()  ; ++k) outPID->addParameter(inPID->getParameters()[k]) ;
+	     outputPFO->addParticleID(outPID);
+	     }
+	     outputPFO->setParticleIDUsed(outputPFO->getParticleIDUsed());
+	     outputPFO->setGoodnessOfPID(outputPFO->getGoodnessOfPID());
+	     for (unsigned int j=0; j< outputPFO->getParticles().size(); ++j) {
+	     outputPFO->addParticle(outputPFO->getParticles()[j]);
+	     }
+	     for (unsigned int j=0; j<outputPFO->getClusters().size(); ++j) {
+	     outputPFO->addCluster(outputPFO->getClusters()[j]);
+	     }
+	     for (unsigned int j=0; j<outputPFO->getTracks().size(); ++j) {
+	     outputPFO->addTrack(outputPFO->getTracks()[j]);
+	     }
+	     outputPFO->setStartVertex(outputPFO->getStartVertex());
+	  */
+	  streamlog_out(MESSAGE6) << "	Updated PFO:" << std::endl;
+	  streamlog_out(MESSAGE5) << *outputPFO << std::endl;			
+	  outputPfoCollection->addElement( outputPFO );
 	}
+	pLCEvent->addCollection( outputPfoCollection , m_outputPfoCollection );
 
 }
 
-std::vector<float> AddNeutralPFOCovMat::getNeutralCovMat( TVector3 clusterPosition , float pfoEc , float pfoMass , std::vector<float> clusterPositionError , float clusterEnergyError )
+std::vector<float> SwitchCovMat::getNeutralCovMat( TVector3 clusterPosition , float pfoEc , float pfoMass , std::vector<float> clusterPositionError , float clusterEnergyError )
 {
 
 //	Obtain covariance matrix on (px,py,pz,E) from the
@@ -354,7 +349,7 @@ std::vector<float> AddNeutralPFOCovMat::getNeutralCovMat( TVector3 clusterPositi
 
 }
 
-void AddNeutralPFOCovMat::check(EVENT::LCEvent *pLCEvent)
+void SwitchCovMat::check(EVENT::LCEvent *pLCEvent)
 {
 
 	LCCollection *inputPfoCollection{};
@@ -363,9 +358,9 @@ void AddNeutralPFOCovMat::check(EVENT::LCEvent *pLCEvent)
 	{
 		inputPfoCollection = pLCEvent->getCollection(m_inputPfoCollection);
 		outputPfoCollection = pLCEvent->getCollection(m_outputPfoCollection);
-		int n_inputPFOs = inputPfoCollection->getNumberOfElements();
-		int n_outputPFOs = outputPfoCollection->getNumberOfElements();
-		streamlog_out(MESSAGE) << " CHECK : processed event: " << pLCEvent->getEventNumber() << " (Number of inputPFOS: " << n_inputPFOs << " , Number of outputPFOs: " << n_outputPFOs <<")" << std::endl;
+		//int n_inputPFOs = inputPfoCollection->getNumberOfElements();
+		//int n_outputPFOs = outputPfoCollection->getNumberOfElements();
+		//streamlog_out(MESSAGE) << " CHECK : processed event: " << pLCEvent->getEventNumber() << " (Number of inputPFOS: " << n_inputPFOs << " , Number of outputPFOs: " << n_outputPFOs <<")" << std::endl;
 	}
 	catch(DataNotAvailableException &e)
         {
@@ -374,7 +369,7 @@ void AddNeutralPFOCovMat::check(EVENT::LCEvent *pLCEvent)
 
 }
 
-void AddNeutralPFOCovMat::end()
+void SwitchCovMat::end()
 {
 
 //	std::cout << " END : processed events: " << m_nEvtSum << std::endl;

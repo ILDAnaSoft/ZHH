@@ -79,6 +79,7 @@ set(sources
   ZHHKinfitProcessors/src/ZHHKinFit.cc
   ZinvisibleErrorAnalysis/src/ZinvisibleErrorAnalysis.cc
   PreSelection/src/PreSelection.cc
+  SwitchCovMat/src/SwitchCovMat.cc
 )
 
 add_library(ZHHProcessors SHARED ${sources})
@@ -121,6 +122,7 @@ target_include_directories(ZHHProcessors PRIVATE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/TruthRecoComparison/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/ZHHKinfitProcessors/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/ZinvisibleErrorAnalysis/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/SwitchCovMat/include>
 )
 target_compile_definitions(ZHHProcessors ${MarlinUtil_DEFINITIONS} PRIVATE "MARLIN_USE_ROOT")
 target_compile_definitions(ZHHProcessors ${MarlinUtil_DEFINITIONS} PRIVATE "MARLIN_USE_AIDA")
