@@ -5,7 +5,7 @@ from .ild_style import fig_ild_style
 import numpy as np
 from matplotlib.axes import Axes
 
-def plot_weighted_hist(calc_dict, title:str, xlabel:str, plot_context:PlotContext,
+def plot_weighted_hist(calc_dict, title:str='<title undefined>', xlabel:str='<xlabel undefined>', plot_context:PlotContext|None=None,
                                    xunit:Optional[str]=None,
                                  bins:int=100, xlim:Optional[Iterable]=None,
                                  yscale:Optional[str]=None,
@@ -15,18 +15,29 @@ def plot_weighted_hist(calc_dict, title:str, xlabel:str, plot_context:PlotContex
                                  ax:Optional[Axes]=None):
     
     from phc import plot_hist
+    if plot_context is None:
+        plot_context = PlotContext()
     
     plot_dict = {}
     plot_weights = []
     
     for key in calc_dict:
-        plot_dict[key] = calc_dict[key][0]
-        plot_weights.append(calc_dict[key][1])
+        if len(calc_dict[key]) != 2:
+            raise Exception(f'Invalid data format: Expected (data:[], weight:[]) for entry {key}')
+        
+        data = calc_dict[key][0]
+        weight = calc_dict[key][1] if calc_dict[key][1] is not None else np.ones_like(data)
+        
+        plot_dict[key] = data
+        plot_weights.append(weight)
         
     fig_plot_hist_kwargs = {
+        'show_stats': False,
+        #'normalize': True,
+        'hist_kwargs': { 'hatch': None },
         'stacked': True,
-        'custom_styling': True,
-        'colorpalette': None if plot_context is None else plot_context.getColorPalette(list(plot_dict.keys()))
+        #'custom_styling': True,
+        'colorpalette': plot_context.getColorPalette(list(plot_dict.keys()))
     }
     
     fig_plot_hist_kwargs = fig_plot_hist_kwargs | plot_hist_kwargs
@@ -58,7 +69,8 @@ def plot_weighted_hist(calc_dict, title:str, xlabel:str, plot_context:PlotContex
         'ylabel_prefix': 'wt. ',
         'title_postfix': '',
         'title': title,
-        'legend_kwargs': {'loc': 'lower right'}
+        'legend_kwargs': { 'loc': 'upper right', 'bbox_to_anchor': (.98, .98), 'fancybox': False },
+        'plot_context': plot_context
     } | ild_style_kwargs
     
     legend_labels = []
@@ -66,6 +78,6 @@ def plot_weighted_hist(calc_dict, title:str, xlabel:str, plot_context:PlotContex
         if len(value) > 0:
             legend_labels.append(key)
             
-    fig = fig_ild_style(ax, xlim, bins, legend_labels=legend_labels, colorpalette=list(map(plot_context.getColorByKey, plot_dict.keys())), **fig_ild_kwargs)
+    fig = fig_ild_style(ax, xlim, bins, legend_labels=legend_labels, **fig_ild_kwargs)
     
     return fig

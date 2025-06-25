@@ -24,6 +24,7 @@
                 "${workspaceFolder}/source/HdecayMode/include/**",
                 "${workspaceFolder}/source/JetTaggingComparison/include/**",
                 "${workspaceFolder}/source/LeptonPairing/include/**",
+                "${workspaceFolder}/source/MergeCollections/include/**",
                 "${workspaceFolder}/source/MergePIDProcessor/include/**",
                 "${workspaceFolder}/source/Misclustering/include/**",
                 "${workspaceFolder}/source/EventObservables/include/**",

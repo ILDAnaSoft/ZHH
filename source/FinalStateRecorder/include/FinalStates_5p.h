@@ -9,10 +9,21 @@
 using namespace std;
 
 class p5: public FinalStateResolver {
+    protected:
+        unsigned short F1_IDX = 6;
+        unsigned short F2_IDX = 7;
+        unsigned short F3_IDX = 8;
+        unsigned short F4_IDX = 9;
+        unsigned short F5_IDX = 10;
+
     public:
         // Set process ID and event category
         p5( string process_name, int process_id, int event_category): FinalStateResolver( process_name, process_id, event_category, 5, 0, vector<int>{5} ) {};
         p5( string process_name, int process_id, int event_category, int n_fermions, int n_higgs ): FinalStateResolver( process_name, process_id, event_category, n_fermions, n_higgs, vector<int>{5} ) {};
+
+        vector<int> resolve_fs_particle_indices(LCCollection *mcp_collection, bool resolve_higgs = false) {
+            return vector<int>{ F1_IDX, F2_IDX, F3_IDX, F4_IDX, F5_IDX };
+        }
 
         vector<MCParticle*> resolve_fs_particles(LCCollection *mcp_collection, bool resolve_higgs = false) {
             (void) resolve_higgs;
@@ -20,11 +31,11 @@ class p5: public FinalStateResolver {
             vector<MCParticle*> fs_particles;
 
             // Get fermions
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(6 ));
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(7 ));
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(8 ));
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(9 ));
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(10));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(F1_IDX));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(F2_IDX));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(F3_IDX));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(F4_IDX));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(F5_IDX));
 
             return fs_particles;
         }

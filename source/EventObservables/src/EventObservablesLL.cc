@@ -15,6 +15,27 @@ m_JMP("best_perm_ll") {
         m_input2JetCollection ,
         std::string("Refined2Jets")
         );
+
+    registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
+        "ISOElectrons" ,
+        "Name of the isolated electron collection"  ,
+        m_inputIsoElectrons ,
+        std::string("ISOElectrons")
+        );
+    
+    registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
+        "ISOMuons" ,
+        "Name of the isolated electron collection"  ,
+        m_inputIsoMuons ,
+        std::string("ISOMuons")
+        );
+
+    registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
+        "ISOTaus" ,
+        "Name of the isolated tau collection"  ,
+        m_inputIsoTaus ,
+        std::string("ISOTaus")
+        );
 }
 
 void EventObservablesLL::prepareChannelTree() {
@@ -155,12 +176,11 @@ void EventObservablesLL::clearChannelValues() {
 };
 
 void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
-    setJetMomenta();
+    setJetCharges();
     
     LCCollection *inputJetCollection = pLCEvent->getCollection( m_inputJetCollection );
     LCCollection *input2JetCollection = pLCEvent->getCollection( m_input2JetCollection );
     LCCollection *inputLepPairCollection = pLCEvent->getCollection( m_inputLepPairCollection );
-    LCCollection *inputLeptonCollection = pLCEvent->getCollection( m_inputIsolatedleptonCollection );
 
     if ( inputLepPairCollection->getNumberOfElements() == m_nAskedIsoLeps() && inputJetCollection->getNumberOfElements() == m_nAskedJets() ) {
         // NPFOS MIN/MAX
@@ -170,6 +190,15 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         //m_m_diff_z = fabs( m_mzll - 91.2 );
         m_mzll_pre_pairing = inputLepPairCollection->parameters().getFloatVal("IsoLepsInvMass");
         
+        int pairedLeptonType = inputLepPairCollection->parameters().getIntVal("PairedType");
+        LCCollection *inputLeptonCollection;
+
+        switch(pairedLeptonType) {
+            case 11: inputLeptonCollection = pLCEvent->getCollection( m_inputIsoElectrons ); break;
+            case 13: inputLeptonCollection = pLCEvent->getCollection( m_inputIsoMuons ); break;
+            case 15: inputLeptonCollection = pLCEvent->getCollection( m_inputIsoTaus ); break;
+        }
+
         IntVec pairedLeptonIDx;
         inputLepPairCollection->parameters().getIntVals("PairedLeptonIDx", pairedLeptonIDx);
         
@@ -183,16 +212,16 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         m_plmin = min(v4_paired_isolep1.P(), v4_paired_isolep2.P());
         m_plmax = max(v4_paired_isolep1.P(), v4_paired_isolep2.P());
 
-        ReconstructedParticle* isolep1 = dynamic_cast<ReconstructedParticle*>( inputLeptonCollection->getElementAt(pairedLeptonIDx[0]));
+        if (pairedLeptonType == 11 || pairedLeptonType == 13) {
+            FloatVec mvaOutputIsoLepTagging;
+            inputLeptonCollection->getParameters().getFloatVals("ISOLepTagging", mvaOutputIsoLepTagging);
 
-        FloatVec mvaOutputIsoLepTagging;
-        inputLeptonCollection->getParameters().getFloatVals("ISOLepTagging", mvaOutputIsoLepTagging);
+            float mvaOutputIsoLep1 = mvaOutputIsoLepTagging[pairedLeptonIDx[0]];
+            float mvaOutputIsoLep2 = mvaOutputIsoLepTagging[pairedLeptonIDx[1]];
 
-        float mvaOutputIsoLep1 = mvaOutputIsoLepTagging[pairedLeptonIDx[0]];
-        float mvaOutputIsoLep2 = mvaOutputIsoLepTagging[pairedLeptonIDx[1]];
-
-        m_mvalepminus = min(mvaOutputIsoLep1, mvaOutputIsoLep2);
-        m_mvalepminus = max(mvaOutputIsoLep1, mvaOutputIsoLep2);
+            m_mvalepminus = min(mvaOutputIsoLep1, mvaOutputIsoLep2);
+            m_mvalepplus = max(mvaOutputIsoLep1, mvaOutputIsoLep2);
+        }
 
         // START EVALUATE 2 JET COLLECTION
         TLorentzVector momentumZv4 = v4_paired_isolep1 + v4_paired_isolep2;
@@ -321,8 +350,8 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
             std::swap(paired_isolep1, paired_isolep2);
         }
 
-        m_paired_lep_type = abs(isolep1->getType());
-        if (m_paired_lep_type != 11 && m_paired_lep_type != 13) { // this should not happen...? but it does seldom...
+        m_paired_lep_type = pairedLeptonType;
+        if (m_paired_lep_type != 11 && m_paired_lep_type != 13 && m_paired_lep_type != 15) { // this should not happen...? but it does seldom...
             m_paired_lep_type = 11; 
             m_errorCodes.push_back(1001);
         }

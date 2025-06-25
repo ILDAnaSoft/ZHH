@@ -102,6 +102,7 @@ class FinalStateResolver {
         };
 
         // MUST be overwritten by deriving class definitions
+        virtual std::vector<int> resolve_fs_particle_indices(LCCollection *mcp_collection, bool resolve_higgs = false) = 0;
         virtual std::vector<EVENT::MCParticle*> resolve_fs_particles(LCCollection *mcp_collection, bool resolve_higgs = false) = 0;
         virtual std::vector<int> resolve(LCCollection *mcp_collection) = 0;
 };

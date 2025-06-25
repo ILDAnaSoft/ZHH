@@ -41,6 +41,9 @@ class EventObservablesLL : public EventObservablesBase {
 	protected:
 		// meta parameters
 		std::string m_input2JetCollection{};
+		std::string m_inputIsoElectrons{};
+		std::string m_inputIsoMuons{};
+		std::string m_inputIsoTaus{};
 
 		std::string m_JMP{};
 		std::string m_JMSP{};

@@ -84,7 +84,7 @@ void EventObservablesVV::clearChannelValues() {
 };
 
 void EventObservablesVV::updateChannelValues(EVENT::LCEvent *pLCEvent) {
-    setJetMomenta();
+    setJetCharges();
     
     LCCollection *input5JetCollection = pLCEvent->getCollection( m_input5JetCollection );
     LCCollection *input6JetCollection = pLCEvent->getCollection( m_input6JetCollection );

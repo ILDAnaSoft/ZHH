@@ -10,6 +10,8 @@ using namespace std;
 
 class ffh: public p4 {
     protected:
+        const unsigned short F1_IDX = 8;
+        const unsigned short F2_IDX = 9;
         const unsigned short HIGGS_IDX = 10;
 
     public:
@@ -17,12 +19,18 @@ class ffh: public p4 {
         ffh( string process_name, int process_id, int event_category, vector<int> z_decay_filter ):
             p4( process_name, process_id, event_category, 2, 1, vector<int> {6,7}, z_decay_filter ) {};
 
+        vector<int> resolve_fs_particle_indices(LCCollection *mcp_collection, bool resolve_higgs = false) {
+            assert(!resolve_higgs);
+
+            return vector<int>{ F1_IDX, F2_IDX, HIGGS_IDX};
+        }
+
         vector<MCParticle*> resolve_fs_particles(LCCollection *mcp_collection, bool resolve_higgs) {
             vector<MCParticle*> fs_particles;
 
             // Get Z-decayed fermions
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(8));
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(9));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(F1_IDX));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(F2_IDX));
 
             // Get Higgs boson
             MCParticle* h = (MCParticle*)mcp_collection->getElementAt(HIGGS_IDX);

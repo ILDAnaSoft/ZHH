@@ -27,6 +27,7 @@
 #include "inv_mass.h"
 #include "v4.h"
 #include "EventObservablesFromZZ.h"
+#include <TrueJet_Parser.h>
 
 using namespace lcio ;
 using namespace marlin ;
@@ -40,13 +41,32 @@ TLorentzVector v4old(LCObject* lcobj);
 // NONE is for initialization only and should not occur in practice
 // TODO: implement, using EventCategory
 
-class EventObservablesBase: public Processor
+struct DelMe {
+  DelMe( std::function<void()> func ) : _func(func) {}
+  ~DelMe() { _func(); }
+  std::function<void()>  _func;
+};
+
+class EventObservablesBase: public Processor, public TrueJet_Parser
 {
 	public:
 		EventObservablesBase(const std::string& name);
 		virtual ~EventObservablesBase() = default;
 		EventObservablesBase(const EventObservablesBase&) = delete;
 		EventObservablesBase& operator=(const EventObservablesBase&) = delete;
+
+		void delall2() {
+			if (  relfcn != NULL ) { delete relfcn; relfcn = NULL; }
+			if (  relicn != NULL ) { delete relicn; relicn = NULL; }
+			if (  relfp != NULL ) { delete relfp; relfp = NULL; }
+			if (  relip != NULL ) { delete relip; relip = NULL; }
+			if (  reltjreco != NULL) { delete reltjreco; reltjreco = NULL; }
+			if (  reltjmcp != NULL) { delete reltjmcp; reltjmcp = NULL; }
+			if (  jets != NULL) { delete jets; jets = NULL; }
+			if (  finalcns != NULL) { delete finalcns; finalcns = NULL; }
+			if (  initialcns != NULL ) { delete initialcns; initialcns = NULL; }
+			if ( reltrue_tj  != NULL ) { delete reltrue_tj; reltrue_tj = NULL; }
+		};
 
 		virtual void init();
         virtual void processRunHeader( LCRunHeader* run );
@@ -264,6 +284,7 @@ class EventObservablesBase: public Processor
 		
 		// jets and jet matching to ZHH hypothesis
 		std::vector<ReconstructedParticle*> m_jets{};
+		std::vector<ROOT::Math::PxPyPzEVector> m_jets4v{};
 
 		std::vector<unsigned short> m_zhh_jet_matching{};
 		float m_zhh_mz{};
@@ -314,35 +335,19 @@ class EventObservablesBase: public Processor
 		float m_cmax42{};
 
 		// jet momenta and energies
-		float m_pxj1{};
-		float m_pyj1{};
-		float m_pzj1{};
-		float m_ej1{};
-		float m_qj1{};
-		float m_qdj1{}; // dynamic jet charge, see https://arxiv.org/pdf/2101.04304
+		float m_jet1_q{};
+		float m_jet1_qdyn{}; // dynamic jet charge, see https://arxiv.org/pdf/2101.04304
 
-		float m_pxj2{};
-		float m_pyj2{};
-		float m_pzj2{};
-		float m_ej2{};
-		float m_qj2{};
-		float m_qdj2{};
+		float m_jet2_q{};
+		float m_jet2_qdyn{};
 
-		float m_pxj3{};
-		float m_pyj3{};
-		float m_pzj3{};
-		float m_ej3{};
-		float m_qj3{};
-		float m_qdj3{};
+		float m_jet3_q{};
+		float m_jet3_qdyn{};
 
-		float m_pxj4{};
-		float m_pyj4{};
-		float m_pzj4{};
-		float m_ej4{};
-		float m_qj4{};
-		float m_qdj4{};
+		float m_jet4_q{};
+		float m_jet4_qdyn{};
 
-		void setJetMomenta();
+		void setJetCharges();
 
 		// jet matching from kinfit
 		std::vector<int> m_JMK_ZHH{};
@@ -353,6 +358,34 @@ class EventObservablesBase: public Processor
 
 		double m_lcme_jmk_zhh_log{};
 		double m_lcme_jmk_zzh_log{};
+
+		// TrueJet information
+		short m_trueJetN{};
+		std::vector<ROOT::Math::PxPyPzEVector> m_trueJetMomenta{};
+		std::vector<ROOT::Math::PxPyPzEVector> m_trueISRMomenta{};
+		std::vector<int> m_trueJetTypes{};
+		std::vector<int> m_trueJetPDGs{};
+
+		short m_trueLeptonN{};
+		std::vector<ROOT::Math::PxPyPzEVector> m_trueLeptonMomenta{};
+		std::vector<int> m_trueLeptonTypes{};
+
+		std::vector<int> m_trueJetICNTypes{};
+		std::vector<int> m_trueJetICNPDGs{};
+		std::vector<int> m_trueJetICNTrueJetsIndices{};
+		std::vector<int> m_reco2TrueJetIndex{};
+		std::vector<int> m_true2RecoJetIndex{};
+		std::vector<int> m_trueJetHiggsICNPairs{};
+
+		float getMatchingByAngularSpace(
+			vector<EVENT::ReconstructedParticle*> recoJets,
+			vector<int> &reco2truejetindex,
+			vector<int> &true2recojetindex,
+			vector<int> &trueHadronicJetIndices,
+			vector<int> &trueLeptonIndices,
+			vector<int> &trueISRIndices );
+
+		bool m_trueRecoJetsMapped{}; // only true if number of true jets is equal to reco jets and they could be mapped by angular overlap 
 
 };
 

@@ -52,12 +52,10 @@ function zhh_attach_marlin_dlls() {
         elif [[ ! -f "$lib" ]]; then
             zhh_echo "+++ WARNING +++ Library <$lib_name> not found at $lib. Make sure to compile it before you start Marlin. Continuing..."
         else
-            zhh_echo "Attaching library $lib_name"
+            zhh_echo "Replacing library $lib_name"
         fi
 
         export MARLIN_DLL=$(echo "$MARLIN_DLL" | sed -e "s|${libs_old[$i]}:|${libs_new[$i]}:|g")
-
-        let i=$i+1
     done
 }
 
