@@ -41,3 +41,5 @@ zhhvenv
 source/*/install/
 *.py
 *.sub
+dependencies
+dependencies/
