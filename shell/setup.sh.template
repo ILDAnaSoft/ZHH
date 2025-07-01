@@ -20,8 +20,7 @@ function zhh_attach_marlin_dlls() {
 
     for lib in "${libs[@]}"; do
         if [[ ! -f "$lib" ]]; then
-            zhh_echo "+++ WARNING +++ Library <$(basename $lib)> not found at $lib."
-            zhh_echo "    Make sure to compile it before you start Marlin. Continuing..."
+            zhh_echo "+++ WARNING +++ Library <$(basename $lib)> not found at $lib. Make sure to compile it before you start Marlin. Continuing..."
         fi
 
         zhh_echo "Attaching library $(basename $lib)"
@@ -43,14 +42,19 @@ function zhh_attach_marlin_dlls() {
         "$MarlinKinfit/lib/libMarlinKinfit.so"
         "")
 
-    for i in "${!libs_new[@]}"; do
+    for ((i=0; i<${#libs_old[@]}; i+=1));
+    do
+        local lib_name=$(basename "${libs_old[$i]}")
         local lib="${libs_new[$i]}"
-        if [[ ! -f "$lib" ]]; then
-            zhh_echo "+++ WARNING +++ Library <$(basename $lib)> not found at $lib."
-            zhh_echo "    Make sure to compile it before you start Marlin. Continuing..."
+
+        if [[ -z "$lib" ]]; then
+            zhh_echo "Removing library $lib_name"
+        elif [[ ! -f "$lib" ]]; then
+            zhh_echo "+++ WARNING +++ Library <$lib_name> not found at $lib. Make sure to compile it before you start Marlin. Continuing..."
+        else
+            zhh_echo "Replacing library $lib_name"
         fi
 
-        zhh_echo "Attaching library $(basename $lib)"
         export MARLIN_DLL=$(echo "$MARLIN_DLL" | sed -e "s|${libs_old[$i]}:|${libs_new[$i]}:|g")
     done
 }

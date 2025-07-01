@@ -8,7 +8,7 @@ import json
 import numpy as np
 import uproot as ur
 import awkward as ak
-from ..util.LazyTablelike import LazyTablelike
+from .PreselectionSummary import PreselectionSummary
 
 DEFAULTS = {
     'PROD_NAME': '500-TDR_ws',
@@ -643,40 +643,26 @@ def fetch_preselection_data_old(rf, presel:str, final_states:bool=True, tree:str
 
 fs_columns = ['Nd', 'Nu', 'Ns', 'Nc', 'Nb', 'Nt', 'Ne1', 'Nv1', 'Ne2', 'Nv2', 'Ne3', 'Nv3', 'Ng', 'Ny', 'NZ', 'NW', 'NH']
 
-def get_final_state_counts(DATA_ROOT:str,
-                           branches:Iterable,
-                           chunks_f:Optional[np.ndarray]=None):
+class PDG2FSCMap:
+    d = 0
+    u = 1
+    s = 2
+    c = 3
+    b = 4
+    t = 5
+    e1 = 6
+    v1 = 7
+    e2 = 8
+    v2 = 9
+    e3 = 10
+    v3 = 11
+    g = 12
+    y = 13
+    Z = 14
+    W = 15
+    H = 16
 
-    dtype = [('branch', ('<U32' if isinstance(branches[0], str) else 'I') if chunks_f is None else chunks_f.dtype['branch']), ('event', 'I')]
-    for id in fs_columns:
-        dtype.append((id, 'B'))
-
-    res_size = 0 if chunks_f is None else np.sum(chunks_f['chunk_size_factual'][np.isin(chunks_f['branch'], branches)])
-    fs_counts = np.zeros(res_size, dtype=dtype)
-    
-    pointer = 0
-    
-    for branch in tqdm(branches):
-        with ur.open(f'{DATA_ROOT}/{branch}/zhh_FinalStates.root:FinalStates') as a:
-            chunk_size = len(a['event'].array())
-
-            chunk = np.zeros(chunk_size, dtype=dtype)
-            chunk['branch'] = branch
-            chunk['event'] = a['event'].array()
-            chunk['Nb_from_H'] = a['n_b_from_higgs'].array()
-            
-            fs_counts_raw = a['final_state_counts'][1].array()
-            
-            for i in range(len(fs_columns)):
-                chunk[fs_columns[i]] = fs_counts_raw[:, i] 
-        
-        if chunks_f is None:
-            fs_counts = np.concatenate([fs_counts, chunk])
-        else:
-            fs_counts[pointer:(pointer+chunk_size)] = chunk
-            pointer += chunk_size
-                
-    return fs_counts
+PDG2FSC = PDG2FSCMap()
 
 def apply_order(categories:List[str], order:Union[List[str], Callable]):
     if isinstance(order, Callable):
@@ -689,32 +675,35 @@ def apply_order(categories:List[str], order:Union[List[str], Callable]):
     
         return categories_new
 
-def weighted_counts_by_categories(presel_results:np.ndarray, weights:np.ndarray,
-                                       categories_selected:Optional[np.ndarray]=None):
+def weighted_counts_by_categories(presel_results:PreselectionSummary, categories_selected:Optional[np.ndarray]=None):
     
     categories = np.array(categories_selected) if categories_selected is not None else np.unique(presel_results['event_category'])
     counts = np.zeros(len(categories), dtype=float)
     
     for i, cat in enumerate(categories):
-        counts[i] += weights['weight'][presel_results['pid'][presel_results['event_category'] == cat]].sum()
+        counts[i] += presel_results['weight'][presel_results['event_category'] == cat].sum()
         
     return categories, counts
 
-def calc_preselection_by_event_categories(presel_results:np.ndarray, processes:np.ndarray, weights:np.ndarray,
+def calc_preselection_by_event_categories(presel_results:PreselectionSummary, processes:np.ndarray,
                                           quantity:Optional[str]=None,
                                           order:Optional[Union[List[str],Callable]]=None,
-                                          categories_selected:Optional[List[int]]=[11, 16, 12, 13, 14],
+                                          categories_selected:Optional[List[int]]=None,
                                           categories_additional:Optional[int]=3,
                                           weighted:bool=True,
                                           categories:Optional[np.ndarray]=None, counts:Optional[np.ndarray]=None,
-                                        xlim:Optional[tuple]=None,
-                                        check_hypothesis:Optional[str]=None)->List[dict]:
+                                        xlim:Optional[tuple]=None)->dict[str, np.ndarray]:
     
-    """Calculate the preselection results for a given hypothesis by event categories
+    """Processes event categories. For a given PreselectionSummary, in the default case,
+    for all event categories, a list of events processes with weight and selected quantity
+    (which must exist in PreselectionSummary) is returned. categories_selected and
+    categories_additional can be used to select the event categories to be included dyna-
+    mically by their importance. The order of results will be descending with respect to
+    the sum of event weights.
 
     Args:
         presel_results (np.ndarray): _description_
-        weights (np.ndarray): _description_  
+        processes (np.ndarray): _description_  
         weighted (bool, optional): Whether the correct proc_pol weighting should be used. Defaults to True.
         quantity (str, optional): _description_. Defaults to 'll_mz'.
         categories_selected (list, optional): Event categories to include in any case. Defaults to [17].
@@ -723,7 +712,6 @@ def calc_preselection_by_event_categories(presel_results:np.ndarray, processes:n
         unit (str, optional): _description_. Defaults to 'GeV'.
         nbins (int, optional): _description_. Defaults to 100.
         xlim (Optional[tuple], optional): _description_. Defaults to None.
-        check_hypothesis (str, optional): If either llHH, vvHH or qqHH, will check if events pass the respective total selection as well. Defaults to None.
         yscale (Optional[str], optional): _description_. Defaults to None.
         ild_style_kwargs (dict, optional): _description_. Defaults to {}.
 
@@ -735,9 +723,6 @@ def calc_preselection_by_event_categories(presel_results:np.ndarray, processes:n
     if categories_additional == 0:
         categories_additional = None
     
-    # Make sure that the weights are ordered exactly by index
-    assert(np.sum(weights['pid'] == np.arange(len(weights))) == len(weights))
-    
     if xlim is not None and isinstance(quantity, str):
         subset = presel_results[(presel_results[quantity] > xlim[0]) & (presel_results[quantity] < xlim[1])]
     else:
@@ -746,8 +731,8 @@ def calc_preselection_by_event_categories(presel_results:np.ndarray, processes:n
     # Find relevant event categories
     if weighted:
         if categories is None or counts is None:
-            categories = np.array(categories_selected) if categories_additional is None else np.unique(subset['event_category'])
-            categories, counts = weighted_counts_by_categories(presel_results, weights, categories)
+            categories = np.array(categories_selected) if (categories_additional is None and categories_selected is not None) else np.unique(subset['event_category'])
+            categories, counts = weighted_counts_by_categories(presel_results, categories)
         else:
             if categories_selected is not None and categories_additional is None:
                 mask = np.isin(categories, categories_selected)
@@ -783,8 +768,7 @@ def calc_preselection_by_event_categories(presel_results:np.ndarray, processes:n
             
         categories = apply_order(categories, order)
     
-    calc_dict_all  = {}
-    calc_dict_pass = {}
+    calc_dict  = {}
     
     for category in (pbar := tqdm(categories)):
         label = EventCategories.inverted[category]
@@ -812,7 +796,6 @@ def calc_preselection_by_event_categories(presel_results:np.ndarray, processes:n
                 #print(f"> {processes['proc_pol'][processes['pid'] == pidc][0]}")
                 mask_process = mask_process | (subset['pid'] == pidc)
             
-            # Use that indices of weights = weights['pid']
             mask_process = mask & mask_process
             
             process_masks.append(mask_process)
@@ -820,21 +803,11 @@ def calc_preselection_by_event_categories(presel_results:np.ndarray, processes:n
         category_mask = np.logical_or.reduce(process_masks)
         
         if quantity is None:
-            calc_dict_all[label] = (None, weights['weight'][subset['pid'][category_mask]])
+            calc_dict[label] = (None, subset['weight'][category_mask])
         else:
-            calc_dict_all[label] = (subset[quantity][category_mask], weights['weight'][subset['pid'][category_mask]])
-        
-        if check_hypothesis is not None:
-            category_mask_pass = category_mask & subset[f'{check_hypothesis[:2]}_pass']
-            if quantity is None:
-                calc_dict_pass[label] = (None, weights['weight'][subset['pid'][category_mask_pass]])
-            else:
-                calc_dict_pass[label] = (subset[quantity][category_mask_pass], weights['weight'][subset['pid'][category_mask_pass]])
+            calc_dict[label] = (subset[quantity][category_mask], subset['weight'][category_mask])
             
-    if check_hypothesis is not None:
-        return [calc_dict_all, calc_dict_pass]
-    else:
-        return [calc_dict_all]
+    return calc_dict
 
 
 def calc_preselection_by_processes(presel_results:np.ndarray, processes:np.ndarray, weights:np.ndarray,

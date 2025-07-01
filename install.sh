@@ -116,10 +116,8 @@ if [ "$ZHH_COMMAND" = "install" ]; then
 
     # Dependencies
     if [ -z "$ZHH_INSTALL_DIR" ]; then
-        get_input_arg "Where do you wish to install all the dependencies? ($ZHH_INSTALL_DIR) " ZHH_INSTALL_DIR $( realpath "$REPO_ROOT/dependencies" )
+        get_input_arg "Where do you wish to install all the dependencies? ($( realpath "$REPO_ROOT/dependencies" )) " ZHH_INSTALL_DIR $( realpath "$REPO_ROOT/dependencies" )
     fi
-
-    echo "> $ZHH_INSTALL_DIR <"
 
     zhh_echo "Attempting to install dependencies to <$ZHH_INSTALL_DIR>..."
     zhh_install_deps $ZHH_INSTALL_DIR

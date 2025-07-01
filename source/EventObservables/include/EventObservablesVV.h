@@ -47,7 +47,7 @@ class EventObservablesVV : public EventObservablesBase, public EventObservablesF
 		std::string m_JMSP{};
 
 		// data members
-		std::vector<ReconstructedParticle*> m_5jets;
+		std::vector<ReconstructedParticle*> m_5jets{};
 		//std::vector<ReconstructedParticle*> m_6jets;
 		
 		float m_ptjmax6{};

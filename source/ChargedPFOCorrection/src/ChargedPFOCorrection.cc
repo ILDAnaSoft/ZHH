@@ -161,7 +161,7 @@ m_kaon_mass(0.493677)
 
 void ChargedPFOCorrection::init()
 {
-	streamlog_out(DEBUG) << "	init called  " << std::endl;
+	streamlog_out(MESSAGE) << "	init called  " << std::endl;
 //	m_Bfield = MarlinUtil::getBzAtOrigin();
 	m_Bfield = 3.5;
 	c = 2.99792458e8;
@@ -169,7 +169,7 @@ void ChargedPFOCorrection::init()
 	eV2GeV = 1e-9;
 	eB = m_Bfield * c * mm2m * eV2GeV;
 	printParameters();
-	streamlog_out(DEBUG) << "	BField =  "<< m_Bfield << " Tesla" << std::endl ;
+	streamlog_out(MESSAGE) << "	BField =  "<< m_Bfield << " Tesla" << std::endl ;
 
 }
 
@@ -215,15 +215,15 @@ void ChargedPFOCorrection::processEvent( EVENT::LCEvent *pLCEvent )
 		n_TRK = MarlinTrkTracks->getNumberOfElements();
 		n_TRKk = MarlinTrkTracksKAON->getNumberOfElements();
 		n_TRKp = MarlinTrkTracksPROTON->getNumberOfElements();
-		if ( n_PFO == -1 ) streamlog_out(DEBUG4) << "	Input PFO collection (" << m_inputPfoCollection << ") has no element (PFO) " << std::endl;
-		if ( n_TRK == -1 ) streamlog_out(DEBUG4) << "	Input TRACK collection (" << m_MarlinTrkTracks << ") has no element (Track) " << std::endl;
-		if ( n_TRK != n_TRKk ) streamlog_out(DEBUG4) << "	Input TRACK collection (" << m_MarlinTrkTracksKAON << ") has in-equal number of elements with Main Track Collection (" << m_MarlinTrkTracks << ")!" << std::endl;
-		if ( n_TRK != n_TRKp ) streamlog_out(DEBUG4) << "	Input TRACK collection (" << MarlinTrkTracksPROTON << ") has in-equal number of elements with Main Track Collection (" << m_MarlinTrkTracks << ")!" << std::endl;
+		if ( n_PFO == -1 ) streamlog_out(MESSAGE4) << "	Input PFO collection (" << m_inputPfoCollection << ") has no element (PFO) " << std::endl;
+		if ( n_TRK == -1 ) streamlog_out(MESSAGE4) << "	Input TRACK collection (" << m_MarlinTrkTracks << ") has no element (Track) " << std::endl;
+		if ( n_TRK != n_TRKk ) streamlog_out(MESSAGE4) << "	Input TRACK collection (" << m_MarlinTrkTracksKAON << ") has in-equal number of elements with Main Track Collection (" << m_MarlinTrkTracks << ")!" << std::endl;
+		if ( n_TRK != n_TRKp ) streamlog_out(MESSAGE4) << "	Input TRACK collection (" << MarlinTrkTracksPROTON << ") has in-equal number of elements with Main Track Collection (" << m_MarlinTrkTracks << ")!" << std::endl;
 
-		streamlog_out(DEBUG4) << "	Total Number of PFOs: " << n_PFO << std::endl;
-		streamlog_out(DEBUG4) << "	Total Number of Tracks: " << n_TRK << std::endl;
-		streamlog_out(DEBUG4) << "	Total Number of KaonTracks: " << n_TRKk << std::endl;
-		streamlog_out(DEBUG4) << "	Total Number of ProtonTracks: " << n_TRKp << std::endl;
+		streamlog_out(MESSAGE4) << "	Total Number of PFOs: " << n_PFO << std::endl;
+		streamlog_out(MESSAGE4) << "	Total Number of Tracks: " << n_TRK << std::endl;
+		streamlog_out(MESSAGE4) << "	Total Number of KaonTracks: " << n_TRKk << std::endl;
+		streamlog_out(MESSAGE4) << "	Total Number of ProtonTracks: " << n_TRKp << std::endl;
 
 		for (int i_pfo = 0; i_pfo < n_PFO ; ++i_pfo)
 		{
@@ -252,8 +252,8 @@ void ChargedPFOCorrection::processEvent( EVENT::LCEvent *pLCEvent )
 				TrackID = getTruthTrkID( pLCEvent, defaultTrk );
 				TrackIndex = getTrackIndex( MarlinTrkTracks , defaultTrk );
 				if ( TrackID == 0 ) m_updatePFO = false;
-				streamlog_out(DEBUG2) << "	TrackID: 	" << TrackID << std::endl;
-				streamlog_out(DEBUG2) << "	TrackIndex: 	" << TrackIndex << std::endl;
+				streamlog_out(MESSAGE2) << "	TrackID: 	" << TrackID << std::endl;
+				streamlog_out(MESSAGE2) << "	TrackIndex: 	" << TrackIndex << std::endl;
 
 				if ( abs( TrackID ) == 2212 )
 				{
@@ -261,7 +261,7 @@ void ChargedPFOCorrection::processEvent( EVENT::LCEvent *pLCEvent )
 					outputPFOtrkvec.push_back( refittedTrack );
 					trackMass = m_proton_mass;
 					m_updatePFO = m_updatePFOwithOneTrack;
-					streamlog_out(DEBUG2) << "	Standard track is replaced with track refitted with proton mass" << std::endl;
+					streamlog_out(MESSAGE2) << "	Standard track is replaced with track refitted with proton mass" << std::endl;
 				}
 				else if ( abs( TrackID ) == 321 )
 				{
@@ -269,7 +269,7 @@ void ChargedPFOCorrection::processEvent( EVENT::LCEvent *pLCEvent )
 					outputPFOtrkvec.push_back( refittedTrack );
 					trackMass = m_kaon_mass;
 					m_updatePFO = m_updatePFOwithOneTrack;
-					streamlog_out(DEBUG2) << "	Standard track is replaced with track refitted with kaon mass" << std::endl;
+					streamlog_out(MESSAGE2) << "	Standard track is replaced with track refitted with kaon mass" << std::endl;
 				}
 				else
 				{
@@ -277,7 +277,7 @@ void ChargedPFOCorrection::processEvent( EVENT::LCEvent *pLCEvent )
 					outputPFOtrkvec.push_back( refittedTrack );
 					trackMass = m_pion_mass;
 					m_updatePFO = m_updatePFOwithPionTrack;
-					streamlog_out(DEBUG2) << "	Standard track is used for updating PFO" << std::endl;
+					streamlog_out(MESSAGE2) << "	Standard track is used for updating PFO" << std::endl;
 				}
 
 				pfoFourMomentum = getTrackFourMomentum( refittedTrack , trackMass );
@@ -289,14 +289,14 @@ void ChargedPFOCorrection::processEvent( EVENT::LCEvent *pLCEvent )
 				{
 					for ( int i_trk = 0 ; i_trk < nTRKsofPFO ; ++i_trk )
 					{
-						streamlog_out(DEBUG2) << "	---------------------" << std::endl;
-						streamlog_out(DEBUG2) << "	Adding Track " << i_trk << " to PFO " << std::endl;
-						streamlog_out(DEBUG2) << "	---------------------" << std::endl;
+						streamlog_out(MESSAGE2) << "	---------------------" << std::endl;
+						streamlog_out(MESSAGE2) << "	Adding Track " << i_trk << " to PFO " << std::endl;
+						streamlog_out(MESSAGE2) << "	---------------------" << std::endl;
 						Track *inputTrk = (Track*)inputPFOtrkvec.at( i_trk );
 						TrackID = getTruthTrkID( pLCEvent, inputTrk );
 						TrackIndex = this->getTrackIndex( MarlinTrkTracks , inputTrk );
-						streamlog_out(DEBUG2) << "	TrackID: 	" << TrackID << std::endl;
-						streamlog_out(DEBUG2) << "	TrackIndex: 	" << TrackIndex << std::endl;
+						streamlog_out(MESSAGE2) << "	TrackID: 	" << TrackID << std::endl;
+						streamlog_out(MESSAGE2) << "	TrackIndex: 	" << TrackIndex << std::endl;
 
 						if ( abs( TrackID ) == 2212 )
 						{
@@ -304,7 +304,7 @@ void ChargedPFOCorrection::processEvent( EVENT::LCEvent *pLCEvent )
 							outputPFOtrkvec.push_back( refittedTrack );
 							trackMass = m_proton_mass;
 							m_updatePFO = true;
-							streamlog_out(DEBUG2) << "	Standard track is replaced with track refitted with proton mass" << std::endl;
+							streamlog_out(MESSAGE2) << "	Standard track is replaced with track refitted with proton mass" << std::endl;
 						}
 						else if ( abs( TrackID ) == 321 )
 						{
@@ -312,7 +312,7 @@ void ChargedPFOCorrection::processEvent( EVENT::LCEvent *pLCEvent )
 							outputPFOtrkvec.push_back( refittedTrack );
 							trackMass = m_kaon_mass;
 							m_updatePFO = true;
-							streamlog_out(DEBUG2) << "	Standard track is replaced with track refitted with kaon mass" << std::endl;
+							streamlog_out(MESSAGE2) << "	Standard track is replaced with track refitted with kaon mass" << std::endl;
 						}
 						else
 						{
@@ -320,7 +320,7 @@ void ChargedPFOCorrection::processEvent( EVENT::LCEvent *pLCEvent )
 							outputPFOtrkvec.push_back( refittedTrack );
 							trackMass = m_pion_mass;
 							if ( !m_updatePFO ) m_updatePFO = false;
-							streamlog_out(DEBUG2) << "	Standard track is used for updating PFO" << std::endl;
+							streamlog_out(MESSAGE2) << "	Standard track is used for updating PFO" << std::endl;
 						}
 						pfoFourMomentum += getTrackFourMomentum( refittedTrack , trackMass );
 						trackFourMomentumCovMat = getChargedPFOCovMat( refittedTrack , trackMass );
@@ -340,15 +340,15 @@ void ChargedPFOCorrection::processEvent( EVENT::LCEvent *pLCEvent )
 						Track *inputTrk = (Track*)inputPFOtrkvec.at( i_trk );
 						TrackID = getTruthTrkID( pLCEvent, inputTrk );
 						TrackIndex = this->getTrackIndex( MarlinTrkTracks , inputTrk );
-						streamlog_out(DEBUG5) << "	Investigating track " << i_trk << " of PFO" << std::endl;
-						streamlog_out(DEBUG5) << *inputTrk << std::endl;
+						streamlog_out(MESSAGE5) << "	Investigating track " << i_trk << " of PFO" << std::endl;
+						streamlog_out(MESSAGE5) << *inputTrk << std::endl;
 						if ( abs( TrackID ) == 2212 )
 						{
 							refittedTrack = dynamic_cast<EVENT::Track*>( MarlinTrkTracksPROTON->getElementAt( TrackIndex ) );
 							outputPFOtrkvec.push_back( refittedTrack );
 							trackMass = m_proton_mass;
 							m_updatePFO = true;
-							streamlog_out(DEBUG2) << "	Standard track is replaced with track refitted with proton mass" << std::endl;
+							streamlog_out(MESSAGE2) << "	Standard track is replaced with track refitted with proton mass" << std::endl;
 						}
 						else if ( abs( TrackID ) == 321 )
 						{
@@ -356,7 +356,7 @@ void ChargedPFOCorrection::processEvent( EVENT::LCEvent *pLCEvent )
 							outputPFOtrkvec.push_back( refittedTrack );
 							trackMass = m_kaon_mass;
 							m_updatePFO = true;
-							streamlog_out(DEBUG2) << "	Standard track is replaced with track refitted with kaon mass" << std::endl;
+							streamlog_out(MESSAGE2) << "	Standard track is replaced with track refitted with kaon mass" << std::endl;
 						}
 						else
 						{
@@ -364,7 +364,7 @@ void ChargedPFOCorrection::processEvent( EVENT::LCEvent *pLCEvent )
 							outputPFOtrkvec.push_back( refittedTrack );
 							trackMass = m_pion_mass;
 							if ( !m_updatePFO ) m_updatePFO = false;
-							streamlog_out(DEBUG2) << "	Standard track is used for updating PFO" << std::endl;
+							streamlog_out(MESSAGE2) << "	Standard track is used for updating PFO" << std::endl;
 						}
 						if ( m_mainTrackSelectionScenario == 1 )
 						{
@@ -388,9 +388,9 @@ void ChargedPFOCorrection::processEvent( EVENT::LCEvent *pLCEvent )
 						}
 						else
 						{
-							streamlog_out(DEBUG5) << "	Investigating track state at first hit" << std::endl;
+							streamlog_out(MESSAGE5) << "	Investigating track state at first hit" << std::endl;
 							TrackState *trackStateAtFirstHit = inputTrk->getTrackStates()[ 1 ];
-							streamlog_out(DEBUG5) << *trackStateAtFirstHit << std::endl;
+							streamlog_out(MESSAGE5) << *trackStateAtFirstHit << std::endl;
 							if ( sqrt( pow( trackStateAtFirstHit->getReferencePoint()[ 0 ] , 2 ) + pow( trackStateAtFirstHit->getReferencePoint()[ 1 ] , 2 ) + pow( trackStateAtFirstHit->getReferencePoint()[ 2 ] , 2 ) ) <= firstHitRef )
 							{
 								mainTrk = refittedTrack;
@@ -400,35 +400,35 @@ void ChargedPFOCorrection::processEvent( EVENT::LCEvent *pLCEvent )
 							}
 						}
 					}
-					streamlog_out(DEBUG5) << "	Main track of PFO" << std::endl;
-					streamlog_out(DEBUG5) << *mainTrk << std::endl;
+					streamlog_out(MESSAGE5) << "	Main track of PFO" << std::endl;
+					streamlog_out(MESSAGE5) << *mainTrk << std::endl;
 					pfoFourMomentum = getTrackFourMomentum( mainTrk , mainTrkMass );
 					newPFOCovMat = getChargedPFOCovMat( mainTrk , mainTrkMass );
 					TrackID = mainTrackID;
 /*
 					TrackID = getTruthTrkID( pLCEvent, mainTrk );
 					TrackIndex = this->getTrackIndex( MarlinTrkTracks , mainTrk );
-					streamlog_out(DEBUG6) << "	TrackID: 	" << TrackID << std::endl;
-					streamlog_out(DEBUG6) << "	TrackIndex: 	" << TrackIndex << std::endl;
+					streamlog_out(MESSAGE6) << "	TrackID: 	" << TrackID << std::endl;
+					streamlog_out(MESSAGE6) << "	TrackIndex: 	" << TrackIndex << std::endl;
 					if ( abs( TrackID ) == 2212 )
 					{
 						mainTrk = dynamic_cast<EVENT::Track*>( MarlinTrkTracksPROTON->getElementAt( TrackIndex ) );
 						trackMass = m_proton_mass;
 						m_updatePFO = true;
-						streamlog_out(DEBUG2) << "	Standard track is replaced with track refitted with proton mass" << std::endl;
+						streamlog_out(MESSAGE2) << "	Standard track is replaced with track refitted with proton mass" << std::endl;
 					}
 					else if ( abs( TrackID ) == 321 )
 					{
 						mainTrk = dynamic_cast<EVENT::Track*>( MarlinTrkTracksKAON->getElementAt( TrackIndex ) );
 						trackMass = m_kaon_mass;
 						m_updatePFO = true;
-						streamlog_out(DEBUG2) << "	Standard track is replaced with track refitted with kaon mass" << std::endl;
+						streamlog_out(MESSAGE2) << "	Standard track is replaced with track refitted with kaon mass" << std::endl;
 					}
 					else
 					{
 						trackMass = m_pion_mass;
 						m_updatePFO = false;
-						streamlog_out(DEBUG2) << "	Standard track is used for updating PFO" << std::endl;
+						streamlog_out(MESSAGE2) << "	Standard track is used for updating PFO" << std::endl;
 					}
 //					m_updatePFO = false;
 */				}
@@ -468,8 +468,8 @@ void ChargedPFOCorrection::processEvent( EVENT::LCEvent *pLCEvent )
 					outputPFO->setCovMatrix( newPFOCovMat );
 				}
 			}
-			streamlog_out(DEBUG8) << "	UPDATED PFO:" << std::endl;
-			streamlog_out(DEBUG8) << *outputPFO << std::endl;
+			streamlog_out(MESSAGE8) << "	UPDATED PFO:" << std::endl;
+			streamlog_out(MESSAGE8) << *outputPFO << std::endl;
 //			outputPfoCollection->addElement( outputPFO );
 
 			newPFO->setType( outputPFO->getType() );
@@ -552,13 +552,13 @@ int ChargedPFOCorrection::getTruthTrkID( EVENT::LCEvent *pLCEvent , EVENT::Track
 		{
 			maxweightTRKtoMCP = mcp_weight;
 			iTRKtoMCPmax = i_mcp;
-			streamlog_out(DEBUG0) << "	MCParticle at index: " << i_mcp << " has PDG: " << testMCP->getPDG() << " and MCParticle to Track link weight is " << mcp_weight << std::endl;
+			streamlog_out(MESSAGE0) << "	MCParticle at index: " << i_mcp << " has PDG: " << testMCP->getPDG() << " and MCParticle to Track link weight is " << mcp_weight << std::endl;
 		}
 	}
 	if ( iTRKtoMCPmax != -1 )
 	{
 		MCParticle *testMCP = (MCParticle *) mcpvec.at(iTRKtoMCPmax);
-		streamlog_out(DEBUG0) << "	MCParticle at index: " << iTRKtoMCPmax << " with PDG code: " << testMCP->getPDG() << " has highest link weight to input track" << std::endl;
+		streamlog_out(MESSAGE0) << "	MCParticle at index: " << iTRKtoMCPmax << " with PDG code: " << testMCP->getPDG() << " has highest link weight to input track" << std::endl;
 		LCRelationNavigator MCParticleTrackNav( pLCEvent->getCollection( m_MCTruthTrackLinkCollection ) );
 		const EVENT::LCObjectVec& trkvec = MCParticleTrackNav.getRelatedToObjects(testMCP);
 		const EVENT::FloatVec&  trkweightvec = MCParticleTrackNav.getRelatedToWeights(testMCP);
@@ -570,7 +570,7 @@ int ChargedPFOCorrection::getTruthTrkID( EVENT::LCEvent *pLCEvent , EVENT::Track
 			{
 				maxweightMCPtoTRK = track_weight;
 				iMCPtoTRKmax = i_trk;
-				streamlog_out(DEBUG0) << "	Track at index: " << i_trk << " has highest link weight to MCParticle = " << track_weight << std::endl;
+				streamlog_out(MESSAGE0) << "	Track at index: " << i_trk << " has highest link weight to MCParticle = " << track_weight << std::endl;
 			}
 		}
 		if ( iMCPtoTRKmax != -1 )
@@ -578,7 +578,7 @@ int ChargedPFOCorrection::getTruthTrkID( EVENT::LCEvent *pLCEvent , EVENT::Track
 			Track *linkedTrack = (Track *) trkvec.at( iMCPtoTRKmax );
 			if ( linkedTrack == inputTrk )
 			{
-				streamlog_out(DEBUG0) << "	Track linked to MCParticle with highest weight" << std::endl;
+				streamlog_out(MESSAGE0) << "	Track linked to MCParticle with highest weight" << std::endl;
 				linkedMCP = (MCParticle *) mcpvec.at(iTRKtoMCPmax);
 				if ( maxweightTRKtoMCP >= m_MinWeightTrackMCTruthLink && maxweightMCPtoTRK >= m_MinWeightMCTruthTrackLink ) TrackID = linkedMCP->getPDG();
 			}
@@ -611,30 +611,30 @@ int ChargedPFOCorrection::getTrackIndex( EVENT::LCCollection *TrackCollection , 
 	}
 	if ( track_index == -1)
 	{
-		streamlog_out(DEBUG1) << "	Coudln't find track_index!!!  " << std::endl;
+		streamlog_out(MESSAGE1) << "	Coudln't find track_index!!!  " << std::endl;
 	}
 	else
 	{
-		streamlog_out(DEBUG1) << "	Track index in " << m_MarlinTrkTracks << " collection is " << track_index << std::endl;
+		streamlog_out(MESSAGE1) << "	Track index in " << m_MarlinTrkTracks << " collection is " << track_index << std::endl;
 	}
 	return track_index;
 }
 
 TLorentzVector ChargedPFOCorrection::getTrackFourMomentum( EVENT::Track* inputTrk , double trackMass )
 {
-	streamlog_out(DEBUG1) << "	------------------------------------------------" << std::endl;
-	streamlog_out(DEBUG1) << "	Calculating PFO 4-momentum from track parameters" << std::endl;
-	streamlog_out(DEBUG1) << "	------------------------------------------------" << std::endl;
+	streamlog_out(MESSAGE1) << "	------------------------------------------------" << std::endl;
+	streamlog_out(MESSAGE1) << "	Calculating PFO 4-momentum from track parameters" << std::endl;
+	streamlog_out(MESSAGE1) << "	------------------------------------------------" << std::endl;
 	double Phi = inputTrk->getPhi();
 	double Omega = inputTrk->getOmega();
 	double tanLambda = inputTrk->getTanLambda();
-	streamlog_out(DEBUG0) << "	Track parameters obtained" << std::endl;
+	streamlog_out(MESSAGE0) << "	Track parameters obtained" << std::endl;
 	double pT = eB / fabs( Omega );
 	double px = pT * TMath::Cos( Phi );
 	double py = pT * TMath::Sin( Phi );
 	double pz = pT * tanLambda;
 	double E = sqrt( pow( trackMass , 2 ) + px * px + py * py + pz * pz);
-	streamlog_out(DEBUG0) << "	Track parameters is converted to (p,E)" << std::endl;
+	streamlog_out(MESSAGE0) << "	Track parameters is converted to (p,E)" << std::endl;
 	TLorentzVector trackFourMomentum( px , py , pz , E );
 	return trackFourMomentum;
 }
@@ -676,9 +676,9 @@ std::vector<float> ChargedPFOCorrection::getChargedPFOCovMat( EVENT::Track* inpu
 //
 //
 
-	streamlog_out(DEBUG1) << "	-------------------------------------------------------" << std::endl;
-	streamlog_out(DEBUG1) << "	Calculating PFO CovMat from track parameters and CovMat" << std::endl;
-	streamlog_out(DEBUG1) << "	-------------------------------------------------------" << std::endl;
+	streamlog_out(MESSAGE1) << "	-------------------------------------------------------" << std::endl;
+	streamlog_out(MESSAGE1) << "	Calculating PFO CovMat from track parameters and CovMat" << std::endl;
+	streamlog_out(MESSAGE1) << "	-------------------------------------------------------" << std::endl;
 	const int rows			= 3; // n rows jacobian
 	const int columns		= 4; // n columns jacobian
 	const int kspace_time_dim	= 4;
@@ -704,7 +704,7 @@ std::vector<float> ChargedPFOCorrection::getChargedPFOCovMat( EVENT::Track* inpu
 	float SigmaTanLambdaSigmaOmega 	=	trackCovMat[ 12 ];
 	float SigmaTanLambda2		=	trackCovMat[ 14 ];
 
-	streamlog_out(DEBUG0) << "	Track parametrs and CovMat obtained" << std::endl;
+	streamlog_out(MESSAGE0) << "	Track parametrs and CovMat obtained" << std::endl;
 
 //	Define array with jacobian matrix elements by rows
 	double jacobian_by_rows[rows*columns] =
@@ -714,11 +714,11 @@ std::vector<float> ChargedPFOCorrection::getChargedPFOCovMat( EVENT::Track* inpu
 		-trackPx / trackOmega	,	-trackPy / trackOmega	,	-trackPz / trackOmega		,	-trackP * trackP / ( trackE * trackOmega )
 	};
 
-	streamlog_out(DEBUG0) << "	Jacobian array formed by rows" << std::endl;
+	streamlog_out(MESSAGE0) << "	Jacobian array formed by rows" << std::endl;
 
 //	construct the Jacobian using previous array ("F" if filling by columns, "C", if filling by rows, $ROOTSYS/math/matrix/src/TMatrixT.cxx)
 	TMatrixD jacobian(rows,columns, jacobian_by_rows, "C");
-	streamlog_out(DEBUG0) << "	Jacobian array converted to Jacobian matrix" << std::endl;
+	streamlog_out(MESSAGE0) << "	Jacobian array converted to Jacobian matrix" << std::endl;
 
 //	track covariance matrix by rows
 	double track_cov_matrix_by_rows[rows*rows] =
@@ -727,17 +727,17 @@ std::vector<float> ChargedPFOCorrection::getChargedPFOCovMat( EVENT::Track* inpu
 		SigmaTanLambdaSigmaPhi		,	SigmaPhi2			,	SigmaPhiSigmaOmega	,
 		SigmaTanLambdaSigmaOmega	,	SigmaPhiSigmaOmega		,	SigmaOmega2
 	};
-	streamlog_out(DEBUG0) << "	Track covariance matrix array formed by rows" << std::endl;
+	streamlog_out(MESSAGE0) << "	Track covariance matrix array formed by rows" << std::endl;
 
 	TMatrixD covMatrix_track(rows,rows, track_cov_matrix_by_rows, "C");
-	streamlog_out(DEBUG0) << "	Track CovMat array converted to track covariance matrix" << std::endl;
+	streamlog_out(MESSAGE0) << "	Track CovMat array converted to track covariance matrix" << std::endl;
 
 	covMatrixMomenta.Mult( TMatrixD( jacobian ,
 					TMatrixD::kTransposeMult ,
 					covMatrix_track) ,
 					jacobian
 					);
-	streamlog_out(DEBUG0) << "	Track covariance matrix converted to FourMomentum Covariance matrix" << std::endl;
+	streamlog_out(MESSAGE0) << "	Track covariance matrix converted to FourMomentum Covariance matrix" << std::endl;
 
 	covP.push_back( covMatrixMomenta(0,0) ); // x-x
 	covP.push_back( covMatrixMomenta(1,0) ); // y-x
@@ -749,7 +749,7 @@ std::vector<float> ChargedPFOCorrection::getChargedPFOCovMat( EVENT::Track* inpu
 	covP.push_back( covMatrixMomenta(3,1) ); // e-y
 	covP.push_back( covMatrixMomenta(3,2) ); // e-z
 	covP.push_back( covMatrixMomenta(3,3) ); // e-e
-	streamlog_out(DEBUG0) << "	FourMomentum CovarianceMatrix Filled succesfully" << std::endl;
+	streamlog_out(MESSAGE0) << "	FourMomentum CovarianceMatrix Filled succesfully" << std::endl;
 
 	return covP;
 
@@ -765,7 +765,7 @@ void ChargedPFOCorrection::check( EVENT::LCEvent *pLCEvent )
 		outputPfoCollection = pLCEvent->getCollection(m_outputPfoCollection);
 		int n_inputPFOs = inputPfoCollection->getNumberOfElements();
 		int n_outputPFOs = outputPfoCollection->getNumberOfElements();
-		streamlog_out(DEBUG4) << "	CHECK : processed event: " << pLCEvent->getEventNumber() << " (Number of inputPFOS: " << n_inputPFOs << " , Number of outputPFOs: " << n_outputPFOs <<")" << std::endl;
+		streamlog_out(MESSAGE4) << "	CHECK : processed event: " << pLCEvent->getEventNumber() << " (Number of inputPFOS: " << n_inputPFOs << " , Number of outputPFOs: " << n_outputPFOs <<")" << std::endl;
 	}
 	catch(DataNotAvailableException &e)
         {

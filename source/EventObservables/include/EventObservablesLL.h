@@ -41,6 +41,9 @@ class EventObservablesLL : public EventObservablesBase {
 	protected:
 		// meta parameters
 		std::string m_input2JetCollection{};
+		std::string m_inputIsoElectrons{};
+		std::string m_inputIsoMuons{};
+		std::string m_inputIsoTaus{};
 
 		std::string m_JMP{};
 		std::string m_JMSP{};
@@ -70,14 +73,42 @@ class EventObservablesLL : public EventObservablesBase {
 		int m_paired_lep_type{};
 
 		// 2 jet
+		float m_pxj1_2Jets{};
+		float m_pyj1_2Jets{};
+		float m_pzj1_2Jets{};
+		float m_ej1_2Jets{};
+
+		float m_pxj2_2Jets{};
+		float m_pyj2_2Jets{};
+		float m_pzj2_2Jets{};
+		float m_ej2_2Jets{};
+
+		float m_ptjmin2{};
+		float m_pjmin2{};
+
 		float m_ptjmax2{};
 		float m_pjmax2{};
+
+		float m_m_inv_2Jets{};
 
 		float m_cosJ1_2Jets{};
 		float m_cosJ2_2Jets{};
         float m_cosJ12_2Jets{};
         float m_cosJ1Z_2Jets{};
         float m_cosJ2Z_2Jets{};
+		float m_cosJZMax_2Jets{};
+
+		float m_yMinus2{};
+		float m_yPlus2{};
+
+		std::vector<double> m_bTagValues_2Jets{};
+		std::vector<double> m_bTagValues_2Jets2{};
+
+		float m_bmax1_2Jets{};
+		float m_bmax2_2Jets{};
+
+		float m_bmax12_2Jets{};
+		float m_bmax22_2Jets{};
 
 		// 4 jet
 		float m_mbmax12{};

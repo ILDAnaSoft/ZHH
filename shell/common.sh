@@ -11,15 +11,15 @@ function get_input_arg() {
     local default="$3"
 
     if [ -z $ZHH_INSTALL_USE_DEFAULT ]; then
-        printf "%s" "$message"
+        printf "ZHH> %s" "$message"
         read $varname
-
-        echo "variable with name ($varname) = ${!varname}"
 
         if [ -z ${!varname} ]; then
             IFS= read -r "$varname" <<< $default
             # add -d '' for multi line
         fi
+
+        #zhh_echo "Set variable $varname to ${!varname}"
     else
         zhh_echo "$message"
         IFS= read -r "$varname" <<< "$default"
@@ -31,8 +31,9 @@ function zhh_recompile() {
     # Compile ZHH processors
     cd $REPO_ROOT
     get_input_arg "Do you wish to recompile ZHH processors? (y) " yn y
+    echo "yn = $yn"
     
-    if [[  "$yn" = "y" || -z "$yn" ]]; then
+    if [[ "$yn" = "y" || -z "$yn" ]]; then
         source compile_from_scratch.sh keep $@
     else
         source compile_from_scratch.sh $@

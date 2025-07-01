@@ -84,7 +84,7 @@ void EventObservablesVV::clearChannelValues() {
 };
 
 void EventObservablesVV::updateChannelValues(EVENT::LCEvent *pLCEvent) {
-    setJetMomenta();
+    setJetCharges();
     
     LCCollection *input5JetCollection = pLCEvent->getCollection( m_input5JetCollection );
     LCCollection *input6JetCollection = pLCEvent->getCollection( m_input6JetCollection );
@@ -101,7 +101,7 @@ void EventObservablesVV::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         sortedTagging(input5JetCollection, m_JetTaggingPIDAlgorithm, m_JetTaggingPIDParameterB);
 
     // order is with decreasing b-tag    
-    for (int i=0; i < sortedBTagsJ5.size(); ++i) {
+    for (size_t i=0; i < sortedBTagsJ5.size(); ++i) {
         ReconstructedParticle* jet = (ReconstructedParticle*) input5JetCollection->getElementAt(i);
 
         m_pjmax5 = std::max(m_ptjmax5, (float)v4(jet).Pt());

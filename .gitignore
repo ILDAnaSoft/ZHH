@@ -5,11 +5,13 @@ source/*/lib
 source/*/xml
 source/build
 source/lib
+zhh/mem/Physsim/build
+*test*
 *#
 *oldsrc*
 *.swp
-Physsim
 .npy
+*.so
 *.pdf
 *.png
 *.root
@@ -58,3 +60,6 @@ WWCATOUTROOT
 *.env*
 *.intellisense*
 TestProd*
+.__afs*
+scripts/DevBatch
+AutoDict*

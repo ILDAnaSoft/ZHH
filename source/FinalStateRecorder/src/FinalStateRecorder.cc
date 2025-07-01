@@ -69,7 +69,7 @@ FinalStateRecorder::FinalStateRecorder() :
 				);
 	
 	registerProcessorParameter("EventFilter",
-				"controls the GoodEvent return value which is true only if all conditions are fulfilled. expects a string vector of the form prop=(int)value; supports nu,nd,nc,ns,nb,nt,ne1,ne2,ne3,nv1,nv2,nv3,ngluon,ngamma,nW,nZ,nb_from_higgs,nc_from_higgs ",
+				"controls the GoodEvent return value which is true only if all conditions are fulfilled. expects a string vector of the form prop=(int)value; supports nu,nd,nc,ns,nb,nt,ne1,ne2,ne3,nv1,nv2,nv3,ngluon,ngamma,nW,nZ,nb_from_higgs,nc_from_higgs. example: nb>=2 ",
 				m_eventFilter,
 				std::vector<std::string>{}
 				);
@@ -77,7 +77,7 @@ FinalStateRecorder::FinalStateRecorder() :
 
 std::vector<std::pair<int*, int>> FinalStateRecorder::construct_filter_lookup(std::vector<std::string> filter) {
 	std::vector<std::pair<int*, int>> result;
-	std::vector<std::string> operators = { "=", "<", ">", "<=", ">=" };
+	std::vector<std::string> operators = { "=", "<=", ">=", "<", ">" };
 
 	for (std::string &piece : filter) {
 		int operator_id = -1;
@@ -95,8 +95,12 @@ std::vector<std::pair<int*, int>> FinalStateRecorder::construct_filter_lookup(st
 			throw EVENT::Exception("Cannot parse filter");
 		}
 
-		std::string property_name = piece.substr(0, split_pos);
-		std::string property_value = piece.substr(split_pos+1, piece.size() - split_pos - 1);
+		std::string property_name = piece.substr(0, split_pos - 1);
+		std::string property_value = piece.substr(split_pos + operators[operator_id].size(), piece.size() - split_pos - 1);
+
+		//std::cerr << "PropertyName: " << property_name << std::endl;
+		//std::cerr << "PropertyValue: " << property_value << std::endl;
+
 		int property_should;
 		try {
 			property_should = std::stoi(property_value);
@@ -168,10 +172,11 @@ bool FinalStateRecorder::process_filter(){
 
 		switch (m_filter_operators[i]) {
 			case 0: check = *is_should_pair.first == is_should_pair.second; break;
-			case 1: check = *is_should_pair.first  < is_should_pair.second; break;
-			case 2: check = *is_should_pair.first  > is_should_pair.second; break;
-			case 3: check = *is_should_pair.first <= is_should_pair.second; break;
-			case 4: check = *is_should_pair.first >= is_should_pair.second; break;
+			case 1: check = *is_should_pair.first <= is_should_pair.second; break;
+			case 2: check = *is_should_pair.first >= is_should_pair.second; break;
+			case 3: check = *is_should_pair.first  < is_should_pair.second; break;
+			case 4: check = *is_should_pair.first  > is_should_pair.second; break;
+			
 			default:
 				// do nothing
 				break;
@@ -222,7 +227,7 @@ void FinalStateRecorder::init()
 		m_pTTree->Branch("n_c_from_higgs", &m_n_c_from_higgs);
 
 		if (m_setReturnValues) {
-			m_pTTree->Branch("passed", &m_passed_filter);
+			m_pTTree->Branch("passed", &m_passed_filter, "passed/I");
 		}
 	}
 
@@ -412,6 +417,14 @@ void FinalStateRecorder::init()
 	this->register_process(new p6_llWW_llxyyx());
 	this->register_process(new p6_llWW_llvllv());
 
+	this->register_process(new p6_inclusive_xxxxxx());
+	this->register_process(new p6_inclusive_xxxyyx());
+	this->register_process(new p6_inclusive_yycyyc());
+	this->register_process(new p6_inclusive_yycyyu());
+	this->register_process(new p6_inclusive_yyuyyc());
+	this->register_process(new p6_inclusive_yyuyyu());
+	this->register_process(new p6_inclusive_yyyyyy());
+
 	// inclusive 6f mc-2025 production
 	this->register_process(new p6_inclusive_eeeexx());
 	this->register_process(new p6_inclusive_eeeeyy());
@@ -548,6 +561,10 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 				m_final_states = resolver->resolve(inputMCParticleCollection);
 				m_higgs_final_states = resolver->resolve_higgs_decays(inputMCParticleCollection);
 
+				// attach indices of hard interaction final state to input MCParticle collection
+				vector<int> hard_fs_indices = resolver->resolve_fs_particle_indices(inputMCParticleCollection);
+				inputMCParticleCollection->parameters().setValues("FINAL_STATE_PARTICLE_INDICES", hard_fs_indices);
+
 				m_n_b_from_higgs = resolver->get_n_b_from_higgs();
 				m_n_c_from_higgs = resolver->get_n_c_from_higgs();
 
@@ -609,7 +626,7 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 		setReturnValue("GoodEvent", false);
 	}
 
-	if (m_write_ttree) {
+	if (m_write_ttree && (!m_setReturnValues || m_passed_filter)) {
 		m_pTTree->Fill();
 	}
 }

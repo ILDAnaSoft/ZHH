@@ -78,7 +78,7 @@ function zhh_install_deps() {
     fi
 
     if [[ -f ".env" ]]; then
-        get_input_arg "You wish to install the dependencies, but an .env file which would be overwritten already exists. Do you wish to continue anyway? (y) " yn y
+        get_input_arg "You wish to install dependencies, but an .env file which would be overwritten already exists. Do you wish to continue anyway? (y) " yn y
 
         if [[ "$yn" = "y" ]]; then
             rm -f .env.bck

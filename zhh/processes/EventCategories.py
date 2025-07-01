@@ -26,6 +26,14 @@ class EVENT_CATEGORY_TRUE:
     llvv = 20
     eeWW = 21
     llWW = 22
+    
+    lvqqqq = 23
+    lvbbqq = 24
+    
+    llqqqq = 25
+    llbbqq = 26
+    llbb = 27
+    lvbbbb = 28
 
     # NEUTRINO
     OTHER_VV = 30
@@ -45,6 +53,9 @@ class EVENT_CATEGORY_TRUE:
     vv = 35
     vvqq = 36
     vvWW = 37
+    
+    vvqqqq = 38
+    vvbbqq = 39
 
     # HADRONIC
     OTHER_QQ = 50
@@ -56,13 +67,14 @@ class EVENT_CATEGORY_TRUE:
     # END
 
     qqqqH = 52
-    qqbbbb = 53
+    bbbbqq = 53
     bbbb = 54
     ttZ = 55
     ttbb = 56
     qq = 57
     qqqq = 58
     bbbbbb = 59
+    qqqqqq = 60
 
     # ttbar -> lvbbqq [t->Wb, W->lv/qq, b->bb]
     # so far not accounted: ttbar -> llvvbb (two leptonically decaying W bosons)
@@ -91,7 +103,7 @@ class EVENT_CATEGORY_TRUE:
     bbqqqq = 81
     bbcssc = 82
     bbuddu = 83
-    bbcsdu = 84
+    bbcsdu = 84 
 
     OTHER_EVENTS = 90
     f5_any = 91
@@ -100,7 +112,7 @@ class EVENT_CATEGORY_TRUE:
     f6_xxWW = 96
     f6_xxxxZ = 97
     
-    OTHER_F6 = 98
+    F6_OTHER = 98
     
     def __init__(self) -> None:
         self.map = { key:value for key, value in EVENT_CATEGORY_TRUE.__dict__.items() if not key.startswith('__') and not callable(key)}

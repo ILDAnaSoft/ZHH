@@ -15,10 +15,34 @@ m_JMP("best_perm_ll") {
         m_input2JetCollection ,
         std::string("Refined2Jets")
         );
+
+    registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
+        "ISOElectrons" ,
+        "Name of the isolated electron collection"  ,
+        m_inputIsoElectrons ,
+        std::string("ISOElectrons")
+        );
+    
+    registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
+        "ISOMuons" ,
+        "Name of the isolated electron collection"  ,
+        m_inputIsoMuons ,
+        std::string("ISOMuons")
+        );
+
+    registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
+        "ISOTaus" ,
+        "Name of the isolated tau collection"  ,
+        m_inputIsoTaus ,
+        std::string("ISOTaus")
+        );
 }
 
 void EventObservablesLL::prepareChannelTree() {
     TTree* ttree = getTTree();
+
+    m_bTagValues_2Jets  = std::vector<double>(2, -1.);
+    m_bTagValues_2Jets2 = std::vector<double>(2, -1.);
 
 	if (m_write_ttree) {
         ttree->Branch("npfosmin4j", &m_npfosmin4j, "npfosmin4j/I");
@@ -44,14 +68,46 @@ void EventObservablesLL::prepareChannelTree() {
         
 
         // 2 jets
+        ttree->Branch("pxj1_2Jets", &m_pxj1_2Jets, "pxj1_2Jets/F");
+		ttree->Branch("pyj1_2Jets", &m_pyj1_2Jets, "pyj1_2Jets/F");
+		ttree->Branch("pzj1_2Jets", &m_pzj1_2Jets, "pzj1_2Jets/F");
+		ttree->Branch("ej1_2Jets", &m_ej1_2Jets, "ej1_2Jets/F");
+
+		ttree->Branch("pxj2_2Jets", &m_pxj2_2Jets, "pxj2_2Jets/F");
+		ttree->Branch("pyj2_2Jets", &m_pyj2_2Jets, "pyj2_2Jets/F");
+		ttree->Branch("pzj2_2Jets", &m_pzj2_2Jets, "pzj2_2Jets/F");
+		ttree->Branch("ej2_2Jets", &m_ej2_2Jets, "ej2_2Jets/F");
+
         ttree->Branch("cosJ1_2Jets", &m_cosJ1_2Jets, "cosJ1_2Jets/F");
         ttree->Branch("cosJ2_2Jets", &m_cosJ2_2Jets, "cosJ2_2Jets/F");
         ttree->Branch("cosJ12_2Jets", &m_cosJ12_2Jets, "cosJ12_2Jets/F");
         ttree->Branch("cosJ1Z_2Jets", &m_cosJ1Z_2Jets, "cosJ1Z_2Jets/F");
         ttree->Branch("cosJ2Z_2Jets", &m_cosJ2Z_2Jets, "cosJ2Z_2Jets/F");
+        ttree->Branch("cosJZMax_2Jets", &m_cosJZMax_2Jets, "cosJZMax_2Jets/F");
+
+        ttree->Branch("ptjmin2", &m_ptjmin2, "ptjmin2/F");
+        ttree->Branch("pjmin2", &m_pjmin2, "pjmin2/F");
 
         ttree->Branch("ptjmax2", &m_ptjmax2, "ptjmax2/F");
         ttree->Branch("pjmax2", &m_pjmax2, "pjmax2/F");
+
+        ttree->Branch("m_inv_2Jets", &m_m_inv_2Jets, "m_inv_2Jets/F");
+
+        ttree->Branch("yminus2", &m_yMinus2, "yminus2/F");
+        ttree->Branch("yplus2", &m_yPlus2, "yplus2/F");
+
+        ttree->Branch("bmax1_2Jets", &m_bmax1_2Jets, "bmax1_2Jets/F");
+        ttree->Branch("bmax2_2Jets", &m_bmax2_2Jets, "bmax2_2Jets/F");
+
+        ttree->Branch("bTagValues_2Jets", &m_bTagValues_2Jets);
+
+        if (m_use_tags2) {
+            ttree->Branch("bmax12_2Jets", &m_bmax12_2Jets, "bmax12_2Jets/F");
+            ttree->Branch("bmax22_2Jets", &m_bmax22_2Jets, "bmax22_2Jets/F");
+
+            ttree->Branch("bTagValues_2Jets2", &m_bTagValues_2Jets2);
+        }
+        
 
         // 4 jets
         ttree->Branch("mbmax12", &m_mbmax12, "mbmax12/F");
@@ -83,14 +139,36 @@ void EventObservablesLL::clearChannelValues() {
 	m_mzll_pre_pairing = 0.;
 
     // 2 jets
+    m_pxj1_2Jets = 0.;
+	m_pyj1_2Jets = 0.;
+	m_pzj1_2Jets = 0.;
+	m_ej1_2Jets  = 0.;
+
+    m_pxj2_2Jets = 0.;
+	m_pyj2_2Jets = 0.;
+	m_pzj2_2Jets = 0.;
+	m_ej2_2Jets  = 0.;
+
+    m_ptjmin2 = 0.;
+    m_pjmin2 = 0.;
+
     m_ptjmax2 = 0.;
     m_pjmax2 = 0.;
+
+    m_m_inv_2Jets = 0.;
 
     m_cosJ1_2Jets = 0.;
 	m_cosJ2_2Jets = 0.;
     m_cosJ12_2Jets = 0.;
     m_cosJ1Z_2Jets = 0.;
     m_cosJ2Z_2Jets = 0.;
+    m_cosJZMax_2Jets = 0.;
+
+    m_yMinus2 = 0.;
+    m_yPlus2 = 0.;
+
+    m_bTagValues_2Jets.clear();
+    m_bTagValues_2Jets2.clear();
 
     // 4 jets
     m_mbmax12 = 0.;
@@ -98,12 +176,11 @@ void EventObservablesLL::clearChannelValues() {
 };
 
 void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
-    setJetMomenta();
+    setJetCharges();
     
     LCCollection *inputJetCollection = pLCEvent->getCollection( m_inputJetCollection );
     LCCollection *input2JetCollection = pLCEvent->getCollection( m_input2JetCollection );
     LCCollection *inputLepPairCollection = pLCEvent->getCollection( m_inputLepPairCollection );
-    LCCollection *inputLeptonCollection = pLCEvent->getCollection( m_inputIsolatedleptonCollection );
 
     if ( inputLepPairCollection->getNumberOfElements() == m_nAskedIsoLeps() && inputJetCollection->getNumberOfElements() == m_nAskedJets() ) {
         // NPFOS MIN/MAX
@@ -113,6 +190,15 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         //m_m_diff_z = fabs( m_mzll - 91.2 );
         m_mzll_pre_pairing = inputLepPairCollection->parameters().getFloatVal("IsoLepsInvMass");
         
+        int pairedLeptonType = inputLepPairCollection->parameters().getIntVal("PairedType");
+        LCCollection *inputLeptonCollection;
+
+        switch(pairedLeptonType) {
+            case 11: inputLeptonCollection = pLCEvent->getCollection( m_inputIsoElectrons ); break;
+            case 13: inputLeptonCollection = pLCEvent->getCollection( m_inputIsoMuons ); break;
+            case 15: inputLeptonCollection = pLCEvent->getCollection( m_inputIsoTaus ); break;
+        }
+
         IntVec pairedLeptonIDx;
         inputLepPairCollection->parameters().getIntVals("PairedLeptonIDx", pairedLeptonIDx);
         
@@ -126,16 +212,16 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         m_plmin = min(v4_paired_isolep1.P(), v4_paired_isolep2.P());
         m_plmax = max(v4_paired_isolep1.P(), v4_paired_isolep2.P());
 
-        ReconstructedParticle* isolep1 = dynamic_cast<ReconstructedParticle*>( inputLeptonCollection->getElementAt(pairedLeptonIDx[0]));
+        if (pairedLeptonType == 11 || pairedLeptonType == 13) {
+            FloatVec mvaOutputIsoLepTagging;
+            inputLeptonCollection->getParameters().getFloatVals("ISOLepTagging", mvaOutputIsoLepTagging);
 
-        FloatVec mvaOutputIsoLepTagging;
-        inputLeptonCollection->getParameters().getFloatVals("ISOLepTagging", mvaOutputIsoLepTagging);
+            float mvaOutputIsoLep1 = mvaOutputIsoLepTagging[pairedLeptonIDx[0]];
+            float mvaOutputIsoLep2 = mvaOutputIsoLepTagging[pairedLeptonIDx[1]];
 
-        float mvaOutputIsoLep1 = mvaOutputIsoLepTagging[pairedLeptonIDx[0]];
-        float mvaOutputIsoLep2 = mvaOutputIsoLepTagging[pairedLeptonIDx[1]];
-
-        m_mvalepminus = min(mvaOutputIsoLep1, mvaOutputIsoLep2);
-        m_mvalepminus = max(mvaOutputIsoLep1, mvaOutputIsoLep2);
+            m_mvalepminus = min(mvaOutputIsoLep1, mvaOutputIsoLep2);
+            m_mvalepplus = max(mvaOutputIsoLep1, mvaOutputIsoLep2);
+        }
 
         // START EVALUATE 2 JET COLLECTION
         TLorentzVector momentumZv4 = v4_paired_isolep1 + v4_paired_isolep2;
@@ -147,19 +233,81 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         ROOT::Math::PxPyPzEVector p4J1_2Jets = v4(jets_2Jets[0]);
         ROOT::Math::PxPyPzEVector p4J2_2Jets = v4(jets_2Jets[1]);
 
+        m_pxj1_2Jets = p4J1_2Jets.X();
+        m_pyj1_2Jets = p4J1_2Jets.Y();
+        m_pzj1_2Jets = p4J1_2Jets.Z();
+        m_ej1_2Jets  = p4J1_2Jets.E();
+
+        m_pxj2_2Jets = p4J2_2Jets.X();
+        m_pyj2_2Jets = p4J2_2Jets.Y();
+        m_pzj2_2Jets = p4J2_2Jets.Z();
+        m_ej2_2Jets  = p4J2_2Jets.E();
+
+        double pJ1_2Jets = p4J1_2Jets.P();
+        double pJ2_2Jets = p4J2_2Jets.P();
+
+        m_ptjmin2 = std::min(p4J1_2Jets.Pt(), p4J2_2Jets.Pt());
+        m_pjmin2 = std::min(pJ1_2Jets, pJ2_2Jets);
+
         m_ptjmax2 = std::max(p4J1_2Jets.Pt(), p4J2_2Jets.Pt());
-        m_pjmax2 = std::max(p4J1_2Jets.P(), p4J2_2Jets.P());
+        m_pjmax2 = std::max(pJ1_2Jets, pJ2_2Jets);
+
+        m_m_inv_2Jets = (p4J1_2Jets + p4J2_2Jets).M();
 
         TVector3 momentum1_2Jets = jets_2Jets[0]->getMomentum();
         TVector3 momentum2_2Jets = jets_2Jets[1]->getMomentum();
-        Double_t pJ1_2Jets = momentum1_2Jets.Mag();
-        Double_t pJ2_2Jets = momentum2_2Jets.Mag();
 
         m_cosJ1_2Jets = momentum1_2Jets.CosTheta();
         m_cosJ2_2Jets = momentum2_2Jets.CosTheta();
         m_cosJ12_2Jets = momentum1_2Jets.Dot(momentum2_2Jets)/pJ1_2Jets/pJ2_2Jets;
         m_cosJ1Z_2Jets = momentum1_2Jets.Dot(momentumZ)/pJ1_2Jets/momentumZ.Mag();
         m_cosJ2Z_2Jets = momentum2_2Jets.Dot(momentumZ)/pJ2_2Jets/momentumZ.Mag();
+        m_cosJZMax_2Jets = std::max(m_cosJ1Z_2Jets, m_cosJ2Z_2Jets);
+
+        PIDHandler jet2PIDh(input2JetCollection);
+
+        int algo_y = jet2PIDh.getAlgorithmID("yth");
+        const ParticleID & ythID = jet2PIDh.getParticleID(jets_2Jets[0], algo_y); // same arguments for all jets
+
+        FloatVec params_y = ythID.getParameters();
+        m_yMinus2 = params_y[jet2PIDh.getParameterIndex(algo_y, "y12")];
+        m_yPlus2 = params_y[jet2PIDh.getParameterIndex(algo_y, "y23")];
+
+        // flavor tagging
+        int _FTAlgoID = jet2PIDh.getAlgorithmID(m_JetTaggingPIDAlgorithm);
+		int _FTAlgoID2 = m_use_tags2 ? jet2PIDh.getAlgorithmID(m_JetTaggingPIDAlgorithm2) : -1;
+
+        int BTagID = jet2PIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterB);
+        //int CTagID = jet2PIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterC);
+
+        int BTagID2 = m_use_tags2 ? jet2PIDh.getParameterIndex(_FTAlgoID2, m_JetTaggingPIDParameterB2) : -1;
+        //int CTagID2 = m_use_tags2 ? jet2PIDh.getParameterIndex(_FTAlgoID2, m_JetTaggingPIDParameterC2) : -1;
+
+        // extract flavor tag values
+        for (int i=0; i<2; ++i) {
+            const ParticleIDImpl& FTImpl = dynamic_cast<const ParticleIDImpl&>(jet2PIDh.getParticleID(jets_2Jets[i], _FTAlgoID));
+            const FloatVec& FTPara = FTImpl.getParameters();
+
+            m_bTagValues_2Jets[i] = FTPara[BTagID];
+
+            if (m_use_tags2) {
+                const ParticleIDImpl& FTImpl2 = dynamic_cast<const ParticleIDImpl&>(jet2PIDh.getParticleID(jets_2Jets[i], _FTAlgoID2));
+                const FloatVec& FTPara2 = FTImpl2.getParameters();
+
+                m_bTagValues_2Jets2[i] = FTPara2[BTagID2];
+            }
+        }
+
+        m_bmax1_2Jets = std::max(m_bTagValues_2Jets[0], m_bTagValues_2Jets[1]);
+        m_bmax2_2Jets = std::min(m_bTagValues_2Jets[0], m_bTagValues_2Jets[1]);
+
+        if (m_use_tags2) {
+            m_bmax12_2Jets = std::max(m_bTagValues_2Jets2[0], m_bTagValues_2Jets2[1]);
+            m_bmax22_2Jets = std::min(m_bTagValues_2Jets2[0], m_bTagValues_2Jets2[1]);
+        }
+
+        
+
         // END EVALUATE 2 JET COLLECTION
 
         // TREAT 4 JET COLELCTION
@@ -170,8 +318,8 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
 
         std::tie(m_zhh_jet_matching, zhh_masses, m_zhh_chi2) = pairJetsByMass(jet_v4, { 25, 25 });
 
-        m_zhh_mh1 = zhh_masses[0];
-        m_zhh_mh2 = zhh_masses[1];
+        m_zhh_mh1 = std::min(zhh_masses[0], zhh_masses[1]);
+        m_zhh_mh2 = std::max(zhh_masses[0], zhh_masses[1]);
         m_zhh_mhh = (jet_v4[0] + jet_v4[1] + jet_v4[2] + jet_v4[3]).M();
 
         std::vector<ROOT::Math::PxPyPzEVector> dijets = {
@@ -202,8 +350,8 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
             std::swap(paired_isolep1, paired_isolep2);
         }
 
-        m_paired_lep_type = abs(isolep1->getType());
-        if (m_paired_lep_type != 11 && m_paired_lep_type != 13) { // this should not happen...? but it does seldom...
+        m_paired_lep_type = pairedLeptonType;
+        if (m_paired_lep_type != 11 && m_paired_lep_type != 13 && m_paired_lep_type != 15) { // this should not happen...? but it does seldom...
             m_paired_lep_type = 11; 
             m_errorCodes.push_back(1001);
         }
