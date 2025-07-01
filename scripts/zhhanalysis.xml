@@ -116,7 +116,7 @@
     <!--true: Use (mathematically) true Jacobian for the option E_cluster = |p|, false: for the option E_cluster = |p|, Use the same jacobian as the option E_cluster = E_kinetic-->
     <parameter name="useTrueJacobian" type="bool">false</parameter>
     <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-    <parameter name="Verbosity" type="string">SILENT</parameter>
+    <parameter name="Verbosity" type="string">DEBUG</parameter>
   </processor>
 
   <processor name="MySwitchCovMat" type="SwitchCovMat">
@@ -133,13 +133,13 @@
     <!--true: Use (mathematically) true Jacobian for the option E_cluster = |p|, false: for the option E_cluster = |p|, Use the same jacobian as the option E_cluster = E_kinetic-->
     <parameter name="useTrueJacobian" type="bool">false</parameter>
     <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-    <parameter name="Verbosity" type="string">SILENT</parameter>
+    <parameter name="Verbosity" type="string">DEBUG</parameter>
   </processor>
 
   <processor name="MyChargedPFOCorrection" type="ChargedPFOCorrection">
     <!--Name of the Input PFO Collection-->
     <parameter name="PfoCollection" type="string" lcioInType="RECONSTRUCTEDPARTICLE">PandoraPFOs</parameter>
-    <parameter name="Verbosity" type="string">SILENT</parameter>
+    <parameter name="Verbosity" type="string">DEBUG</parameter>
   </processor>
   
   <processor name="MyHdecayMode" type="HdecayMode">
@@ -533,7 +533,7 @@
    <!--parameter name="JetPullsOutputColection" type="string" lcioOutType="LCFloatVec">JetPulls</parameter-->
    <!--parameter name="StartOutputCollection" type="string" lcioOutType="ReconstructedParticle">StartReco</parameter-->
    <!-- verbosity level - DEBUG only works if compiled in debug mode! -->
-   <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> SILENT </parameter>
+   <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> DEBUG </parameter>
  </processor>
  
  <processor name="MyZHHKinFit_zhh" type="ZHHKinFit">
@@ -580,7 +580,7 @@
    <!--parameter name="JetPullsOutputColection" type="string" lcioOutType="LCFloatVec">JetPulls</parameter-->
    <!--parameter name="StartOutputCollection" type="string" lcioOutType="ReconstructedParticle">StartReco</parameter-->
    <!-- verbosity level - DEBUG only works if compiled in debug mode! -->
-   <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> SILENT </parameter>
+   <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> DEBUG </parameter>
  </processor>
 
  <processor name="MyZHHKinFit_zzh" type="ZHHKinFit">
@@ -627,7 +627,7 @@
    <!--parameter name="JetPullsOutputColection" type="string" lcioOutType="LCFloatVec">JetPulls</parameter-->
    <!--parameter name="StartOutputCollection" type="string" lcioOutType="ReconstructedParticle">StartReco</parameter-->
    <!-- verbosity level - DEBUG only works if compiled in debug mode! -->
-   <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> SILENT </parameter>
+   <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> DEBUG </parameter>
  </processor>
  
  <processor name="MyErrorFlow" type="ErrorFlow">
