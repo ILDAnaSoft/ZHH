@@ -37,14 +37,15 @@ if [ -z "$1" ] && [ -z "$2" ]; then
     USE_CLUSTER="NO"
     read -p "> Submit via cluster? y/n (n) " USE_CLUSTER
 
+    if [ "$USE_CLUSTER" = "y" ]; then
+        BASEDIR="$USE_CLUSTER_BASEDIR"
+    fi
+
     rm -rf $BASEDIR/*.root $BASEDIR/*.slcio $BASEDIR/*.log $BASEDIR/*.json
     mkdir -p $BASEDIR
 else
     # this is a cluster job
     USE_CLUSTER="y"
-fi
-
-if [ "$USE_CLUSTER" = "y" ]; then
     BASEDIR="$USE_CLUSTER_BASEDIR"
 fi
 

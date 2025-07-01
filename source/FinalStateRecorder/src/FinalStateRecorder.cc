@@ -227,7 +227,7 @@ void FinalStateRecorder::init()
 		m_pTTree->Branch("n_c_from_higgs", &m_n_c_from_higgs);
 
 		if (m_setReturnValues) {
-			m_pTTree->Branch("passed", &m_passed_filter);
+			m_pTTree->Branch("passed", &m_passed_filter, "passed/I");
 		}
 	}
 
@@ -626,7 +626,7 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 		setReturnValue("GoodEvent", false);
 	}
 
-	if (m_write_ttree) {
+	if (m_write_ttree && (!m_setReturnValues || m_passed_filter)) {
 		m_pTTree->Fill();
 	}
 }

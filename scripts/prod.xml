@@ -56,77 +56,77 @@
         <processor name="MyHdecayMode" />
         <processor name="MyFinalStateRecorder" />
 
-        <if condition="MyFinalStateRecorder.GoodEvent">
+        <!-- <if condition="MyFinalStateRecorder.GoodEvent"> -->
 
-            <!-- Overlay removal so far cheated -->
-            <!-- <processor name="MyFastJetProcessor" /> -->
-            <processor name="MyCheatedMCOverlayRemoval" />
-            <processor name="MyThrust" />
+        <!-- Overlay removal so far cheated -->
+        <!-- <processor name="MyFastJetProcessor" /> -->
+        <processor name="MyCheatedMCOverlayRemoval" />
+        <processor name="MyThrust" />
 
-            <!-- Isolated lepton tagging and lepton pairing with BS/FSR recovery is run to separate llbbbb from vv/qqbbbb -->
-            <processor name="IsolatedMuonTagging"/>
-            <processor name="IsolatedElectronTagging"/>
-            <!-- <processor name="IsolatedTauTagging"/> -->
+        <!-- Isolated lepton tagging and lepton pairing with BS/FSR recovery is run to separate llbbbb from vv/qqbbbb -->
+        <processor name="IsolatedMuonTagging"/>
+        <processor name="IsolatedElectronTagging"/>
+        <!-- <processor name="IsolatedTauTagging"/> -->
 
-            <processor name="MyLeptonPairing" />
-            <!-- <processor name="MyMergePIDProcessor" /> -->
+        <processor name="MyLeptonPairing" />
+        <!-- <processor name="MyMergePIDProcessor" /> -->
 
-            <processor name="MyMergeIsolatedLeptons" />
-            <processor name="MyPatchCollections" />
+        <processor name="MyMergeIsolatedLeptons" />
+        <processor name="MyPatchCollections" />
 
-            <!-- JC, SLD CORR AND ERROR FLOW FOR 2,4,5,6 JETS -->
-            <processor name="JC2FT" />
-            <processor name="MySLDCorrection2J" />
-            <processor name="MyErrorFlow2J" />
+        <!-- JC, SLD CORR AND ERROR FLOW FOR 2,4,5,6 JETS -->
+        <processor name="JC2FT" />
+        <processor name="MySLDCorrection2J" />
+        <processor name="MyErrorFlow2J" />
 
-            <processor name="JC4FT" />
-            <processor name="MySLDCorrection4J" />
-            <processor name="MyErrorFlow4J" />
+        <processor name="JC4FT" />
+        <processor name="MySLDCorrection4J" />
+        <processor name="MyErrorFlow4J" />
 
-            <!--    
-            <processor name="JC5FT" />
-            <processor name="MySLDCorrection5J" />
-            <processor name="MyErrorFlow5J" />
+        <!--    
+        <processor name="JC5FT" />
+        <processor name="MySLDCorrection5J" />
+        <processor name="MyErrorFlow5J" />
 
-            <processor name="JC6FT" />
-            <processor name="MySLDCorrection6J" />
-            <processor name="MyErrorFlow6J" />
-            -->
+        <processor name="JC6FT" />
+        <processor name="MySLDCorrection6J" />
+        <processor name="MyErrorFlow6J" />
+        -->
 
-            <processor name="MyZHHKinFit_NMC" />
-            <processor name="MyZHHKinFit_solveNu" />
-            <processor name="MyZHHKinFit_ZHH" />
-            <processor name="MyZHHKinFit_ZZH" />
+        <processor name="MyZHHKinFit_NMC" />
+        <processor name="MyZHHKinFit_solveNu" />
+        <processor name="MyZHHKinFit_ZHH" />
+        <processor name="MyZHHKinFit_ZZH" />
 
-            <!-- TrueJet clustering for matrix element study with different levels of information -->
-            <processor name="MyTrueJet" />
+        <!-- TrueJet clustering for matrix element study with different levels of information -->
+        <processor name="MyTrueJet" />
 
-            <!-- lepton channel -->
-            <if condition="${Runllbbbb}">
-                <processor name="MyEventObservablesLL" />
-            </if>
-
-            <!-- neutrino channel -->
-            <if condition="${Runvvbbbb}">
-                <processor name="MyEventObservablesVV" /> 
-            </if>
-
-            <!-- hadron channel -->
-            <if condition="${Runqqbbbb}">
-                <processor name="MyEventObservablesQQ" />
-            </if>
-
-            <!-- <if condition="${RunTruthRecoComparison}">
-                <processor name="MyTruthRecoComparison" />
-            </if> -->
-
-            <!--
-            <if condition="MyHdecayMode.GoodEvent">
-            <processor name="MyMisclustering"/>
-            </if>
-            -->
-
+        <!-- lepton channel -->
+        <if condition="${Runllbbbb}">
+            <processor name="MyEventObservablesLL" />
         </if>
+
+        <!-- neutrino channel -->
+        <if condition="${Runvvbbbb}">
+            <processor name="MyEventObservablesVV" /> 
+        </if>
+
+        <!-- hadron channel -->
+        <if condition="${Runqqbbbb}">
+            <processor name="MyEventObservablesQQ" />
+        </if>
+
+        <!-- <if condition="${RunTruthRecoComparison}">
+            <processor name="MyTruthRecoComparison" />
+        </if> -->
+
+        <!--
+        <if condition="MyHdecayMode.GoodEvent">
+        <processor name="MyMisclustering"/>
+        </if>
+        -->
+
+        <!-- </if> -->
 
         <processor name="MyLCIOOutputProcessor" />
     </execute>
@@ -143,7 +143,7 @@
         <!-- limit the number of processed records (run+evt): -->
         <!--parameter name="MaxRecordNumber" value="0" /to process all events--> 
         <!--parameter name="MaxRecordNumber" value="1000" /to process 1000 events--> 
-        <parameter name="MaxRecordNumber" value="10"/>
+        <parameter name="MaxRecordNumber" value="50"/>
         <parameter name="SkipNEvents" value="0" />
         <parameter name="SupressCheck" value="false" />
         <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT">SILENT</parameter>
@@ -1807,7 +1807,7 @@
         <!--MyFinalStateRecorder identified events that have passed the EventObservables-->
         <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
         <parameter name="outputJsonFilename" type="string">${OutputDirectory}/${OutputBaseName}_FinalStateMeta.json</parameter>
-        <parameter name="EventFilter" type="string">nb>=2</parameter>
+        <!-- <parameter name="EventFilter" type="string">nb>=2</parameter> -->
 
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
         <parameter name="Verbosity" type="string">${Verbosity}</parameter>
