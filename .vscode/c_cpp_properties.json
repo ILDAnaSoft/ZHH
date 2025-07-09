@@ -16,6 +16,8 @@
                 "/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-almalinux9-gcc11.3.1-opt/ilcutil/1.7.2-vamvj5/include/**", // streamlog
                 "/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-almalinux9-gcc11.3.1-opt/nlohmann-json/3.11.2-mxh7ki/include", // nlohmann-json
                 "/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-almalinux9-gcc11.3.1-opt/py-torch/2.2.1-le2nos/lib/python3.10/site-packages/torch/include/**", // py-torch
+                "/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-almalinux9-gcc11.3.1-opt/py-pybind11/2.11.0-5c2fg5/include/**", // pybind11
+                "/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-almalinux9-gcc11.3.1-opt/python/3.10.13-od343s/include/**", // Python
                 "${workspaceFolder}/dependencies/Physsim/include**", // Physsim
                 "${workspaceFolder}/source/CheatedMCOverlayRemoval/include/**",
                 "${workspaceFolder}/source/CommonTools/include/**",
@@ -24,9 +26,11 @@
                 "${workspaceFolder}/source/HdecayMode/include/**",
                 "${workspaceFolder}/source/JetTaggingComparison/include/**",
                 "${workspaceFolder}/source/LeptonPairing/include/**",
+                "${workspaceFolder}/source/MergeCollections/include/**",
                 "${workspaceFolder}/source/MergePIDProcessor/include/**",
                 "${workspaceFolder}/source/Misclustering/include/**",
                 "${workspaceFolder}/source/EventObservables/include/**",
+                "${workspaceFolder}/source/PreSelection/include/**",
                 "${workspaceFolder}/source/TruthRecoComparison/include/**",
                 "${workspaceFolder}/source/ZHHKinfitProcessors/include/**",
                 "${workspaceFolder}/dependencies/MarlinMLFlavorTagging/StoreVariablesForMLTagging/include/**",

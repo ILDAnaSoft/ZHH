@@ -18,4 +18,5 @@ from .FinalStateDefinitions import define_eebb, define_μμbb, define_ττbb, \
     define_bbqqqq, define_bbbbqq, define_bbbbbb, \
     define_llhh, define_eeHHbbbb, define_µµHHbbbb, define_ττHHbbbb, \
     define_llhh_llbbbb, define_llqqh, \
-    FinalStateDefinition
+    FinalStateDefinition, \
+    categorize_llhh, categorize_llbb, categorize_2l4q, categorize_6q

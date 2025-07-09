@@ -207,7 +207,7 @@ class AnalysisCombine(ShellTask):
     def build_command(self, **kwargs):
         output_dirn = osp.dirname(cast(str, self.output().path))
         source_dirn = osp.dirname(self.input()[0]['collection'][0][0].path)
-        ttrees = ['FinalStates', 'EventObservablesLL', 'KinFitLLZHH;4', 'KinFitLLZZH;4']
+        ttrees = ['FinalStates', 'EventObservablesLL', 'KinFit_solveNu', 'KinFit_ZHH', 'KinFit_ZZH']
         
         return f"""source $REPO_ROOT/setup.sh
 zhhvenv

@@ -35,19 +35,13 @@ void EventObservablesQQ::prepareChannelTree() {
         ttree->Branch("ptjmax4", &m_ptjmax4, "ptjmax4/F");
         ttree->Branch("pjmax4", &m_pjmax4, "pjmax4/F");
 
-        ttree->Branch("pxj5", &m_pxj5, "pxj5/F");
-		ttree->Branch("pyj5", &m_pyj5, "pyj5/F");
-		ttree->Branch("pzj5", &m_pzj5, "pzj5/F");
-		ttree->Branch("ej5", &m_ej5, "ej5/F");
-        ttree->Branch("qj5", &m_qj5, "qj5/F");
-        ttree->Branch("qdj5", &m_qdj5, "qdj5/F");
+        ttree->Branch("jet5_4v", &m_jets4v[4]);
+		ttree->Branch("jet5_q", &m_jet5_q, "jet5_q/F");
+        ttree->Branch("jet5_qdyn", &m_jet5_qdyn, "jet5_qdyn/F");
 
-		ttree->Branch("pxj6", &m_pxj6, "pxj6/F");
-		ttree->Branch("pyj6", &m_pyj6, "pyj6/F");
-		ttree->Branch("pzj6", &m_pzj6, "pzj6/F");
-		ttree->Branch("ej6", &m_ej6, "ej6/F");
-        ttree->Branch("qj6", &m_qj6, "qj6/F");
-        ttree->Branch("qdj6", &m_qdj6, "qdj6/F");
+        ttree->Branch("jet6_4v", &m_jets4v[5]);
+		ttree->Branch("jet6_q", &m_jet6_q, "jet6_q/F");
+        ttree->Branch("jet6_qdyn", &m_jet6_qdyn, "jet6_qdyn/F");
 
         ttree->Branch("bmax5", &m_bmax5, "bmax5/F");
         ttree->Branch("bmax6", &m_bmax6, "bmax6/F");
@@ -83,19 +77,11 @@ void EventObservablesQQ::clearChannelValues() {
     m_pjmax4 = 0.;
     m_ptjmax4 = 0.;
 
-    m_pxj5 = 0.;
-    m_pyj5 = 0.;
-    m_pzj5 = 0.;
-    m_ej5 = 0.;
-    m_qj5 = 0.;
-    m_qdj5 = 0.;
+    m_jet5_q = 0.;
+    m_jet5_qdyn = 0.;
 
-    m_pxj6 = 0.;
-    m_pyj6 = 0.;
-    m_pzj6 = 0.;
-    m_ej6 = 0.;
-    m_qj6 = 0.;
-    m_qdj6 = 0.;
+    m_jet6_q = 0.;
+    m_jet6_qdyn = 0.;
 
     m_bmax5 = 0.;
     m_bmax6 = 0.;
@@ -112,7 +98,7 @@ void EventObservablesQQ::clearChannelValues() {
 };
 
 void EventObservablesQQ::updateChannelValues(EVENT::LCEvent *pLCEvent) {
-    setJetMomenta();
+    setJetCharges();
     
     LCCollection *inputJetCollection = pLCEvent->getCollection( m_inputJetCollection ); // -> m_jets
     LCCollection *input4JetCollection = pLCEvent->getCollection( m_input4JetCollection ); // -> m_4jets
@@ -235,20 +221,11 @@ void EventObservablesQQ::updateChannelValues(EVENT::LCEvent *pLCEvent) {
     }
 };
 
-void EventObservablesQQ::setJetMomenta() {
-    EventObservablesBase::setJetMomenta();
+void EventObservablesQQ::setJetCharges() {
+    EventObservablesBase::setJetCharges();
 
-	m_pxj5 = m_jets[4]->getMomentum()[0];
-	m_pyj5 = m_jets[4]->getMomentum()[1];
-	m_pzj5 = m_jets[4]->getMomentum()[2];
-	m_ej5  = m_jets[4]->getEnergy();
-    std::tie(m_qj5, m_qdj5) = jetCharge(m_jets[4]);
-
-    m_pxj6 = m_jets[5]->getMomentum()[0];
-	m_pyj6 = m_jets[5]->getMomentum()[1];
-	m_pzj6 = m_jets[5]->getMomentum()[2];
-	m_ej6  = m_jets[5]->getEnergy();
-    std::tie(m_qj6, m_qdj6) = jetCharge(m_jets[5]);
+	std::tie(m_jet5_q, m_jet5_qdyn) = jetCharge(m_jets[4]);
+    std::tie(m_jet6_q, m_jet6_qdyn) = jetCharge(m_jets[5]);
 };
 
 void EventObservablesQQ::calculateSimpleZHHChi2() {

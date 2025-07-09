@@ -62,7 +62,9 @@ def fig_ild_style(fig_or_ax:Figure|Axes, xlim:Union[List[float], Tuple[float,flo
             if hasattr(fig, 'columns'):
                 colorpalette = plot_context.getColorPalette(fig.columns)
             else:
-                raise Exception('Could not get colors for legend. Assign the .columns attribute to the figure.')
+                colorpalette = plot_context.getColorPalette(plot_context.getColorsAssignedKeys())
+                print('Could not get colors for legend. Using all properties of PlotContext')
+                #raise Exception('Could not get colors for legend. Assign the .columns attribute to the figure.')
         else:
             use_facecolor = ax.patches[0].get_facecolor() != (1,1,1,0)
             colorpalette = [getattr(ax.patches[(n_patches -1 - i) if use_facecolor else i], 'get_facecolor' if use_facecolor else 'get_edgecolor')() for i in range(n_patches)]
@@ -144,7 +146,10 @@ def fig_ild_style(fig_or_ax:Figure|Axes, xlim:Union[List[float], Tuple[float,flo
             process_name = legend_labels[i]
             legend_handles.append(Patch(color=colorpalette[i], linewidth=0, label=process_name))
         
-        legend_call_kwargs = deepmerge(legend_kwargs_fn(plot_context), deepcopy(legend_kwargs))
+        if plot_context is not None:
+            legend_call_kwargs = deepmerge(legend_kwargs_fn(plot_context), deepcopy(legend_kwargs))
+        else:
+            legend_call_kwargs = deepcopy(legend_kwargs)
         
         ax.legend(handles=legend_handles, **legend_call_kwargs)
     

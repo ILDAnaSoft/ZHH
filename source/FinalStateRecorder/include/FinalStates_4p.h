@@ -12,6 +12,11 @@ class p4: public FinalStateResolver {
     protected:
         vector<int> m_final_state_filter;
 
+        unsigned short F1_IDX = 6;
+        unsigned short F2_IDX = 7;
+        unsigned short F3_IDX = 8;
+        unsigned short F4_IDX = 9;
+
     public:
         // Set process ID and event category
         p4( string process_name, int process_id, int event_category, vector<int> decay_filter ):
@@ -24,6 +29,32 @@ class p4: public FinalStateResolver {
             m_final_state_filter {decay_filter},
             m_first_event_check(false) {};
 
+        vector<int> resolve_fs_particle_indices(LCCollection *mcp_collection, bool resolve_higgs = false) {
+            (void) resolve_higgs;
+
+            m_nZorH = 0;
+
+            // only required for test production: f4_llbb_sl0 and f4_eebb_sl0
+            // see workflows/resources/whizard_template/whizard.base.sin
+            if (m_process_id == PROCESS_ID::f4_llbb_sl0 || m_process_id == PROCESS_ID::f4_eebb_sl0) {
+                int mcp_cand1_pdg = ((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 6 ))->getPDG();
+                int mcp_cand2_pdg = ((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 7 ))->getPDG();
+
+                if (mcp_cand1_pdg == 23 || mcp_cand1_pdg == 25)
+                    m_nZorH++;
+
+                if (mcp_cand2_pdg == 23 || mcp_cand2_pdg == 25)
+                    m_nZorH++;
+
+                F1_IDX = m_shift_pos + 6 + m_nZorH;
+                F2_IDX = m_shift_pos + 7 + m_nZorH;
+                F3_IDX = m_shift_pos + 8 + m_nZorH;
+                F4_IDX = m_shift_pos + 9 + m_nZorH;
+            }
+            
+            return vector<int>{ F1_IDX, F2_IDX, F3_IDX, F4_IDX };
+        }
+
         // for compatability with new samples; see FinalStates_p6.h for explanation
         void on_first_event(LCCollection *mcp_collection) {
             if (((MCParticle*)mcp_collection->getElementAt(1))->getGeneratorStatus() == 4) {
@@ -31,6 +62,11 @@ class p4: public FinalStateResolver {
                 
                 m_isr_indices[0] += m_shift_pos;
                 m_isr_indices[1] += m_shift_pos;
+
+                F1_IDX += m_shift_pos;
+                F2_IDX += m_shift_pos;
+                F3_IDX += m_shift_pos;
+                F4_IDX += m_shift_pos;
             }
         };
         bool m_first_event_check{};
@@ -38,27 +74,14 @@ class p4: public FinalStateResolver {
         int m_nZorH = 0;
 
         vector<MCParticle*> resolve_fs_particles(LCCollection *mcp_collection, bool resolve_higgs = false) {
-            (void) resolve_higgs;
+            (void) resolve_fs_particle_indices(mcp_collection, resolve_higgs);
 
-            vector<MCParticle*> fs_particles;
-            m_nZorH = 0;
-
-            if (m_process_id == PROCESS_ID::f4_llbb_sl0 || m_process_id == PROCESS_ID::f4_eebb_sl0) {                
-                if (((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 6 ))->getPDG() == 23 ||
-                    ((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 6 ))->getPDG() == 25)
-                    m_nZorH++;
-
-                if (((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 7 ))->getPDG() == 23 ||
-                    ((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 7 ))->getPDG() == 25)
-                    m_nZorH++;
-            }
-
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 6 + m_nZorH ));
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 7 + m_nZorH ));
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 8 + m_nZorH ));
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 9 + m_nZorH ));
-
-            return fs_particles;
+            return vector<MCParticle*>{ 
+                (MCParticle*)mcp_collection->getElementAt( F1_IDX ),
+                (MCParticle*)mcp_collection->getElementAt( F2_IDX ),
+                (MCParticle*)mcp_collection->getElementAt( F3_IDX ),
+                (MCParticle*)mcp_collection->getElementAt( F4_IDX )
+            };
         }
 
         vector<int> resolve(LCCollection *mcp_collection) {

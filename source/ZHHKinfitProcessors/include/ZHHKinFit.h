@@ -61,11 +61,10 @@ public:
   typedef vector<EVENT::ReconstructedParticle*>	pfoVector;
   typedef vector<vector<EVENT::ReconstructedParticle*>>	pfoVectorVector;
   struct FitResult {
-    FitResult() {
-      fitter = shared_ptr<BaseFitter>();
-      constraints = shared_ptr<vector<shared_ptr<BaseHardConstraint>>>();
-      fitobjects = shared_ptr<vector<shared_ptr<BaseFitObject>>>();
-    };
+    FitResult():
+      fitter(shared_ptr<BaseFitter>()),
+      constraints(shared_ptr<vector<shared_ptr<BaseHardConstraint>>>()),
+      fitobjects(shared_ptr<vector<shared_ptr<BaseFitObject>>>()) {};
     FitResult(shared_ptr<BaseFitter> _fitter, 
 	      shared_ptr<vector<shared_ptr<BaseHardConstraint>>> _constraints, 
 	      shared_ptr<vector<shared_ptr<BaseFitObject>>> _fitobjects) : 
@@ -125,6 +124,7 @@ private:
   std::string _recoParticleCollectionName{};
   std::string _recoMCTruthLink{};
   std::string m_outputFile{};
+  std::string m_treeName{};
   std::string m_fithypothesis{};
   std::string m_outputLeptonCollection{};
   std::string m_outputJetCollection{};

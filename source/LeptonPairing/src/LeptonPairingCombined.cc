@@ -248,8 +248,8 @@ void LeptonPairingCombined::processEvent( EVENT::LCEvent *pLCEvent ) {
   
     streamlog_out(DEBUG7) << "Isolated electron and muon collections successfully found in event " << m_nEvt << endl;
   } catch( DataNotAvailableException &e ) {
-    cerr << "Critical error: Either no electron/muon/PFO collection found in event " << m_nEvt << "!!!" << endl;
-    exit(1);
+    cerr << "Event " << m_nEvt << endl;
+    throw EVENT::Exception("Critical error: Either no electron/muon/PFO collection found");
   }
 
   try {
@@ -388,6 +388,8 @@ void LeptonPairingCombined::processEvent( EVENT::LCEvent *pLCEvent ) {
   pLCEvent->addCollection(m_PFOsWOLepPairCol, m_outputPFOsWOLepPairCollection.c_str());
 
   if ( m_fillRootTree ) m_pTTree->Fill();
+
+  setReturnValue("pairFound", bestLeptonType > 0);
 }
 
 void LeptonPairingCombined::check(EVENT::LCEvent *pLCEvent) {

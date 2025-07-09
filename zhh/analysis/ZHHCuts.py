@@ -9,37 +9,37 @@ def zhh_cuts(hypothesis:str,
              disable_cuts:list[str]=[])->Sequence[Cut]:
     
     if hypothesis[:2].lower() == 'll':
-        cuts = [GreaterThanEqualCut('nisoleps', 2, label='nisoleps'),
-                WindowCut('mz', mZ, 80, center=True, label=r'm_{Z}')]
+        cuts = [GreaterThanEqualCut('nisoleptons', 2, label='nisoleptons'),
+                WindowCut('mzll', mZ, 80, center=True, label=r'm_{Z}')]
         
         if additional:
-            cuts += [WindowCut('mh1', 60., 180., label=r'm_{H1}'),
-                     WindowCut('mh2', 60., 180., label=r'm_{H2}'),
-                     LessThanEqualCut('pt_miss', 70., label=r'p_{t}^{miss}'),
+            cuts += [WindowCut('zhh_mh1', 60., 180., label=r'm_{H1}'),
+                     WindowCut('zhh_mh1', 60., 180., label=r'm_{H2}'),
+                     LessThanEqualCut('ptmiss', 70., label=r'p_{t}^{miss}'),
                      LessThanEqualCut('thrust', 0.9, label='thrust'),]
         
     elif hypothesis[:2].lower() == 'vv':
-        cuts = [EqualCut('nisoleps', 0, label='nisoleps'),
-                WindowCut('mh1', 60., 180., label=r'm_{H1}'),
-                WindowCut('mh2', 60., 180., label=r'm_{H2}'),
-                WindowCut('pt_miss', 10., 180., label=r'p_{t}^{miss}'),
+        cuts = [EqualCut('nisoleptons', 0, label='nisoleptons'),
+                WindowCut('zhh_mh1', 60., 180., label=r'm_{H1}'),
+                WindowCut('zhh_mh2', 60., 180., label=r'm_{H2}'),
+                WindowCut('ptmiss', 10., 180., label=r'p_{t}^{miss}'),
                 LessThanEqualCut('thrust', 0.9, label='thrust'),
-                LessThanEqualCut('e_vis', 400., label=r'E_{vis}'),
+                LessThanEqualCut('evis', 400., label=r'E_{vis}'),
                 GreaterThanEqualCut('mhh', 220., label=r'm_{HH}')]
         
         if b_tagging:
             cuts += [GreaterThanEqualCut('bmax3', 0.2)]
         
     elif hypothesis[:2].lower() == 'qq':
-        cuts = [EqualCut('nisoleps', 0)]
+        cuts = [EqualCut('nisoleptons', 0)]
         
         if b_tagging:
             cuts += [GreaterThanEqualCut('qq_bmax4', 0.16, label='bmax4')]
         
         if additional:
-            cuts += [WindowCut('mh1', 60., 180., label=r'm_{H1}'),
-                     WindowCut('mh2', 60., 180., label=r'm_{H2}'),
-                     LessThanEqualCut('pt_miss', 70., label=r'p_{t}^{miss}'),
+            cuts += [WindowCut('zhh_mh1', 60., 180., label=r'm_{H1}'),
+                     WindowCut('zhh_mh2', 60., 180., label=r'm_{H2}'),
+                     LessThanEqualCut('ptmiss', 70., label=r'p_{t}^{miss}'),
                      LessThanEqualCut('thrust', 0.9, label='thrust')]
         
     else:

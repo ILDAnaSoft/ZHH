@@ -16,10 +16,10 @@ dtypes = {
     'is_bkg': '?',
     
     'thrust': 'f',
-    'e_vis': 'f',
-    'pt_miss': 'f',
-    'invmass_miss': 'f',
-    'nisoleps': 'B',
+    'evis': 'f',
+    'ptmiss': 'f',
+    'm_miss': 'f',
+    'nisoleptons': 'B',
     'xx_paired_isoleptype': 'B',
     
     'passed': 'B',
@@ -30,17 +30,16 @@ dtypes = {
     'bmax3': 'f',
     'bmax4': 'f',
     
+    'zhh_mh1': 'f',
+    'zhh_mh2': 'f',
+    
     # ll
     'dilepton_type': 'B',
-    'mz': 'f',
+    'mzll': 'f',
     'mz_pre_pairing': 'f',
     
     # vv
-    'mhh': 'f',
-    
-    # qq
-    'mh1': 'f',
-    'mh2': 'f',
+    'zhh_mhh': 'f',
 }
 
 
@@ -64,7 +63,10 @@ class PreselectionSummary(MixedLazyTablelike):
                     self.cache[key] = np.array(tree[loc].array(), dtype=dtypes[key])
                     return self.cache[key]                
             else:
-                return np.array(tree[loc].array(), dtype=dtypes[key])
+                # make dtype default to float
+                return np.array(tree[loc].array(), dtype=dtypes[key] if key in dtypes else 'f')
+            
+        self._defaultHandler = fetch
         
         # writable
         self['id'] = np.arange(r_size, dtype=dtypes['id'])
@@ -101,14 +103,14 @@ class PreselectionSummary(MixedLazyTablelike):
             self['fsc'] = lambda: fs_counts(None)
             
         self['thrust'] = lambda: fetch('thrust', f'{prop_prefix}thrust')
-        self['e_vis'] = lambda: fetch('e_vis', f'{prop_prefix}evis')
-        self['pt_miss'] = lambda: fetch('pt_miss', f'{prop_prefix}ptmiss')
-        self['invmass_miss'] = lambda: fetch('invmass_miss', f'{prop_prefix}m_miss')
-        self['nisoleps'] = lambda: fetch('nisoleps', f'{prop_prefix}nisoleptons')
+        self['evis'] = lambda: fetch('evis', f'{prop_prefix}evis')
+        self['ptmiss'] = lambda: fetch('ptmiss', f'{prop_prefix}ptmiss')
+        self['m_miss'] = lambda: fetch('m_miss', f'{prop_prefix}m_miss')
+        self['nisoleptons'] = lambda: fetch('nisoleptons', f'{prop_prefix}nisoleptons')
         
-        # keep {presel}_mhi for compatability; NEW way should be WITHOUT preselection
-        self['mh1'] = lambda: fetch('mh1', f'{prop_prefix}zhh_mh1')
-        self['mh2'] = lambda: fetch('mh2', f'{prop_prefix}zhh_mh2')
+        # NEW: explicit definition of properties inside TTrees that are of type float are no more necessary
+        #self['zhh_mh1'] = lambda: fetch('zhh_mh1', f'{prop_prefix}zhh_mh1')
+        #self['zhh_mh2'] = lambda: fetch('zhh_mh2', f'{prop_prefix}zhh_mh2')
         
         if presel == 'll':
             #lepTypes = tree['lepTypes'].array()
@@ -116,7 +118,7 @@ class PreselectionSummary(MixedLazyTablelike):
             #pass_ltype13 = np.sum(np.abs(lepTypes) == 13, axis=1) == 2
             #self['ll_dilepton_type'] = pass_ltype11*11 + pass_ltype13*13
             self['dilepton_type'] = lambda: fetch('dilepton_type', f'{prop_prefix}paired_lep_type')
-            self['mz'] = lambda: fetch('mz', f'{prop_prefix}mzll')
+            self['mzll'] = lambda: fetch('mzll', f'{prop_prefix}mzll')
             self['mz_pre_pairing'] = lambda: fetch('mz_pre_pairing', f'{prop_prefix}mzll_pre_pairing')
             
         elif presel == 'vv':
@@ -128,13 +130,13 @@ class PreselectionSummary(MixedLazyTablelike):
         self['bmax4'] = lambda: fetch('bmax4', f'{prop_prefix}bmax4')
         
         # old names for compatability:
-        self[f'{presel}_mh1'] = lambda: self['mh1']
-        self[f'{presel}_mh2'] = lambda: self['mh2']
+        #self[f'{presel}_mh1'] = lambda: self['mh1']
+        #self[f'{presel}_mh2'] = lambda: self['mh2']
         
-        self[f'{presel}_bmax1'] = lambda: self['bmax1']
-        self[f'{presel}_bmax2'] = lambda: self['bmax2']
-        self[f'{presel}_bmax3'] = lambda: self['bmax3']
-        self[f'{presel}_bmax4'] = lambda: self['bmax4']
+        #self[f'{presel}_bmax1'] = lambda: self['bmax1']
+        #self[f'{presel}_bmax2'] = lambda: self['bmax2']
+        #self[f'{presel}_bmax3'] = lambda: self['bmax3']
+        #self[f'{presel}_bmax4'] = lambda: self['bmax4']
 
 @dataclass
 class FinalStateCounts:

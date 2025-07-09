@@ -9,6 +9,14 @@
 using namespace std;
 
 class p6: public FinalStateResolver {
+    protected:
+        unsigned short F1_IDX = 6;
+        unsigned short F2_IDX = 7;
+        unsigned short F3_IDX = 8;
+        unsigned short F4_IDX = 9;
+        unsigned short F5_IDX = 10;
+        unsigned short F6_IDX = 11;
+
     public:
         // Set process ID and event category
         p6( string process_name, int process_id, int event_category ):
@@ -36,14 +44,26 @@ class p6: public FinalStateResolver {
         // ISR photons will not have genstat 5
         void on_first_event(LCCollection *mcp_collection) {
             if (((MCParticle*)mcp_collection->getElementAt(1))->getGeneratorStatus() == 4) {
-                shift_pos = 2;
+                unsigned short shift_pos = 2;
                 
                 m_isr_indices[0] += shift_pos;
                 m_isr_indices[1] += shift_pos;
+
+                F1_IDX += shift_pos;
+                F2_IDX += shift_pos;
+                F3_IDX += shift_pos;
+                F4_IDX += shift_pos;
+                F5_IDX += shift_pos;
+                F6_IDX += shift_pos;
             }
         };
         bool first_event_check{};
-        int shift_pos = 0;
+
+        vector<int> resolve_fs_particle_indices(LCCollection *mcp_collection, bool resolve_higgs = false) {
+            (void) mcp_collection;
+            (void) resolve_higgs;
+            return vector<int>{ F1_IDX, F2_IDX, F3_IDX, F4_IDX, F5_IDX, F6_IDX };
+        }
 
         vector<MCParticle*> resolve_fs_particles(LCCollection *mcp_collection, bool resolve_higgs = false) {
             (void) resolve_higgs;
@@ -51,12 +71,12 @@ class p6: public FinalStateResolver {
             vector<MCParticle*> fs_particles;
 
             // Get fermions
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(shift_pos + 6 ));
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(shift_pos + 7 ));
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(shift_pos + 8 ));
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(shift_pos + 9 ));
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(shift_pos + 10));
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(shift_pos + 11));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(F1_IDX));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(F2_IDX));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(F3_IDX));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(F4_IDX));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(F5_IDX));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(F6_IDX));
 
             return fs_particles;
         }

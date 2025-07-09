@@ -11,6 +11,8 @@ using namespace std;
 class p2: public FinalStateResolver {
     protected:
         vector<int> m_final_state_filter{};
+        unsigned short F1_IDX = 6;
+        unsigned short F2_IDX = 7;
 
     public:
         // Set process ID and event category
@@ -18,14 +20,21 @@ class p2: public FinalStateResolver {
             m_final_state_filter = final_state_filter;
         };
 
+        vector<int> resolve_fs_particle_indices(LCCollection *mcp_collection, bool resolve_higgs = false) {
+            (void) mcp_collection;
+            (void) resolve_higgs;
+            
+            return vector<int>{ F1_IDX, F2_IDX };
+        }
+
         vector<MCParticle*> resolve_fs_particles(LCCollection *mcp_collection, bool resolve_higgs = false) {
             (void) resolve_higgs;
 
             vector<MCParticle*> fs_particles;
 
             // Get fermions
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(6 ));
-            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(7 ));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(F1_IDX));
+            fs_particles.push_back((MCParticle*)mcp_collection->getElementAt(F2_IDX));
 
             return fs_particles;
         }

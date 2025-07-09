@@ -62,6 +62,7 @@ set(sources
   LeptonPairing/src/ZHHUtilities.cc
   LeptonPairing/src/LeptonPairing.cc
   LeptonPairing/src/LeptonPairingCombined.cc
+  MergeCollections/src/MergeCollections.cc
   MergePIDProcessor/src/MergePIDProcessor.cc
   Misclustering/src/Misclustering.cc
   EventObservables/src/EventObservablesFromZZ.cc
@@ -116,12 +117,14 @@ target_include_directories(ZHHProcessors PRIVATE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/JetTaggingComparison/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/LeptonErrorAnalysis/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/LeptonPairing/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/MergeCollections/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/MergePIDProcessor/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Misclustering/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/EventObservables/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/TruthRecoComparison/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/ZHHKinfitProcessors/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/ZinvisibleErrorAnalysis/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/PreSelection/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/SwitchCovMat/include>
 )
 target_compile_definitions(ZHHProcessors ${MarlinUtil_DEFINITIONS} PRIVATE "MARLIN_USE_ROOT")

@@ -32,7 +32,7 @@
         <constant name="DetectorModel" value="ILD_l5_o1_v02" />
         <constant name="CompactFile" value="${lcgeo_DIR}/ILD/compact/${DetectorModel}/${DetectorModel}.xml" />
         <constant name="OutputDirectory" value="." />
-        <constant name="OutputBaseName" value="zhh" />
+        <constant name="OutputBaseName" value="zhh_reco" />
         <constant name="OutputRootFile" value="${OutputBaseName}.root" />
         <constant name="NumberOfHiggs" value="2" />
         <constant name="MCParticleCollectionName" value="MCParticlesSkimmed" />
@@ -46,6 +46,9 @@
         <processor name="InitDD4hep" />
         <processor name="MyStatusmonitor" />
 
+        <!-- Runtime+Process information in FinalStatesMeta.json -->
+        <processor name="MyFinalStateRecorder" />
+
         <!-- Reconstruction -->
         <group name="prodRecoCorrections" />
 
@@ -55,19 +58,6 @@
         </if>
 
         <group name="prodRecoMain" />
-
-        <!-- Analysis -->
-        <group name="prodAnalysisAll" />
-
-        <if condition="${Runllbbbb}">
-            <group name="prodAnalysisLL" />
-        </if>
-        <if condition="${Runvvbbbb}">
-            <group name="prodAnalysisVV" />
-        </if>
-        <if condition="${Runqqbbbb}">
-            <group name="prodAnalysisQQ" />
-        </if>
 
         <processor name="MyLCIOOutputProcessor" />
     </execute>
@@ -121,20 +111,48 @@
         <parameter name="Verbosity" type="string">SILENT</parameter>
     </processor>
 
-    <include ref="${ZHH_REPO_ROOT}/scripts/prod_analysis.xml" />
     <include ref="${ZHH_REPO_ROOT}/scripts/prod_reco.xml" />
 
+    <processor name="MyFinalStateRecorder" type="FinalStateRecorder">
+        <!--MyFinalStateRecorder identified events that have passed the EventObservables-->
+        <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
+        <parameter name="outputJsonFilename" type="string">${OutputDirectory}/${OutputBaseName}_FinalStateMeta.json</parameter>
+        <parameter name="writeTTree" type="bool">false</parameter>
+
+        <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
+        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
+    </processor>
+
+    <processor name="IsolatedTauTagging" type="TaJetClustering">
+        <!--Input PFO collection-->
+        <parameter name="PFOCollection" type="string" lcioInType="ReconstructedParticle"> PFOsMinusMuonsElectrons </parameter>
+        <!--Tau output collection-->
+        <parameter name="OutputTauCollection" type="string" lcioOutType="ReconstructedParticle"> ISOTaus </parameter>
+        <!--Remained PFO collection not clustered-->
+        <parameter name="RemainPFOCollection" type="string" lcioOutType="ReconstructedParticle"> PFOsMinusIsolatedLeptons </parameter>
+        <!--Tau mass for tau clustering [GeV]-->
+        <parameter name="TauMass" type="double">2 </parameter>
+        <!--Allowed cosine angle to be clustered-->
+        <parameter name="TauCosAngle" type="double">0.98 </parameter>
+        <!-- Skip ANY Primary and Cone cuts if true: should be only used in lepton-only final states! -->
+        <parameter name="NoSelection" type="int">0 </parameter>
+        <!--Primary cut include IMPLICIT selection of accepting only 1 or 3 tracks in jets: this loosen the counting of low energy tracks-->
+        <parameter name="AcceptFlexibleLowEnergyTrack" type="int">1 </parameter>
+        <!--Minimum jet energy to be accepted as taus-->
+        <parameter name="MinimumJetEnergy" type="double">3 </parameter>
+        <!--Minimum track energy to be accepted as taus-->
+        <parameter name="MinimumTrackEnergy" type="double">2 </parameter>
+        <!--Minimum track energy to be counted-->
+        <parameter name="MinimumTrackEnergyAssoc" type="double">2 </parameter>
+        <!--Minimum cosine angle for cone-->
+        <parameter name="ConeMinCosAngle" type="double">0.9 </parameter>
+        <!--Maximum cosine angle for cone-->
+        <parameter name="ConeMaxCosAngle" type="double">1 </parameter>
+        <!--Energy fraction of cone compared to central-->
+        <parameter name="ConeMaxEnergyFrac" type="double">0.1 </parameter>
+    </processor>
+
     <processor name="MyLCIOOutputProcessor" type="LCIOOutputProcessor">
-        <!--Writes the current event to the specified LCIO outputfile. Needs to be the last ActiveProcessor.-->
-        <!--drops the named collections from the event-->
-        <parameter name="DropCollectionNames" type="StringVec"> BuildUpVertex BuildUpVertex_RP BuildUpVertex_V0 BuildUpVertex_V0_RP GammaGammaCandidateEtaPrimes GammaGammaCandidateEtas GammaGammaCandidatePi0s MCTruthMarlinTrkTracksLink MCTruthClusterLink MarlinTrkTracksMCTruthLink ${PFOsWithoutOverlayCollection} PandoraPFO_updatedNeutralPFOs PrimaryVertex PrimaryVertex_RP RefinedJets_rel RefinedJets_vtx RefinedJets_vtx_RP RefinedVertex_RP V0RecoParticles V0Vertices VertexJets DistilledPFOs GammaGammaParticles DurhamJetsPFOs Durham_2JetsPFOs </parameter>
-        <!--drops all collections of the given type from the event-->
-        <!--parameter name="DropCollectionTypes" type="StringVec">SimTrackerHit SimCalorimeterHit  </parameter-->
-        <!-- write complete objects in subset collections to the file (i.e. ignore subset flag)-->
-        <!--parameter name="FullSubsetCollections" type="StringVec">${MCParticleCollectionName}</parameter-->
-        <!--force keep of the named collections - overrules DropCollectionTypes (and DropCollectionNames)-->
-        <parameter name="KeepCollectionNames" type="StringVec"> ISOMuons ISOElectrons ISOTaus recoNeutrinos4 recoNeutrinos6 SemiLeptonicDecay_RP SemiLeptonicDecayVertex PandoraClusters PFOsMinusISOMuons PandoraPFOsWithoutLepPair MarlinTrkTracks MarlinTrkTracksKaon MarlinTrkTracksProton JetSLDLink SLDJetLink mcNurecoNuLink recoNumcNuLink NuSLDLink SLDNuLink PandoraPFOs ${PFOsWithoutOverlayCollection} IsolatedLeptons ISOLeptons PandoraPFOsWithoutLepPair PandoraPFOsWithoutIsoLep RefinedJets2 RefinedJets4 RefinedJets5 RefinedJets6 TrueJets FinalColourNeutrals InitialColourNeutrals TrueJetPFOLink TrueJetMCParticleLink FinalElementonLink InitialElementonLink FinalColourNeutralLink InitialColourNeutralLink HdecayMode </parameter>
-        <!-- name of output file -->
         <parameter name="LCIOOutputFile" type="string">${OutputDirectory}/${OutputBaseName}.slcio</parameter>
         <!--write mode for output file:  WRITE_APPEND or WRITE_NEW-->
         <parameter name="LCIOWriteMode" type="string">WRITE_NEW</parameter>

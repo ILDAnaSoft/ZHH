@@ -231,6 +231,68 @@ EventObservablesBase::EventObservablesBase(const std::string &name) : Processor(
 			m_outputFile,
 			std::string("")
 			);
+
+	// TrueJet_Parser parameters
+  registerInputCollection( LCIO::RECONSTRUCTEDPARTICLE,
+                           "TrueJets" ,
+                           "Name of the TrueJetCollection input collection"  ,
+                           _trueJetCollectionName ,
+                           std::string("TrueJets") ) ;
+
+  registerInputCollection( LCIO::RECONSTRUCTEDPARTICLE,
+                           "FinalColourNeutrals" ,
+                           "Name of the FinalColourNeutralCollection input collection"  ,
+                           _finalColourNeutralCollectionName ,
+                           std::string("FinalColourNeutrals") ) ;
+
+  registerInputCollection( LCIO::RECONSTRUCTEDPARTICLE,
+                           "InitialColourNeutrals" ,
+                           "Name of the InitialColourNeutralCollection input collection"  ,
+                           _initialColourNeutralCollectionName ,
+                           std::string("InitialColourNeutrals") ) ;
+
+  registerInputCollection( LCIO::LCRELATION,
+                            "TrueJetPFOLink" ,
+                            "Name of the TrueJetPFOLink input collection"  ,
+                            _trueJetPFOLink,
+                            std::string("TrueJetPFOLink") ) ;
+
+  registerInputCollection( LCIO::LCRELATION,
+                            "TrueJetMCParticleLink" ,
+                            "Name of the TrueJetMCParticleLink input collection"  ,
+                            _trueJetMCParticleLink,
+                            std::string("TrueJetMCParticleLink") ) ;
+
+  registerInputCollection( LCIO::LCRELATION,
+                            "FinalElementonLink" ,
+                            "Name of the  FinalElementonLink input collection"  ,
+                            _finalElementonLink,
+                            std::string("FinalElementonLink") ) ;
+
+  registerInputCollection( LCIO::LCRELATION,
+                            "InitialElementonLink" ,
+                            "Name of the  InitialElementonLink input collection"  ,
+                            _initialElementonLink,
+                            std::string("InitialElementonLink") ) ;
+
+  registerInputCollection( LCIO::LCRELATION,
+                            "FinalColourNeutralLink" ,
+                            "Name of the  FinalColourNeutralLink input collection"  ,
+                            _finalColourNeutralLink,
+                            std::string("FinalColourNeutralLink") ) ;
+
+  registerInputCollection( LCIO::LCRELATION,
+                            "InitialColourNeutralLink" ,
+                            "Name of the  InitialColourNeutralLink input collection"  ,
+                            _initialColourNeutralLink,
+                            std::string("InitialColourNeutralLink") ) ;
+
+  registerInputCollection( LCIO::LCRELATION,
+                            "RecoMCTruthLink",
+                            "Name of the RecoMCTruthLink input collection"  ,
+                            _recoMCTruthLink,
+                            string("RecoMCTruthLink")
+                            );
 };
 
 void EventObservablesBase::prepareBaseTree()
@@ -294,6 +356,10 @@ void EventObservablesBase::prepareBaseTree()
 		ttree->Branch("zhh_mhh", &m_zhh_mhh, "zhh_mhh/F");
 		ttree->Branch("zhh_chi2", &m_zhh_chi2, "zhh_chi2/F");
 
+		// jet matching from KinFit
+		ttree->Branch("jet_matching_kinfit_zhh", &m_JMK_ZHH);
+		ttree->Branch("jet_matching_kinfit_zzh", &m_JMK_ZZH);
+
 		// nhbb:njet:chi2:mpt:prob11:prob12:prob21:prob22
 
 		ttree->Branch("bTags", &m_bTagValues);
@@ -329,33 +395,21 @@ void EventObservablesBase::prepareBaseTree()
 
 		// pxij:pyij:pzij:eij for all dijets i=(1,2) and associated jets (1,2)
 		// that all hypotheses have in common
-		ttree->Branch("pxj1", &m_pxj1, "pxj1/F");
-		ttree->Branch("pyj1", &m_pyj1, "pyj1/F");
-		ttree->Branch("pzj1", &m_pzj1, "pzj1/F");
-		ttree->Branch("ej1", &m_ej1, "ej1/F");
-		ttree->Branch("qj1", &m_qj1, "qj1/F");
-        ttree->Branch("qdj1", &m_qdj1, "qdj1/F");
+		ttree->Branch("jet1_4v", &m_jets4v[0]);
+		ttree->Branch("jet1_q", &m_jet1_q, "jet1_q/F");
+        ttree->Branch("jet1_qdyn", &m_jet1_qdyn, "jet1_qdyn/F");
 
-		ttree->Branch("pxj2", &m_pxj2, "pxj2/F");
-		ttree->Branch("pyj2", &m_pyj2, "pyj2/F");
-		ttree->Branch("pzj2", &m_pzj2, "pzj2/F");
-		ttree->Branch("ej2", &m_ej2, "ej2/F");
-		ttree->Branch("qj2", &m_qj2, "qj2/F");
-        ttree->Branch("qdj2", &m_qdj2, "qdj2/F");
+		ttree->Branch("jet2_4v", &m_jets4v[1]);
+		ttree->Branch("jet2_q", &m_jet2_q, "jet2_q/F");
+        ttree->Branch("jet2_qdyn", &m_jet2_qdyn, "jet2_qdyn/F");
 
-		ttree->Branch("pxj3", &m_pxj3, "pxj3/F");
-		ttree->Branch("pyj3", &m_pyj3, "pyj3/F");
-		ttree->Branch("pzj3", &m_pzj3, "pzj3/F");
-		ttree->Branch("ej3", &m_ej3, "ej3/F");
-		ttree->Branch("qj3", &m_qj3, "qj3/F");
-        ttree->Branch("qdj3", &m_qdj3, "qdj3/F");
+		ttree->Branch("jet3_4v", &m_jets4v[2]);
+		ttree->Branch("jet3_q", &m_jet3_q, "jet3_q/F");
+        ttree->Branch("jet3_qdyn", &m_jet3_qdyn, "jet3_qdyn/F");
 
-		ttree->Branch("pxj4", &m_pxj4, "pxj4/F");
-		ttree->Branch("pyj4", &m_pyj4, "pyj4/F");
-		ttree->Branch("pzj4", &m_pzj4, "pzj4/F");
-		ttree->Branch("ej4", &m_ej4, "ej4/F");
-		ttree->Branch("qj4", &m_qj4, "qj4/F");
-        ttree->Branch("qdj4", &m_qdj4, "qdj4/F");
+		ttree->Branch("jet4_4v", &m_jets4v[3]);
+		ttree->Branch("jet4_q", &m_jet4_q, "jet4_q/F");
+        ttree->Branch("jet4_qdyn", &m_jet4_qdyn, "jet4_qdyn/F");
 
 		// jet matching
 		//ttree->Branch("jet_matching", &m_jet_matching);
@@ -374,6 +428,24 @@ void EventObservablesBase::prepareBaseTree()
 			ttree->Branch("me_jmk_zhh_log", &m_lcme_jmk_zhh_log, "me_jmk_zhh_log/D");
 			ttree->Branch("me_jmk_zzh_log", &m_lcme_jmk_zzh_log, "me_jmk_zzh_log/D");
 		}
+
+		// TrueJet
+		ttree->Branch("trueLeptonN", &m_trueLeptonN, "trueLeptonN/I");
+		ttree->Branch("trueLeptonMomenta", &m_trueLeptonMomenta);
+		ttree->Branch("trueLeptonTypes", &m_trueLeptonTypes);
+
+		ttree->Branch("trueJetN", &m_trueJetN, "trueJetN/I");
+		ttree->Branch("trueJetMomenta", &m_trueJetMomenta);
+		ttree->Branch("trueJetTypes", &m_trueJetTypes);
+		ttree->Branch("trueJetPDGs", &m_trueJetPDGs);
+
+		ttree->Branch("trueRecoJetsMapped", &m_trueRecoJetsMapped, "trueRecoJetsMapped/I");
+		ttree->Branch("trueISRMomenta", &m_trueISRMomenta);
+
+		ttree->Branch("reco2TrueJetIndex", &m_reco2TrueJetIndex);
+		ttree->Branch("true2RecoJetIndex", &m_true2RecoJetIndex);
+
+		ttree->Branch("trueJetHiggsICNPairs", &m_trueJetHiggsICNPairs);
 
 		/* old variables for pre selection
 		ttree->Branch("dileptonMassPrePairing", &m_dileptonMassPrePairing, "dileptonMassPrePairing/F");
@@ -565,33 +637,20 @@ void EventObservablesBase::clearBaseValues()
 	*/
 
 	// jet quantities
-	m_pxj1 = 0.;
-	m_pyj1 = 0.;
-	m_pzj1 = 0.;
-	m_ej1  = 0.;
-	m_qj1  = 0.;
-	m_qdj1 = 0.;
+	for (int i = 0; i < m_nAskedJets(); i++)
+		m_jets4v[i].SetPxPyPzE(0., 0., 0., 0.);
 
-	m_pxj2 = 0.;
-	m_pyj2 = 0.;
-	m_pzj2 = 0.;
-	m_ej2  = 0.;
-	m_qj2  = 0.;
-	m_qdj2 = 0.;
+	m_jet1_q  = 0.;
+	m_jet1_qdyn = 0.;
 
-	m_pxj3 = 0.;
-	m_pyj3 = 0.;
-	m_pzj3 = 0.;
-	m_ej3  = 0.;
-	m_qj3  = 0.;
-	m_qdj3 = 0.;
+	m_jet2_q  = 0.;
+	m_jet2_qdyn = 0.;
 
-	m_pxj4 = 0.;
-	m_pyj4 = 0.;
-	m_pzj4 = 0.;
-	m_ej4  = 0.;
-	m_qj4  = 0.;
-	m_qdj4 = 0.;
+	m_jet3_q  = 0.;
+	m_jet3_qdyn = 0.;
+
+	m_jet4_q  = 0.;
+	m_jet4_qdyn = 0.;
 
 	// jet matching
 	m_JMK_ZHH.clear();
@@ -599,6 +658,25 @@ void EventObservablesBase::clearBaseValues()
 
 	m_JMK_ZHH_perm_idx = -1;
 	m_JMK_ZZH_perm_idx = -1;
+
+	// TrueJet
+	m_trueLeptonN = 0;
+	m_trueLeptonMomenta.clear();
+	m_trueLeptonTypes.clear();
+
+	m_trueJetN = 0;
+	m_trueJetMomenta.clear();
+	m_trueJetTypes.clear();
+	m_trueJetPDGs.clear();
+
+	m_trueISRMomenta.clear();
+
+	m_trueRecoJetsMapped = false;
+
+	m_reco2TrueJetIndex.clear();
+	std::fill(m_true2RecoJetIndex.begin(), m_true2RecoJetIndex.end(), -1.);
+
+	m_trueJetHiggsICNPairs.clear();
 }
 
 void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
@@ -700,8 +778,10 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 
 				m_ptjmax = std::max(m_ptjmax, (float)jet_v4.Pt());
 				m_pjmax = std::max(m_pjmax, currentJetMomentum);
-				m_jets.push_back(jet);
 				jetsum += jet_v4;
+
+				m_jets.push_back(jet);
+				m_jets4v[i] = jet_v4;
 			}
 			m_invJetMass = jetsum.M();
 
@@ -717,7 +797,7 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 			//int OTagID = jetPIDh.getParameterIndex(_FTAlgoID, "OTag");
 
 			streamlog_out(MESSAGE) << "--- FLAVOR TAG ---" << std::endl;
-			for (int i=0; i<m_nJets; ++i) {
+			for (int i=0; i < m_nJets; ++i) {
 				const ParticleIDImpl& FTImpl = dynamic_cast<const ParticleIDImpl&>(jetPIDh.getParticleID(m_jets[i], _FTAlgoID));
 				const FloatVec& FTPara = FTImpl.getParameters();
 
@@ -833,7 +913,7 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 		*/
 
 	} catch(DataNotAvailableException &e) {
-		streamlog_out(MESSAGE) << "processEvent : Input collections not found in event " << m_nEvt << std::endl;
+		streamlog_out(MESSAGE) << "processEvent : Input collections not found in event " << m_nEvt << ": " << e.what() << std::endl;
 		m_statusCode = 20;
 	} catch (const std::exception &exc) {
 		// remove for production
@@ -860,6 +940,66 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 	} catch(DataNotAvailableException &e) {
 		streamlog_out(MESSAGE) << "processEvent : Input collections not found in event " << m_nEvt << std::endl;
 		m_statusCode += 100;
+	}
+
+	if (m_nJets == m_nAskedJets()) {
+		TrueJet_Parser* trueJet = this;
+		trueJet->getall( pLCEvent );
+		//DelMe delme(std::bind(&EventObservablesBase::delall, this));  // TrueJetParser::delall will be called, when this  goes out of scope
+
+		vector<int> trueHadronicJetIndices;
+		vector<int> trueLeptonIndices;
+		vector<int> trueISRIndices;
+		float smallestSumCosAngle = getMatchingByAngularSpace(m_jets, m_reco2TrueJetIndex, m_true2RecoJetIndex, trueHadronicJetIndices, trueLeptonIndices, trueISRIndices);
+
+		// case in which number of hadronic jets == m_nJets
+		m_trueRecoJetsMapped = smallestSumCosAngle < 99;
+
+		// store hadronic true jets
+		m_trueJetN = trueHadronicJetIndices.size();
+
+		for (int index: trueHadronicJetIndices) {
+			const ReconstructedParticle* tjet = trueJet->jet(index);
+
+			m_trueJetMomenta.push_back(v4(tjet));
+			m_trueJetTypes.push_back(type_jet(index));
+			m_trueJetPDGs.push_back(tjet->getParticleIDs()[0]->getPDG());
+		}
+
+		// store leptons
+		m_trueLeptonN = trueLeptonIndices.size();
+
+		for (int index: trueLeptonIndices) {
+			const ReconstructedParticle* tjet = trueJet->jet(index);
+
+			m_trueLeptonMomenta.push_back(v4(tjet));
+			m_trueLeptonTypes.push_back(tjet->getParticleIDs()[0]->getPDG());
+		}
+
+		if (m_trueRecoJetsMapped) {
+			vector<int> truejetpermICNs;
+			int nicn = trueJet->nicn();
+			streamlog_out(DEBUG3) << "number of icns = " << nicn << endl;
+			
+			for (int i_icn = 0; i_icn < nicn; i_icn++) {
+				auto siblings = jets_of_initial_cn(i_icn);
+				
+				if (pdg_icn_parent(i_icn) == 25) {
+					for (auto tj : siblings) {
+						auto it = std::find(trueHadronicJetIndices.begin(), trueHadronicJetIndices.end(), tj);
+						
+						if (it != trueHadronicJetIndices.end())
+							truejetpermICNs.push_back(std::distance(trueHadronicJetIndices.begin(), it));
+					}
+				}
+			}
+
+			if (truejetpermICNs.size() % 2 == 0) {
+				m_trueJetHiggsICNPairs = truejetpermICNs;
+			}
+		}
+
+		delall2();
 	}
 };
 
@@ -902,6 +1042,10 @@ void EventObservablesBase::init(){
 
 	m_bTagValues2 = std::vector<double>(m_nAskedJets(), -1.);
   	m_cTagValues2 = std::vector<double>(m_nAskedJets(), -1.);
+
+	m_true2RecoJetIndex = std::vector<int>(m_nAskedJets(), -1);
+
+	m_jets4v = std::vector<ROOT::Math::PxPyPzEVector>(m_nAskedJets());
 
 	prepareBaseTree();
 	prepareChannelTree();
@@ -1191,7 +1335,8 @@ std::tuple<float, float> EventObservablesBase::jetCharge(ReconstructedParticle* 
 		ReconstructedParticle* pfo = dynamic_cast<ReconstructedParticle*>(jetConstituents[i]);
 
 		// only consider hadronic pfos
-		if (abs(pfo->getType()) > 100) {
+		//if (abs(pfo->getType()) > 100) {
+		if (pfo->getCharge() != 0) {
 			z_i = pfo->getEnergy() / jet_energy;
 
 			charge += std::pow(z_i, m_jetChargeKappa) * pfo->getCharge();
@@ -1204,30 +1349,11 @@ std::tuple<float, float> EventObservablesBase::jetCharge(ReconstructedParticle* 
 	return std::make_tuple(charge, dynamic_charge);
 }
 
-void EventObservablesBase::setJetMomenta() {
-	m_pxj1 = m_jets[0]->getMomentum()[0];
-	m_pyj1 = m_jets[0]->getMomentum()[1];
-	m_pzj1 = m_jets[0]->getMomentum()[2];
-	m_ej1  = m_jets[0]->getEnergy();
-	std::tie(m_qj1, m_qdj1) = jetCharge(m_jets[0]);
-
-	m_pxj2 = m_jets[1]->getMomentum()[0];
-	m_pyj2 = m_jets[1]->getMomentum()[1];
-	m_pzj2 = m_jets[1]->getMomentum()[2];
-	m_ej2  = m_jets[1]->getEnergy();
-	std::tie(m_qj2, m_qdj2) = jetCharge(m_jets[1]);
-
-	m_pxj3 = m_jets[2]->getMomentum()[0];
-	m_pyj3 = m_jets[2]->getMomentum()[1];
-	m_pzj3 = m_jets[2]->getMomentum()[2];
-	m_ej3  = m_jets[2]->getEnergy();
-	std::tie(m_qj3, m_qdj3) = jetCharge(m_jets[2]);
-
-	m_pxj4 = m_jets[3]->getMomentum()[0];
-	m_pyj4 = m_jets[3]->getMomentum()[1];
-	m_pzj4 = m_jets[3]->getMomentum()[2];
-	m_ej4  = m_jets[3]->getEnergy();
-	std::tie(m_qj4, m_qdj4) = jetCharge(m_jets[3]);
+void EventObservablesBase::setJetCharges() {
+	std::tie(m_jet1_q, m_jet1_qdyn) = jetCharge(m_jets[0]);
+	std::tie(m_jet2_q, m_jet2_qdyn) = jetCharge(m_jets[1]);
+	std::tie(m_jet3_q, m_jet3_qdyn) = jetCharge(m_jets[2]);
+	std::tie(m_jet4_q, m_jet4_qdyn) = jetCharge(m_jets[3]);
 };
 
 float EventObservablesBase::leadingMomentum(ReconstructedParticleVec jets) {
@@ -1268,3 +1394,69 @@ std::vector<std::pair<int, float>> EventObservablesBase::sortedTagging(LCCollect
 
 	return sortedTagging(tags_by_jet_order);
 };
+
+float EventObservablesBase::getMatchingByAngularSpace(
+	vector<EVENT::ReconstructedParticle*> recoJets,
+	vector<int> &reco2truejetindex, // reco jet index -> truejet index
+	vector<int> &true2recojetindex, // truejet index -> reco jet index
+	vector<int> &trueHadronicJetIndices,
+	vector<int> &trueLeptonIndices,
+	vector<int> &trueISRIndices )
+{
+	int njets = this->njets();
+
+	for (int i_jet = 0 ; i_jet < njets ; i_jet++ ) {
+		streamlog_out(DEBUG) << "type of jet " << i_jet << ": " << type_jet( i_jet ) << endl;   
+		switch (type_jet(i_jet)) {
+			case 1:
+			case 3: trueHadronicJetIndices.push_back( i_jet ); break;
+			case 2: trueLeptonIndices.push_back( i_jet ); break;
+			case 4: trueISRIndices.push_back( i_jet ); break;
+			default:
+				// do nothing
+				break;
+		}
+	}
+
+	if ((int)trueHadronicJetIndices.size() != m_nJets)
+		return 999;
+
+	vector<int> arr(m_nJets);
+	vector<TVector3> trueJetUnitVectors(m_nJets);
+	vector<TVector3> recoJetUnitVectors(m_nJets);
+
+	for (int i_array = 0; i_array < m_nJets; i_array++) {
+		arr[i_array] = i_array;
+
+		TVector3 trueJetMomentumUnit(ptrueseen(trueHadronicJetIndices[i_array])[0], ptrueseen(trueHadronicJetIndices[i_array])[1], ptrueseen(trueHadronicJetIndices[i_array])[2]);
+		trueJetMomentumUnit.SetMag(1.0);
+		trueJetUnitVectors[i_array] = trueJetMomentumUnit;
+
+		TVector3 recoJetMomentumUnit(recoJets.at(arr[i_array])->getMomentum());
+		recoJetMomentumUnit.SetMag(1.0);
+		recoJetUnitVectors[i_array] = recoJetMomentumUnit;
+	}
+
+	float SmallestSumCosAngle = 99999.0;
+	vector<int> matchedRecoJetIndices(m_nJets);
+	do {
+		float sumcosangle = 0.0;
+
+		for (int i_Jet = 0 ; i_Jet < m_nJets; i_Jet++ )
+			sumcosangle += acos(trueJetUnitVectors[i_Jet].Dot( recoJetUnitVectors[arr[i_Jet]] ));
+
+		if (sumcosangle < SmallestSumCosAngle) {
+			SmallestSumCosAngle = sumcosangle;
+
+			for (int i_array = 0; i_array < m_nJets; i_array++)
+				matchedRecoJetIndices[i_array] = arr[i_array];
+		}
+	} while (next_permutation(arr.begin(), arr.begin() + m_nJets));
+
+	reco2truejetindex = matchedRecoJetIndices;
+
+	for (int i_jet = 0; i_jet < m_nJets; i_jet++)
+		true2recojetindex[reco2truejetindex[i_jet]] = i_jet;
+	
+	return SmallestSumCosAngle;
+}

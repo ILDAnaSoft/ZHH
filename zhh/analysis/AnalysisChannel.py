@@ -1,6 +1,4 @@
 from collections.abc import Callable, Sequence
-from .Cuts import Cut, EqualCut
-from .ZHHCuts import zhh_cuts
 from .PreselectionAnalysis import fetch_preselection_data, sample_weight, get_pol_key
 from .PreselectionSummary import PreselectionSummary
 from zhh.processes import parse_polarization_code, ProcessCategories
@@ -17,16 +15,13 @@ config = {
 }
 
 class AnalysisChannel:
-    def __init__(self, work_root:str, name:str='', define_bkg:Callable|None=None, define_sig:Callable|None=None, cuts:Optional[Sequence[Cut]]=None):
+    def __init__(self, work_root:str, name:str=''):
         """Helper class to combine ROOT files+TTrees, calculate weights
         and prepare data for TMVA.
 
         Args:
             work_root (str): directory to store Merged.root. must be user writable
             name (str, optional): _description_. Defaults to ''.
-            define_bkg (Callable | None, optional): _description_. Defaults to None.
-            define_sig (Callable | None, optional): _description_. Defaults to None.
-            cuts (Optional[Sequence[Cut]], optional): _description_. Defaults to None.
         """
         
         import ROOT
@@ -38,10 +33,6 @@ class AnalysisChannel:
         self._name = name
         self._root_files = []
         self._merged_file = f'{work_root}/Merged.root'
-        
-        self._define_bkg = define_bkg
-        self._define_sig = define_sig
-        self._cuts = cuts
         
         # combine()
         self._rf:ur.WritableFile|None = None
@@ -87,6 +78,9 @@ class AnalysisChannel:
         
         if not os.path.isfile(self._merged_file):
             assert(isinstance(root_files, list) and isinstance(trees, list))
+            
+            ROOT.gInterpreter.GenerateDictionary("ROOT::VecOps::RVec<vector<double>>", "vector;ROOT/RVec.hxx")
+            ROOT.gInterpreter.GenerateDictionary("ROOT::VecOps::RVec<ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>>>", "vector;ROOT/RVec.hxx;Math/Vector4D.h")
             
             chain = ROOT.TChain(trees[0])
             friends = []
@@ -305,7 +299,7 @@ class AnalysisChannel:
         
         return self
     
-    def evalutateEventCategories(self, default_category:int|None, force:bool=False, order:Optional[list[str]]=None)->'AnalysisChannel':
+    def evaluateEventCategories(self, default_category:int|None, force:bool=False, order:Optional[list[str]]=None)->'AnalysisChannel':
         """Evaluates event category definitions and saves them as numpy masks.
         default_category is assigned to all events first, if not None.
         After that, all categories for which the category paraemter in the
@@ -315,7 +309,9 @@ class AnalysisChannel:
         Args:
             default_category (int | None): _description_
             force (bool, optional): _description_. Defaults to False.
-            order (Optional[list[str]], optional): if None, all categories are considered in the order they were registered. Defaults to None.
+            order (Optional[list[str]], optional): if None, all categories are considered
+                in the order they were registered. If a list, ONLY the contained categories
+                are considered. Defaults to None.
 
         Returns:
             AnalysisChannel: _description_
@@ -408,7 +404,3 @@ class AnalysisChannel:
         self._train_test_ratio = train_test_ratio
         
         self._mask_presel = None
-        
-#llhh1_lvbbqq = AnalysisChannel('llhh_lvbbqq', zhh_cuts('llhh'),# + [EqualCut('ll_dilepton_type', 11)],
-#                               define_bkg=lambda a: True,
-#                               define_sig=lambda b: True)

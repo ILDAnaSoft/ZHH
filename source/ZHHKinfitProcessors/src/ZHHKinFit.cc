@@ -178,6 +178,12 @@ ZHHKinFit::ZHHKinFit() :
 			     std::string("")
 			     );
   
+  registerProcessorParameter("treeName",
+			     "name of output ROOT TTree; if empty, will be chosen as KinFit_<FitHypothesis>",
+			     m_treeName,
+			     std::string("")
+			     );
+  
   registerProcessorParameter("traceall" ,
 			     "set true if every event should be traced",
 			     m_traceall,
@@ -272,7 +278,13 @@ void ZHHKinFit::init()
   
   printParameters();
 
-  const char* treeName = (std::string("KinFitLL") + m_fithypothesis).c_str();
+  const char* treeName;
+  if (m_treeName == "")
+    treeName = (std::string("KinFit_") + m_fithypothesis).c_str();
+  else
+    treeName = m_treeName.c_str();
+  
+  streamlog_out(MESSAGE) << "Writing to TTree " << treeName << std::endl;
 	m_pTTree = new TTree(treeName, treeName);
   
   if (m_outputFile.size()) {
@@ -434,7 +446,7 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
   IMPL::LCCollectionVec* outputStartJetCollection = NULL;
   outputStartJetCollection = new IMPL::LCCollectionVec(LCIO::RECONSTRUCTEDPARTICLE);
   //outputStartJetCollection->setSubset( true );
-  LCCollectionVec *outputNuEnergyCollection = new LCCollectionVec(LCIO::LCFLOATVEC);
+  //LCCollectionVec *outputNuEnergyCollection = new LCCollectionVec(LCIO::LCFLOATVEC);
 
   LCRelationNavigator* JetSLDNav = NULL;
   LCRelationNavigator* SLDNuNav = NULL;
@@ -694,7 +706,10 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
       ReconstructedParticleImpl* fittedjet = new ReconstructedParticleImpl;
       ROOT::Math::PxPyPzEVector FourMomentum(castfitjet->getPx(), castfitjet->getPy(), castfitjet->getPz(), castfitjet->getE());
       m_PostfitJetFourMomentum.push_back(FourMomentum);
-      float momentum[3] = {castfitjet->getPx(), castfitjet->getPy(), castfitjet->getPz()};
+      float momentum[3] = {
+        (float)castfitjet->getPx(),
+        (float)castfitjet->getPy(),
+        (float)castfitjet->getPz()};
       fittedjet->setMomentum(momentum);
       fittedjet->setEnergy(FourMomentum.E());
       fittedjet->setMass(FourMomentum.M());
@@ -727,7 +742,10 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
       std::shared_ptr<LeptonFitObject> castfitlepton =  std::dynamic_pointer_cast<LeptonFitObject>(*fitlepton);
       ReconstructedParticleImpl* fittedlepton = new ReconstructedParticleImpl;
       ROOT::Math::PxPyPzEVector FourMomentum(castfitlepton->getPx(), castfitlepton->getPy(), castfitlepton->getPz(), castfitlepton->getE());
-      float momentum[3] = {castfitlepton->getPx(), castfitlepton->getPy(), castfitlepton->getPz()};
+      float momentum[3] = {
+        (float)castfitlepton->getPx(),
+        (float)castfitlepton->getPy(),
+        (float)castfitlepton->getPz()};
       fittedlepton->setMomentum(momentum);
       fittedlepton->setEnergy(FourMomentum.E());
       fittedlepton->setMass(FourMomentum.M());
@@ -780,7 +798,7 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     streamlog_out(MESSAGE) << "   GOING THROUGH COMBINATIONS FOR " << m_nJets << " jets" << endl;
     streamlog_out(MESSAGE) << "   WE HAVE " << CorrectedJetsVector.size() << " total jets stored" << endl;
     // need to have equal amount of vectors as jets
-    assert(CorrectedJetsVector.size() == m_nJets);
+    assert((int)CorrectedJetsVector.size() == m_nJets);
     //For each jet loop over all possible combinations of the SLDcorrection sets
     for(std::vector<JetAndCorrection*> CorrectedJetsAndNu : combinations({}, CorrectedJetsVector, 0, {})) {
       streamlog_out(MESSAGE) << "   size: " << CorrectedJetsAndNu.size() << endl;
@@ -1013,7 +1031,10 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
       ReconstructedParticleImpl* fittedjet = new ReconstructedParticleImpl;
       ROOT::Math::PxPyPzEVector FourMomentum(castfitjet->getPx(), castfitjet->getPy(), castfitjet->getPz(), castfitjet->getE());
       m_PostfitJetFourMomentum.push_back(FourMomentum);
-      float momentum[3] = {castfitjet->getPx(), castfitjet->getPy(), castfitjet->getPz()};
+      float momentum[3] = {
+        (float)castfitjet->getPx(),
+        (float)castfitjet->getPy(),
+        (float)castfitjet->getPz()};
       fittedjet->setMomentum(momentum);
       fittedjet->setEnergy(FourMomentum.E());
       fittedjet->setMass(FourMomentum.M());
@@ -1046,7 +1067,10 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
       std::shared_ptr<LeptonFitObject> castfitlepton =  std::dynamic_pointer_cast<LeptonFitObject>(*fitlepton);
       ReconstructedParticleImpl* fittedlepton = new ReconstructedParticleImpl;
       ROOT::Math::PxPyPzEVector FourMomentum(castfitlepton->getPx(), castfitlepton->getPy(), castfitlepton->getPz(), castfitlepton->getE());
-      float momentum[3] = {castfitlepton->getPx(), castfitlepton->getPy(), castfitlepton->getPz()};
+      float momentum[3] = {
+        (float)castfitlepton->getPx(),
+        (float)castfitlepton->getPy(),
+        (float)castfitlepton->getPz()};
       fittedlepton->setMomentum(momentum);
       fittedlepton->setEnergy(FourMomentum.E());
       fittedlepton->setMass(FourMomentum.M());
@@ -1065,10 +1089,10 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
       m_H2MassBeforeFit // "H2MassBeforeFit/F" );
     */
     streamlog_out(MESSAGE) << "Pulls have been calculated" << std::endl;
-    for (int i=0; i<m_pullLeptonInvPt.size(); i++) {
+    for (size_t i=0; i<m_pullLeptonInvPt.size(); i++) {
       streamlog_out(MESSAGE) << "Lepton: InvPt = " << m_pullLeptonInvPt[i] << ", Theta = " << m_pullLeptonTheta[i] << ", Phi = " << m_pullLeptonPhi[i] << endl;  
     }
-    for (int i=0; i<m_pullJetEnergy.size(); i++) {
+    for (size_t i=0; i<m_pullJetEnergy.size(); i++) {
       streamlog_out(MESSAGE) << "Jet:   Energy = " << m_pullJetEnergy[i] << ", Theta = " << m_pullJetTheta[i] << ", Phi = " << m_pullJetPhi[i] << endl;  
     }
     //Fill output collections
@@ -1136,7 +1160,10 @@ ReconstructedParticle* ZHHKinFit::addNeutrinoCorrection(ReconstructedParticle* j
   }
   ReconstructedParticleImpl* rp = new ReconstructedParticleImpl(*dynamic_cast<ReconstructedParticleImpl*>(jet));
   rp->setEnergy(jetFourMomentum.E());
-  float jetThreeMomentum[3] = { jetFourMomentum.Px(), jetFourMomentum.Py(), jetFourMomentum.Pz()};
+  float jetThreeMomentum[3] = {
+    (float)jetFourMomentum.Px(),
+    (float)jetFourMomentum.Py(),
+    (float)jetFourMomentum.Pz()};
   rp->setMomentum(jetThreeMomentum);
   rp->setCovMatrix(jetCovMat);
   

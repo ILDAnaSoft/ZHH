@@ -12,6 +12,7 @@
     <constant name="lcgeo_DIR" value="/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-centos7-gcc12.2.0-opt/k4geo/0.20-e42drs/share/k4geo" />
     <constant name="DetectorModel" value="ILD_l5_o1_v02" />
     <constant name="CompactFile" value="${lcgeo_DIR}/ILD/compact/${DetectorModel}/${DetectorModel}.xml" />
+    <constant name="FTagWeightsDir" value="${ILDConfigDir}/LCFIPlusConfig/lcfiweights" />
     <constant name="OutputDirectory" value="." />
     <constant name="OutputBaseName" value="zhh" />
     <constant name="OutputRootFile" value="${OutputBaseName}.root" />
@@ -251,7 +252,7 @@
     <parameter name="ReadSubdetectorEnergies" type="int" value="1"/> <!-- true for ILD -->
     <parameter name="UpdateVertexRPDaughters" type="int" value="0"/> <!-- false for non-updative PandoraPFOs -->
     <parameter name="TrackHitOrdering" type="int" value="1"/> <!-- Track hit ordering: 0=ILD-LOI,SID-DBD, 1=ILD-DBD -->
-    <parameter name="PrintEventNumber" type="int" value="100"/> <!-- 0 for not printing event number, n for printing every n events -->
+    <parameter name="PrintEventNumber" type="int" value="1"/> <!-- 0 for not printing event number, n for printing every n events -->
 
     <!-- jet clustering parameters -->
     <parameter name="JetClustering.PrimaryVertexCollectionName" type="string" value="PrimaryVertex" />
@@ -306,7 +307,7 @@
 
     <!--parameter name="FlavorTag.WeightsDirectory" type="string" value="/afs/desy.de/user/s/skawada/sonas_work/mini-DST/lcfiweights"/--> <!-- e.g. lcfiweights/lcfiweights_6q500_v04_p00_ildl5 -->
     <!--parameter name="FlavorTag.WeightsPrefix" type="string" value="6q500_v04_p00_ildl5" /--> <!-- e.g. 6q500_v04_p00_ildl5 -->
-    <parameter name="FlavorTag.WeightsDirectory" type="string" value="/afs/desy.de/user/j/jtorndal/pool/lcfiweights"/>
+    <parameter name="FlavorTag.WeightsDirectory" type="string" value="${FTagWeightsDir}"/>
     <parameter name="FlavorTag.WeightsPrefix" type="string" value="6q500_v04_p00_ildl5" />
     <parameter name="FlavorTag.BookName" type="string" value="bdt" />
     <parameter name="FlavorTag.PIDAlgo" type="string" value="lcfiplus" />

@@ -2,7 +2,11 @@ from matplotlib.colors import ListedColormap, Colormap
 from typing import cast, Any
 
 class PlotContext:
-    def __init__(self, cmap:ListedColormap|Any, font:str|list[str]|None=None) -> None:
+    def __init__(self, cmap:ListedColormap|Any=None, font:str|list[str]|None=None) -> None:
+        if cmap is None:
+            from zhh import colormap_desy
+            cmap = colormap_desy
+        
         if not isinstance(font, str):
             from zhh import resolve_fonts
             font = resolve_fonts(font)
@@ -23,6 +27,9 @@ class PlotContext:
             self._keys.append(key)
         
         return cast(list, self._cmap.colors)[self._keys_idx_map[key]]
+    
+    def getColorsAssignedKeys(self):
+        return self._keys
     
     def getColorPalette(self, keys:list):
         return [self.getColorByKey(key) for key in keys]

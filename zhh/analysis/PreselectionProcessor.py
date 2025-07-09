@@ -9,7 +9,14 @@ import numpy as np
 import os.path as osp
 
 class PreselectionProcessor:
-    def __init__(self, sources:list[AnalysisChannel], cuts:Sequence[Cut]|None=None, colormap=None, plot_options:dict[str, list[dict]]|None=None, hypothesis:str='llbbbb'):
+    def __init__(self,
+                 sources:list[AnalysisChannel],
+                 cuts:Sequence[Cut]|None=None,
+                 colormap=None,
+                 plot_options:dict[str, list[dict]]|None=None,
+                 hypothesis:str='llbbbb',
+                 work_dir:str|None=None
+    ):
         from zhh import colormap_desy, zhh_cuts, preselection_plot_options
         
         assert(len(sources) > 0)
@@ -20,6 +27,10 @@ class PreselectionProcessor:
             if source.getIntegratedLuminosity() != self._sources[0].getIntegratedLuminosity():
                 raise ValueError(f"All sources must have the same luminosity. Found {source.getIntegratedLuminosity()} and {self._sources[0].getIntegratedLuminosity()}.")
         
+        if work_dir is None:
+            work_dir = osp.abspath('')
+            
+        self._work_dir = work_dir
         self._luminosity = self._sources[0].getIntegratedLuminosity()
         self._cuts = cuts if cuts is not None else zhh_cuts('ll')
         self._plot_options:dict[str, list[dict]] = plot_options if plot_options is not None else preselection_plot_options
@@ -165,6 +176,23 @@ class PreselectionProcessor:
         
         return post_presel_mask
     
+    def writeROOTFiles(self):
+        import uproot as ur
+        
+        with ur.recreate(f'{self._work_dir}/preselection.root', compression=ur.ZSTD(5)) as rf:
+            for source in self._sources:
+                name = source.getName()
+                
+                source.getPreselection().resetView()
+            
+                data = {
+                    'passed_preselection': self.getFinalEventMaskByName(name),
+                    'event_weight': source.getPreselection()['weight'],
+                    'event_category': source.getPreselection()['event_category'],
+                }
+                    
+                rf[name] = data
+    
     def cutflowPlots(self, display:bool=True):
         """Creates plots for signal/background separation
         after each cut. When return_last_calc_dict is True, a separate plot showing the event
@@ -176,13 +204,16 @@ class PreselectionProcessor:
         
         """
         
-        result = cutflowPlots(self, display)
+        result = cutflowPlots(self, self._work_dir, display)
         self._plot_context = result[0]
         
         return result
         
-    def cutflowTable(self, final_state_labels_and_names_or_processes:list[tuple[str,str]|tuple[str,str,str]]):
-        return cutflowTable(self, final_state_labels_and_names_or_processes)
+    def cutflowTable(self, final_state_labels_and_names_or_processes:list[tuple[str,str]|tuple[str,str,str]], path:str|None=None):
+        if path is None:
+            path = f'{self._work_dir}/cutflow_{self._hypothesis}.pdf'
+            
+        return cutflowTable(self, final_state_labels_and_names_or_processes, path)
     
     def getPlotContext(self)->PlotContext:
         """Returns the plot context for the preselection processor.
@@ -195,7 +226,7 @@ class PreselectionProcessor:
         
         return self._plot_context
 
-def cutflowPlots(pp:PreselectionProcessor, display:bool=True):
+def cutflowPlots(pp:PreselectionProcessor, output_dir:str, display:bool=True):
     assert(pp._signal_categories is not None and pp._masks is not None and pp._calc_dicts is not None and pp._max_before is not None)
     
     return cutflowPlotsFn(pp._signal_categories,
@@ -205,7 +236,8 @@ def cutflowPlots(pp:PreselectionProcessor, display:bool=True):
         pp._hypothesis,
         pp._cmap,
         pp._plot_options,
-        display)
+        display,
+        output_dir)
 
 def cutflowPlotsFn(signal_categories:list[int],
                  cuts:Sequence[Cut],
@@ -214,7 +246,8 @@ def cutflowPlotsFn(signal_categories:list[int],
                  hypothesis:str,
                  cmap,
                  plot_options:dict[str, list[dict]],
-                 display:bool):
+                 display:bool,
+                 output_dir:str):
     
     from zhh import plot_preselection_by_calc_dict, annotate_cut, EventCategories, deepmerge
     
@@ -291,8 +324,8 @@ def cutflowPlotsFn(signal_categories:list[int],
             plt.close(fig1)
             plt.close(fig2)
     
-    export_figures('cuts.pdf', figs_stacked)
-    export_figures('cuts_separate.pdf', figs_sigvbkg)
+    export_figures(f'{output_dir}/cuts.pdf', figs_stacked)
+    export_figures(f'{output_dir}/cuts_separate.pdf', figs_sigvbkg)
     
     # create a plot with the event counts per category after the last cut
     from zhh.plot.ild_style import update_plot, legend_kwargs_fn
@@ -331,27 +364,29 @@ def cutflowPlotsFn(signal_categories:list[int],
     
     update_plot(ax, x_label=None, y_label='Event count', title='Events after full preselection', context=context)
     
-    export_figures('after_preselection.pdf', [fig])
+    export_figures(f'{output_dir}/after_preselection.pdf', [fig])
     
     if not display:
         plt.close(fig)
     
     return context, figs_stacked, figs_sigvbkg, fig
 
-def cutflowTable(pp:PreselectionProcessor, final_state_labels_and_names_or_processes:list[tuple[str,str]|tuple[str,str,str]]):
+def cutflowTable(pp:PreselectionProcessor, final_state_labels_and_names_or_processes:list[tuple[str,str]|tuple[str,str,str]], path:str):
     assert(pp._masks is not None and pp._luminosity is not None and pp._sources is not None)
     
     return cutflowTableFn(pp._masks,
                         pp._luminosity,
                         pp._sources,
                         final_state_labels_and_names_or_processes,
-                        pp._cuts)
+                        pp._cuts,
+                        path)
 
 def cutflowTableFn(masks,
                  luminosity:float,
                  sources:list[AnalysisChannel],
                  final_state_labels_and_names_or_processes:list[tuple[str,str]|tuple[str,str,str]],
-                 cuts:Sequence[Cut]):
+                 cuts:Sequence[Cut],
+                 path:str):
     
     from zhh import combined_cross_section, render_table, render_latex
 
@@ -404,7 +439,7 @@ def cutflowTableFn(masks,
                         presel = analysis.getPreselection()
                         cut_counts[i_cut] += np.sum(presel['weight'][mask & category_mask])
                         
-            print(label, n_expected, cut_counts)
+            #print(label, n_expected, cut_counts)
             # finalize entry to write
             entry = [
                 rf'$\mathbf{{ {label} }}$',
@@ -437,7 +472,7 @@ def cutflowTableFn(masks,
         latex_out = render_table(table)
         print(latex_out)
 
-        render_latex(latex_out, f"{osp.abspath('')}/llHH_{'efficiency' if calc_cut_efficiency else 'abs'}.pdf")
+        render_latex(latex_out, osp.splitext(path)[0] +('_efficiency.pdf' if calc_cut_efficiency else '_abs.pdf'))
 
 # for table
 def format_counts(x:float):

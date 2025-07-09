@@ -10,6 +10,8 @@
 #include <TTree.h>
 #include <vector>
 #include "TLorentzVector.h"
+#include <EventCategory.h>
+
 class TFile;
 class TH1F;
 class TH1I;
@@ -22,13 +24,7 @@ using jsonf = nlohmann::json;
 
 // If the final state is a ZHH (with H -> bbar), the channel is given by the decay channel of the Z boson (else OTHER)
 // NONE is for initialization only and should not occur in practice
-enum EVENT_CATEGORY_ZHH: unsigned int {
-	NONE = 0,
-	OTHER = 1,
-	LEPTONIC = 11,
-	NEUTRINO = 21,
-	HADRONIC = 31
-};
+// TODO: implement, using EventCategory
 
 class PreSelection : public Processor
 {
@@ -68,6 +64,7 @@ class PreSelection : public Processor
 		std::string m_isPassedCollection{};
 		std::string m_cutDefinitionsJSONFile{};
 		std::string m_PIDAlgorithmBTag{};
+		bool m_write_ttree{};
 
 		int m_nAskedJets{};
         int m_nAskedIsoLeps{};
@@ -114,13 +111,13 @@ class PreSelection : public Processor
 		float m_dihiggsMass{};
 		std::vector<int>  m_preselsPassedVec{};
 
-		int m_preselsPassedAll{};
+		size_t m_preselsPassedAll{};
 		int m_preselsPassedConsec{};
 		int m_nbjets{};
 		std::vector<float> m_blikelihoodness{};
 
 		TFile *m_pTFile{};        
-		TTree *m_pTTree{};
+		TTree *m_pTTree = new TTree("PreSelection", "PreSelection");
 
 };
 
