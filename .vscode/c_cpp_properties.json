@@ -30,6 +30,7 @@
                 "${workspaceFolder}/source/MergePIDProcessor/include/**",
                 "${workspaceFolder}/source/Misclustering/include/**",
                 "${workspaceFolder}/source/EventObservables/include/**",
+                "${workspaceFolder}/source/PreSelection/include/**",
                 "${workspaceFolder}/source/TruthRecoComparison/include/**",
                 "${workspaceFolder}/source/ZHHKinfitProcessors/include/**",
                 "${workspaceFolder}/dependencies/MarlinMLFlavorTagging/StoreVariablesForMLTagging/include/**",

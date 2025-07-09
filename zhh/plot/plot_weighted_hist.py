@@ -21,12 +21,21 @@ def plot_weighted_hist(calc_dict, title:str='<title undefined>', xlabel:str='<xl
     plot_dict = {}
     plot_weights = []
     
+    is_weighted = True
+    
     for key in calc_dict:
         if len(calc_dict[key]) != 2:
             raise Exception(f'Invalid data format: Expected (data:[], weight:[]) for entry {key}')
         
         data = calc_dict[key][0]
-        weight = calc_dict[key][1] if calc_dict[key][1] is not None else np.ones_like(data)
+        if calc_dict[key][1] is not None:
+            weight = calc_dict[key][1]
+            
+            if not is_weighted:
+                raise Exception(f'Inconsistent data format: Entry {key} has weights, but previous entries did not.')
+        else:            
+            weight = np.ones_like(data)
+            is_weighted = False
         
         plot_dict[key] = data
         plot_weights.append(weight)
@@ -35,7 +44,7 @@ def plot_weighted_hist(calc_dict, title:str='<title undefined>', xlabel:str='<xl
         'show_stats': False,
         #'normalize': True,
         'hist_kwargs': { 'hatch': None },
-        'stacked': True,
+        'stacked': False,
         #'custom_styling': True,
         'colorpalette': plot_context.getColorPalette(list(plot_dict.keys()))
     }
@@ -60,13 +69,13 @@ def plot_weighted_hist(calc_dict, title:str='<title undefined>', xlabel:str='<xl
     
     if xlim is None:
         xlim = ax.get_xlim()
-    
+        
     fig_ild_kwargs = {
         'xunit': xunit,
         'xlabel': xlabel,
         'yscale': yscale_wt,
         'ild_offset_x': 0.,
-        'ylabel_prefix': 'wt. ',
+        'ylabel_prefix': 'wt. ' if is_weighted else '',
         'title_postfix': '',
         'title': title,
         'legend_kwargs': { 'loc': 'upper right', 'bbox_to_anchor': (.98, .98), 'fancybox': False },

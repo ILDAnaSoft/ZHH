@@ -504,6 +504,8 @@ void FinalStateRecorder::clear()
 
 	m_event_category = EVENT_CATEGORY_TRUE::OTHER;
 	m_event_category_zhh = EVENT_CATEGORY::NONE;
+
+	m_hard_fs_indices.clear();
 }
 void FinalStateRecorder::processRunHeader( LCRunHeader*  /*run*/) { 
 	m_n_run++ ;
@@ -562,8 +564,8 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 				m_higgs_final_states = resolver->resolve_higgs_decays(inputMCParticleCollection);
 
 				// attach indices of hard interaction final state to input MCParticle collection
-				vector<int> hard_fs_indices = resolver->resolve_fs_particle_indices(inputMCParticleCollection);
-				inputMCParticleCollection->parameters().setValues("FINAL_STATE_PARTICLE_INDICES", hard_fs_indices);
+				m_hard_fs_indices = resolver->resolve_fs_particle_indices(inputMCParticleCollection);
+				inputMCParticleCollection->parameters().setValues("FINAL_STATE_PARTICLE_INDICES", m_hard_fs_indices);
 
 				m_n_b_from_higgs = resolver->get_n_b_from_higgs();
 				m_n_c_from_higgs = resolver->get_n_c_from_higgs();
@@ -609,6 +611,14 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 				setReturnValue("GoodEvent", m_passed_filter);
 			} catch (int err) {
 				std::cerr << "Encountered exception (error " << err << ") in run " << m_n_run << " (process " << m_process << ") at event " << m_n_evt << std::endl ;
+				std::cerr << "Indices of MCParticles from hard interaction: [ ";
+
+				for (auto ind: m_hard_fs_indices) {
+					std::cerr << ind << " ";
+				}
+
+				std::cerr << "]" << std::endl;
+
 				setReturnValue("GoodEvent", false);
 				throw err;
 			}

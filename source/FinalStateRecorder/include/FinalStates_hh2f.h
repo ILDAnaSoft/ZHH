@@ -24,6 +24,7 @@ class ffhh: public p6 {
             m_z_decay_filter { z_decay_filter } {};
 
         vector<int> resolve_fs_particle_indices(LCCollection *mcp_collection, bool resolve_higgs = false) {
+            (void) mcp_collection;
             assert(!resolve_higgs);
 
             return vector<int>{ F1_IDX, F2_IDX, HIGGS_1_IDX, HIGGS_2_IDX };

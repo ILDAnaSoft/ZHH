@@ -124,6 +124,7 @@ target_include_directories(ZHHProcessors PRIVATE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/TruthRecoComparison/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/ZHHKinfitProcessors/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/ZinvisibleErrorAnalysis/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/PreSelection/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/SwitchCovMat/include>
 )
 target_compile_definitions(ZHHProcessors ${MarlinUtil_DEFINITIONS} PRIVATE "MARLIN_USE_ROOT")

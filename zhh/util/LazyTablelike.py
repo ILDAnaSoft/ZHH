@@ -40,7 +40,19 @@ class MixedLazyTablelike(LazilyLoadedObject):
     Args:
         LazilyLoadedObject (_type_): _description_
     """
-    def __init__(self, length:int, mask:np.ndarray|None=None):
+    def __init__(self, length:int, mask:np.ndarray|None=None,
+                 defaultHandler:Callable|None=None):
+        
+        """_summary_
+
+        Args:
+            length (int): _description_
+            mask (np.ndarray | None, optional): _description_. Defaults to None.
+            defaultHandler (Callable | None, optional): If a Callable,
+                will be used at the very end of the resolution order
+                to fetch a value. Defaults to None.
+        """
+        
         self._l0 = length
         self._length = length
         
@@ -49,9 +61,19 @@ class MixedLazyTablelike(LazilyLoadedObject):
         
         self._masks = []
         self._mask = None
-        
+        self._defaultHandler = defaultHandler
+                
         if mask:
             self.maskAppend(mask)
+            
+    def setDefaultHandler(self, handler:Callable):
+        """Sets a default handler for the container. This handler is called
+        when an item is not found in the container.
+        
+        Args:
+            handler (Callable): A callable that takes a key and returns a value.
+        """
+        self._defaultHandler = handler
     
     def maskAppend(self, mask:np.ndarray):
         self._masks.append(mask)
@@ -103,6 +125,8 @@ class MixedLazyTablelike(LazilyLoadedObject):
                 res = self._props[key]()
             elif key in self._items:
                 res = self._items[key]
+            elif self._defaultHandler is not None:
+                res = self._defaultHandler(key)
             else:
                 raise Exception(f'Property <{key}> not found')
             

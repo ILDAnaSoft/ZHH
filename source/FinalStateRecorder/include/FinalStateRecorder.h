@@ -55,7 +55,6 @@ class FinalStateRecorder : public Processor
 		float m_event_weight{};
 		int m_process_id{};
 		std::time_t m_t_start{};
-		std::string m_process_name{};
 
 		// filter mechanism
 		std::vector<std::pair<int*, int>> construct_filter_lookup(std::vector<std::string> filter);
@@ -147,6 +146,9 @@ class FinalStateRecorder : public Processor
 		};
 
 		int m_process{};
+		std::string m_process_name{};
+		std::vector<int> m_hard_fs_indices{};
+
 		unsigned short m_polarization_code{};
 		int m_event_category{};
 		int m_event_category_zhh{};

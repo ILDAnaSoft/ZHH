@@ -1,2 +1,2 @@
 from .MatrixElementProvider import MatrixElementProvider
-from .Physsim.PhyssimMatrixElementProvider import PhyssimMatrixElementProvider, PhyssimZHH
+from .Physsim.PhyssimMatrixElementProvider import PhyssimMatrixElementProvider, PhyssimZHH, PhyssimZZH

@@ -30,8 +30,12 @@ class p4: public FinalStateResolver {
             m_first_event_check(false) {};
 
         vector<int> resolve_fs_particle_indices(LCCollection *mcp_collection, bool resolve_higgs = false) {
+            (void) resolve_higgs;
+
             m_nZorH = 0;
 
+            // only required for test production: f4_llbb_sl0 and f4_eebb_sl0
+            // see workflows/resources/whizard_template/whizard.base.sin
             if (m_process_id == PROCESS_ID::f4_llbb_sl0 || m_process_id == PROCESS_ID::f4_eebb_sl0) {
                 int mcp_cand1_pdg = ((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 6 ))->getPDG();
                 int mcp_cand2_pdg = ((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 7 ))->getPDG();
@@ -39,7 +43,7 @@ class p4: public FinalStateResolver {
                 if (mcp_cand1_pdg == 23 || mcp_cand1_pdg == 25)
                     m_nZorH++;
 
-                if (mcp_cand1_pdg == 23 || mcp_cand2_pdg == 25)
+                if (mcp_cand2_pdg == 23 || mcp_cand2_pdg == 25)
                     m_nZorH++;
 
                 F1_IDX = m_shift_pos + 6 + m_nZorH;
@@ -47,7 +51,7 @@ class p4: public FinalStateResolver {
                 F3_IDX = m_shift_pos + 8 + m_nZorH;
                 F4_IDX = m_shift_pos + 9 + m_nZorH;
             }
-
+            
             return vector<int>{ F1_IDX, F2_IDX, F3_IDX, F4_IDX };
         }
 
@@ -70,15 +74,13 @@ class p4: public FinalStateResolver {
         int m_nZorH = 0;
 
         vector<MCParticle*> resolve_fs_particles(LCCollection *mcp_collection, bool resolve_higgs = false) {
-            (void) resolve_higgs;
-
-            vector<int> indices = resolve_fs_particle_indices(mcp_collection, resolve_higgs);
+            (void) resolve_fs_particle_indices(mcp_collection, resolve_higgs);
 
             return vector<MCParticle*>{ 
-                (MCParticle*)mcp_collection->getElementAt( indices[0] ),
-                (MCParticle*)mcp_collection->getElementAt( indices[1] ),
-                (MCParticle*)mcp_collection->getElementAt( indices[2] ),
-                (MCParticle*)mcp_collection->getElementAt( indices[3] )
+                (MCParticle*)mcp_collection->getElementAt( F1_IDX ),
+                (MCParticle*)mcp_collection->getElementAt( F2_IDX ),
+                (MCParticle*)mcp_collection->getElementAt( F3_IDX ),
+                (MCParticle*)mcp_collection->getElementAt( F4_IDX )
             };
         }
 

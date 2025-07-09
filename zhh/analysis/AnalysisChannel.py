@@ -299,7 +299,7 @@ class AnalysisChannel:
         
         return self
     
-    def evalutateEventCategories(self, default_category:int|None, force:bool=False, order:Optional[list[str]]=None)->'AnalysisChannel':
+    def evaluateEventCategories(self, default_category:int|None, force:bool=False, order:Optional[list[str]]=None)->'AnalysisChannel':
         """Evaluates event category definitions and saves them as numpy masks.
         default_category is assigned to all events first, if not None.
         After that, all categories for which the category paraemter in the
@@ -309,7 +309,9 @@ class AnalysisChannel:
         Args:
             default_category (int | None): _description_
             force (bool, optional): _description_. Defaults to False.
-            order (Optional[list[str]], optional): if None, all categories are considered in the order they were registered. Defaults to None.
+            order (Optional[list[str]], optional): if None, all categories are considered
+                in the order they were registered. If a list, ONLY the contained categories
+                are considered. Defaults to None.
 
         Returns:
             AnalysisChannel: _description_

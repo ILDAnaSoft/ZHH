@@ -20,6 +20,7 @@ class ffh: public p4 {
             p4( process_name, process_id, event_category, 2, 1, vector<int> {6,7}, z_decay_filter ) {};
 
         vector<int> resolve_fs_particle_indices(LCCollection *mcp_collection, bool resolve_higgs = false) {
+            (void) mcp_collection;
             assert(!resolve_higgs);
 
             return vector<int>{ F1_IDX, F2_IDX, HIGGS_IDX};

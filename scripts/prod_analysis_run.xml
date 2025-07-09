@@ -25,9 +25,6 @@
         <constant name="errorflowconfusion" value="true" />
 
         <!-- These variables should be constant -->
-        <constant name="LCFIPlusML_ONNX" value="${ZHH_REPO_ROOT}/dependencies/LCFIPlusConfig/onnx/ilc_nnqq_sgvnew_3cat_cut/ilc_nnqq_sgvnew_3cat_cut.onnx" />
-        <constant name="LCFIPlusML_JSON" value="${ZHH_REPO_ROOT}/dependencies/LCFIPlusConfig/onnx/ilc_nnqq_sgvnew_3cat_cut/preprocess.json" />
-
         <constant name="lcgeo_DIR" value="/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-centos7-gcc12.2.0-opt/k4geo/0.20-e42drs/share/k4geo" />
         <constant name="DetectorModel" value="ILD_l5_o1_v02" />
         <constant name="CompactFile" value="${lcgeo_DIR}/ILD/compact/${DetectorModel}/${DetectorModel}.xml" />
@@ -45,16 +42,6 @@
         <processor name="MyAIDAProcessor" />
         <processor name="InitDD4hep" />
         <processor name="MyStatusmonitor" />
-
-        <!-- Reconstruction -->
-        <group name="prodRecoCorrections" />
-
-        <!-- when running on fast sim samples, apply the CovMatSwitch fix to correct extremely large errors from tracks (use cluster error then) -->
-        <if condition="${IsFastSim}">
-            <group name="prodRecoFastSim" />
-        </if>
-
-        <group name="prodRecoMain" />
 
         <!-- Analysis -->
         <group name="prodAnalysisAll" />
@@ -122,7 +109,6 @@
     </processor>
 
     <include ref="${ZHH_REPO_ROOT}/scripts/prod_analysis.xml" />
-    <include ref="${ZHH_REPO_ROOT}/scripts/prod_reco.xml" />
 
     <processor name="MyLCIOOutputProcessor" type="LCIOOutputProcessor">
         <!--Writes the current event to the specified LCIO outputfile. Needs to be the last ActiveProcessor.-->

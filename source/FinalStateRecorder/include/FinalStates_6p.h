@@ -60,6 +60,8 @@ class p6: public FinalStateResolver {
         bool first_event_check{};
 
         vector<int> resolve_fs_particle_indices(LCCollection *mcp_collection, bool resolve_higgs = false) {
+            (void) mcp_collection;
+            (void) resolve_higgs;
             return vector<int>{ F1_IDX, F2_IDX, F3_IDX, F4_IDX, F5_IDX, F6_IDX };
         }
 

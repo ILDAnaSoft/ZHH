@@ -22,6 +22,8 @@ class p5: public FinalStateResolver {
         p5( string process_name, int process_id, int event_category, int n_fermions, int n_higgs ): FinalStateResolver( process_name, process_id, event_category, n_fermions, n_higgs, vector<int>{5} ) {};
 
         vector<int> resolve_fs_particle_indices(LCCollection *mcp_collection, bool resolve_higgs = false) {
+            (void) mcp_collection;
+            (void) resolve_higgs;
             return vector<int>{ F1_IDX, F2_IDX, F3_IDX, F4_IDX, F5_IDX };
         }
 
