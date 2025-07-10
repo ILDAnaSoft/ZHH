@@ -35,12 +35,9 @@ def get_process_normalization(
     # Find the least represented proc_pol combination
     # First find n_events_tot for each proc_pol
     for p in processes:
-        n_events_tot = 0
         process, proc_pol, cross_sec = p['process'], p['proc_pol'], p['cross_sec']
         pol = p['pol_e'], p['pol_p']
-        
-        for s in samples[samples['process'] == process]:
-            n_events_tot += s['n_events']
+        n_events_tot = samples[samples['proc_pol'] == proc_pol]['n_events'].sum()
             
         n_events_expected = sample_weight(cross_sec, pol, n_gen=1)
         event_weight = n_events_expected / n_events_tot
@@ -156,7 +153,6 @@ def get_sample_chunk_splits(
             
                 if atpe is not None:
                     time_per_event = atpe['tPE'][atpe['process'] == p['process']]
-                    print('time_per_event', time_per_event)
                     max_chunk_size = floor(MAXIMUM_TIME_PER_JOB/time_per_event)
                     
                 while n_accounted < n_target and n_accounted_sample < n_tot_sample:

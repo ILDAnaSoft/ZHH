@@ -27,7 +27,6 @@ def evaluate_runtime(DATA_ROOT:str,
         src_path = file.read().strip()
         
     meta_file = glob(f'{DATA_ROOT}/{bname}/zhh*FinalStateMeta.json')
-    print(meta_file)
     
     assert(len(meta_file) == 1)
     with open(meta_file[0]) as metafile:
@@ -90,12 +89,13 @@ def get_runtime_analysis(DATA_ROOT:Optional[str]=None,
         
         for job_key in jobs:
             branch = jobs[job_key]['branches'][0]
-            if jobs[job_key]['status'] == 'finished':
-                dir = list(filter(lambda a: a.endswith('-' + str(branch)), dirs))
-                assert(len(dir) == 1)
-                
-                ev = evaluate_runtime(DATA_ROOT=DATA_ROOT, bname=os.path.basename(dir[0]), WITH_EXIT_STATUS=WITH_EXIT_STATUS)
-                results.append(ev)
+            #if jobs[job_key]['status'] == 'finished':
+            
+            dir = list(filter(lambda a: a.endswith('-' + str(branch)), dirs))
+            assert(len(dir) == 1)
+            
+            ev = evaluate_runtime(DATA_ROOT=DATA_ROOT, bname=os.path.basename(dir[0]), WITH_EXIT_STATUS=WITH_EXIT_STATUS)
+            results.append(ev)
     else:
         raise Exception('No data source given')
     
