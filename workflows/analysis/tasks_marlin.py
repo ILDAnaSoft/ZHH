@@ -7,6 +7,21 @@ import numpy as np
 import law
 
 class MarlinBaseJob(AbstractMarlin):
+    """Base class for Marlin jobs. Tasks subclassing this must imple-
+    ment/define correctly:
+    - output_file (see documentation of AbstractMarlin)
+    - workflow_requires() and requires(), which are expected to return:
+        - 'index_task': task subclassing AbstractIndex
+        - 'marlin_chunks': task subclassing AbstractCreateChunks, only
+            required if self.debug is False (as is for
+            [Analysis/Reco]Final tasks)
+
+    Args:
+        AbstractMarlin (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     debug = True
     
     # controls how many files are processed in debug mode (e.g. AnalysisRuntime). if None, all files are processed
@@ -21,6 +36,13 @@ class MarlinBaseJob(AbstractMarlin):
     check_output_files_exist = [
         'zhh_FinalStateMeta.json'
     ]
+    
+    def requires(self):
+        """
+        Define the requirements for individual workflow branches.
+        """
+        
+        raise NotImplementedError('requires() must be implemented by classes subclassing MarlinBaseJob')
     
     # Attach MCParticleCollectionName and constants/globals for Marlin
     def pre_run_command(self, **kwargs):
@@ -40,30 +62,6 @@ class MarlinBaseJob(AbstractMarlin):
         
         for key, value in config.marlin_globals.items():
             self.globals.append((key, str(value)))
-    
-    def workflow_requires(self):
-        from .tasks import RawIndex, CreateAnalysisChunks
-        
-        reqs = super().workflow_requires()
-        reqs['raw_index'] = RawIndex.req(self)
-        
-        # In debug mode (runtime analysis), the CreateAnalysisChunks task is not required
-        if not self.debug:
-            reqs['preselection_chunks'] = CreateAnalysisChunks.req(self)
-        
-        return reqs
-    
-    def requires(self):
-        from .tasks import RawIndex, CreateAnalysisChunks
-        
-        reqs = super().workflow_requires()
-        reqs['raw_index'] = RawIndex.req(self)
-        
-        # In debug mode (runtime analysis), the CreateAnalysisChunks task is not required
-        if not self.debug:
-            reqs['preselection_chunks'] = CreateAnalysisChunks.req(self)
-        
-        return reqs
     
     @law.dynamic_workflow_condition
     def workflow_condition(self):
@@ -85,11 +83,11 @@ class MarlinBaseJob(AbstractMarlin):
             for prop, value in config.task_kwargs['MarlinBaseJob'].items():
                 setattr(self, prop, value)
         
-        samples = np.load(self.input()['raw_index'][1].path)
+        samples = np.load(self.input()['index_task'][1].path)
         
         if not self.debug:
             # The calculated chunking is used
-            scs = np.load(self.input()['preselection_chunks'][0].path)
+            scs = np.load(self.input()['marlin_chunks'][0].path)
             
             for branch in scs['branch'].tolist():
                 branch_map[branch] = (
@@ -145,12 +143,36 @@ class MarlinBaseJob(AbstractMarlin):
 
 class RecoAbstract(MarlinBaseJob):
     steering_file:str = '$REPO_ROOT/scripts/prod_reco_run.xml'
+    output_file:str = 'zhh_reco.slcio'
     
     check_output_root_ttrees = None
-    output_file = 'zhh.slcio'
+    
+    def workflow_requires(self):
+        from .tasks import RawIndex, CreateRecoChunks
+        
+        reqs = super().workflow_requires()
+        reqs['index_task'] = RawIndex.req(self)
+        
+        if not self.debug:
+            reqs['marlin_chunks'] = CreateRecoChunks.req(self)
+        
+        return reqs
+    
+    def requires(self):
+        from .tasks import RawIndex, CreateRecoChunks
+        
+        reqs = {}
+        reqs['index_task'] = RawIndex.req(self)
+        
+        if not self.debug:
+            reqs['marlin_chunks'] = CreateRecoChunks.req(self)
+        
+        return reqs
+    
 
 class AnalysisAbstract(MarlinBaseJob):
     steering_file:str = '$REPO_ROOT/scripts/prod_analysis_run.xml'
+    output_file:str = 'zhh_AIDA.root'
     
     check_output_root_ttrees = [
         ('zhh_AIDA.root', 'EventObservablesLL'),
@@ -158,6 +180,28 @@ class AnalysisAbstract(MarlinBaseJob):
         ('zhh_AIDA.root', 'KinFit_ZHH'),
         ('zhh_AIDA.root', 'KinFit_ZZH'),
     ]
+    
+    def workflow_requires(self):
+        from .tasks import AnalysisIndex, CreateAnalysisChunks
+        
+        reqs = super().workflow_requires()
+        reqs['index_task'] = AnalysisIndex.req(self)
+        
+        if not self.debug:
+            reqs['marlin_chunks'] = CreateAnalysisChunks.req(self)
+        
+        return reqs
+    
+    def requires(self):
+        from .tasks import AnalysisIndex, CreateAnalysisChunks
+        
+        reqs = {}
+        reqs['index_task'] = AnalysisIndex.req(self)
+        
+        if not self.debug:
+            reqs['marlin_chunks'] = CreateAnalysisChunks.req(self)
+        
+        return reqs
 
 
 

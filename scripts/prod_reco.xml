@@ -193,10 +193,11 @@
     </processor>
 
     <processor name="MyLeptonPairing" type="LeptonPairingCombined">
+        <parameter name="PFOsWOIsoLepCollection" type="string" lcioInType="ReconstructedParticle">PFOsMinusRawIsolatedLeptons</parameter>
+
         <parameter name="IsoElectronCollection" type="string" lcioInType="ReconstructedParticle">ISOElectrons</parameter>
         <parameter name="IsoMuonCollection" type="string" lcioInType="ReconstructedParticle">ISOMuons</parameter>
         <parameter name="IsoTauCollection" type="string" lcioInType="ReconstructedParticle">ISOTaus</parameter>
-        <parameter name="PFOsWOIsoLepCollection" type="string" lcioInType="ReconstructedParticle">PFOsMinusRawIsolatedLeptons</parameter>
         
         <parameter name="LeptonPair" type="string" lcioOutType="ReconstructedParticle">LeptonPair</parameter>
         <parameter name="PFOsWOLepPairCollection" type="string" lcioOutType="ReconstructedParticle">PandoraPFOsWithoutLepPair</parameter>
@@ -204,7 +205,7 @@
 
         <!-- empty to write to AIDA -->
         <parameter name="RootFile" type="string"></parameter>
-        <parameter name="Verbosity" type="string">SILENT</parameter>
+        <parameter name="Verbosity" type="string">DEBUG</parameter>
     </processor>
 
     <!-- JetClustering+FlavorTag, ErrorFlow and SLDCorrection for 2,4,5,6 jets -->

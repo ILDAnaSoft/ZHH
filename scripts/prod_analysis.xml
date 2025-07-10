@@ -8,7 +8,7 @@
         <!--Names of the Output Higgs decay mode collection-->
         <parameter name="HdecayModeCollection" type="string" lcioOutType="MCParticle">HdecayMode</parameter>
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
+        <parameter name="Verbosity" type="string">MESSAGE</parameter>
     </processor>
 
     <processor name="MyFinalStateRecorder" type="FinalStateRecorder">
@@ -17,7 +17,7 @@
         <parameter name="outputJsonFilename" type="string">${OutputDirectory}/${OutputBaseName}_FinalStateMeta.json</parameter>
 
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
+        <parameter name="Verbosity" type="string">MESSAGE</parameter>
     </processor>
 
     <processor name="MyThrust" type="ThrustReconstruction">
@@ -26,7 +26,17 @@
         
         <!--Type of thrust reconstruction algorithm to be used:  1 : Tasso algorithm  2 : JetSet algorithm-->
         <parameter name="typeOfThrustFinder" type="int"> 2 </parameter>
-        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
+        <parameter name="Verbosity" type="string">MESSAGE</parameter>
+    </processor>
+
+    <processor name="MyMergeIsoLeptons" type="MergeCollections">
+        <parameter name="SourceCollection1" type="string" lcioInType="ReconstructedParticle"> ISOElectrons </parameter>
+        <parameter name="SourceCollection2" type="string" lcioInType="ReconstructedParticle"> ISOMuons </parameter>
+        <parameter name="SourceCollection3" type="string" lcioInType="ReconstructedParticle"> ISOTaus </parameter>
+
+        <parameter name="MergedCollection" type="string" lcioOutType="ReconstructedParticle"> ISOLeptons </parameter>
+        
+        <parameter name="Verbosity" type="string">MESSAGE</parameter>
     </processor>
 
     <processor name="MyTrueJet" type="TrueJet">
@@ -54,7 +64,7 @@
         <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
 
         <parameter name="ZinvisibleResidualsOutputCollection" type="string" lcioOutType="LCFloatVec">ZinvisibleResiduals</parameter>
-        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
+        <parameter name="Verbosity" type="string">MESSAGE</parameter>
     </processor>
     -->
 
@@ -116,7 +126,7 @@
         <parameter name="JetPullsOutputCollection" type="string" lcioOutType="LCFloatVec">JetPulls_ZHH</parameter> -->
         
         <!-- verbosity level - DEBUG only works if compiled in debug mode! -->
-        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> ${Verbosity} </parameter>
+        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> MESSAGE </parameter>
     </processor>
     
     <processor name="MyZHHKinFit_solveNu" type="ZHHKinFit">
@@ -166,7 +176,7 @@
         <parameter name="JetPullsOutputCollection" type="string" lcioOutType="LCFloatVec">JetPulls_ZHH</parameter> -->
         
         <!-- verbosity level - DEBUG only works if compiled in debug mode! -->
-        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> ${Verbosity} </parameter>
+        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> MESSAGE </parameter>
     </processor>
 
     <processor name="MyZHHKinFit_ZHH" type="ZHHKinFit">
@@ -216,7 +226,7 @@
         <parameter name="JetPullsOutputCollection" type="string" lcioOutType="LCFloatVec">JetPulls_ZHH</parameter> -->
         
         <!-- verbosity level - DEBUG only works if compiled in debug mode! -->
-        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> ${Verbosity} </parameter>
+        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> MESSAGE </parameter>
     </processor>
 
     <processor name="MyZHHKinFit_ZZH" type="ZHHKinFit">
@@ -266,7 +276,7 @@
         <parameter name="JetPullsOutputCollection" type="string" lcioOutType="LCFloatVec">JetPulls_ZHH</parameter> -->
         
         <!-- verbosity level - DEBUG only works if compiled in debug mode! -->
-        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> ${Verbosity} </parameter>
+        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> MESSAGE </parameter>
     </processor>
 
     <processor name="MyEventObservablesLL" type="EventObservablesLL">
@@ -291,7 +301,7 @@
 
         <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
 
-        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
+        <parameter name="Verbosity" type="string">MESSAGE</parameter>
     </processor>
 
     <!--
@@ -303,7 +313,7 @@
         <parameter name="ECM" type="float">${CMSEnergy}</parameter>
 
         <parameter name="outputKinematics" type="bool">True</parameter>
-        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
+        <parameter name="Verbosity" type="string">MESSAGE</parameter>
     </processor>
     -->
 </group>
@@ -329,7 +339,7 @@
 
         <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
 
-        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
+        <parameter name="Verbosity" type="string">MESSAGE</parameter>
     </processor>
 </group>
 
@@ -354,6 +364,6 @@
         <parameter name="polarizations" type="FloatVec"> 1 0 </parameter>
         <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
 
-        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
+        <parameter name="Verbosity" type="string">MESSAGE</parameter>
     </processor>
 </group>

@@ -157,6 +157,9 @@ class AnalysisConfiguration:
     slcio_files:Optional[Union[list[str], Callable[['FastSimSGV'], list[str]]]] = None
     
     """Fration of available events that will be used for all channels
+    Will only be used if not 1.
+    DEPRECATED: Not used anymore. Instead, use the --fraction parameter to
+        AbstractCreateChunks tasks
     """
     statistics:float = 1. 
     
