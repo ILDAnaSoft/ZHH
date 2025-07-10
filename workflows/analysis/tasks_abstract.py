@@ -185,10 +185,70 @@ class AbstractIndex(BaseTask):
         self.index.load()
         
         # For compatability, also save as CSV
-        np.savetxt(cast(str, self.output()[2].path), index.processes, delimiter=',', fmt='%s')
-        np.savetxt(cast(str, self.output()[3].path), index.samples, delimiter=',', fmt='%s')
+        np.savetxt(cast(str, self.output()[2].path), index.processes, delimiter=',', fmt='%s', header=cast(np.ndarray, index.processes).dtype.names)
+        np.savetxt(cast(str, self.output()[3].path), index.samples, delimiter=',', fmt='%s', header=cast(np.ndarray, index.samples).dtype.names)
         
         self.publish_message(f'Loaded {len(index.samples)} samples and {len(index.processes)} processes')
+        self.overview()
+    
+    def complete(self):
+        complete = super().complete()
+        
+        if complete:
+            self.overview()
+            
+        return complete
+    
+    def overview(self):
+        from law.util import colored
+        
+        processes = np.load(str(self.output()[0].path))
+        samples = np.load(str(self.output()[1].path))
+        
+        unique_proc_pol = list(processes['proc_pol'])    
+        unique_proc_pol.sort()
+        
+        text = f'''++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ {self.__class__.__name__} Overview: Found {len(processes)} in {len(samples)} sample files!
+
+ 1. SAMPLES (see {str(self.output()[3].path)})
+
+   Run ID   | Process      | Polarization |  NEvents  | Location
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+'''
+
+        for proc_pol in unique_proc_pol:
+            process, polarization = proc_pol[:-3], proc_pol[-2:]
+            
+            for file in samples[samples['proc_pol'] == proc_pol]:
+                text += f"{file['run_id']:>11} | "
+                text += f"{process:>12} | "
+                text += f"{polarization:>12} | "
+                text += f"{file['n_events']:>9,} | "            
+                text += f"{file['location']}\n"
+        
+        text += f'''
+ 2. PROCESSES (see {str(self.output()[2].path)})
+
+ Process      | Polarization | Cross section [fb] | CS. MC error [fb] | NSamples |  NEvents
+----------------------------------------------------------------------------------------------
+'''
+
+        for proc_pol in unique_proc_pol:
+            process, polarization = proc_pol[:-3], proc_pol[-2:]
+            p = processes[processes['proc_pol'] == proc_pol]
+            assert(len(p) == 1)
+            p = p[0]
+            
+            text += f"{process:>12} | "
+            text += f"{polarization:>12} | "
+            text += f"{p['cross_sec']:18.4} | "
+            text += f"{p['cross_sec_err']:18.4} | "
+            text += f"{len(samples[samples['proc_pol'] == proc_pol]):>8,} | "
+            text += f"{samples[samples['proc_pol'] == proc_pol]['n_events'].sum():>12,} \n"
+
+        
+        self.publish_message(colored(text, color='green', background='black'))
 
 class AbstractCreateChunks(BaseTask):
     jobtime = cast(int, luigi.IntParameter(default=7200))
@@ -242,10 +302,10 @@ class AbstractCreateChunks(BaseTask):
         np.save(str(self.output()[3].path), process_normalization)
         
         # For compatability, also save the final results as CSV
-        np.savetxt(str(self.output()[4].path), chunks, delimiter=',', fmt='%s')
-        np.savetxt(str(self.output()[5].path), runtime_analysis, delimiter=',', fmt='%s')
-        np.savetxt(str(self.output()[6].path), time_per_event, delimiter=',', fmt='%s')
-        np.savetxt(str(self.output()[7].path), process_normalization, delimiter=',', fmt='%s')
+        np.savetxt(str(self.output()[4].path), chunks, delimiter=',', fmt='%s', header=chunks.dtype.names)
+        np.savetxt(str(self.output()[5].path), runtime_analysis, delimiter=',', fmt='%s', header=runtime_analysis.dtype.names)
+        np.savetxt(str(self.output()[6].path), time_per_event, delimiter=',', fmt='%s', header=time_per_event.dtype.names)
+        np.savetxt(str(self.output()[7].path), process_normalization, delimiter=',', fmt='%s', header=process_normalization.dtype.names)
         
         self.overview()
         
@@ -259,18 +319,20 @@ class AbstractCreateChunks(BaseTask):
         unique_proc_pol = list(np.unique(chunks['proc_pol']))        
         unique_proc_pol.sort(key=lambda proc_pol: -len(chunks['proc_pol'] == proc_pol))
         
-        text = f'''++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-                                     Compiled analysis with {len(chunks)} chunks!
+        text = f'''+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ {self.__class__.__name__} Overview: Divided submission into {len(chunks)} chunks
+ 
+     See also {str(self.output()[4].path)}
 
-NChunks(branches) | Process      | Polarization | t/event(s) avg | Events expected | Events available | Events to process | Input samples
---------------------------------------------------------------------------------------------------------------------------------------------
+ NChunks(branches) | Process      | Polarization | t/event(s) avg | Events expected | Events available | Events to process | Input samples
+-------------------|--------------|--------------|----------------|-----------------|------------------|-------------------|-----------------
 '''
         
         for proc_pol in unique_proc_pol:
             process, polarization = proc_pol[:-3], proc_pol[-2:]
             n_samples_input = len(np.unique(chunks[chunks['proc_pol'] == proc_pol]['location']))
             
-            text += f"{len(chunks[chunks['proc_pol'] == proc_pol]):>17} | "
+            text += f"{len(chunks[chunks['proc_pol'] == proc_pol]):>18} | "
             text += f"{process:>12} | "
             text += f"{polarization:>12} | "
             text += f"{time_per_event[time_per_event['process'] == process]['tPE'][0]:14.4} | "
