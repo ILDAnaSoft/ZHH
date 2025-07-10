@@ -226,7 +226,6 @@ class AbstractCreateChunks(BaseTask):
         samples = np.load(SAMPLE_INDEX)
         
         runtime_analysis = get_runtime_analysis(DATA_ROOT)
-        print(runtime_analysis)
         
         process_normalization = get_process_normalization(processes, samples, RATIO_BY_TOTAL=config.statistics)
         time_per_event = get_adjusted_time_per_event(runtime_analysis)
@@ -249,18 +248,45 @@ class AbstractCreateChunks(BaseTask):
         np.savetxt(str(self.output()[7].path), process_normalization, delimiter=',', fmt='%s')
         
         self.overview()
-        self.publish_message(f'Compiled analysis with {len(chunks)} chunks!')
         
     def overview(self):
         from law.util import colored
         
-        chunk_splits = np.load(str(self.output()[0].path))
-        unique_proc_pol = list(np.unique(chunk_splits['proc_pol'])[0])
-        unique_proc_pol.sort(key=lambda proc_pol: -np.sum(chunk_splits['chunk_size'][chunk_splits['proc_pol'] == proc_pol]))
+        chunks = np.load(str(self.output()[0].path))
+        time_per_event = np.load(str(self.output()[2].path))
+        process_normalization = np.load(str(self.output()[3].path))
         
-        text = ' '.join(unique_proc_pol)
+        unique_proc_pol = list(np.unique(chunks['proc_pol']))        
+        unique_proc_pol.sort(key=lambda proc_pol: -len(chunks['proc_pol'] == proc_pol))
+        
+        text = f'''++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                                     Compiled analysis with {len(chunks)} chunks!
+
+NChunks(branches) | Process      | Polarization | t/event(s) avg | Events expected | Events available | Events to process | Input samples
+--------------------------------------------------------------------------------------------------------------------------------------------
+'''
+        
+        for proc_pol in unique_proc_pol:
+            process, polarization = proc_pol[:-3], proc_pol[-2:]
+            n_samples_input = len(np.unique(chunks[chunks['proc_pol'] == proc_pol]['location']))
+            
+            text += f"{len(chunks[chunks['proc_pol'] == proc_pol]):>17} | "
+            text += f"{process:>12} | "
+            text += f"{polarization:>12} | "
+            text += f"{time_per_event[time_per_event['process'] == process]['tPE'][0]:14.4} | "
+            text += f"{process_normalization[process_normalization['proc_pol'] == proc_pol]['n_events_expected'][0]:14.3} | "
+            text += f"{process_normalization[process_normalization['proc_pol'] == proc_pol]['n_events_tot'][0]:17,} |"
+            text += f"{np.sum(chunks[chunks['proc_pol'] == proc_pol]['chunk_size']):18,} | "
+            text += f"{n_samples_input:>14} \n"
         
         self.publish_message(colored(text, color='green', background='black'))
+        
+    def complete(self):
+        complete = super().complete()
+        if complete:
+            self.overview()
+        
+        return complete
 
 class FastSimSGVExternalReadJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     """Abstract class for fast simulation jobs using SGV, reading in
