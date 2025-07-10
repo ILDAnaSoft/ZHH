@@ -72,7 +72,7 @@ class Config_250_ftag_full(AnalysisConfiguration):
     tag = '250-ftag-full'
     
     task_kwargs:dict[str, dict] = {
-        'MarlinJob': {
+        'MarlinBaseJob': {
             'debug_n_files_to_process': 0, # process all files
             'n_events_max': 0, # process all events
             'steering_file': '$REPO_ROOT/scripts/dev_flavortag_compare.xml',
@@ -106,7 +106,7 @@ class Config_250_ftag_fast_pfl(AnalysisConfiguration):
     tag = '250-ftag-fast-pfl'
     
     task_kwargs:dict[str, dict] = {
-        'MarlinJob': {
+        'MarlinBaseJob': {
             'debug_n_files_to_process': 0, # process all files
             'n_events_max': 0, # process all events
             'steering_file': '$REPO_ROOT/scripts/dev_flavortag_compare.xml',

@@ -1,13 +1,12 @@
-from analysis.tasks_abstract import MarlinJob, MarlinBranchValue
-from typing import Union, Optional, cast
+from .tasks_abstract import AbstractMarlin, MarlinBranchValue
+from typing import cast
 from collections.abc import Callable
 from law.util import flatten
-from analysis.framework import zhh_configs
+from .framework import zhh_configs
 import numpy as np
-import os.path as osp
 import law
 
-class AnalysisAbstract(MarlinJob):
+class MarlinBaseJob(AbstractMarlin):
     debug = True
     
     # controls how many files are processed in debug mode (e.g. AnalysisRuntime). if None, all files are processed
@@ -19,13 +18,6 @@ class AnalysisAbstract(MarlinJob):
         ('OutputDirectory', '.')
     ]
     
-    check_output_root_ttrees = [
-        ('zhh_AIDA.root', 'EventObservablesLL'),
-        #('zhh_AIDA.root', 'KinFitLLZHH'),
-        #('zhh_AIDA.root', 'KinFitLLZZH'),
-        ('zhh_AIDA.root', 'FinalStates')
-    ]
-    
     check_output_files_exist = [
         'zhh_FinalStateMeta.json'
     ]
@@ -34,8 +26,8 @@ class AnalysisAbstract(MarlinJob):
     def pre_run_command(self, **kwargs):
         config = zhh_configs.get(str(self.tag))
         
-        if 'MarlinJob' in config.task_kwargs:
-            for prop, value in config.task_kwargs['MarlinJob'].items():
+        if 'MarlinBaseJob' in config.task_kwargs:
+            for prop, value in config.task_kwargs['MarlinBaseJob'].items():
                 setattr(self, prop, value)
  
         mcp_col_name:str = self.get_steering_parameters()['mcp_col_name']
@@ -50,7 +42,19 @@ class AnalysisAbstract(MarlinJob):
             self.globals.append((key, str(value)))
     
     def workflow_requires(self):
-        from analysis.tasks import RawIndex, CreateAnalysisChunks
+        from .tasks import RawIndex, CreateAnalysisChunks
+        
+        reqs = super().workflow_requires()
+        reqs['raw_index'] = RawIndex.req(self)
+        
+        # In debug mode (runtime analysis), the CreateAnalysisChunks task is not required
+        if not self.debug:
+            reqs['preselection_chunks'] = CreateAnalysisChunks.req(self)
+        
+        return reqs
+    
+    def requires(self):
+        from .tasks import RawIndex, CreateAnalysisChunks
         
         reqs = super().workflow_requires()
         reqs['raw_index'] = RawIndex.req(self)
@@ -77,8 +81,8 @@ class AnalysisAbstract(MarlinJob):
         branch_map:dict[int, MarlinBranchValue] = {}
         
         config = zhh_configs.get(str(self.tag))
-        if 'MarlinJob' in config.task_kwargs:
-            for prop, value in config.task_kwargs['MarlinJob'].items():
+        if 'MarlinBaseJob' in config.task_kwargs:
+            for prop, value in config.task_kwargs['MarlinBaseJob'].items():
                 setattr(self, prop, value)
         
         samples = np.load(self.input()['raw_index'][1].path)
@@ -132,27 +136,50 @@ class AnalysisAbstract(MarlinJob):
     @workflow_condition.output
     def output(self):
         output_name = self.output_name()
+        assert('.' in self.output_file)
         
         return [
             self.local_directory_target(output_name),
-            self.local_target(f'{output_name}.root')
+            self.local_target(f'{output_name}.{self.output_file.split(".")[-1]}')
         ]
-        
-        #return self.local_directory_target(self.branch)
 
-class AnalysisRuntime(AnalysisAbstract):
-    """Generates a runtime analysis for each proc_pol combination, essentially by running in debug mode
+class RecoAbstract(MarlinBaseJob):
+    steering_file:str = '$REPO_ROOT/scripts/prod_reco_run.xml'
+    
+    check_output_root_ttrees = None
+    output_file = 'zhh.slcio'
 
-    Args:
-        AnalysisAbstract (_type_): _description_
+class AnalysisAbstract(MarlinBaseJob):
+    steering_file:str = '$REPO_ROOT/scripts/prod_analysis_run.xml'
+    
+    check_output_root_ttrees = [
+        ('zhh_AIDA.root', 'EventObservablesLL'),
+        ('zhh_AIDA.root', 'FinalStates'),
+        ('zhh_AIDA.root', 'KinFit_ZHH'),
+        ('zhh_AIDA.root', 'KinFit_ZZH'),
+    ]
+
+
+
+class RecoRuntime(RecoAbstract):
+    """Runs prod_reco_run.xml for a runtime analysis for each proc_pol combination
     """
     debug = True
 
-class AnalysisFinal(AnalysisAbstract):
-    """Does the full analysis for every channel and proc_pol combination
+class RecoFinal(RecoAbstract):
+    """Runs prod_reco_run.xml for the full analysis for each proc_pol combination
 
     Args:
         AnalysisAbstract (_type_): _description_
     """
     debug = False
-    
+
+class AnalysisRuntime(AnalysisAbstract):
+    """Runs prod_analysis_run.xml for a runtime analysis for each proc_pol combination
+    """
+    debug = True
+
+class AnalysisFinal(AnalysisAbstract):
+    """Runs prod_analysis_run.xml for the full analysis for each proc_pol combination
+    """
+    debug = False

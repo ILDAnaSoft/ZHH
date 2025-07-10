@@ -53,7 +53,7 @@ This will run the tasks RawIndex, AnalysisRuntime, CreateAnalysisChunks and then
 To use the maximum number of jobs, the chunking is done in a way such that only the normal quota is used (see [here](https://docs.desy.de/naf/documentation/job-requirements/)). 
 
 ### Task Definitions
-Tasks are defined as Python classed in `tasks*.py`. Jobs which should run on HTCondor simply inherit from `HTCondorWorkflow`. Custom HTCondor settings are defined in `framework.py`. All ZHH analysis tasks which require running Marlin inherit from the `MarlinJob` class.
+Tasks are defined as Python classed in `tasks*.py`. Jobs which should run on HTCondor simply inherit from `HTCondorWorkflow`. Custom HTCondor settings are defined in `framework.py`. All ZHH analysis tasks which require running Marlin inherit from the `AbstractMarlin` class.
 
 ## Central Bookkeeping
 
