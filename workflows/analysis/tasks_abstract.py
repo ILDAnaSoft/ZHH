@@ -21,6 +21,11 @@ class AbstractMarlin(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     The parameters for running Marlin can be set here
     or overwritten in a child class by a custom imple-
     mentation of get_steering_parameters.
+    
+    Considers two targets per task branch:
+    - output[0]: a directory, identified as the temp.
+        working directory in which Marlin is run
+    - output[1]: a file, identified by self.output_file
     """
     
     executable = 'Marlin'
@@ -126,7 +131,7 @@ class AbstractMarlin(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
                 
         if self.check_output_files_exist is not None:
             for name in self.check_output_files_exist:
-                cmd += f' && echo "Info: Checking if file <{name}> exists" && [[ -f ./{name} ]] && echo "Success: File <{name}> exists"'
+                cmd += f' && echo "Info: Checking if file <{name}> exists" && [ -f ./{name} ] && echo "Success: File <{name}> exists"'
         
         if self.check_output_lcio_files is not None:
             for name in self.check_output_lcio_files:
@@ -151,6 +156,8 @@ class AbstractIndex(BaseTask):
     2. processes.npy: An index containing all encountered physics processes for each polarization and their cross section-section values 
     """
     index: Optional[ProcessIndex] = None
+    overview:bool = cast(bool, luigi.BoolParameter(description='Whether or not to force showing the overview when the task is already done.',
+                                                   default=False))
     
     def requires(self):
         from analysis.configurations import zhh_configs
@@ -189,17 +196,17 @@ class AbstractIndex(BaseTask):
         np.savetxt(cast(str, self.output()[3].path), index.samples, delimiter=',', fmt='%s', header=cast(np.ndarray, index.samples).dtype.names)
         
         self.publish_message(f'Loaded {len(index.samples)} samples and {len(index.processes)} processes')
-        self.overview()
+        self.printOverview()
     
     def complete(self):
         complete = super().complete()
         
-        if complete:
-            self.overview()
+        if complete and self.overview:
+            self.printOverview()
             
         return complete
     
-    def overview(self):
+    def printOverview(self):
         from law.util import colored
         
         processes = np.load(str(self.output()[0].path))
@@ -251,7 +258,14 @@ class AbstractIndex(BaseTask):
         self.publish_message(colored(text, color='green', background='black'))
 
 class AbstractCreateChunks(BaseTask):
-    jobtime = cast(int, luigi.IntParameter(default=7200))
+    jobtime:int = cast(int, luigi.IntParameter(description='Maximum runtime of each job. Uses DESY NAF defaults for the vanilla queue.',
+                                               default=7200))
+    
+    fraction:float = cast(float, luigi.FloatParameter(description='Ratio of available events (as estimated from AbstractIndex task)',
+                                                      default=1.))
+    
+    overview:bool = cast(bool, luigi.BoolParameter(description='Whether or not to force showing the overview when the task is already done.',
+                                                   default=False))
     
     def requires(self):
         raise NotImplementedError('requires must be implemented by an inheriting class and return exactly two items: first a task implementing AbstractIndex and second a task implementing AbstractMarlin')
@@ -286,8 +300,8 @@ class AbstractCreateChunks(BaseTask):
         samples = np.load(SAMPLE_INDEX)
         
         runtime_analysis = get_runtime_analysis(DATA_ROOT)
-        
-        process_normalization = get_process_normalization(processes, samples, RATIO_BY_TOTAL=config.statistics)
+        process_normalization = get_process_normalization(processes, samples,
+                                                          RATIO_BY_TOTAL=self.fraction)
         time_per_event = get_adjusted_time_per_event(runtime_analysis)
 
         chunks = get_sample_chunk_splits(samples, process_normalization=process_normalization,
@@ -307,9 +321,9 @@ class AbstractCreateChunks(BaseTask):
         np.savetxt(str(self.output()[6].path), time_per_event, delimiter=',', fmt='%s', header=time_per_event.dtype.names)
         np.savetxt(str(self.output()[7].path), process_normalization, delimiter=',', fmt='%s', header=process_normalization.dtype.names)
         
-        self.overview()
+        self.printOverview()
         
-    def overview(self):
+    def printOverview(self):
         from law.util import colored
         
         chunks = np.load(str(self.output()[0].path))
@@ -345,8 +359,9 @@ class AbstractCreateChunks(BaseTask):
         
     def complete(self):
         complete = super().complete()
-        if complete:
-            self.overview()
+        
+        if complete and self.overview:
+            self.printOverview()
         
         return complete
 
