@@ -8,7 +8,7 @@ from .PreselectionAnalysis import sample_weight
 def get_process_normalization(
         processes:np.ndarray,
         samples:np.ndarray,
-        RATIO_BY_TOTAL:Optional[float]=1.):
+        RATIO_BY_TOTAL:Optional[float]=1.)->np.ndarray:
     """Returns a np.ndarray with
 
     Args:
@@ -64,7 +64,7 @@ def get_sample_chunk_splits(
         custom_statistics:Optional[List[tuple]]=None,
         existing_chunks:Optional[np.ndarray]=None,
         MAXIMUM_TIME_PER_JOB:int=5400,
-        ):
+        )->np.ndarray:
     """_summary_
 
     Args:
