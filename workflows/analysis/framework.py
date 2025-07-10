@@ -112,6 +112,8 @@ class HTCondorWorkflow(law.contrib.htcondor.HTCondorWorkflow):
         
         config.custom_content.append(('requirements', 'Machine =!= LastRemoteHost'))
         config.custom_content.append(('max_idle', 1000))
+        
+        raise Exception('asdf')
 
         return config
 
@@ -119,8 +121,8 @@ class AnalysisConfiguration:
     tag:str
     cuts:Literal['llbbbb', 'vvbbbb', 'qqbbbb']
     
-    # possible entries: MarlinJob
-    # e.g. 'MarlinJob': { 'analysis_runtime_n_files_to_process': 0, 'steering_file': 'some path.xml' }
+    # possible entries: MarlinBaseJob
+    # e.g. 'MarlinBaseJob': { 'analysis_runtime_n_files_to_process': 0, 'steering_file': 'some path.xml' }
     task_kwargs:dict[str, dict] = {}
     
     # whizard_options: should return a list of whizard option entries,

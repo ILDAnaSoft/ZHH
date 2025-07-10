@@ -1,11 +1,11 @@
 from analysis.framework import HTCondorWorkflow
 from analysis.utils import SGVSteeringModifier
-import law, os, uuid
+import law, luigi, uuid, numpy as np
 import os.path as osp
-from typing import Optional, Union, cast
+from typing import Optional, cast
 from .utils.types import SGVOptions
 from zhh import ProcessIndex
-from .utils import ShellTask, BaseTask, RealTimeLoggedTask
+from .utils import ShellTask, BaseTask
 
 MarlinBranchValue = tuple[str, int, int, int, int, str]
 # [0]: input file
@@ -15,7 +15,7 @@ MarlinBranchValue = tuple[str, int, int, int, int, str]
 # [4]: n_events_max
 # [5]: mcp_col_name
 
-class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
+class AbstractMarlin(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     """Abstract class for Marlin jobs
     
     The parameters for running Marlin can be set here
@@ -35,13 +35,18 @@ class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     
     steering_file:str = '$REPO_ROOT/scripts/prod.xml'
     
+    # file to be moved to the file output location (output[1])
     output_file:str = 'zhh_AIDA.root'
     
     # Optional: list of tuples of structure (file-name.root, TTree-name)
-    check_output_root_ttrees:Optional[list[tuple[str,str]]] = None 
+    check_output_root_ttrees:list[tuple[str,str]]|None = None 
     
     # Optional: list of files
-    check_output_files_exist:Optional[list[str]] = None
+    check_output_files_exist:list[str]|None = None
+    
+    # Optional: list of SLCIO files for which lcio_event_counter
+    # must return successfully a number > 0
+    check_output_lcio_files:list[str]|None = None
     
     def get_steering_parameters(self)->dict:
         """The branch map self.branch_map is a dictionary
@@ -83,7 +88,7 @@ class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         n_chunk = branch_data[1]
         n_chunks_in_sample = branch_data[2]
         
-        return f'{osp.splitext(sample_filename)[0]}-{n_chunk}-{n_chunks_in_sample}-{str(self.branch)}'
+        return f'{osp.splitext(sample_filename)[0]}.{n_chunk}-{n_chunks_in_sample}-{str(self.branch)}'
     
     def parse_marlin_globals(self) -> str:
         globals = filter(lambda tup: tup[0] not in ['MaxRecordNumber', 'LCIOInputFiles', 'SkipNEvents'], self.globals)
@@ -123,6 +128,10 @@ class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
             for name in self.check_output_files_exist:
                 cmd += f' && echo "Info: Checking if file <{name}> exists" && [[ -f ./{name} ]] && echo "Success: File <{name}> exists"'
         
+        if self.check_output_lcio_files is not None:
+            for name in self.check_output_lcio_files:
+                cmd += f' && echo "Info: Checking with lcio_event_counter that file <{name}> contains events" && counts=$(lcio_event_counter {name}) && [ ! -z "$counts" ] && [ "$counts" -gt 0 ] && echo "Success: File <{name}> contains <${{counts}}> events!"'
+        
         cmd += f' && mv "{self.output_file}" "{self.output()[1].path}" && cd .. && mv "{temp}" "{self.output()[0].path}" )'
 
         return cmd
@@ -136,6 +145,122 @@ class MarlinJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     def run(self, **kwargs):
         ShellTask.run(self, keep_cwd=True, **kwargs)
 
+class AbstractIndex(BaseTask):
+    """This task creates two indeces:
+    1. samples.npy: An index of available SLCIO sample files with information about the file location, number of events, physics process and polarization
+    2. processes.npy: An index containing all encountered physics processes for each polarization and their cross section-section values 
+    """
+    index: Optional[ProcessIndex] = None
+    
+    def requires(self):
+        from analysis.configurations import zhh_configs
+        return zhh_configs.get(str(self.tag)).index_requires(self)
+    
+    def slcio_files(self) -> list[str]:
+        from analysis.configurations import zhh_configs
+        config = zhh_configs.get(str(self.tag))
+        if callable(config.slcio_files):
+            files = config.slcio_files(self)
+        elif config.slcio_files is not None:
+            files = config.slcio_files
+        else:
+            raise Exception(f'Invalid slcio_files in config <{self.tag}>')
+            
+        files.sort()
+        return files
+    
+    def output(self):
+        return [
+            self.local_target('processes.npy'),
+            self.local_target('samples.npy'),
+            self.local_target('processes.csv'),
+            self.local_target('samples.csv')
+        ]
+    
+    def run(self):
+        temp_files: list[law.LocalFileTarget] = self.output()
+        BaseTask.touch_parent(temp_files[0])
+
+        self.index = index = ProcessIndex(str(temp_files[0].path), str(temp_files[1].path), self.slcio_files())
+        self.index.load()
+        
+        # For compatability, also save as CSV
+        np.savetxt(cast(str, self.output()[2].path), index.processes, delimiter=',', fmt='%s')
+        np.savetxt(cast(str, self.output()[3].path), index.samples, delimiter=',', fmt='%s')
+        
+        self.publish_message(f'Loaded {len(index.samples)} samples and {len(index.processes)} processes')
+
+class AbstractCreateChunks(BaseTask):
+    jobtime = cast(int, luigi.IntParameter(default=7200))
+    
+    def requires(self):
+        raise NotImplementedError('requires must be implemented by an inheriting class and return exactly two items: first a task implementing AbstractIndex and second a task implementing AbstractMarlin')
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def output(self):
+        return [
+            self.local_target('chunks.npy'),
+            self.local_target('runtime_analysis.npy'),
+            self.local_target('time_per_event.npy'),
+            self.local_target('process_normalization.npy'),
+            
+            self.local_target('chunks.csv'),
+            self.local_target('runtime_analysis.csv'),
+            self.local_target('time_per_event.csv'),
+            self.local_target('process_normalization.csv'),
+        ]
+    
+    def run(self):
+        from analysis.configurations import zhh_configs
+        from zhh import get_runtime_analysis, get_process_normalization, \
+                        get_adjusted_time_per_event, get_sample_chunk_splits
+        
+        config = zhh_configs.get(str(self.tag))
+        
+        SAMPLE_INDEX = self.input()[0][1].path
+        DATA_ROOT = osp.dirname(self.input()[1]['collection'][0][0].path)
+        
+        processes = np.load(self.input()[0][0].path)
+        samples = np.load(SAMPLE_INDEX)
+        
+        runtime_analysis = get_runtime_analysis(DATA_ROOT)
+        print(runtime_analysis)
+        
+        process_normalization = get_process_normalization(processes, samples, RATIO_BY_TOTAL=config.statistics)
+        time_per_event = get_adjusted_time_per_event(runtime_analysis)
+
+        chunks = get_sample_chunk_splits(samples, process_normalization=process_normalization,
+                    adjusted_time_per_event=time_per_event, MAXIMUM_TIME_PER_JOB=cast(int, self.jobtime),
+                    custom_statistics=config.custom_statistics)
+        
+        BaseTask.touch_parent(self.output()[0])
+        
+        np.save(str(self.output()[0].path), chunks)
+        np.save(str(self.output()[1].path), runtime_analysis)
+        np.save(str(self.output()[2].path), time_per_event)
+        np.save(str(self.output()[3].path), process_normalization)
+        
+        # For compatability, also save the final results as CSV
+        np.savetxt(str(self.output()[4].path), chunks, delimiter=',', fmt='%s')
+        np.savetxt(str(self.output()[5].path), runtime_analysis, delimiter=',', fmt='%s')
+        np.savetxt(str(self.output()[6].path), time_per_event, delimiter=',', fmt='%s')
+        np.savetxt(str(self.output()[7].path), process_normalization, delimiter=',', fmt='%s')
+        
+        self.overview()
+        self.publish_message(f'Compiled analysis with {len(chunks)} chunks!')
+        
+    def overview(self):
+        from law.util import colored
+        
+        chunk_splits = np.load(str(self.output()[0].path))
+        unique_proc_pol = list(np.unique(chunk_splits['proc_pol'])[0])
+        unique_proc_pol.sort(key=lambda proc_pol: -np.sum(chunk_splits['chunk_size'][chunk_splits['proc_pol'] == proc_pol]))
+        
+        text = ' '.join(unique_proc_pol)
+        
+        self.publish_message(colored(text, color='green', background='black'))
 
 class FastSimSGVExternalReadJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     """Abstract class for fast simulation jobs using SGV, reading in

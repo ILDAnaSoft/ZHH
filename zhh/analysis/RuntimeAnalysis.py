@@ -26,7 +26,11 @@ def evaluate_runtime(DATA_ROOT:str,
     with open(f'{DATA_ROOT}/{bname}/Source.txt') as file:
         src_path = file.read().strip()
         
-    with open(f'{DATA_ROOT}/{bname}/zhh_FinalStateMeta.json') as metafile:
+    meta_file = glob(f'{DATA_ROOT}/{bname}/zhh*FinalStateMeta.json')
+    print(meta_file)
+    
+    assert(len(meta_file) == 1)
+    with open(meta_file[0]) as metafile:
         branch_meta = json.load(metafile)
         n_proc, process = branch_meta['nEvtSum'], branch_meta['processName']
         tEnd, tStart = branch_meta['tEnd'], branch_meta['tStart']
@@ -101,7 +105,15 @@ def get_runtime_analysis(DATA_ROOT:Optional[str]=None,
 
 def get_adjusted_time_per_event(runtime_analysis:np.ndarray,
                                  MAX_CAP:Optional[float]=None,
-                                 MIN_CAP:Optional[float]=0.01):
+                                 MIN_CAP:Optional[float]=0.01)->np.ndarray:
+    
+    """Average for each process (i.e. over each polarization) the processing
+    runtime and apply the MIN/MAX_CAP values.
+
+    Returns:
+        np.ndarray: A named numpy array containing the columns
+            process, tAvg, tMax, n_processes and tPE (time per event)
+    """
     
     unique_processes = np.unique(runtime_analysis['process'])
 

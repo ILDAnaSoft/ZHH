@@ -156,6 +156,7 @@ def get_sample_chunk_splits(
             
                 if atpe is not None:
                     time_per_event = atpe['tPE'][atpe['process'] == p['process']]
+                    print('time_per_event', time_per_event)
                     max_chunk_size = floor(MAXIMUM_TIME_PER_JOB/time_per_event)
                     
                 while n_accounted < n_target and n_accounted_sample < n_tot_sample:
