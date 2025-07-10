@@ -113,7 +113,7 @@ class HTCondorWorkflow(law.contrib.htcondor.HTCondorWorkflow):
         config.custom_content.append(('requirements', 'Machine =!= LastRemoteHost'))
         config.custom_content.append(('max_idle', 1000))
         
-        raise Exception('asdf')
+        #raise Exception('asdf')
 
         return config
 
