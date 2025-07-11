@@ -158,7 +158,7 @@ void LeptonPairingCombined::Clear() {
   streamlog_out(DEBUG) << "   Clear called  " << endl;
 
   m_bestLeptonType = 0;
-  m_bestLeptonDelta = 0.;
+  m_bestLeptonDelta = 99999.;
 
   m_IsoLepsInvMass = { 9999., 9999., 9999. };
   m_RecoLepsInvMass.clear();
@@ -171,23 +171,23 @@ void LeptonPairingCombined::processRunHeader( LCRunHeader* run ) {
 }
 
 float LeptonPairingCombined::evaluateIsoLeptons(EVENT::LCCollection * isoLepCollection, int leptonType){
-  float massDelta = 99999.;
-  float bestMass = 0;
-  float pairmass = 0;
-
+  float bestDelta = 99999.;
   int massEntryIndex;
+  int InIsoLeps;
+
   switch (abs(leptonType)) {
     case 11: massEntryIndex = 0; break; // electron
     case 13: massEntryIndex = 1; break; // muon
     case 15: massEntryIndex = 2; break; // tau
   }
 
-  int InIsoLeps = isoLepCollection->getNumberOfElements();
+  InIsoLeps = isoLepCollection->getNumberOfElements();
   streamlog_out(DEBUG7) << "Pairing iso (type=" << leptonType << ") leptons. Checking n=" << InIsoLeps << " objects" << endl;
 
   if (InIsoLeps >= 2) {
-    float mindelta = 99999.;
+    float bestMass = 0;
     float pairmass = 0;
+    float massDelta;
 
     for ( int i_lep1 = 0 ; i_lep1 < InIsoLeps - 1 ; ++i_lep1 ) {
       ReconstructedParticle* lepton1 = static_cast<ReconstructedParticle*>( isoLepCollection->getElementAt( i_lep1 ) );
@@ -198,16 +198,17 @@ float LeptonPairingCombined::evaluateIsoLeptons(EVENT::LCCollection * isoLepColl
         
         if (lepton1->getType() + lepton2->getType() == 0) {
           pairmass = inv_mass(lepton1, lepton2);
-          massDelta = abs(bestMass - m_diLepInvMass);
+          massDelta = abs(pairmass - m_diLepInvMass);
 
-          streamlog_out(DEBUG7) << "mass = " << bestMass << endl;
-          streamlog_out(DEBUG7) << "same type, opposite charge" << endl;
+          streamlog_out(DEBUG7) << "same type, opposite charge; mass = " << pairmass << endl;
 
-          if (massDelta > mindelta)
+          if (massDelta > bestDelta)
             continue;
 
           bestMass = pairmass;
-          mindelta = massDelta;
+          bestDelta = massDelta;
+
+          streamlog_out(DEBUG7) << "new best pairing: deltaM = " << bestDelta << endl;
 
           if (massDelta < abs(m_IsoLepsInvMass[massEntryIndex] - m_diLepInvMass))
             m_IsoLepsInvMass[massEntryIndex] = bestMass;
@@ -223,7 +224,7 @@ float LeptonPairingCombined::evaluateIsoLeptons(EVENT::LCCollection * isoLepColl
     }
   }
 
-  return massDelta;
+  return bestDelta;
 }
 
 void LeptonPairingCombined::processEvent( EVENT::LCEvent *pLCEvent ) {
@@ -248,15 +249,15 @@ void LeptonPairingCombined::processEvent( EVENT::LCEvent *pLCEvent ) {
   
     streamlog_out(DEBUG7) << "Isolated electron and muon collections successfully found in event " << m_nEvt << endl;
   } catch( DataNotAvailableException &e ) {
-    cerr << "Event " << m_nEvt << endl;
-    throw EVENT::Exception("Critical error: One of the given input collections do not exist: " << m_inputIsoElectronCollection << ", " << m_inputIsoMuonCollection << " or " << m_inputPFOsWOIsoLepCollection);
+    cerr << "Critical error: One of the given input collections do not exist in event " << m_nEvt << ": " << m_inputIsoElectronCollection << ", " << m_inputIsoMuonCollection << " or " << m_inputPFOsWOIsoLepCollection;
+    throw EVENT::Exception("Required collection does not exist");
   }
 
   try {
     IsoTauCollection = pLCEvent->getCollection(m_inputIsoTauCollection);
     streamlog_out(DEBUG7) << "Isolated tau collection successfully found in event " << m_nEvt << endl;
   } catch( DataNotAvailableException &e ) {
-    streamlog_out(MESSAGE) << "No tau collection found. Taus will not be considered" << m_nEvt << endl;
+    streamlog_out(MESSAGE) << "No tau collection found. Taus will not be considered in event " << m_nEvt << endl;
   }
 
   IMPL::LCCollectionVec* m_LepPairCol = new IMPL::LCCollectionVec( LCIO::RECONSTRUCTEDPARTICLE );
@@ -267,7 +268,7 @@ void LeptonPairingCombined::processEvent( EVENT::LCEvent *pLCEvent ) {
   IMPL::LCCollectionVec* m_PFOsWOLepPairCol = new IMPL::LCCollectionVec( LCIO::RECONSTRUCTEDPARTICLE );
   m_PFOsWOLepPairCol->setSubset( true );
   
-  std::vector<int> leptonTypes;
+  vector<int> leptonTypes;
 
   if (IsoElectronCollection)
     leptonTypes.push_back(11); // electron
@@ -311,7 +312,13 @@ void LeptonPairingCombined::processEvent( EVENT::LCEvent *pLCEvent ) {
 
     m_RecoLepsInvMass[massEntryIndex] = inv_mass(recoLepton1, recoLepton2);
 
+    float E_ph_tot = 0.;
+    for (size_t i_ph = 0; i_ph < photons.size(); i_ph++) {
+      E_ph_tot += photons[i_ph]->getEnergy();
+    }
+
     streamlog_out(DEBUG7) << "Best lepton pair (type=" << m_bestLeptonType << ") with invariant mass = " << m_IsoLepsInvMass[massEntryIndex] << " (before pairing: " << m_RecoLepsInvMass[massEntryIndex] <<")" << endl;      
+    streamlog_out(DEBUG7) << "  Recovered " << photons.size() << " photons with an energy of " << E_ph_tot << endl;
 
     m_IsoLepPairCol->addElement(m_bestLeptonPair[0]);
     m_IsoLepPairCol->addElement(m_bestLeptonPair[1]);
@@ -346,13 +353,17 @@ void LeptonPairingCombined::processEvent( EVENT::LCEvent *pLCEvent ) {
     for (int i_lep = 0 ; i_lep < InIsoLeps; ++i_lep) {
       bool isFromPair = false;
       ReconstructedParticle* lepton = static_cast<ReconstructedParticle*>(IsoLepCollection->getElementAt(i_lep));
-      for (auto leptonfrompair: m_bestLeptonPair) {
-        if (lepton == leptonfrompair)
-          isFromPair = true;
+
+      if (m_bestLeptonType == leptonType) {
+        for (auto leptonfrompair: m_bestLeptonPair) {
+          if (lepton == leptonfrompair)
+            isFromPair = true;
+        }
       }
+
       if (!isFromPair) {
         m_PFOsWOLepPairCol->addElement(lepton);
-        streamlog_out(DEBUG7) << "Adding lepton (type=" << lepton->getType() << ") to PFOsWOLepPair because it couldn't be paired" << endl;
+        streamlog_out(DEBUG7) << "Adding lepton (type=" << lepton->getType() << ") [" << i_lep << "] to PFOsWOLepPair because it couldn't be paired" << endl;
       }
     }
   }
