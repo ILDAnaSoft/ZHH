@@ -53,6 +53,8 @@ class LeptonPairingCombined : public Processor
   vector<float> m_RecoLepsInvMass{};
   vector<ReconstructedParticle*> m_bestLeptonPair{};
   vector<int> m_bestLeptonPairIDx{};
+  int m_bestLeptonType{};
+  float m_bestLeptonDelta{};
   TFile *m_pTFile{};
   TTree *m_pTTree = new TTree("LeptonPairingCombined", "LeptonPairingCombined");
 
