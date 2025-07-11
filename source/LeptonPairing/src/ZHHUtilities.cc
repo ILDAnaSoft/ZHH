@@ -52,14 +52,11 @@ void doPhotonRecovery(ReconstructedParticle *lepton, LCCollection *colPFO, Recon
       leptonCovMat.begin(), std::plus<float>());
   }
 
-  Double_t energy = lortzLepton.E();
-  Double_t mass   = lortzLepton.M();
   Double_t momentum[3] = {lortzLepton.Px(), lortzLepton.Py(), lortzLepton.Pz()};
-  Double_t charge = lepton->getCharge();
   recoLepton->setMomentum(momentum);
-  recoLepton->setEnergy(energy);
-  recoLepton->setMass(mass);
-  recoLepton->setCharge(charge);
+  recoLepton->setEnergy(lortzLepton.E());
+  recoLepton->setMass(lortzLepton.M());
+  recoLepton->setCharge(lepton->getCharge());
   recoLepton->setType(lepType);
   recoLepton->setCovMatrix(leptonCovMat);
   

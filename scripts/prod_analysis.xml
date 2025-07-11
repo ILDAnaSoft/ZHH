@@ -29,6 +29,16 @@
         <parameter name="Verbosity" type="string">${Verbosity}</parameter>
     </processor>
 
+    <processor name="MyMergeIsoLeptons" type="MergeCollections">
+        <parameter name="SourceCollection1" type="string" lcioInType="ReconstructedParticle"> ISOElectrons </parameter>
+        <parameter name="SourceCollection2" type="string" lcioInType="ReconstructedParticle"> ISOMuons </parameter>
+        <parameter name="SourceCollection3" type="string" lcioInType="ReconstructedParticle"> ISOTaus </parameter>
+
+        <parameter name="MergedCollection" type="string" lcioOutType="ReconstructedParticle"> ISOLeptons </parameter>
+        
+        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
+    </processor>
+
     <processor name="MyTrueJet" type="TrueJet">
         <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
         <parameter name="RecoParticleCollection" type="string" lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
@@ -42,7 +52,7 @@
         <parameter name="InitialElementonLink" type="string" lcioOutType="LCRelation">InitialElementonLink</parameter>
         <parameter name="FinalColourNeutralLink" type="string" lcioOutType="LCRelation">FinalColourNeutralLink</parameter>
         <parameter name="InitialColourNeutralLink" type="string" lcioOutType="LCRelation">InitialColourNeutralLink</parameter>
-        <parameter name="Verbosity" type="string">MESSAGE</parameter>
+        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
     </processor>
 </group>
 
