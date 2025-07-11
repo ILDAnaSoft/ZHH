@@ -144,6 +144,8 @@ void LeptonPairingCombined::init() {
     m_pTTree->Branch("event", &m_nEvt, "event/I");
     m_pTTree->Branch("IsoLepsInvMass", &m_IsoLepsInvMass);
     m_pTTree->Branch("RecoLepsInvMass", &m_RecoLepsInvMass);
+    m_pTTree->Branch("bestLeptonType", &m_bestLeptonType, "bestLeptonType/I");
+    m_pTTree->Branch("bestLeptonDelta", &m_bestLeptonDelta, "bestLeptonDelta/F");
 
     streamlog_out(DEBUG0) << "      Created root file/tree/histograms" << endl ;
   }

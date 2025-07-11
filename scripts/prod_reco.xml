@@ -13,13 +13,13 @@
         <!--true: Use (mathematically) true Jacobian for the option E_cluster = |p|, false: for the option E_cluster = |p|, Use the same jacobian as the option E_cluster = E_kinetic-->
         <parameter name="useTrueJacobian" type="bool">false</parameter>
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">SILENT</parameter>
+        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
     </processor>
 
     <processor name="MyChargedPFOCorrection" type="ChargedPFOCorrection">
         <!--Name of the Input PFO Collection-->
         <parameter name="PfoCollection" type="string" lcioInType="RECONSTRUCTEDPARTICLE">PandoraPFOs</parameter>
-        <parameter name="Verbosity" type="string">SILENT</parameter>
+        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
     </processor>
 
     <!--
@@ -58,7 +58,7 @@
         <!--true: Use (mathematically) true Jacobian for the option E_cluster = |p|, false: for the option E_cluster = |p|, Use the same jacobian as the option E_cluster = E_kinetic-->
         <parameter name="useTrueJacobian" type="bool">false</parameter>
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">SILENT</parameter>
+        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
     </processor>
 
     <processor name="MyPatchCollections" type="PatchCollections">
@@ -79,7 +79,7 @@
         <parameter name="PIDAlgoSync" type="bool">false</parameter>
         <parameter name="PIDAlgosToKeep" type="StringVec"></parameter>
 
-        <parameter name="Verbosity" type="string">SILENT</parameter>
+        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
     </processor>
 
     <processor name="IsolatedMuonTagging" type="IsolatedLeptonTaggingProcessor">
@@ -133,7 +133,7 @@
         <!--Name of the new PFOs collection without isolated lepton-->
         <parameter name="OutputPFOsWithoutIsoLepCollection" type="string" lcioOutType="ReconstructedParticle"> PFOsMinusISOMuons </parameter>
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string"> SILENT </parameter>
+        <parameter name="Verbosity" type="string"> ${Verbosity} </parameter>
     </processor>
 
     <processor name="IsolatedElectronTagging" type="IsolatedLeptonTaggingProcessor">
@@ -189,12 +189,11 @@
         <parameter name="OutputPFOsWithoutIsoLepCollection" type="string" lcioOutType="ReconstructedParticle"> PFOsMinusRawIsolatedLeptons </parameter>
 
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string"> SILENT </parameter>
+        <parameter name="Verbosity" type="string"> ${Verbosity} </parameter>
     </processor>
 
     <processor name="MyLeptonPairing" type="LeptonPairingCombined">
         <parameter name="PFOsWOIsoLepCollection" type="string" lcioInType="ReconstructedParticle">PFOsMinusRawIsolatedLeptons</parameter>
-
         <parameter name="IsoElectronCollection" type="string" lcioInType="ReconstructedParticle">ISOElectrons</parameter>
         <parameter name="IsoMuonCollection" type="string" lcioInType="ReconstructedParticle">ISOMuons</parameter>
         <parameter name="IsoTauCollection" type="string" lcioInType="ReconstructedParticle">ISOTaus</parameter>
@@ -205,14 +204,14 @@
 
         <!-- empty to write to AIDA -->
         <parameter name="RootFile" type="string"></parameter>
-        <parameter name="Verbosity" type="string">DEBUG</parameter>
+        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
     </processor>
 
     <!-- JetClustering+FlavorTag, ErrorFlow and SLDCorrection for 2,4,5,6 jets -->
     <processor name="JC2FT" type="LcfiplusProcessor">
         <!-- run primary and secondary vertex finders -->
         <parameter name="Algorithms" type="stringVec"> JetClustering JetVertexRefiner FlavorTag ReadMVA MLInferenceWeaver </parameter>
-        <parameter name="Verbosity" type="string">SILENT</parameter>
+        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
 
         <!-- general parameters -->
         <parameter name="PFOCollection" type="string" value="PandoraPFOsWithoutLepPair" /> <!-- input PFO collection -->
@@ -439,7 +438,7 @@
 		<!--Event selection based on semi-leptonic decays: (0): without SLD (1): with >= 0 SLD(all events) (2): with >= 1 SLD (3): with correctable SLD -->
         <parameter name="SLDMode" type="int">1</parameter>
 		<!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-		<parameter name="Verbosity" type="string">SILENT</parameter>
+		<parameter name="Verbosity" type="string">${Verbosity}</parameter>
 	</processor>
 
     <processor name="MyErrorFlow2J" type="ErrorFlow">
@@ -465,7 +464,7 @@
     <processor name="JC4FT" type="LcfiplusProcessor">
         <!-- run primary and secondary vertex finders -->
         <parameter name="Algorithms" type="stringVec"> JetClustering JetVertexRefiner FlavorTag ReadMVA MLInferenceWeaver </parameter>
-        <parameter name="Verbosity" type="string">SILENT</parameter>
+        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
 
         <!-- general parameters -->
         <parameter name="PFOCollection" type="string" value="PandoraPFOsWithoutLepPair" /> <!-- input PFO collection -->
@@ -688,7 +687,7 @@
 		<!--Event selection based on semi-leptonic decays: (0): without SLD (1): with >= 0 SLD(all events) (2): with >= 1 SLD (3): with correctable SLD -->
         <parameter name="SLDMode" type="int">1</parameter>
 		<!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-		<parameter name="Verbosity" type="string">SILENT</parameter>
+		<parameter name="Verbosity" type="string">${Verbosity}</parameter>
 	</processor>
 
     <processor name="MyErrorFlow4J" type="ErrorFlow">
@@ -714,7 +713,7 @@
     <processor name="JC5FT" type="LcfiplusProcessor">
         <!-- run primary and secondary vertex finders -->
         <parameter name="Algorithms" type="stringVec"> JetClustering JetVertexRefiner FlavorTag ReadMVA MLInferenceWeaver </parameter>
-        <parameter name="Verbosity" type="string">SILENT</parameter>
+        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
 
         <!-- general parameters -->
         <parameter name="PFOCollection" type="string" value="PandoraPFOsWithoutLepPair" /> <!-- input PFO collection -->
@@ -937,7 +936,7 @@
 		<!--Event selection based on semi-leptonic decays: (0): without SLD (1): with >= 0 SLD(all events) (2): with >= 1 SLD (3): with correctable SLD -->
         <parameter name="SLDMode" type="int">1</parameter>
 		<!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-		<parameter name="Verbosity" type="string">SILENT</parameter>
+		<parameter name="Verbosity" type="string">${Verbosity}</parameter>
 	</processor>
 
     <processor name="MyErrorFlow5J" type="ErrorFlow">
@@ -963,7 +962,7 @@
     <processor name="JC6FT" type="LcfiplusProcessor">
         <!-- run primary and secondary vertex finders -->
         <parameter name="Algorithms" type="stringVec"> JetClustering JetVertexRefiner FlavorTag ReadMVA MLInferenceWeaver </parameter>
-        <parameter name="Verbosity" type="string">SILENT</parameter>
+        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
 
         <!-- general parameters -->
         <parameter name="PFOCollection" type="string" value="PandoraPFOsWithoutLepPair" /> <!-- input PFO collection -->
@@ -1186,7 +1185,7 @@
 		<!--Event selection based on semi-leptonic decays: (0): without SLD (1): with >= 0 SLD(all events) (2): with >= 1 SLD (3): with correctable SLD -->
         <parameter name="SLDMode" type="int">1</parameter>
 		<!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-		<parameter name="Verbosity" type="string">SILENT</parameter>
+		<parameter name="Verbosity" type="string">${Verbosity}</parameter>
 	</processor>
 
     <processor name="MyErrorFlow6J" type="ErrorFlow">
