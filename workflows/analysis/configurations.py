@@ -230,6 +230,35 @@ class Config_550_llbb_fast_pfl(AnalysisConfiguration):
     marlin_globals = {  }
     marlin_constants = { 'CMSEnergy': 550 }
 
+class Config_550_4f_fast_perf(AnalysisConfiguration):
+    tag = '550-4f-fast-perf'
+    
+    def sgv_inputs(self, fast_sim_task):
+        input_files = glob('/pnfs/desy.de/ilc/prod/ilc/mc-2025/generated/550-TDR_ws/4f/*.slcio')
+        input_files = list(filter(lambda path: 'pilot.slcio' not in path and '.0.slcio' not in path, input_files))
+
+        invalid_files = [
+            '/pnfs/desy.de/ilc/prod/ilc/mc-2025/generated/550-TDR_ws/4f/E550-TDR_ws.P4f_sznu_sl.Gwhizard-3_1_4.eL.pR.I501050.22.slcio',
+            '/pnfs/desy.de/ilc/prod/ilc/mc-2025/generated/550-TDR_ws/4f/E550-TDR_ws.P4f_zz_sl.Gwhizard-3_1_4.eL.pR.I501014.3.slcio',
+            '/pnfs/desy.de/ilc/prod/ilc/mc-2025/generated/550-TDR_ws/4f/E550-TDR_ws.P4f_zznu_sl.Gwhizard-3_1_4.eL.pR.I501018.11.slcio',
+            '/pnfs/desy.de/ilc/prod/ilc/mc-2025/generated/550-TDR_ws/4f/E550-TDR_ws.P4f_sze_sl.Gwhizard-3_1_4.eL.pR.I501042.97.slcio']
+
+        input_files = list(set(input_files) - set(invalid_files))
+        input_files.sort()
+        
+        input_options = [{
+            'global_steering.MAXEV': 999999,
+            'global_generation_steering.CMS_ENE': 550,
+            'external_read_generation_steering.GENERATOR_INPUT_TYPE': 'LCIO',
+            'external_read_generation_steering.INPUT_FILENAMES': 'input.slcio',
+            'analysis_steering.CALO_TREATMENT': 'PERF'
+        }] * len(input_files)
+        
+        return input_files, input_options
+    
+    marlin_globals = {  }
+    marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
+
 class Config_550_2l4q_fast_perf(AnalysisConfiguration):
     tag = '550-2l4q-fast-perf'
     
@@ -442,6 +471,7 @@ zhh_configs.add(Config_550_llhh_fast_pfl())
 zhh_configs.add(Config_550_llbb_fast_pfl())
 zhh_configs.add(Config_550_2l4q_fast_pfl())
 zhh_configs.add(Config_550_6q_fast_pfl())
+zhh_configs.add(Config_550_4f_fast_perf())
 
 class llbbbb(AggregateAnalysisConfig):
     tag = 'llbbbb'

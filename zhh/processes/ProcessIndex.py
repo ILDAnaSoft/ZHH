@@ -71,15 +71,17 @@ def per_chunk(input_entry:tuple[int, list[str]]) -> tuple[int, list[tuple[str, S
         
         # treat case where number of events = 0; calls to readNextEvent() fails in this case
         # relevant when WhizardEventGeneration produces samples with no contribution
-        if reader.getNumberOfEvents() > 0:
-            event = reader.readNextEvent()
-            
-            file_meta = SampleMeta.fromevent(event, reader.getNumberOfEvents(), event.getRunNumber())
-            
-            result.append((location, file_meta))
-        else:
-            raise Exception(f'File {location} has no events! Cannot index sample.')
-            result.append((location, None))
+        try:
+            if reader.getNumberOfEvents() > 0:
+                event = reader.readNextEvent()
+                
+                file_meta = SampleMeta.fromevent(event, reader.getNumberOfEvents(), event.getRunNumber())
+                
+                result.append((location, True, file_meta))
+            else:
+                raise Exception(f'File does not appear to contain any events! Cannot index sample.')
+        except Exception as e:
+            result.append((location, False, e.__str__()))
     
     return (chunk_idx, result)
 
@@ -171,7 +173,13 @@ class ProcessIndex:
         chunk_outputs.sort(key=lambda x: x[0]) # Sort by file location
         
         meta:SampleMeta
-        for location, meta in chunk_outputs:            
+        exceptions = []
+        
+        for location, is_successful, meta in chunk_outputs:
+            if not is_successful:
+                exceptions.append((location, meta))
+                continue
+                 
             if meta.beamPol1 != 0 or meta.beamPol2 != 0:
                 pol_em, pol_ep = meta.beamPol1, meta.beamPol2
             else:
@@ -193,6 +201,18 @@ class ProcessIndex:
                     (n_sample, meta.run, process, proc_pol, meta.nEvtSum, pol_em, pol_ep, location, meta.mcp_col_name)
                 ], dtype=self.dtype_sample)])
                 n_sample += 1
+                
+        if len(exceptions):
+            print(f'Critical error: Exceptions occured while trying to read from {len(exceptions)} files')
+            files = []
+            for location, exc in exceptions:
+                files.append(location)
+                print(location, exc)
+            
+            print('Files that could not be read:', files)
+            
+            raise Exception('At least one file could not be read. Aborting.')
+            
         
         self.STATE = 1
         self.save()

@@ -120,7 +120,7 @@ class AbstractMarlin(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         str_max_record_number = f' --global.MaxRecordNumber={str(n_events_max)}' if n_events_max is not None else ''
         str_skip_n_events = f' --global.SkipNEvents={str(n_events_skip)}' if (n_events_skip is not None and n_events_skip != 0) else ''
         
-        cmd += f' && ( {executable} {steering_file} {self.parse_marlin_constants()} {self.parse_marlin_globals()}{str_max_record_number}{str_skip_n_events} --global.LCIOInputFiles={input_file} || true )'
+        cmd += f' && ( {executable} {steering_file} {self.parse_marlin_constants()}{self.parse_marlin_globals()}{str_max_record_number}{str_skip_n_events} --global.LCIOInputFiles={input_file} || true )'
         cmd += f' && echo "{input_file}" >> Source.txt'
         cmd += f' && echo "Finished Marlin at $(date)"'
         cmd += f' && ( sleep 2'
@@ -192,8 +192,8 @@ class AbstractIndex(BaseTask):
         self.index.load()
         
         # For compatability, also save as CSV
-        np.savetxt(cast(str, self.output()[2].path), index.processes, delimiter=',', fmt='%s', header=cast(np.ndarray, index.processes).dtype.names)
-        np.savetxt(cast(str, self.output()[3].path), index.samples, delimiter=',', fmt='%s', header=cast(np.ndarray, index.samples).dtype.names)
+        np.savetxt(cast(str, self.output()[2].path), index.processes, delimiter=',', fmt='%s', header=','.join(cast(np.ndarray, index.processes).dtype.names))
+        np.savetxt(cast(str, self.output()[3].path), index.samples, delimiter=',', fmt='%s', header=','.join(cast(np.ndarray, index.samples).dtype.names))
         
         self.publish_message(f'Loaded {len(index.samples)} samples and {len(index.processes)} processes')
         self.printOverview()
@@ -267,6 +267,9 @@ class AbstractCreateChunks(BaseTask):
     overview:bool = cast(bool, luigi.BoolParameter(description='Whether or not to force showing the overview when the task is already done.',
                                                    default=False))
     
+    # time to start up Marlin; is substracted in the RuntimeAnalysis
+    T0_MARLIN:int = 10
+    
     def requires(self):
         raise NotImplementedError('requires must be implemented by an inheriting class and return exactly two items: first a task implementing AbstractIndex and second a task implementing AbstractMarlin')
     
@@ -302,7 +305,7 @@ class AbstractCreateChunks(BaseTask):
         runtime_analysis = get_runtime_analysis(DATA_ROOT)
         process_normalization = get_process_normalization(processes, samples,
                                                           RATIO_BY_TOTAL=self.fraction)
-        time_per_event = get_adjusted_time_per_event(runtime_analysis)
+        time_per_event = get_adjusted_time_per_event(runtime_analysis, T0=self.T0_MARLIN)
 
         chunks = get_sample_chunk_splits(samples, process_normalization=process_normalization,
                     adjusted_time_per_event=time_per_event, MAXIMUM_TIME_PER_JOB=cast(int, self.jobtime),
@@ -316,10 +319,10 @@ class AbstractCreateChunks(BaseTask):
         np.save(str(self.output()[3].path), process_normalization)
         
         # For compatability, also save the final results as CSV
-        np.savetxt(str(self.output()[4].path), chunks, delimiter=',', fmt='%s', header=chunks.dtype.names)
-        np.savetxt(str(self.output()[5].path), runtime_analysis, delimiter=',', fmt='%s', header=runtime_analysis.dtype.names)
-        np.savetxt(str(self.output()[6].path), time_per_event, delimiter=',', fmt='%s', header=time_per_event.dtype.names)
-        np.savetxt(str(self.output()[7].path), process_normalization, delimiter=',', fmt='%s', header=process_normalization.dtype.names)
+        np.savetxt(str(self.output()[4].path), chunks, delimiter=',', fmt='%s', header=','.join(chunks.dtype.names))
+        np.savetxt(str(self.output()[5].path), runtime_analysis, delimiter=',', fmt='%s', header=','.join(runtime_analysis.dtype.names))
+        np.savetxt(str(self.output()[6].path), time_per_event, delimiter=',', fmt='%s', header=','.join(time_per_event.dtype.names))
+        np.savetxt(str(self.output()[7].path), process_normalization, delimiter=',', fmt='%s', header=','.join(process_normalization.dtype.names))
         
         self.printOverview()
         

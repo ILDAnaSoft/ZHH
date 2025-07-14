@@ -105,7 +105,8 @@ def get_runtime_analysis(DATA_ROOT:Optional[str]=None,
 
 def get_adjusted_time_per_event(runtime_analysis:np.ndarray,
                                  MAX_CAP:Optional[float]=None,
-                                 MIN_CAP:Optional[float]=0.01)->np.ndarray:
+                                 MIN_CAP:Optional[float]=0.01,
+                                 T0:int=0)->np.ndarray:
     
     """Average for each process (i.e. over each polarization) the processing
     runtime and apply the MIN/MAX_CAP values.
@@ -134,7 +135,7 @@ def get_adjusted_time_per_event(runtime_analysis:np.ndarray,
         i_max = np.argmax(subset['tDuration'])
         tMax = subset['tDuration'][i_max]
         n_processed = subset['n_processed'].sum()
-        tPE = tMax/subset['n_processed'][i_max] #subset['tDuration'].sum()/ n_processed
+        tPE = (tMax - T0)/subset['n_processed'][i_max] #subset['tDuration'].sum()/ n_processed
         
         results['process'][i] = process
         results['tAvg'][i] = tAvg

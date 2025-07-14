@@ -36,16 +36,6 @@
 
         <parameter name="MergedCollection" type="string" lcioOutType="ReconstructedParticle"> ISOLeptons </parameter>
         
-        <parameter name="Verbosity" type="string">MESSAGE</parameter>
-    </processor>
-
-    <processor name="MyMergeIsoLeptons" type="MergeCollections">
-        <parameter name="SourceCollection1" type="string" lcioInType="ReconstructedParticle"> ISOElectrons </parameter>
-        <parameter name="SourceCollection2" type="string" lcioInType="ReconstructedParticle"> ISOMuons </parameter>
-        <parameter name="SourceCollection3" type="string" lcioInType="ReconstructedParticle"> ISOTaus </parameter>
-
-        <parameter name="MergedCollection" type="string" lcioOutType="ReconstructedParticle"> ISOLeptons </parameter>
-        
         <parameter name="Verbosity" type="string">${Verbosity}</parameter>
     </processor>
 

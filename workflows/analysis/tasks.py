@@ -22,11 +22,15 @@ class AnalysisIndex(AbstractIndex):
     pass
 
 class CreateRecoChunks(AbstractCreateChunks):
+    T0_MARLIN = 18
+    
     def requires(self):
         from analysis.tasks_marlin import RecoRuntime
         return [ RawIndex.req(self), RecoRuntime.req(self) ]
 
 class CreateAnalysisChunks(AbstractCreateChunks):
+    T0_MARLIN = 8
+    
     def requires(self):
         from analysis.tasks_marlin import AnalysisRuntime
         return [ AnalysisIndex.req(self), AnalysisRuntime.req(self) ]

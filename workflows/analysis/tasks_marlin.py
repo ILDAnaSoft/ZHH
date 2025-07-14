@@ -33,10 +33,6 @@ class MarlinBaseJob(AbstractMarlin):
         ('OutputDirectory', '.')
     ]
     
-    check_output_files_exist = [
-        'zhh_FinalStateMeta.json'
-    ]
-    
     def requires(self):
         """
         Define the requirements for individual workflow branches.
@@ -145,6 +141,7 @@ class RecoAbstract(MarlinBaseJob):
     steering_file:str = '$REPO_ROOT/scripts/prod_reco_run.xml'
     output_file:str = 'zhh_reco.slcio'
     
+    check_output_files_exist = ['zhh_reco_FinalStateMeta.json']    
     check_output_root_ttrees = None
     
     def workflow_requires(self):
@@ -174,6 +171,7 @@ class AnalysisAbstract(MarlinBaseJob):
     steering_file:str = '$REPO_ROOT/scripts/prod_analysis_run.xml'
     output_file:str = 'zhh_AIDA.root'
     
+    check_output_files_exist = ['zhh_FinalStateMeta.json']
     check_output_root_ttrees = [
         ('zhh_AIDA.root', 'EventObservablesLL'),
         ('zhh_AIDA.root', 'FinalStates'),
