@@ -339,6 +339,7 @@ void EventObservablesBase::prepareBaseTree()
 		ttree->Branch("nisoelectrons", &m_nIsoElectrons, "nisoelectrons/I");
 		ttree->Branch("nisomuons", &m_nIsoMuons, "nisomuons/I");
 		ttree->Branch("nisotaus", &m_nIsoTaus, "nisotaus/I");
+		ttree->Branch("pairedLepType", &m_pairedLepType, "pairedLepType/I");
 		ttree->Branch("npfos", &m_npfos, "npfos/I");
 		ttree->Branch("lep_types", &m_lep_types);
 
@@ -557,6 +558,7 @@ void EventObservablesBase::clearBaseValues()
 	m_nIsoElectrons = 0;
 	m_nIsoMuons = 0;
 	m_nIsoTaus = 0;
+	m_pairedLepType = 0;
 	m_npfos = 0;
 	m_lep_types.clear();
 
@@ -712,6 +714,9 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 		}
 
 		m_npfos = inputPfoCollection->getNumberOfElements();
+
+		// ISOLATED LEPTON PAIRING
+		m_pairedLepType = inputLepPairCollection->parameters().getIntVal("PairedType");
 
 		// ---------- MISSING PT ----------
 		// corrected for crossing angle

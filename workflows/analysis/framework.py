@@ -1,13 +1,5 @@
 # coding: utf-8
 
-"""
-Law example tasks to demonstrate HTCondor workflows at NAF.
-
-In this file, some really basic tasks are defined that can be inherited by
-other tasks to receive the same features. This is usually called "framework"
-and only needs to be defined once per user / group / etc.
-"""
-
 import law.contrib.htcondor.workflow
 import os, luigi, law, law.util, law.contrib, law.contrib.htcondor, law.job.base, math
 from typing import Optional, Union, cast, TYPE_CHECKING, Any, Literal
@@ -16,7 +8,7 @@ from .utils.types import SGVOptions, WhizardOption
 from law import Task
 
 if TYPE_CHECKING:
-    from analysis.tasks import RawIndex
+    from analysis.tasks import RawIndex, AnalysisIndex
     from analysis.tasks_reco import FastSimSGV
 
 # the htcondor workflow implementation is part of a law contrib package
@@ -118,6 +110,16 @@ class HTCondorWorkflow(law.contrib.htcondor.HTCondorWorkflow):
         return config
 
 class AnalysisConfiguration:
+    """Base class for defining law task tags that supply steering information
+    about task input and inject task dependencies.
+
+    Raises:
+        Exception: _description_
+
+    Returns:
+        _type_: _description_
+    """
+    
     tag:str
     cuts:Literal['llbbbb', 'vvbbbb', 'qqbbbb']
     
@@ -140,7 +142,7 @@ class AnalysisConfiguration:
     
     sgv_inputs:Optional[Callable[['FastSimSGV'], tuple[list[str], list[SGVOptions|None]]]] = None
 
-    def index_requires(self, raw_index_task: 'RawIndex'):
+    def raw_index_requires(self, raw_index_task: 'RawIndex'):
         """If sgv_inputs is not None, we will run SGV before
         creating the ProcessIndex.
         """
@@ -152,6 +154,10 @@ class AnalysisConfiguration:
              result.append(fast_sim_task)
              
         return result
+    
+    def analysis_index_requires(self, analysis_index_task: 'AnalysisIndex'):
+        from analysis.tasks_marlin import RecoFinal
+        return [ RecoFinal.req(analysis_index_task) ]      
     
     """All SLCIO files that should be included in the analysis"""
     slcio_files:Optional[Union[list[str], Callable[['FastSimSGV'], list[str]]]] = None
@@ -179,10 +185,28 @@ class AnalysisConfiguration:
     marlin_globals:dict[str,Union[int,float,str]] = {}
     marlin_constants:dict[str,Union[int,float,str]]|Callable[[int, Any], dict[str,Union[int,float,str]]] = {}
     
-    def __init__(self):
+    # 
+    analysis_combine_ttrrees:list[str] = []
+    
+    def __init__(self, mode:str='LL'):
+        """Defines parameters and functions to inject into law tasks
+        at runtime. Different configurations may refer to others in
+        the task implementations. See Config_550_llbb_fast_perf in 
+        configurations.py for an example.
+
+        Args:
+            mode (str, optional): defines the TTree to read. Must be
+                either 'LL', 'VV' or 'QQ'. Defaults to 'LL'.
+
+        Returns:
+            _type_: _description_
+        """
+        
+        mode = mode.upper()
+        assert(mode in ['LL', 'VV', 'QQ'])
+        
         # if not slcio files are supplied, add the outputs from SGV
         # if any other case, slcio_files must be implemented manually
-        
         if self.sgv_inputs is not None and self.slcio_files is None:
             def slcio_files(raw_index_task: 'RawIndex'):        
                 input_targets = raw_index_task.input()[0]['collection'].targets.values()
@@ -190,6 +214,8 @@ class AnalysisConfiguration:
                 return [f.path for f in input_targets]
             
             self.slcio_files = slcio_files
+            
+        self.analysis_combine_ttrrees = ['FinalStates', f'EventObservables{mode}', 'KinFit_solveNu', 'KinFit_ZHH', 'KinFit_ZZH']
         
 
 class Registry():
@@ -225,20 +251,9 @@ class AnalysisConfigurationRegistry(Registry):
         super().add(config)
     
     def get(self, tag:str)->AnalysisConfiguration:
-        return super().get(tag)
-
-class AggregateAnalysisConfig:
-    tag: str
-    sub_tags:list[str]
-    cuts: str
-        
-class AggregateAnalysisConfigurationRegistry(Registry):
-    def __init__(self):
-        super().__init__(AggregateAnalysisConfig)
-    
+        return super().get(tag)    
 
 # Create the registry and load the configurations
 zhh_configs = AnalysisConfigurationRegistry()
-aa_configs = AggregateAnalysisConfigurationRegistry()
 
 import analysis.configurations

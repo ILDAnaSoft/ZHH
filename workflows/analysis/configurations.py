@@ -1,15 +1,83 @@
-from analysis.framework import AnalysisConfiguration, zhh_configs, \
-    AggregateAnalysisConfig, aa_configs
-from zhh import get_raw_files
+from analysis.framework import AnalysisConfiguration, zhh_configs
 from glob import glob
 from typing import TYPE_CHECKING
-from .utils.types import SGVOptions, WhizardOption
-from law import Task
 from os import environ
-import os.path as osp
+import numpy as np
 
 if TYPE_CHECKING:
-    from analysis.tasks import RawIndex
+    from analysis.tasks import RawIndex, AbstractIndex
+    
+# only configurations
+if False:
+    # example how to use Whizard before SGV
+    class Config_550_llbb_fast_perf(AnalysisConfiguration):
+        tag = '550-llbb-fast-perf'
+        
+        whizard_options = [
+            { 'process_name': 'eebb_sl0', 'process_definition': '', 'template_dir': '$REPO_ROOT/workflows/resources/whizard_template', 'sindarin_file': 'whizard.base.sin' },
+            { 'process_name': 'llbb_sl0', 'process_definition': '', 'template_dir': '$REPO_ROOT/workflows/resources/whizard_template', 'sindarin_file': 'whizard.base.sin' }
+        ]
+        
+        def sgv_inputs(self, fast_sim_task):
+            from analysis.tasks_reco import FastSimSGV
+            assert(isinstance(fast_sim_task, FastSimSGV))
+            
+            sgv_inputs = fast_sim_task.input()
+            assert('whizard_event_generation' in sgv_inputs)
+            
+            whiz_outputs = sgv_inputs['whizard_event_generation']['collection']
+            
+            input_files:list[str] = []
+            for i in range(len(whiz_outputs)):
+                input_files.append(whiz_outputs[i][0].path)
+            
+            input_options = [{
+                'global_steering.MAXEV': 999999,
+                'global_generation_steering.CMS_ENE': 550,
+                'external_read_generation_steering.GENERATOR_INPUT_TYPE': 'LCIO',
+                'external_read_generation_steering.INPUT_FILENAMES': 'input.slcio',
+                'analysis_steering.CALO_TREATMENT': 'PERF'
+            }] * len(input_files)
+            
+            return input_files, input_options
+        
+        marlin_globals = {  }
+        marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
+
+    class Config_550_llbb_fast_pfl(AnalysisConfiguration):
+        tag = '550-llbb-fast-pfl'
+        
+        whizard_options = [
+            { 'process_name': 'eebb_sl0', 'process_definition': '', 'template_dir': '$REPO_ROOT/workflows/resources/whizard_template', 'sindarin_file': 'whizard.base.sin' },
+            { 'process_name': 'llbb_sl0', 'process_definition': '', 'template_dir': '$REPO_ROOT/workflows/resources/whizard_template', 'sindarin_file': 'whizard.base.sin' }
+        ]
+        
+        def sgv_inputs(self, fast_sim_task):
+            from analysis.tasks_reco import FastSimSGV
+            assert(isinstance(fast_sim_task, FastSimSGV))
+            
+            sgv_inputs = fast_sim_task.input()
+            assert('whizard_event_generation' in sgv_inputs)
+            
+            whiz_outputs = sgv_inputs['whizard_event_generation']['collection']
+            
+            input_files:list[str] = []
+            for i in range(len(whiz_outputs)):
+                input_files.append(whiz_outputs[i][0].path)
+            
+            input_options = [{
+                'global_steering.MAXEV': 999999,
+                'global_generation_steering.CMS_ENE': 550,
+                'external_read_generation_steering.GENERATOR_INPUT_TYPE': 'LCIO',
+                'external_read_generation_steering.INPUT_FILENAMES': 'input.slcio',
+                'analysis_steering.CALO_TREATMENT': 'PFL '
+            }] * len(input_files)
+            
+            return input_files, input_options
+        
+        marlin_globals = {  }
+        marlin_constants = { 'CMSEnergy': 550 }
+
         
 #################################
 # FULL SIM                      #
@@ -165,70 +233,33 @@ class Config_550_llhh_fast_pfl(AnalysisConfiguration):
 class Config_550_llbb_fast_perf(AnalysisConfiguration):
     tag = '550-llbb-fast-perf'
     
-    whizard_options = [
-        { 'process_name': 'eebb_sl0', 'process_definition': '', 'template_dir': '$REPO_ROOT/workflows/resources/whizard_template', 'sindarin_file': 'whizard.base.sin' },
-        { 'process_name': 'llbb_sl0', 'process_definition': '', 'template_dir': '$REPO_ROOT/workflows/resources/whizard_template', 'sindarin_file': 'whizard.base.sin' }
-    ]
-    
-    def sgv_inputs(self, fast_sim_task):
+    def raw_index_requires(self, raw_index_task: 'AbstractIndex'):
+        # use the output of 550-4f-fast-perf as input
+        
         from analysis.tasks_reco import FastSimSGV
-        assert(isinstance(fast_sim_task, FastSimSGV))
+        from analysis.tasks import RawIndex
         
-        sgv_inputs = fast_sim_task.input()
-        assert('whizard_event_generation' in sgv_inputs)
+        fast_sim_dep = FastSimSGV.req(raw_index_task, tag='550-4f-fast-perf')
+        raw_index_dep = RawIndex.req(raw_index_task, tag='550-4f-fast-perf') 
+                     
+        return [fast_sim_dep, raw_index_dep]
+    
+    def slcio_files(self, raw_index_task: 'AbstractIndex'):        
+        raw_index_4f = raw_index_task.input()[1]        
+        samples_4f = np.load(raw_index_4f[1].path)
         
-        whiz_outputs = sgv_inputs['whizard_event_generation']['collection']
-        
-        input_files:list[str] = []
-        for i in range(len(whiz_outputs)):
-            input_files.append(whiz_outputs[i][0].path)
-        
-        input_options = [{
-            'global_steering.MAXEV': 999999,
-            'global_generation_steering.CMS_ENE': 550,
-            'external_read_generation_steering.GENERATOR_INPUT_TYPE': 'LCIO',
-            'external_read_generation_steering.INPUT_FILENAMES': 'input.slcio',
-            'analysis_steering.CALO_TREATMENT': 'PERF'
-        }] * len(input_files)
-        
-        return input_files, input_options
+        semileptonic_processes = list(filter(lambda p: '_sl0' in p, np.unique(samples_4f['process']).tolist()))
+
+        input_files = []
+        for proc in semileptonic_processes:
+            input_files += samples_4f['location'][samples_4f['process'] == proc].tolist()
+            
+        input_files.sort()
+
+        return input_files
     
     marlin_globals = {  }
     marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
-
-class Config_550_llbb_fast_pfl(AnalysisConfiguration):
-    tag = '550-llbb-fast-pfl'
-    
-    whizard_options = [
-        { 'process_name': 'eebb_sl0', 'process_definition': '', 'template_dir': '$REPO_ROOT/workflows/resources/whizard_template', 'sindarin_file': 'whizard.base.sin' },
-        { 'process_name': 'llbb_sl0', 'process_definition': '', 'template_dir': '$REPO_ROOT/workflows/resources/whizard_template', 'sindarin_file': 'whizard.base.sin' }
-    ]
-    
-    def sgv_inputs(self, fast_sim_task):
-        from analysis.tasks_reco import FastSimSGV
-        assert(isinstance(fast_sim_task, FastSimSGV))
-        
-        sgv_inputs = fast_sim_task.input()
-        assert('whizard_event_generation' in sgv_inputs)
-        
-        whiz_outputs = sgv_inputs['whizard_event_generation']['collection']
-        
-        input_files:list[str] = []
-        for i in range(len(whiz_outputs)):
-            input_files.append(whiz_outputs[i][0].path)
-        
-        input_options = [{
-            'global_steering.MAXEV': 999999,
-            'global_generation_steering.CMS_ENE': 550,
-            'external_read_generation_steering.GENERATOR_INPUT_TYPE': 'LCIO',
-            'external_read_generation_steering.INPUT_FILENAMES': 'input.slcio',
-            'analysis_steering.CALO_TREATMENT': 'PFL '
-        }] * len(input_files)
-        
-        return input_files, input_options
-    
-    marlin_globals = {  }
-    marlin_constants = { 'CMSEnergy': 550 }
 
 class Config_550_4f_fast_perf(AnalysisConfiguration):
     tag = '550-4f-fast-perf'
@@ -468,16 +499,7 @@ zhh_configs.add(Config_250_ftag_fast_pfl())
 
 # llHH
 zhh_configs.add(Config_550_llhh_fast_pfl())
-zhh_configs.add(Config_550_llbb_fast_pfl())
+#zhh_configs.add(Config_550_llbb_fast_pfl())
 zhh_configs.add(Config_550_2l4q_fast_pfl())
 zhh_configs.add(Config_550_6q_fast_pfl())
 zhh_configs.add(Config_550_4f_fast_perf())
-
-class llbbbb(AggregateAnalysisConfig):
-    tag = 'llbbbb'
-    sub_tags = ['550-llhh-fast-perf',
-               '550-2l4q-fast-perf',
-               '550-llbb-fast-perf']
-    cuts = 'llhh'
-
-aa_configs.add(llbbbb)

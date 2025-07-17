@@ -159,10 +159,6 @@ class AbstractIndex(BaseTask):
     overview:bool = cast(bool, luigi.BoolParameter(description='Whether or not to force showing the overview when the task is already done.',
                                                    default=False))
     
-    def requires(self):
-        from analysis.configurations import zhh_configs
-        return zhh_configs.get(str(self.tag)).index_requires(self)
-    
     def slcio_files(self) -> list[str]:
         from analysis.configurations import zhh_configs
         config = zhh_configs.get(str(self.tag))
@@ -208,54 +204,12 @@ class AbstractIndex(BaseTask):
     
     def printOverview(self):
         from law.util import colored
+        from .utils import index_overview
         
         processes = np.load(str(self.output()[0].path))
         samples = np.load(str(self.output()[1].path))
         
-        unique_proc_pol = list(processes['proc_pol'])    
-        unique_proc_pol.sort()
-        
-        text = f'''++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- {self.__class__.__name__} Overview: Found {len(processes)} in {len(samples)} sample files!
-
- 1. SAMPLES (see {str(self.output()[3].path)})
-
-   Run ID   | Process      | Polarization |  NEvents  | Location
-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-'''
-
-        for proc_pol in unique_proc_pol:
-            process, polarization = proc_pol[:-3], proc_pol[-2:]
-            
-            for file in samples[samples['proc_pol'] == proc_pol]:
-                text += f"{file['run_id']:>11} | "
-                text += f"{process:>12} | "
-                text += f"{polarization:>12} | "
-                text += f"{file['n_events']:>9,} | "            
-                text += f"{file['location']}\n"
-        
-        text += f'''
- 2. PROCESSES (see {str(self.output()[2].path)})
-
- Process      | Polarization | Cross section [fb] | CS. MC error [fb] | NSamples |  NEvents
-----------------------------------------------------------------------------------------------
-'''
-
-        for proc_pol in unique_proc_pol:
-            process, polarization = proc_pol[:-3], proc_pol[-2:]
-            p = processes[processes['proc_pol'] == proc_pol]
-            assert(len(p) == 1)
-            p = p[0]
-            
-            text += f"{process:>12} | "
-            text += f"{polarization:>12} | "
-            text += f"{p['cross_sec']:18.4} | "
-            text += f"{p['cross_sec_err']:18.4} | "
-            text += f"{len(samples[samples['proc_pol'] == proc_pol]):>8,} | "
-            text += f"{samples[samples['proc_pol'] == proc_pol]['n_events'].sum():>12,} \n"
-
-        
-        self.publish_message(colored(text, color='green', background='black'))
+        self.publish_message(colored(index_overview(samples, processes, self), color='green', background='black'))
 
 class AbstractCreateChunks(BaseTask):
     jobtime:int = cast(int, luigi.IntParameter(description='Maximum runtime of each job. Uses DESY NAF defaults for the vanilla queue.',
@@ -328,37 +282,14 @@ class AbstractCreateChunks(BaseTask):
         
     def printOverview(self):
         from law.util import colored
+        from .utils.task_overviews import chunk_overview
         
         chunks = np.load(str(self.output()[0].path))
         time_per_event = np.load(str(self.output()[2].path))
         process_normalization = np.load(str(self.output()[3].path))
         
-        unique_proc_pol = list(np.unique(chunks['proc_pol']))        
-        unique_proc_pol.sort(key=lambda proc_pol: -len(chunks['proc_pol'] == proc_pol))
-        
-        text = f'''+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- {self.__class__.__name__} Overview: Divided submission into {len(chunks)} chunks
- 
-     See also {str(self.output()[4].path)}
-
- NChunks(branches) | Process      | Polarization | t/event(s) avg | Events expected | Events available | Events to process | Input samples
--------------------|--------------|--------------|----------------|-----------------|------------------|-------------------|-----------------
-'''
-        
-        for proc_pol in unique_proc_pol:
-            process, polarization = proc_pol[:-3], proc_pol[-2:]
-            n_samples_input = len(np.unique(chunks[chunks['proc_pol'] == proc_pol]['location']))
-            
-            text += f"{len(chunks[chunks['proc_pol'] == proc_pol]):>18} | "
-            text += f"{process:>12} | "
-            text += f"{polarization:>12} | "
-            text += f"{time_per_event[time_per_event['process'] == process]['tPE'][0]:14.4} | "
-            text += f"{process_normalization[process_normalization['proc_pol'] == proc_pol]['n_events_expected'][0]:14.3} | "
-            text += f"{process_normalization[process_normalization['proc_pol'] == proc_pol]['n_events_tot'][0]:17,} |"
-            text += f"{np.sum(chunks[chunks['proc_pol'] == proc_pol]['chunk_size']):18,} | "
-            text += f"{n_samples_input:>14} \n"
-        
-        self.publish_message(colored(text, color='green', background='black'))
+        self.publish_message(colored(chunk_overview(chunks, time_per_event, process_normalization),
+                                     color='green', background='black'))
         
     def complete(self):
         complete = super().complete()

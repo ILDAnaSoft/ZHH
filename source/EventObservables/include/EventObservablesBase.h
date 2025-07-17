@@ -276,6 +276,7 @@ class EventObservablesBase: public Processor, public TrueJet_Parser
 		int m_nIsoElectrons{};
 		int m_nIsoMuons{};
 		int m_nIsoTaus{};
+		int m_pairedLepType{};
 		int m_npfos{};
 		std::vector<int> m_lep_types{};
 

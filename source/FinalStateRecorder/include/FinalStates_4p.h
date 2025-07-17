@@ -32,24 +32,30 @@ class p4: public FinalStateResolver {
         vector<int> resolve_fs_particle_indices(LCCollection *mcp_collection, bool resolve_higgs = false) {
             (void) resolve_higgs;
 
-            m_nZorH = 0;
+            m_nZorHorW = 0;
 
-            // only required for test production: f4_llbb_sl0 and f4_eebb_sl0
+            // only required for test production (f4_llbb_sl0 and f4_eebb_sl0) AND new mc-2025 4f prod
             // see workflows/resources/whizard_template/whizard.base.sin
-            if (m_process_id == PROCESS_ID::f4_llbb_sl0 || m_process_id == PROCESS_ID::f4_eebb_sl0) {
-                int mcp_cand1_pdg = ((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 6 ))->getPDG();
-                int mcp_cand2_pdg = ((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 7 ))->getPDG();
+            if (m_process_id == PROCESS_ID::f4_llbb_sl0 || m_process_id == PROCESS_ID::f4_eebb_sl0 ||
+                m_process_id == PROCESS_ID::f4_sw_sl0 || m_process_id == PROCESS_ID::f4_sze_sl0 ||
+                m_process_id == PROCESS_ID::f4_sznu_sl0 || m_process_id == PROCESS_ID::f4_ww_sl0 ||
+                 m_process_id == PROCESS_ID::f4_zz_sl0 || m_process_id == PROCESS_ID::f4_zznu_sl0) {
 
-                if (mcp_cand1_pdg == 23 || mcp_cand1_pdg == 25)
-                    m_nZorH++;
+                int mcp_cand1_pdg = abs(((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 6 ))->getPDG());
+                int mcp_cand2_pdg = abs(((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 7 ))->getPDG());
 
-                if (mcp_cand2_pdg == 23 || mcp_cand2_pdg == 25)
-                    m_nZorH++;
+                if (mcp_cand1_pdg == 23 ||  mcp_cand1_pdg == 24 || mcp_cand1_pdg == 25)
+                    m_nZorHorW++;
 
-                F1_IDX = m_shift_pos + 6 + m_nZorH;
-                F2_IDX = m_shift_pos + 7 + m_nZorH;
-                F3_IDX = m_shift_pos + 8 + m_nZorH;
-                F4_IDX = m_shift_pos + 9 + m_nZorH;
+                if (mcp_cand2_pdg == 23 ||  mcp_cand2_pdg == 24 || mcp_cand2_pdg == 25)
+                    m_nZorHorW++;
+
+                F1_IDX = m_shift_pos + 6 + m_nZorHorW;
+                F2_IDX = m_shift_pos + 7 + m_nZorHorW;
+                F3_IDX = m_shift_pos + 8 + m_nZorHorW;
+                F4_IDX = m_shift_pos + 9 + m_nZorHorW;
+
+                //std::cerr << "nZorHorW = " << m_nZorHorW << " | IDX(PDG): " << (m_shift_pos + 6) << " (PDG=" << mcp_cand1_pdg << "); " << (m_shift_pos + 7) << "(PDG=" << mcp_cand2_pdg << ")" << std::endl; 
             }
             
             return vector<int>{ F1_IDX, F2_IDX, F3_IDX, F4_IDX };
@@ -71,7 +77,7 @@ class p4: public FinalStateResolver {
         };
         bool m_first_event_check{};
         int m_shift_pos = 0;
-        int m_nZorH = 0;
+        int m_nZorHorW = 0;
 
         vector<MCParticle*> resolve_fs_particles(LCCollection *mcp_collection, bool resolve_higgs = false) {
             (void) resolve_fs_particle_indices(mcp_collection, resolve_higgs);
@@ -190,5 +196,23 @@ class llbb_sl0 : public p4 {
 
 class eebb_sl0 : public p4 {
     public: eebb_sl0(): p4( "eebb_sl0", PROCESS_ID::f4_eebb_sl0, EVENT_CATEGORY_TRUE::llqq, vector{11,5} ) {}; };
+
+class sw_sl0 : public p4 {
+    public: sw_sl0(): p4( "sw_sl0", PROCESS_ID::f4_sw_sl0, EVENT_CATEGORY_TRUE::lvqq, vector{1,2,3,4,5,6,11,12,13,14,15,16} ) {}; };
+
+class sze_sl0 : public p4 {
+    public: sze_sl0(): p4( "sze_sl0", PROCESS_ID::f4_sze_sl0, EVENT_CATEGORY_TRUE::llqq, vector{1,2,3,4,5,6,11} ) {}; };
+
+class sznu_sl0 : public p4 {
+    public: sznu_sl0(): p4( "sznu_sl0", PROCESS_ID::f4_sznu_sl0, EVENT_CATEGORY_TRUE::vvqq, vector{1,2,3,4,5,6,12,14,16} ) {}; };
+
+class ww_sl0 : public p4 {
+    public: ww_sl0(): p4( "ww_sl0", PROCESS_ID::f4_ww_sl0, EVENT_CATEGORY_TRUE::lvqq, vector{1,2,3,4,5,6,11,12,13,14,15,16} ) {}; };
+
+class zz_sl0 : public p4 {
+    public: zz_sl0(): p4( "zz_sl0", PROCESS_ID::f4_zz_sl0, EVENT_CATEGORY_TRUE::llqq, vector{1,2,3,4,5,6,11,13,15} ) {}; };
+
+class zznu_sl0 : public p4 {
+    public: zznu_sl0(): p4( "zznu_sl0", PROCESS_ID::f4_zznu_sl0, EVENT_CATEGORY_TRUE::vvqq, vector{1,2,3,4,5,6,12,14,16} ) {}; };
 
 #endif

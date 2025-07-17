@@ -4,6 +4,7 @@ import uproot as ur
 from math import floor, ceil
 from typing import Optional, List, Iterable, cast
 from .PreselectionAnalysis import sample_weight
+from copy import deepcopy
 
 def get_process_normalization(
         processes:np.ndarray,
@@ -57,6 +58,38 @@ def get_process_normalization(
     
     return results
 
+dtype_common = [
+    ('branch', 'I'),
+    ('sid', 'I'),
+    ('process', '<U60'),
+    ('proc_pol', '<U64'),
+    ('location', '<U512')
+]
+
+def process_custom_statistics(pn:np.ndarray,
+                              custom_statistics:list[tuple])->np.ndarray:
+    
+    for entry in custom_statistics:
+        if len(entry) == 2:
+            fraction, processes = entry
+            if isinstance(processes, str):
+                processes = [processes]
+                
+            reference = 'total'
+        elif len(entry) == 3:
+            fraction, processes, reference = entry
+            reference = reference.lower()
+        else:
+            raise Exception('Cannot interpret custom_statistics')
+        
+        processes = np.unique(processes)
+        mask = np.isin(pn['process'], processes)
+        
+        pn['n_events_target'][mask] = np.ceil(fraction*pn['n_events_' + ('tot' if reference == 'total' else 'expected')][mask])
+        pn['n_events_target'][mask] = np.minimum(pn['n_events_target'][mask], pn['n_events_tot'][mask])
+        
+    return pn
+
 CHUNK_SPLIT_MODES = {
     # splits one input LCIO file into multiple output files
     'ONE_TO_MANY': 0,
@@ -66,6 +99,7 @@ CHUNK_SPLIT_MODES = {
     'MANY_TO_MANY': 1
 }
 
+
 def get_sample_chunk_splits(
     samples:np.ndarray,
     adjusted_time_per_event:np.ndarray,
@@ -74,8 +108,7 @@ def get_sample_chunk_splits(
     existing_chunks:np.ndarray|None=None,
     MAXIMUM_TIME_PER_JOB:int=7200,
     split_mode:int=CHUNK_SPLIT_MODES['ONE_TO_MANY'],
-    samples_to_group:list[list[int]]|None=None
-):
+    samples_to_group:list[list[int]]|None=None)->np.ndarray:
     """_summary_
 
     Args:
@@ -93,54 +126,48 @@ def get_sample_chunk_splits(
     Returns:
         _type_: _description_
     """
-
-    dtype = [
-        ('branch', 'I'),
-        ('sid', 'I'),
-        ('process', '<U60'),
-        ('proc_pol', '<U64'),
-        ('location', '<U512')
-    ]
     
+    if existing_chunks is not None:
+        raise Exception('The existing_chunks feature has been removed')
+
     if split_mode == CHUNK_SPLIT_MODES['ONE_TO_MANY']:
-        dtype += [('n_chunks', 'I')]
-        dtype += [('n_chunk_in_sample', 'I')]
-        dtype += [('n_chunks_in_sample', 'I')]
-        dtype += [('chunk_start', 'I')]
-        dtype += [('chunk_size', 'I')]
+        return get_sample_chunk_splits_o2m(samples, adjusted_time_per_event,
+                                           process_normalization, custom_statistics,
+                                           MAXIMUM_TIME_PER_JOB)
     elif split_mode == CHUNK_SPLIT_MODES['MANY_TO_MANY']:
-        dtype += [('sub_branch_size', 'I')]
-        dtype += [('branch_size', 'I')]
-    #    dtype += [('n_files', 'I')]
+        if samples_to_group is None:
+            return get_sample_chunk_splits_m2m(samples, adjusted_time_per_event,
+                                            process_normalization, custom_statistics,
+                                            MAXIMUM_TIME_PER_JOB)
+        else:
+            return get_sample_chunk_splits_m2m_grouped(samples, adjusted_time_per_event,
+                                            process_normalization, custom_statistics,
+                                            MAXIMUM_TIME_PER_JOB)
     else:
-        raise Exception(f'Unknown split mode {split_mode}. Must be one of CHUNK_SPLIT_MODES.keys() .')
+        raise Exception(f'Unhandled split mode <{split_mode}>')
 
-    results = np.empty(0, dtype=dtype) if existing_chunks is None else np.copy(existing_chunks)
+def get_sample_chunk_splits_o2m(samples:np.ndarray,
+                                adjusted_time_per_event:np.ndarray,
+                                process_normalization:np.ndarray,
+                                custom_statistics:list[tuple]|None,
+                                MAXIMUM_TIME_PER_JOB:int)->np.ndarray:
+    
+    dtype = deepcopy(dtype_common)
+    dtype += [('n_chunks', 'I')]
+    dtype += [('n_chunk_in_sample', 'I')]
+    dtype += [('n_chunks_in_sample', 'I')]
+    dtype += [('chunk_start', 'I')]
+    dtype += [('chunk_size', 'I')]
 
-    pn = process_normalization
+    results = np.empty(0, dtype=dtype)
+
+    pn = np.copy(process_normalization)
     atpe = adjusted_time_per_event
 
     if isinstance(custom_statistics, Iterable):
-        for entry in custom_statistics:
-            if len(entry) == 2:
-                fraction, processes = entry
-                if isinstance(processes, str):
-                    processes = [processes]
-                    
-                reference = 'total'
-            elif len(entry) == 3:
-                fraction, processes, reference = entry
-                reference = reference.lower()
-            else:
-                raise Exception('Cannot interpret custom_statistics')
-            
-            processes = np.unique(processes)
-            mask = np.isin(pn['process'], processes)
-            
-            pn['n_events_target'][mask] = np.ceil(fraction*pn['n_events_' + ('tot' if reference == 'total' else 'expected')][mask])
-            pn['n_events_target'][mask] = np.minimum(pn['n_events_target'][mask], pn['n_events_tot'][mask])
+        pn = process_custom_statistics(pn, custom_statistics)
 
-    n_branch_tot = 0 if existing_chunks is None else len(existing_chunks)
+    n_branch_tot = 0
 
     for p in pn:
         n_target = p['n_events_target']
@@ -149,85 +176,104 @@ def get_sample_chunk_splits(
             c_chunks = []
             c_samples = samples[samples['proc_pol'] == p['proc_pol']]
             
-            if existing_chunks is not None:
-                mask = existing_chunks['proc_pol'] == p['proc_pol']
-                
-                n_accounted = np.sum(existing_chunks['chunk_size'][mask])
-                n_chunks = np.max(existing_chunks['n_chunks'][mask]) + 1
-                
-                raise Exception('Deprecated.')
-                n_chunks_in_sample = 0
-                n_sample = len(np.unique(existing_chunks['location'][mask]))
-            else:
-                n_accounted = 0
-                n_chunks = 0
-                n_sample = 0
+            n_accounted = 0
+            n_chunks = 0
+            n_sample = 0
                 
             max_chunk_size = 999999
             if atpe is not None:
                 time_per_event = atpe['tPE'][atpe['process'] == p['process']]
                 max_chunk_size = floor(MAXIMUM_TIME_PER_JOB/time_per_event)   
             
-            if split_mode == CHUNK_SPLIT_MODES['ONE_TO_MANY']:
-                
-                while n_sample < len(c_samples) and n_accounted < n_target:
-                    sample = c_samples[n_sample] 
-            
-                    n_chunks_in_sample = 0
-                    n_accounted_sample = 0
-                    n_tot_sample = sample['n_events']
-                        
-                    while n_accounted < n_target and n_accounted_sample < n_tot_sample:
-                        c_chunk_size = min(min(n_tot_sample - n_accounted_sample, max_chunk_size), n_target - n_accounted)
-                        c_chunks.append((n_branch_tot, sample['sid'], p['process'], p['proc_pol'], sample['location'], n_chunks, n_chunks_in_sample, 0, n_accounted_sample, c_chunk_size))
-                        
-                        n_accounted += c_chunk_size
-                        n_accounted_sample += c_chunk_size
+            while n_sample < len(c_samples) and n_accounted < n_target:
+                sample = c_samples[n_sample] 
+        
+                n_chunks_in_sample = 0
+                n_accounted_sample = 0
+                n_tot_sample = sample['n_events']
+                    
+                while n_accounted < n_target and n_accounted_sample < n_tot_sample:
+                    c_chunk_size = min(min(n_tot_sample - n_accounted_sample, max_chunk_size), n_target - n_accounted)
+                    c_chunks.append((n_branch_tot, sample['sid'], p['process'], p['proc_pol'], sample['location'], n_chunks, n_chunks_in_sample, 0, n_accounted_sample, c_chunk_size))
+                    
+                    n_accounted += c_chunk_size
+                    n_accounted_sample += c_chunk_size
 
-                        n_chunks += 1
-                        n_chunks_in_sample += 1
-                        n_branch_tot += 1
-                        
-                    n_sample += 1
-                        
-                    if len(c_chunks) > 0:
-                        results = np.append(results, np.array(c_chunks, dtype=dtype))
-                        results['n_chunks_in_sample'][results['sid'] == sample['sid']] = n_chunks_in_sample
-                        
-                        c_chunks.clear()
-                        
-            else:
-                
-                n_in_branch = 0
-                
-                while n_accounted < n_target:
-                    sample = c_samples[n_sample]
-                    sample_size = sample['n_events']
+                    n_chunks += 1
+                    n_chunks_in_sample += 1
+                    n_branch_tot += 1
                     
-                    if n_in_branch + sample_size < max_chunk_size:
-                        n_in_branch += sample_size
-                    else:
-                        # assign 
-                        #for j in range(len(c_chunks)):
-                        #    if c_chunks[j][0] == n_branch_tot:
-                        #        c_chunks[j][-1] = n_in_branch
-                        
-                        n_in_branch = 0
-                        n_branch_tot += 1
-                        
-                    c_chunks.append((n_branch_tot, sample['sid'], p['process'], p['proc_pol'], sample['location'], sample_size, 0))
-                    
-                    n_sample += 1
-                    n_accounted += sample_size
+                n_sample += 1
                     
                 if len(c_chunks) > 0:
                     results = np.append(results, np.array(c_chunks, dtype=dtype))
-                    for branch in range(results['branch'].max() + 1):
-                        results['branch_size'][results['branch'] == branch] = results['sub_branch_size'][results['branch'] == branch].sum()
+                    results['n_chunks_in_sample'][results['sid'] == sample['sid']] = n_chunks_in_sample
                     
                     c_chunks.clear()
-
+                    
     return results
+
+def get_sample_chunk_splits_m2m(samples:np.ndarray,
+                                adjusted_time_per_event:np.ndarray,
+                                process_normalization:np.ndarray,
+                                custom_statistics:list[tuple]|None,
+                                MAXIMUM_TIME_PER_JOB:int)->np.ndarray:
+    
+    dtype = deepcopy(dtype_common)
+    dtype += [('sub_branch_size', 'I')]
+    dtype += [('branch_size', 'I')]
+
+    results = np.empty(0, dtype=dtype)
+
+    pn = np.copy(process_normalization)
+    atpe = adjusted_time_per_event
+
+    if isinstance(custom_statistics, Iterable):
+        pn = process_custom_statistics(pn, custom_statistics)
+
+    n_branch_tot = 0
+
+    for p in pn:
+        n_target = p['n_events_target']
+        
+        if n_target > 0:
+            c_chunks = []
+            c_samples = samples[samples['proc_pol'] == p['proc_pol']]
+            
+            n_accounted = 0
+            n_sample = 0
+                
+            max_chunk_size = 999999
+            if atpe is not None:
+                time_per_event = atpe['tPE'][atpe['process'] == p['process']]
+                max_chunk_size = floor(MAXIMUM_TIME_PER_JOB/time_per_event)   
+            
+            n_in_branch = 0
+                
+            while n_accounted < n_target:
+                sample = c_samples[n_sample]
+                sample_size = sample['n_events']
+                
+                if n_in_branch + sample_size < max_chunk_size:
+                    n_in_branch += sample_size
+                else:
+                    n_in_branch = 0
+                    n_branch_tot += 1
+                    
+                c_chunks.append((n_branch_tot, sample['sid'], p['process'], p['proc_pol'], sample['location'], sample_size, 0))
+                
+                n_sample += 1
+                n_accounted += sample_size
+                
+            if len(c_chunks) > 0:
+                results = np.append(results, np.array(c_chunks, dtype=dtype))
+                for branch in range(results['branch'].max() + 1):
+                    results['branch_size'][results['branch'] == branch] = results['sub_branch_size'][results['branch'] == branch].sum()
+                
+                c_chunks.clear()
+                    
+    return results
+
 
 def get_chunks_factual(DATA_ROOT:str, chunks_in:np.ndarray, attach_time:bool=False):
     dtype_arr = chunks_in.dtype.descr + [('chunk_size_factual', 'I')]

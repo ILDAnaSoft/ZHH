@@ -14,7 +14,7 @@ def zhh_cuts(hypothesis:str,
         
         if additional:
             cuts += [WindowCut('zhh_mh1', 60., 180., label=r'm_{H1}'),
-                     WindowCut('zhh_mh1', 60., 180., label=r'm_{H2}'),
+                     WindowCut('zhh_mh2', 60., 180., label=r'm_{H2}'),
                      LessThanEqualCut('ptmiss', 70., label=r'p_{t}^{miss}'),
                      LessThanEqualCut('thrust', 0.9, label='thrust'),]
         
