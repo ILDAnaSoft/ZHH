@@ -351,7 +351,7 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         // MATRIX ELEMENT
 
         if (m_pairedLepType != 11 && m_pairedLepType != 13 && m_pairedLepType != 15) { // this should not happen...? but it does seldom...
-            throw EVENT::Exception('Invalid paired IsoLepton type');
+            throw EVENT::Exception("Invalid paired IsoLepton type");
             std::cerr << "Got lepton type " << m_pairedLepType << " in event " << m_nEvt << std::endl;
             m_errorCodes.push_back(1001);
         }
