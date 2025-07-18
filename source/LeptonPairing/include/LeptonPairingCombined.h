@@ -41,8 +41,8 @@ class LeptonPairingCombined : public Processor
   virtual void end();
 
  protected:
-  virtual float evaluateIsoLeptons(EVENT::LCCollection * col, int leptonType);
-
+  virtual float evaluateIsoLeptons(EVENT::LCCollection *isoLepCollection,EVENT::LCCollection *pfosWOIsoLepCollection, int leptonType);
+  
   double m_diLepInvMass = 91.2;
   string m_rootFile{};
   bool m_doPhotonRecovery = false;

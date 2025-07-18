@@ -128,6 +128,8 @@ class PreselectionSummary(MixedLazyTablelike):
         self['bmax2'] = lambda: fetch('bmax2', f'{prop_prefix}bmax2')
         self['bmax3'] = lambda: fetch('bmax3', f'{prop_prefix}bmax3')
         self['bmax4'] = lambda: fetch('bmax4', f'{prop_prefix}bmax4')
+
+        self['sumBTags'] = lambda: ( fetch('bmax1') + fetch('bmax2') + fetch('bmax3') + fetch('bmax4') )
         
         # old names for compatability:
         #self[f'{presel}_mh1'] = lambda: self['mh1']
