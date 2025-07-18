@@ -91,7 +91,7 @@ def get_runtime_analysis(DATA_ROOT:Optional[str]=None,
             branch = jobs[job_key]['branches'][0]
             #if jobs[job_key]['status'] == 'finished':
             
-            dir = list(filter(lambda a: a.endswith('-' + str(branch)), dirs))
+            dir = list(filter(lambda a: a.endswith('-' + str(branch)) and not ('TMP-' in a), dirs))
             assert(len(dir) == 1)
             
             ev = evaluate_runtime(DATA_ROOT=DATA_ROOT, bname=os.path.basename(dir[0]), WITH_EXIT_STATUS=WITH_EXIT_STATUS)

@@ -34,18 +34,24 @@ class AnalysisIndex(AbstractIndex):
         return reco_slcio_files
 
 class CreateRecoChunks(AbstractCreateChunks):
-    T0_MARLIN = 18
+    jobtime:int = cast(int, luigi.IntParameter(description='Maximum runtime of each job. Uses DESY NAF defaults for the vanilla queue.',
+                                               default=7200))
+    
+    T0_MARLIN = 16
     
     def requires(self):
         from analysis.tasks_marlin import RecoRuntime
         return [ RawIndex.req(self), RecoRuntime.req(self) ]
 
 class CreateAnalysisChunks(AbstractCreateChunks):
-    T0_MARLIN = 8
+    jobtime:int = cast(int, luigi.IntParameter(description='Maximum runtime of each job. Uses DESY NAF defaults for the vanilla queue.',
+                                               default=3600))
+    
+    T0_MARLIN = 4
     
     def requires(self):
         from analysis.tasks_marlin import AnalysisRuntime
-        return [ AnalysisIndex.req(self), AnalysisRuntime.req(self) ]
+        return [ AnalysisIndex.req(self), AnalysisRuntime.req(self), CreateRecoChunks.req(self) ]
         
 
 class AnalysisCombine(ShellTask):    

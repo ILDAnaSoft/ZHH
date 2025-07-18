@@ -26,6 +26,7 @@ dependencies/**
 *.csv
 *_local.*
 *.pyc
+*.pyc.*
 *.json
 !source/PreSelection/cuts.json
 !config/*

@@ -7,13 +7,14 @@ from .utils.types import SGVOptions
 from zhh import ProcessIndex
 from .utils import ShellTask, BaseTask
 
-MarlinBranchValue = tuple[str, int, int, int, int, str]
-# [0]: input file
+MarlinBranchValue = tuple[list[str]|str, int, int, int|None, int, str, str|None]
+# [0]: input file: str if [6] is None, else must be list[str] input files
 # [1]: chunk index of the given input file
 # [2]: total number of chunks for the file
 # [3]: n_events_skip
 # [4]: n_events_max
 # [5]: mcp_col_name
+# [6]: str output basename or None
 
 class AbstractMarlin(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     """Abstract class for Marlin jobs
@@ -57,7 +58,7 @@ class AbstractMarlin(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         """The branch map self.branch_map is a dictionary
         branch => value where value has one of the following form:
         
-        a) tuples: (input_file:str, n_events_skip:int, n_events_max:int)
+        a) tuples: (input_files:list[str], n_events_skip:int, n_events_max:int)
         b) string: input_file
 
         Returns:
@@ -67,18 +68,22 @@ class AbstractMarlin(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         branch_value = cast(MarlinBranchValue, self.branch_map[self.branch])
         assert isinstance(branch_value, tuple)
         
-        input_file, n_chunk_of_sample, n_chunks_in_sample, n_events_skip, n_events_max, mcp_col_name = branch_value
+        input_files, n_chunk_of_sample, n_chunks_in_sample, n_events_skip, n_events_max, mcp_col_name, output_bname = branch_value
         
-        n_events_skip = n_events_skip if n_events_skip > -1 else self.n_events_skip
+        n_events_skip = n_events_skip if (n_events_skip is None or n_events_skip > -1) else self.n_events_skip
         n_events_max  = n_events_max  if n_events_max  > -1 else self.n_events_max
+        
+        if isinstance(input_files, str):
+            input_files = [input_files]
         
         steering = {
             'executable': self.executable,
             'steering_file': self.steering_file,
-            'input_file': input_file,
+            'input_files': input_files,
             'n_events_skip': n_events_skip,
             'n_events_max': n_events_max,
-            'mcp_col_name': mcp_col_name
+            'mcp_col_name': mcp_col_name,
+            'output_bname': output_bname
         }
         
         return steering
@@ -88,12 +93,19 @@ class AbstractMarlin(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     
     def output_name(self):
         branch_data = cast(MarlinBranchValue, self.branch_data)
+        input_file = branch_data[0]
+        output_bname = branch_data[-1]
         
-        sample_filename = osp.basename(branch_data[0])
-        n_chunk = branch_data[1]
-        n_chunks_in_sample = branch_data[2]
-        
-        return f'{osp.splitext(sample_filename)[0]}.{n_chunk}-{n_chunks_in_sample}-{str(self.branch)}'
+        if isinstance(input_file, str):
+            sample_filename = osp.basename(input_file)
+            n_chunk = branch_data[1]
+            n_chunks_in_sample = branch_data[2]
+            
+            return f'{osp.splitext(sample_filename)[0]}.{n_chunk}-{n_chunks_in_sample}-{str(self.branch)}'
+        elif isinstance(input_file, list) and isinstance(output_bname, str):
+            return f'{output_bname}-{str(self.branch)}.slcio'
+        else:
+            raise Exception('Either input_file must be a string, or a list while output_bname is a str')
     
     def parse_marlin_globals(self) -> str:
         globals = filter(lambda tup: tup[0] not in ['MaxRecordNumber', 'LCIOInputFiles', 'SkipNEvents'], self.globals)
@@ -105,7 +117,7 @@ class AbstractMarlin(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     def build_command(self, **kwargs):
         steering = self.get_steering_parameters()
         
-        input_file = steering['input_file']
+        input_files = steering['input_files']
         n_events_skip = steering['n_events_skip']
         n_events_max = steering['n_events_max']
         executable = steering['executable']
@@ -118,10 +130,10 @@ class AbstractMarlin(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         cmd += f' && mkdir -p "{temp}" && cd "{temp}"'
         
         str_max_record_number = f' --global.MaxRecordNumber={str(n_events_max)}' if n_events_max is not None else ''
-        str_skip_n_events = f' --global.SkipNEvents={str(n_events_skip)}' if (n_events_skip is not None and n_events_skip != 0) else ''
+        str_skip_n_events = f' --global.SkipNEvents={str(n_events_skip)}' if (n_events_skip is not None and n_events_skip > 0) else ''
         
-        cmd += f' && ( {executable} {steering_file} {self.parse_marlin_constants()}{self.parse_marlin_globals()}{str_max_record_number}{str_skip_n_events} --global.LCIOInputFiles={input_file} || true )'
-        cmd += f' && echo "{input_file}" >> Source.txt'
+        cmd += f' && ( {executable} {steering_file} {self.parse_marlin_constants()}{self.parse_marlin_globals()}{str_max_record_number}{str_skip_n_events} --global.LCIOInputFiles="{" ".join(input_files)}" || true )'
+        cmd += f' && echo "{",".join(input_files)}" >> Source.txt'
         cmd += f' && echo "Finished Marlin at $(date)"'
         cmd += f' && ( sleep 2'
         
@@ -212,9 +224,19 @@ class AbstractIndex(BaseTask):
         self.publish_message(colored(index_overview(samples, processes, self), color='green', background='black'))
 
 class AbstractCreateChunks(BaseTask):
-    jobtime:int = cast(int, luigi.IntParameter(description='Maximum runtime of each job. Uses DESY NAF defaults for the vanilla queue.',
-                                               default=7200))
-    
+    """Base class for CreateChunks tasks
+    Require a luigi.IntParameter jobtime for the target job runtime
+    in seconds.
+
+    Args:
+        BaseTask (_type_): _description_
+
+    Raises:
+        NotImplementedError: _description_
+
+    Returns:
+        _type_: _description_
+    """
     fraction:float = cast(float, luigi.FloatParameter(description='Ratio of available events (as estimated from AbstractIndex task)',
                                                       default=1.))
     
@@ -225,7 +247,10 @@ class AbstractCreateChunks(BaseTask):
     T0_MARLIN:int = 10
     
     def requires(self):
-        raise NotImplementedError('requires must be implemented by an inheriting class and return exactly two items: first a task implementing AbstractIndex and second a task implementing AbstractMarlin')
+        raise NotImplementedError("""requires must be implemented by an inheriting class and return at least two items with a third optional:
+first a task implementing AbstractIndex
+second a task implementing AbstractMarlin
+[third, optional: a task implementing AbstractCreateChunks; this will be assumed to be the basis for a MarlinTask giving rise to the samples in AbstractIndex]""")
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -246,15 +271,31 @@ class AbstractCreateChunks(BaseTask):
     def run(self):
         from analysis.configurations import zhh_configs
         from zhh import get_runtime_analysis, get_process_normalization, \
-                        get_adjusted_time_per_event, get_sample_chunk_splits
+                        get_adjusted_time_per_event, get_sample_chunk_splits, \
+                        construct_sample_groups, CHUNK_SPLIT_MODES
         
         config = zhh_configs.get(str(self.tag))
         
-        SAMPLE_INDEX = self.input()[0][1].path
-        DATA_ROOT = osp.dirname(self.input()[1]['collection'][0][0].path)
+        # inputs
+        inputs = self.input()
+        input_targets = {
+            'index': inputs[0],
+            'marlin': inputs[1]
+        }
         
-        processes = np.load(self.input()[0][0].path)
+        PROCESS_INDEX = input_targets['index'][0].path
+        SAMPLE_INDEX = input_targets['index'][1].path
+        DATA_ROOT = osp.dirname(input_targets['marlin']['collection'][0][0].path)
+        
+        processes = np.load(PROCESS_INDEX)
         samples = np.load(SAMPLE_INDEX)
+        
+        # construct sample_groups
+        sample_groups = None
+
+        if len(inputs) > 2:
+            src_chunks = np.load(inputs[2][0].path)
+            sample_groups = construct_sample_groups(src_chunks, samples)
         
         runtime_analysis = get_runtime_analysis(DATA_ROOT)
         process_normalization = get_process_normalization(processes, samples,
@@ -263,7 +304,8 @@ class AbstractCreateChunks(BaseTask):
 
         chunks = get_sample_chunk_splits(samples, process_normalization=process_normalization,
                     adjusted_time_per_event=time_per_event, MAXIMUM_TIME_PER_JOB=cast(int, self.jobtime),
-                    custom_statistics=config.custom_statistics)
+                    custom_statistics=config.custom_statistics, sample_groups=sample_groups,
+                    split_mode=CHUNK_SPLIT_MODES['ONE_TO_MANY'] if sample_groups is None else CHUNK_SPLIT_MODES['MANY_TO_MANY'])
         
         BaseTask.touch_parent(self.output()[0])
         
@@ -288,7 +330,7 @@ class AbstractCreateChunks(BaseTask):
         time_per_event = np.load(str(self.output()[2].path))
         process_normalization = np.load(str(self.output()[3].path))
         
-        self.publish_message(colored(chunk_overview(chunks, time_per_event, process_normalization),
+        self.publish_message(colored(chunk_overview(chunks, time_per_event, process_normalization, self),
                                      color='green', background='black'))
         
     def complete(self):

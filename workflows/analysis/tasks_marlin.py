@@ -82,18 +82,44 @@ class MarlinBaseJob(AbstractMarlin):
         samples = np.load(self.input()['index_task'][1].path)
         
         if not self.debug:
-            # The calculated chunking is used
-            scs = np.load(self.input()['marlin_chunks'][0].path)
             
-            for branch in scs['branch'].tolist():
-                branch_map[branch] = (
-                    scs['location'][branch],
-                    scs['n_chunk_in_sample'][branch],
-                    scs['n_chunks_in_sample'][branch],
-                    scs['chunk_start'][branch],
-                    scs['chunk_size'][branch],
-                    samples['mcp_col_name'][samples['location'] == scs['location'][branch]][0]
-                )
+            # The calculated chunking is used
+            chunks = np.load(self.input()['marlin_chunks'][0].path)
+            
+            if 'sub_branch_size' in chunks.dtype.names:
+                filecount = {}
+                
+                for branch in np.unique(chunks['branch']).tolist():
+                    c_chunks = chunks[chunks['branch'] == branch]
+                    src_bname = c_chunks['src_bname'][0]
+                    files = list(c_chunks['location'])
+                    
+                    if src_bname not in filecount:
+                        filecount[src_bname] = 0
+                    else:
+                        filecount[src_bname] += 1
+                    
+                    branch_map[branch] = (
+                        files,
+                        0,
+                        0,
+                        None,
+                        0,
+                        samples['mcp_col_name'][samples['location'] == files[0]][0], # require mcp_col_name to be equal
+                        f'{src_bname}.{filecount[src_bname]}'
+                    )
+                    
+            else:
+                for branch in chunks['branch'].tolist():
+                    branch_map[branch] = (
+                        chunks['location'][branch],
+                        chunks['n_chunk_in_sample'][branch],
+                        chunks['n_chunks_in_sample'][branch],
+                        chunks['chunk_start'][branch],
+                        chunks['chunk_size'][branch],
+                        samples['mcp_col_name'][samples['location'] == chunks['location'][branch]][0],
+                        None
+                    )
                 
             #branch_map = { k: v for k, v in zip(
             #    scs['branch'].tolist(),
@@ -121,7 +147,8 @@ class MarlinBaseJob(AbstractMarlin):
                         1,
                         -1,
                         -1,
-                        entry['mcp_col_name'] 
+                        entry['mcp_col_name'],
+                        None
                     )
                     i += 1
         

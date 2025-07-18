@@ -1,6 +1,7 @@
 import json
 import numpy as np
 import uproot as ur
+import os.path as osp
 from math import floor, ceil
 from typing import Optional, List, Iterable, cast
 from .PreselectionAnalysis import sample_weight
@@ -108,7 +109,7 @@ def get_sample_chunk_splits(
     existing_chunks:np.ndarray|None=None,
     MAXIMUM_TIME_PER_JOB:int=7200,
     split_mode:int=CHUNK_SPLIT_MODES['ONE_TO_MANY'],
-    samples_to_group:list[list[int]]|None=None)->np.ndarray:
+    sample_groups:dict[str, dict[str, list[int]]]|None=None)->np.ndarray:
     """_summary_
 
     Args:
@@ -120,8 +121,9 @@ def get_sample_chunk_splits(
         existing_chunks (Optional[np.ndarray], optional): Deprecated. Defaults to None.
         MAXIMUM_TIME_PER_JOB (int, optional): For splitting jobs, in seconds. Defaults to 7200 (2h).
         split_mode (int, optional): Determines the splitting behavior. Defaults to CHUNK_SPLIT_MODES['ONE_TO_MANY'].
-        samples_to_group (list[list[int]]|None, optional): Must be provided if split_mode is CHUNK_SPLIT_MODES['MANY_TO_MANY'].
-            samples with IDs in the inner lists will be grouped together into one output file, if possible.
+        sample_groups (dict[str, dict[str, list[int]]]|None, optional): Can be provided if split_mode
+            is CHUNK_SPLIT_MODES['MANY_TO_MANY']. { proc_pol: { src_bname: [sample IDs...] } } where all files  belonging
+            to one src_bname will tried to be grouped together into one output file, if possible. the output will be numbered
 
     Returns:
         _type_: _description_
@@ -135,14 +137,14 @@ def get_sample_chunk_splits(
                                            process_normalization, custom_statistics,
                                            MAXIMUM_TIME_PER_JOB)
     elif split_mode == CHUNK_SPLIT_MODES['MANY_TO_MANY']:
-        if samples_to_group is None:
+        if sample_groups is None:
             return get_sample_chunk_splits_m2m(samples, adjusted_time_per_event,
                                             process_normalization, custom_statistics,
                                             MAXIMUM_TIME_PER_JOB)
         else:
             return get_sample_chunk_splits_m2m_grouped(samples, adjusted_time_per_event,
                                             process_normalization, custom_statistics,
-                                            MAXIMUM_TIME_PER_JOB)
+                                            MAXIMUM_TIME_PER_JOB, sample_groups)
     else:
         raise Exception(f'Unhandled split mode <{split_mode}>')
 
@@ -274,6 +276,127 @@ def get_sample_chunk_splits_m2m(samples:np.ndarray,
                     
     return results
 
+def construct_sample_groups(
+    reco_chunks:np.ndarray,
+    analysis_samples:np.ndarray
+)->dict[str, dict[str, list[int]]]:
+    """Constructs a sample_groups dict based on a samples
+    np.ndarray and a previous chunk_splits np.ndarray that
+    was used in creating the sample.
+
+    Args:
+        reco_chunks (np.ndarray): _description_
+        analysis_samples (np.ndarray): _description_
+
+    Returns:
+        dict[str, dict[str, list[int]]]: sample_groups for
+            use with get_sample_chunk_splits_m2m_grouped
+    """
+    reco_chunk_2_analysis_sample_map = {}
+
+    for sample_branch in range(len(analysis_samples)):
+        reco_chunk = int(analysis_samples['location'][sample_branch].split('-')[-1].split('.slcio')[0])
+        reco_chunk_2_analysis_sample_map[reco_chunk] = sample_branch
+
+    grouped_branches = []
+
+    source_sample_locations = np.unique(reco_chunks['location']).tolist()
+
+    sample_groups = {}
+
+    for loc in source_sample_locations:
+        proc_pol = reco_chunks['proc_pol'][reco_chunks['location'] == loc][0]
+        source_bname = osp.basename(loc).replace('.slcio', '')
+        
+        if not proc_pol in sample_groups:
+            sample_groups[proc_pol] = {}
+        
+        reco_branches = reco_chunks['branch'][reco_chunks['location'] == loc].tolist()
+        reco_branches.sort()
+        
+        sample_group = [ reco_chunk_2_analysis_sample_map[branch] for branch in reco_branches]    
+        sample_groups[proc_pol][source_bname] = sample_group
+        
+        grouped_branches.append(reco_chunks['branch'][reco_chunks['location'] == loc].tolist())
+        
+    assert(len(reco_chunks) == len(np.concatenate(grouped_branches)) and
+        len(reco_chunks) == len(analysis_samples))
+    
+    return sample_groups
+    
+
+def get_sample_chunk_splits_m2m_grouped(samples:np.ndarray,
+                                adjusted_time_per_event:np.ndarray,
+                                process_normalization:np.ndarray,
+                                custom_statistics:list[tuple]|None,
+                                MAXIMUM_TIME_PER_JOB:int,
+                                sample_groups:dict[str, dict[str, list[int]]])->np.ndarray:
+    
+    dtype = deepcopy(dtype_common)
+    dtype += [('sub_branch_size', 'I')]
+    dtype += [('branch_size', 'I')]
+    dtype += [('src_bname', '<U80')]
+
+    results = np.empty(0, dtype=dtype)
+
+    pn = np.copy(process_normalization)
+    atpe = adjusted_time_per_event
+
+    if custom_statistics is not None:
+        pn = process_custom_statistics(pn, custom_statistics)
+
+    n_branch_tot = -1
+
+    for p in pn:
+        process = p['process']
+        proc_pol = p['proc_pol']
+        n_target_total = p['n_events_target']
+        n_accounted = 0
+        
+        if n_target_total > 0:
+            assert(proc_pol in sample_groups)
+            sample_group = sample_groups[proc_pol]
+            c_chunks = []
+            
+            max_chunk_size = 999999
+            if atpe is not None:
+                time_per_event = atpe['tPE'][atpe['process'] == process][0] #np.average(atpe['tPE'][atpe['process'] == process])
+                max_chunk_size = floor(MAXIMUM_TIME_PER_JOB/time_per_event)
+            
+            for src_bname in sample_group:
+                sample_ids = sample_group[src_bname]
+                n_branch_tot += 1
+                
+                c_samples = samples[sample_ids]
+                n_accounted_src_file = 0
+                
+                n_sample = 0
+                n_in_branch = 0
+                    
+                while n_accounted < n_target_total and n_sample < len(c_samples):
+                    sample = c_samples[n_sample]
+                    sample_size = sample['n_events']
+                    
+                    if n_in_branch + sample_size < max_chunk_size:
+                        n_in_branch += sample_size
+                        n_accounted_src_file += sample_size
+                    else:
+                        n_in_branch = 0
+                        n_branch_tot += 1
+                        
+                    c_chunks.append((n_branch_tot, sample['sid'], process, proc_pol, sample['location'], sample_size, 0, src_bname))
+                    
+                    n_sample += 1
+                    n_accounted += sample_size
+                    
+                if len(c_chunks) > 0:
+                    results = np.append(results, np.array(c_chunks, dtype=dtype))
+                    for branch in range(results['branch'].max() + 1):
+                        results['branch_size'][results['branch'] == branch] = results['sub_branch_size'][results['branch'] == branch].sum()
+                    
+                    c_chunks.clear()
+                    
+    return results
 
 def get_chunks_factual(DATA_ROOT:str, chunks_in:np.ndarray, attach_time:bool=False):
     dtype_arr = chunks_in.dtype.descr + [('chunk_size_factual', 'I')]

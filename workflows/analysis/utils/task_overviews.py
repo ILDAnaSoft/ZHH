@@ -85,26 +85,36 @@ def chunk_overview(chunks:np.ndarray,
     task_name = '' if task_instance is None else task_instance.__class__.__name__
     chunk_file_path = '<unknown path>' if task_instance is None else str(task_instance.output()[4].path)
     
+    is_m2m = 'sub_branch_size' in chunks.dtype.names
+    is_grouped_m2m = 'src_bname' in chunks.dtype.names
+    size_prop_name = 'chunk_size' if not is_m2m else 'sub_branch_size'
+    n_branches_tot = len(chunks) if not is_m2m else len(np.unique(chunks['branch']))
+    chunk_mode = 'MANY-TO-ONE' if not is_m2m else ('MANY-TO-MANY (GROUPED)' if is_grouped_m2m else 'MANY-TO-MANY (NON-GROUPED)')
+    
     text = f'''+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-{task_name} Overview: Divided submission into {len(chunks)} chunks
+{task_name} Overview: Divided submission into {n_branches_tot} chunks
 
-    See also {chunk_file_path}
+    Chunk mode : <{chunk_mode}>
+    Chunk list : <{chunk_file_path}>
 
-NChunks(branches) | Process      | Polarization | t/event(s) avg | Events expected | Events available | Events to process | Input samples
+ NChunks(branches) | Process      | Polarization | t/event(s) avg | Events expected | Events available | Events to process | Input samples
 -------------------|--------------|--------------|----------------|-----------------|------------------|-------------------|-----------------
 '''
     
     for proc_pol in unique_proc_pol:
         process, polarization = proc_pol[:-3], proc_pol[-2:]
-        n_samples_input = len(np.unique(chunks[chunks['proc_pol'] == proc_pol]['location']))
+        c_chunks = chunks[chunks['proc_pol'] == proc_pol]
         
-        text += f"{len(chunks[chunks['proc_pol'] == proc_pol]):>18} | "
+        n_samples_input = len(np.unique(c_chunks['location']))
+        n_branches = len(c_chunks) if not is_m2m else len(np.unique(c_chunks['branch']))
+        
+        text += f"{n_branches:>18} | "
         text += f"{process:>12} | "
         text += f"{polarization:>12} | "
         text += f"{time_per_event[time_per_event['process'] == process]['tPE'][0]:14.4} | "
-        text += f"{process_normalization[process_normalization['proc_pol'] == proc_pol]['n_events_expected'][0]:14.3} | "
-        text += f"{process_normalization[process_normalization['proc_pol'] == proc_pol]['n_events_tot'][0]:17,} |"
-        text += f"{np.sum(chunks[chunks['proc_pol'] == proc_pol]['chunk_size']):18,} | "
+        text += f"{process_normalization[process_normalization['proc_pol'] == proc_pol]['n_events_expected'][0]:15.3} | "
+        text += f"{process_normalization[process_normalization['proc_pol'] == proc_pol]['n_events_tot'][0]:16,} |"
+        text += f"{np.sum(c_chunks[size_prop_name]):18,} | "
         text += f"{n_samples_input:>14} \n"
         
     return text
