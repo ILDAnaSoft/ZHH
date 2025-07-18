@@ -52,13 +52,14 @@ void EventObservablesLL::prepareChannelTree() {
 		ttree->Branch("pyl1", &m_pyl1, "pyl1/F");
 		ttree->Branch("pzl1", &m_pzl1, "pzl1/F");
 		ttree->Branch("el1", &m_el1, "el1/F");
+        ttree->Branch("typel1", &m_typel1, "typel1/I");
 
 		ttree->Branch("pxl2", &m_pxl2, "pxl2/F");
 		ttree->Branch("pyl2", &m_pyl2, "pyl2/F");
 		ttree->Branch("pzl2", &m_pzl2, "pzl2/F");
 		ttree->Branch("el2", &m_el2, "el2/F");
+        ttree->Branch("typel2", &m_typel2, "typel2/I");
 
-        ttree->Branch("paired_lep_type", &m_paired_lep_type, "paired_lep_type/I");
         ttree->Branch("plmin", &m_plmin, "plmin/F");
         ttree->Branch("plmax", &m_plmax, "plmax/F");
         ttree->Branch("mvalepminus", &m_mvalepminus, "mvalepminus/F");
@@ -123,13 +124,13 @@ void EventObservablesLL::clearChannelValues() {
     m_pyl1 = 0.;
     m_pzl1 = 0.;
     m_el1 = 0.;
+    m_typel1 = 0;
 
     m_pxl2 = 0.;
     m_pyl2 = 0.;
     m_pzl2 = 0.;
     m_el2 = 0.;
-
-    m_paired_lep_type = 0;
+    m_typel2 = 0;
 
     m_plmin = 0;
     m_plmax = 0;
@@ -205,6 +206,11 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         // ---------- SAVE TYPES OF PAIRED ISOLATED LEPTONS ----------
         ReconstructedParticle* paired_isolep1 = dynamic_cast<ReconstructedParticle*>( inputLepPairCollection->getElementAt(0));
         ReconstructedParticle* paired_isolep2 = dynamic_cast<ReconstructedParticle*>( inputLepPairCollection->getElementAt(1));
+
+        // for ME calculation, leptons must be stored consistently
+        // we store lepton first, then anti-lepton
+        if (paired_isolep1->getCharge() > 0)
+            std::swap(paired_isolep1, paired_isolep2);
 
         TLorentzVector v4_paired_isolep1 = v4old(paired_isolep1);
         TLorentzVector v4_paired_isolep2 = v4old(paired_isolep2);
@@ -306,8 +312,6 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
             m_bmax22_2Jets = std::min(m_bTagValues_2Jets2[0], m_bTagValues_2Jets2[1]);
         }
 
-        
-
         // END EVALUATE 2 JET COLLECTION
 
         // TREAT 4 JET COLELCTION
@@ -345,14 +349,10 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
             v4(inputJetCollection->getElementAt(m_bTagsSorted[3].first))).M();
         
         // MATRIX ELEMENT
-        // for ME calculation, first lepton must be the negative charged one
-        if (paired_isolep1->getCharge() > 0){
-            std::swap(paired_isolep1, paired_isolep2);
-        }
 
-        m_paired_lep_type = pairedLeptonType;
-        if (m_paired_lep_type != 11 && m_paired_lep_type != 13 && m_paired_lep_type != 15) { // this should not happen...? but it does seldom...
-            m_paired_lep_type = 11; 
+        if (m_pairedLepType != 11 && m_pairedLepType != 13 && m_pairedLepType != 15) { // this should not happen...? but it does seldom...
+            throw EVENT::Exception("Invalid paired IsoLepton type");
+            std::cerr << "Got lepton type " << m_pairedLepType << " in event " << m_nEvt << std::endl;
             m_errorCodes.push_back(1001);
         }
     
@@ -360,21 +360,20 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         m_pyl1 = v4_paired_isolep1.Py();
         m_pzl1 = v4_paired_isolep1.Pz();
         m_el1 = v4_paired_isolep1.E();
+        m_typel1 = paired_isolep1->getType();
 
         m_pxl2 = v4_paired_isolep2.Px();
         m_pyl2 = v4_paired_isolep2.Py();
         m_pzl2 = v4_paired_isolep2.Pz();
         m_el2 = v4_paired_isolep2.E();
+        m_typel2 = paired_isolep2->getType();
 
         m_mzll = momentumZv4.M();
         m_zhh_mz = m_mzll;
 
-        if (m_paired_lep_type != 11 && m_paired_lep_type != 13)
-            throw EVENT::Exception("Invalid pairedLepType " + std::to_string( m_paired_lep_type));
+        streamlog_out(DEBUG) << "PairedLeptons of type " << m_pairedLepType << " to M=" << m_mzll << std::endl;
 
-        streamlog_out(DEBUG) << "PairedLeptons of type " << m_paired_lep_type << " to M=" << m_mzll << std::endl;
-
-        calculateMatrixElements(m_paired_lep_type, 5, v4_paired_isolep1, v4_paired_isolep2,
+        calculateMatrixElements(m_pairedLepType, 5, v4_paired_isolep1, v4_paired_isolep2,
                                 v4old(inputJetCollection->getElementAt(0)), v4old(inputJetCollection->getElementAt(1)),
                                 v4old(inputJetCollection->getElementAt(2)), v4old(inputJetCollection->getElementAt(3)), false);
 

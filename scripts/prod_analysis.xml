@@ -34,7 +34,7 @@
         <parameter name="SourceCollection2" type="string" lcioInType="ReconstructedParticle"> ISOMuons </parameter>
         <parameter name="SourceCollection3" type="string" lcioInType="ReconstructedParticle"> ISOTaus </parameter>
 
-        <parameter name="MergedCollection" type="string" lcioOutType="ReconstructedParticle"> ISOLeptons </parameter>
+        <parameter name="OutputCollection" type="string" lcioOutType="ReconstructedParticle"> ISOLeptons </parameter>
         
         <parameter name="Verbosity" type="string">${Verbosity}</parameter>
     </processor>
@@ -64,7 +64,7 @@
         <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
 
         <parameter name="ZinvisibleResidualsOutputCollection" type="string" lcioOutType="LCFloatVec">ZinvisibleResiduals</parameter>
-        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
+        <parameter name="Verbosity" type="string">MESSAGE</parameter>
     </processor>
     -->
 
@@ -126,7 +126,7 @@
         <parameter name="JetPullsOutputCollection" type="string" lcioOutType="LCFloatVec">JetPulls_ZHH</parameter> -->
         
         <!-- verbosity level - DEBUG only works if compiled in debug mode! -->
-        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> ${Verbosity} </parameter>
+        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT">${Verbosity}</parameter>
     </processor>
     
     <processor name="MyZHHKinFit_solveNu" type="ZHHKinFit">
@@ -176,7 +176,7 @@
         <parameter name="JetPullsOutputCollection" type="string" lcioOutType="LCFloatVec">JetPulls_ZHH</parameter> -->
         
         <!-- verbosity level - DEBUG only works if compiled in debug mode! -->
-        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> ${Verbosity} </parameter>
+        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT">${Verbosity}</parameter>
     </processor>
 
     <processor name="MyZHHKinFit_ZHH" type="ZHHKinFit">
@@ -226,7 +226,7 @@
         <parameter name="JetPullsOutputCollection" type="string" lcioOutType="LCFloatVec">JetPulls_ZHH</parameter> -->
         
         <!-- verbosity level - DEBUG only works if compiled in debug mode! -->
-        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> ${Verbosity} </parameter>
+        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT">${Verbosity}</parameter>
     </processor>
 
     <processor name="MyZHHKinFit_ZZH" type="ZHHKinFit">
@@ -276,7 +276,7 @@
         <parameter name="JetPullsOutputCollection" type="string" lcioOutType="LCFloatVec">JetPulls_ZHH</parameter> -->
         
         <!-- verbosity level - DEBUG only works if compiled in debug mode! -->
-        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> ${Verbosity} </parameter>
+        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT">${Verbosity}</parameter>
     </processor>
 
     <processor name="MyEventObservablesLL" type="EventObservablesLL">
@@ -301,7 +301,7 @@
 
         <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
 
-        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
+        <parameter name="Verbosity" type="string">DEBUG</parameter>
     </processor>
 
     <!--

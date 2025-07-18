@@ -480,6 +480,14 @@ void FinalStateRecorder::init()
 	this->register_process(new p6_ftag_cccccc());
 	this->register_process(new p6_ftag_bbbbbb());
 
+	// new mc-2025 4f production
+	this->register_process(new sw_sl0());
+	this->register_process(new sze_sl0());
+	this->register_process(new sznu_sl0());
+	this->register_process(new ww_sl0());
+	this->register_process(new zz_sl0());
+	this->register_process(new zznu_sl0());
+
 
 
 	streamlog_out(MESSAGE) << "   init finished  " << std::endl;

@@ -73,6 +73,14 @@ struct PROCESS_ID {
 		f4_llbb_sl0 = 3195,
 		f4_eebb_sl0 = 3196,
 
+		// NEW 4f
+		f4_sw_sl0 = 31940,
+		f4_sze_sl0 = 31920,
+		f4_sznu_sl0 = 33600,
+		f4_ww_sl0 = 31930,
+		f4_zz_sl0 = 31910,
+		f4_zznu_sl0 = 31970,
+
 		// fffff
 		p5_ae_eeevv = 9101,
 		p5_ea_eyyyy = 9102,
@@ -306,6 +314,10 @@ struct EVENT_CATEGORY_TRUE {
 		qq = 57,
 		qqqq = 58,
 		bbbbbb = 59,
+		qqqqqq = 60,
+		
+		// SEMILEPTONIC
+		lvqq = 65,
 		
 		// ttbar -> lvbbqq [t->Wb, W->lv/qq, b->bb]
 		// so far not accounted: ttbar -> llvvbb (two leptonically decaying W bosons)

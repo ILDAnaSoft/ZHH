@@ -26,7 +26,10 @@ def evaluate_runtime(DATA_ROOT:str,
     with open(f'{DATA_ROOT}/{bname}/Source.txt') as file:
         src_path = file.read().strip()
         
-    with open(f'{DATA_ROOT}/{bname}/zhh_FinalStateMeta.json') as metafile:
+    meta_file = glob(f'{DATA_ROOT}/{bname}/zhh*FinalStateMeta.json')
+    
+    assert(len(meta_file) == 1)
+    with open(meta_file[0]) as metafile:
         branch_meta = json.load(metafile)
         n_proc, process = branch_meta['nEvtSum'], branch_meta['processName']
         tEnd, tStart = branch_meta['tEnd'], branch_meta['tStart']
@@ -86,12 +89,13 @@ def get_runtime_analysis(DATA_ROOT:Optional[str]=None,
         
         for job_key in jobs:
             branch = jobs[job_key]['branches'][0]
-            if jobs[job_key]['status'] == 'finished':
-                dir = list(filter(lambda a: a.endswith('-' + str(branch)), dirs))
-                assert(len(dir) == 1)
-                
-                ev = evaluate_runtime(DATA_ROOT=DATA_ROOT, bname=os.path.basename(dir[0]), WITH_EXIT_STATUS=WITH_EXIT_STATUS)
-                results.append(ev)
+            #if jobs[job_key]['status'] == 'finished':
+            
+            dir = list(filter(lambda a: a.endswith('-' + str(branch)) and not ('TMP-' in a), dirs))
+            assert(len(dir) == 1)
+            
+            ev = evaluate_runtime(DATA_ROOT=DATA_ROOT, bname=os.path.basename(dir[0]), WITH_EXIT_STATUS=WITH_EXIT_STATUS)
+            results.append(ev)
     else:
         raise Exception('No data source given')
     
@@ -101,7 +105,16 @@ def get_runtime_analysis(DATA_ROOT:Optional[str]=None,
 
 def get_adjusted_time_per_event(runtime_analysis:np.ndarray,
                                  MAX_CAP:Optional[float]=None,
-                                 MIN_CAP:Optional[float]=0.01):
+                                 MIN_CAP:Optional[float]=0.01,
+                                 T0:int=0)->np.ndarray:
+    
+    """Average for each process (i.e. over each polarization) the processing
+    runtime and apply the MIN/MAX_CAP values.
+
+    Returns:
+        np.ndarray: A named numpy array containing the columns
+            process, tAvg, tMax, n_processes and tPE (time per event)
+    """
     
     unique_processes = np.unique(runtime_analysis['process'])
 
@@ -122,7 +135,7 @@ def get_adjusted_time_per_event(runtime_analysis:np.ndarray,
         i_max = np.argmax(subset['tDuration'])
         tMax = subset['tDuration'][i_max]
         n_processed = subset['n_processed'].sum()
-        tPE = tMax/subset['n_processed'][i_max] #subset['tDuration'].sum()/ n_processed
+        tPE = (tMax - T0)/subset['n_processed'][i_max] #subset['tDuration'].sum()/ n_processed
         
         results['process'][i] = process
         results['tAvg'][i] = tAvg

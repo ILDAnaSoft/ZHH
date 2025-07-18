@@ -456,6 +456,7 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     inputLeptonCollection = pLCEvent->getCollection( m_inputleptonCollection );
   } catch(DataNotAvailableException &e) {
     streamlog_out(MESSAGE) << "processEvent : Input lepton collection not found in event " << m_nEvt << std::endl;
+    m_pTTree->Fill();
     return;
   }
   try {
@@ -463,6 +464,7 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     inputJetCollection = pLCEvent->getCollection( m_inputJetCollection );
   } catch(DataNotAvailableException &e) {
     streamlog_out(MESSAGE) << "processEvent : Input jet collection not found in event " << m_nEvt << std::endl;
+    m_pTTree->Fill();
     return;
   }
   try {
@@ -470,6 +472,7 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     inputSLDecayCollection = pLCEvent->getCollection( m_inputSLDVertexCollection );
   } catch(DataNotAvailableException &e) {
     streamlog_out(MESSAGE) << "processEvent : Input semi-leptonic vertex collection collection not found in event " << m_nEvt << std::endl;
+    m_pTTree->Fill();
     return;
   }
   try {
@@ -477,24 +480,28 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     inputMCParticleCollection = pLCEvent->getCollection( _MCParticleColllectionName );
   } catch(DataNotAvailableException &e) {
     streamlog_out(MESSAGE) << "processEvent : Input mc particle collection not found in event " << m_nEvt << std::endl;
+    m_pTTree->Fill();
     return;
   }
   try {
     JetSLDNav = new LCRelationNavigator( pLCEvent->getCollection( m_inputJetSLDLink ) );
     } catch(DataNotAvailableException &e) {
     streamlog_out(MESSAGE) << "processEvent : JetSLDNav collection not found in event " << m_nEvt << std::endl;
+    m_pTTree->Fill();
     return;
   }
   try {
     SLDNuNav = new LCRelationNavigator( pLCEvent->getCollection( m_inputSLDNuLink ) );
   } catch(DataNotAvailableException &e) {
     streamlog_out(MESSAGE) << "processEvent : SLDNuNav collection not found in event " << m_nEvt << std::endl;
+    m_pTTree->Fill();
     return;
   }
   try {
     NuMCNav = new LCRelationNavigator( pLCEvent->getCollection( m_recoNumcNuLinkName ) );
   } catch(DataNotAvailableException &e) {
     streamlog_out(MESSAGE) << "processEvent : NuMCNav collection not found in event " << m_nEvt << std::endl;
+    m_pTTree->Fill();
     return;
   }
 

@@ -10,7 +10,7 @@ class ClearLCIOFiles(BaseTask):
     task_completed = False
     
     def requires(self):
-        from analysis.tasks_analysis import AnalysisFinal
+        from analysis.tasks_marlin import AnalysisFinal
         return [ AnalysisFinal.req(self) ]
     
     def complete(self):
