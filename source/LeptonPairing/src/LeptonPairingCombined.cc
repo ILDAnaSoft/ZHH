@@ -172,7 +172,7 @@ void LeptonPairingCombined::processRunHeader( LCRunHeader* run ) {
   (void) run;
 }
 
-float LeptonPairingCombined::evaluateIsoLeptons(EVENT::LCCollection * isoLepCollection, int leptonType){
+float LeptonPairingCombined::evaluateIsoLeptons(EVENT::LCCollection *isoLepCollection,EVENT::LCCollection *pfosWOIsoLepCollection, int leptonType){
   float bestDelta = 99999.;
   int massEntryIndex;
   int InIsoLeps;
@@ -191,18 +191,28 @@ float LeptonPairingCombined::evaluateIsoLeptons(EVENT::LCCollection * isoLepColl
     float pairmass = 0;
     float massDelta;
 
+    Double_t fCosFSRCut = m_doPhotonRecovery ? 0.99 : 99.; // the angle of BS and FSR around the direction of charged lepton
+    vector<lcio::ReconstructedParticle*> photons;
+
     for ( int i_lep1 = 0 ; i_lep1 < InIsoLeps - 1 ; ++i_lep1 ) {
       ReconstructedParticle* lepton1 = static_cast<ReconstructedParticle*>( isoLepCollection->getElementAt( i_lep1 ) );
+      ReconstructedParticleImpl *recoLepton1 = new ReconstructedParticleImpl();
+      ZHH::doPhotonRecovery(lepton1, pfosWOIsoLepCollection, recoLepton1, fCosFSRCut, lepton1->getType(), photons);
+      
       for ( int i_lep2 = i_lep1 + 1 ; i_lep2 < InIsoLeps ; ++i_lep2 ) {
         ReconstructedParticle* lepton2 = static_cast<ReconstructedParticle*>( isoLepCollection->getElementAt( i_lep2 ) );
+	ReconstructedParticleImpl *recoLepton2 = new ReconstructedParticleImpl();
+	ZHH::doPhotonRecovery(lepton2, pfosWOIsoLepCollection, recoLepton2, fCosFSRCut, lepton2->getType(), photons);
+	
         //Check if same type and have opposite charge 
         streamlog_out(DEBUG7) << "Pairing item [" << i_lep1 << "] with [" << i_lep2 << "]" << endl;
         
         if (lepton1->getType() + lepton2->getType() == 0) {
-          pairmass = inv_mass(lepton1, lepton2);
+          pairmass = inv_mass(recoLepton1, recoLepton2);
           massDelta = abs(pairmass - m_diLepInvMass);
 
-          streamlog_out(DEBUG7) << "same type, opposite charge; mass = " << pairmass << endl;
+          streamlog_out(MESSAGE) << "same type, opposite charge; recolep mass = " << pairmass << endl;
+          streamlog_out(MESSAGE) << "same type, opposite charge; isolep mass = " << inv_mass(lepton1, lepton2) << endl;
 
           if (massDelta > bestDelta)
             continue;
@@ -254,7 +264,8 @@ void LeptonPairingCombined::processEvent( EVENT::LCEvent *pLCEvent ) {
     cerr << "Critical error: One of the given input collections do not exist in event " << m_nEvt << ": " << m_inputIsoElectronCollection << ", " << m_inputIsoMuonCollection << " or " << m_inputPFOsWOIsoLepCollection;
     throw EVENT::Exception("Required collection does not exist");
   }
-
+  streamlog_out(MESSAGE) << " test message " <<endl;
+  
   try {
     IsoTauCollection = pLCEvent->getCollection(m_inputIsoTauCollection);
     streamlog_out(DEBUG7) << "Isolated tau collection successfully found in event " << m_nEvt << endl;
@@ -291,7 +302,7 @@ void LeptonPairingCombined::processEvent( EVENT::LCEvent *pLCEvent ) {
       case 15: IsoLepCollection = IsoTauCollection; break;
     }
 
-    (void) evaluateIsoLeptons(IsoLepCollection, leptonType);
+    (void) evaluateIsoLeptons(IsoLepCollection, PFOsWOIsoLepCollection, leptonType);
   }
 
   // check if a best pairing was found among all isolated leptons for all lepton species
@@ -319,8 +330,8 @@ void LeptonPairingCombined::processEvent( EVENT::LCEvent *pLCEvent ) {
       E_ph_tot += photons[i_ph]->getEnergy();
     }
 
-    streamlog_out(DEBUG7) << "Best lepton pair (type=" << m_bestLeptonType << ") with invariant mass = " << m_IsoLepsInvMass[massEntryIndex] << " (before pairing: " << m_RecoLepsInvMass[massEntryIndex] <<")" << endl;      
-    streamlog_out(DEBUG7) << "  Recovered " << photons.size() << " photons with an energy of " << E_ph_tot << endl;
+    streamlog_out(MESSAGE) << "Best lepton pair (type=" << m_bestLeptonType << ") with invariant mass = " << m_IsoLepsInvMass[massEntryIndex] << " (before pairing: " << m_RecoLepsInvMass[massEntryIndex] <<")" << endl;      
+    streamlog_out(MESSAGE) << "  Recovered " << photons.size() << " photons with an energy of " << E_ph_tot << endl;
 
     m_IsoLepPairCol->addElement(m_bestLeptonPair[0]);
     m_IsoLepPairCol->addElement(m_bestLeptonPair[1]);
