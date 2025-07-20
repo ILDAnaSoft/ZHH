@@ -152,7 +152,9 @@ class EventObservablesBase: public Processor, public TrueJet_Parser
 		std::string m_inputPfoCollection{};
 		std::string m_inputJetKinFitZHHCollection{};
 		std::string m_inputJetKinFitZZHCollection{};
-		std::string m_outputFile{};
+		std::string m_inputLeptonKinFit_solveNuCollection{};
+		std::string m_inputJetKinFit_solveNuCollection{};
+                std::string m_outputFile{};
 		std::string m_whichPreselection{};
 		std::string m_cutDefinitionsJSONFile{};
 
@@ -295,7 +297,11 @@ class EventObservablesBase: public Processor, public TrueJet_Parser
 		float m_zhh_p1st{};
 		float m_zhh_cosTh1st{};
 
-		typedef std::pair<unsigned short, double> JetTaggingPair;
+		float m_fit4C_mz{};
+		float m_fit4C_mh1{};
+		float m_fit4C_mh2{};
+
+                typedef std::pair<unsigned short, double> JetTaggingPair;
 
 		// returns a vector of pairs (jet idx, tag value) sorted ASCENDING by btags given a collection
 		static std::vector<std::pair<int, float>> sortedTagging(LCCollection* collection, std::string pid_algorithm, std::string pid_parameter_b);
@@ -355,6 +361,9 @@ class EventObservablesBase: public Processor, public TrueJet_Parser
 
 		short m_JMK_ZHH_perm_idx{};
 		short m_JMK_ZZH_perm_idx{};
+  
+                float m_fitprob_ZHH{};
+                float m_fitprob_ZZH{};
 
 		double m_lcme_jmk_zhh_log{};
 		double m_lcme_jmk_zzh_log{};

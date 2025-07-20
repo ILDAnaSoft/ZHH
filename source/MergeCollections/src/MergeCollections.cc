@@ -39,7 +39,7 @@ MergeCollections::MergeCollections(): Processor("MergeCollections") {
         "OutputCollection",
         "Output collection to copy PID entries to. will be newly created and be a subset of SourceCollection",
         m_outputCollection,
-        std::string("MergedCollection") );
+        std::string("ISOLeptons") );
 }
 
 void MergeCollections::init(){
@@ -76,7 +76,8 @@ void MergeCollections::processEvent( LCEvent* evt ){
         }
     }
 
-    evt->addCollection(outputPfoCollection, m_outputCollection.c_str());    
+    evt->addCollection(outputPfoCollection, m_outputCollection.c_str());
+    streamlog_out(MESSAGE) << "added output collection: " << m_outputCollection << std::endl;
 }
 
 void MergeCollections::check( LCEvent* evt ){

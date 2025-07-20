@@ -19,6 +19,28 @@ def zhh_cuts(hypothesis:str,
                      LessThanEqualCut('thrust', 0.9, label='thrust'),
                      GreaterThanEqualCut('sumBTags', 1.0, label='sum b-tags'),]
             
+    elif hypothesis[:2].lower() == 'ee':
+        cuts = [EqualCut('dilepton_type', 11, label='dilepton_type'),
+                WindowCut('mzll', 20., 200., label=r'm_{Z}')]
+        
+        if additional:
+            cuts += [WindowCut('zhh_mh1', 50., 200., label=r'm_{H1}'),
+                     WindowCut('zhh_mh2', 50., 200., label=r'm_{H2}'),
+                     LessThanEqualCut('ptmiss', 70., label=r'p_{t}^{miss}'),
+                     LessThanEqualCut('thrust', 0.9, label='thrust'),
+                     GreaterThanEqualCut('sumBTags', 1.0, label='sum b-tags'),]
+            
+    elif hypothesis[:2].lower() == 'mm':
+        cuts = [EqualCut('dilepton_type', 13, label='dilepton_type'),
+                WindowCut('mzll', 20., 150., label=r'm_{Z}')]
+        
+        if additional:
+            cuts += [WindowCut('zhh_mh1', 50., 200., label=r'm_{H1}'),
+                     WindowCut('zhh_mh2', 50., 200., label=r'm_{H2}'),
+                     LessThanEqualCut('ptmiss', 70., label=r'p_{t}^{miss}'),
+                     LessThanEqualCut('thrust', 0.9, label='thrust'),
+                     GreaterThanEqualCut('sumBTags', 1.0, label='sum b-tags'),]
+            
     elif hypothesis[:2].lower() == 'vv':
         cuts = [EqualCut('nisoleptons', 0, label='nisoleptons'),
                 WindowCut('zhh_mh1', 60., 180., label=r'm_{H1}'),

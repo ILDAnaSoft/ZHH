@@ -4,6 +4,7 @@ from zhh import EventCategories, PreselectionProcessor, \
 import numpy as np
 from tqdm.auto import tqdm
 from zhh import AnalysisChannel, EventCategories
+import sys
 
 if __name__ == "__main__":
 
@@ -30,7 +31,8 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
 
-    PRESELECTION = 'll'
+    #PRESELECTION = 'll'
+    PRESELECTION = sys.argv[1]
 
     llbb = AnalysisChannel(args.llbb, 'llbb')
     l2q4 = AnalysisChannel(args.l2q4, '2l4q')

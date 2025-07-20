@@ -191,6 +191,7 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         m_mzll_pre_pairing = inputLepPairCollection->parameters().getFloatVal("IsoLepsInvMass");
         
         int pairedLeptonType = inputLepPairCollection->parameters().getIntVal("PairedType");
+	
         LCCollection *inputLeptonCollection;
 
         switch(pairedLeptonType) {
@@ -371,8 +372,8 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
 
         if (m_paired_lep_type != 11 && m_paired_lep_type != 13)
             throw EVENT::Exception("Invalid pairedLepType " + std::to_string( m_paired_lep_type));
-
-        streamlog_out(DEBUG) << "PairedLeptons of type " << m_paired_lep_type << " to M=" << m_mzll << std::endl;
+	
+        streamlog_out(MESSAGE) << "PairedLeptons of type " << m_paired_lep_type << " to M=" << m_mzll << std::endl;
 
         calculateMatrixElements(m_paired_lep_type, 5, v4_paired_isolep1, v4_paired_isolep2,
                                 v4old(inputJetCollection->getElementAt(0)), v4old(inputJetCollection->getElementAt(1)),

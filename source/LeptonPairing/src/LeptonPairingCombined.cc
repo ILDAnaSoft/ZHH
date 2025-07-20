@@ -184,7 +184,7 @@ float LeptonPairingCombined::evaluateIsoLeptons(EVENT::LCCollection *isoLepColle
   }
 
   InIsoLeps = isoLepCollection->getNumberOfElements();
-  streamlog_out(DEBUG7) << "Pairing iso (type=" << leptonType << ") leptons. Checking n=" << InIsoLeps << " objects" << endl;
+  streamlog_out(MESSAGE) << "Pairing iso (type=" << leptonType << ") leptons. Checking n=" << InIsoLeps << " objects" << endl;
 
   if (InIsoLeps >= 2) {
     float bestMass = 0;

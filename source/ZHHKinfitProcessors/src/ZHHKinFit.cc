@@ -1134,6 +1134,8 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
   //m_perm.erase(m_perm.begin()+m_nJets,m_perm.end());
   outputStartJetCollection->parameters().setValues("permutation", m_perm);
   outputJetCollection->parameters().setValues("permutation", m_perm);
+  outputStartJetCollection->parameters().setValue("fitprob", m_FitProbability);
+  outputJetCollection->parameters().setValue("fitprob", m_FitProbability);
   
   pLCEvent->addCollection( outputJetCollection , m_outputJetCollection.c_str() );
   streamlog_out(DEBUG0) << " Output Jet collection added to event" << std::endl;

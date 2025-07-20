@@ -37,6 +37,7 @@ dtypes = {
     'dilepton_type': 'B',
     'mzll': 'f',
     'mz_pre_pairing': 'f',
+    'paired_lepton_type': 'I',
     
     # vv
     'zhh_mhh': 'f',

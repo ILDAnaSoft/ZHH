@@ -94,6 +94,20 @@ EventObservablesBase::EventObservablesBase(const std::string &name) : Processor(
 			std::string("")
 			);
 
+	registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
+			"LeptonssKinFit_solveNu",
+			"Name of the Lepton collection of the 4C kinfit",
+			m_inputLeptonKinFit_solveNuCollection,
+			std::string("")
+			);
+
+	registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
+			"JetsKinFit_solveNu",
+			"Name of the Jet collection of the 4C kinfit",
+			m_inputJetKinFit_solveCollection,
+			std::string("")
+			);
+
 	registerProcessorParameter("whichPreselection",
             "Which set of cuts to use in the preselection. This will overwrite any input preselection values.",
             m_whichPreselection,
@@ -360,6 +374,11 @@ void EventObservablesBase::prepareBaseTree()
 		ttree->Branch("jet_matching_kinfit_zhh", &m_JMK_ZHH);
 		ttree->Branch("jet_matching_kinfit_zzh", &m_JMK_ZZH);
 
+		//4C fit
+		ttree->Branch("fit4C_mz", &m_fit4C_mz, "fit4C_mz/F");
+		ttree->Branch("fit4C_mh1", &m_fit4C_mh1, "fit4C_mh1/F");
+                ttree->Branch("fit4C_mh2", &m_fit4C_mh2, "fit4C_mh2/F");
+		
 		// nhbb:njet:chi2:mpt:prob11:prob12:prob21:prob22
 
 		ttree->Branch("bTags", &m_bTagValues);
@@ -600,6 +619,11 @@ void EventObservablesBase::clearBaseValues()
 
 	m_jets.clear();
 
+	//4C
+	m_fit4C_mz = 0.;
+	m_fit4C_mh1 = 0.;
+	m_fit4C_mh2 = 0.;
+	
 	// ZHH
 	m_zhh_jet_matching.clear();
     m_zhh_mz = 0.;
@@ -931,6 +955,9 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 		inputJKF_ZHHCollection->parameters().getIntVals("permutation", m_JMK_ZHH);
 		inputJKF_ZZHCollection->parameters().getIntVals("permutation", m_JMK_ZZH);
 
+		inputJKF_ZHHCollection->parameters().getFloatVal("fitprob", m_fitprob_ZHH);
+		inputJKF_ZZHCollection->parameters().getFloatVal("fitprob", m_fitprob_ZZH);
+
 		if (static_cast<int>(m_JMK_ZHH.size()) >= m_nAskedJets())
 			getPermutationIndex(m_JMK_ZHH, m_nAskedJets(), m_JMK_ZHH_perm_idx);
 		
@@ -942,6 +969,14 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 		m_statusCode += 100;
 	}
 
+	try {
+		LCCollection *inputLKF_solveNuCollection = pLCEvent->getCollection( m_inputLeptonKinFit_solveNuCollection );
+		LCCollection *inputJKF_solveNuCollection = pLCEvent->getCollection( m_inputJetKinFit_solveNuCollection );
+	} catch(DataNotAvailableException &e) {
+                streamlog_out(MESSAGE) << "processEvent : Input 4C kinfit jet and lepton collections not found in event " << m_nEvt << std::endl;
+		m_statusCode += 100;
+        }
+		
 	if (m_nJets == m_nAskedJets()) {
 		TrueJet_Parser* trueJet = this;
 		trueJet->getall( pLCEvent );

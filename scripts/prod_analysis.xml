@@ -36,7 +36,8 @@
 
         <parameter name="MergedCollection" type="string" lcioOutType="ReconstructedParticle"> ISOLeptons </parameter>
         
-        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
+        <!--parameter name="Verbosity" type="string">${Verbosity}</parameter-->
+        <parameter name="Verbosity" type="string">DEBUG</parameter>
     </processor>
 
     <processor name="MyTrueJet" type="TrueJet">
@@ -300,8 +301,9 @@
         <parameter name="cutDefinitionsJSONFile" type="string">${ZHH_REPO_ROOT}/config/preselection_cuts_cd.json</parameter>
 
         <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
-
-        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
+	<parameter name="outputFilename" type="string">${OutputDirectory}/${OutputBaseName}_EventObservables.root</parameter>
+        <parameter name="Verbosity" type="string">DEBUG</parameter>
+        <!--parameter name="Verbosity" type="string">${Verbosity}</parameter-->
     </processor>
 
     <!--
