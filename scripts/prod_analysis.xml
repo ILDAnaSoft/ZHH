@@ -39,6 +39,7 @@
         <parameter name="Verbosity" type="string">${Verbosity}</parameter>
     </processor>
 
+    <!--
     <processor name="MyTrueJet" type="TrueJet">
         <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
         <parameter name="RecoParticleCollection" type="string" lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
@@ -54,6 +55,7 @@
         <parameter name="InitialColourNeutralLink" type="string" lcioOutType="LCRelation">InitialColourNeutralLink</parameter>
         <parameter name="Verbosity" type="string">${Verbosity}</parameter>
     </processor>
+    -->
 </group>
 
 <group name="prodAnalysisLL">
@@ -285,6 +287,7 @@
         <parameter name="JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets4</parameter>
         <parameter name="2JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets2</parameter>
         <parameter name="inputPfoCollection" type="string" lcioInType="ReconstructedParticle">${PFOsWithoutOverlayCollection}</parameter>
+        <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
 
         <parameter name="JetsKinFitZHH" type="string" lcioInType="ReconstructedParticle">JetsKinFit_ZHH</parameter>
         <parameter name="JetsKinFitZZH" type="string" lcioInType="ReconstructedParticle">JetsKinFit_ZZH</parameter>
@@ -292,6 +295,9 @@
         <parameter name="JetTaggingPIDAlgorithm" type="string">weaver</parameter>
         <parameter name="JetTaggingPIDParameterB" type="string">mc_b</parameter>
         <parameter name="JetTaggingPIDParameterC" type="string">mc_c</parameter>
+        <parameter name="JetTaggingPIDParameterBbar" type="string">mc_bbar</parameter>
+        <parameter name="JetTaggingPIDParameterCbar" type="string">mc_cbar</parameter>
+        <parameter name="JetTaggingPIDParameters" type="StringVec">mc_b mc_bbar mc_c mc_cbar mc_d mc_dbar mc_g mc_s mc_sbar mc_u mc_ubar</parameter>
 
         <parameter name="JetTaggingPIDAlgorithm2" type="string">lcfiplus</parameter>
         <parameter name="JetTaggingPIDParameterB2" type="string">BTag</parameter>
@@ -301,7 +307,7 @@
 
         <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
 
-        <parameter name="Verbosity" type="string">DEBUG</parameter>
+        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
     </processor>
 
     <!--

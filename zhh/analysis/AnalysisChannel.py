@@ -136,8 +136,13 @@ class AnalysisChannel:
         
         return self._preselection
     
+    def getData(self)->PreselectionSummary:
+        return self.getPreselection()
+    
     def getPreselection(self)->PreselectionSummary:
         """Returns the preselection summary object.
+        
+        Will be deprecated soon in favor of .data()
 
         Returns:
             PreselectionSummary: preselection summary object

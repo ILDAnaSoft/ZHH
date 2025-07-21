@@ -1,8 +1,7 @@
 import json, os
 import numpy as np
 from glob import glob
-from dateutil import parser
-from typing import Union, Optional
+from datetime import datetime
 
 def get_dirs(path:str):
     return [ f.path for f in os.scandir(path) if f.is_dir() ]
@@ -45,15 +44,15 @@ def evaluate_runtime(DATA_ROOT:str,
             
     return (branch, process, n_proc, src_path, tEnd - tStart, tStart, tEnd, value)
 
-def get_runtime_analysis(DATA_ROOT:Optional[str]=None,
-                         chunks_factual:Optional[np.ndarray]=None,
-                         meta:Optional[dict]=None,
+def get_runtime_analysis(DATA_ROOT:str|None=None,
+                         chunks_factual:np.ndarray|None=None,
+                         meta:dict|None=None,
                          WITH_EXIT_STATUS:bool=False)->np.ndarray:
     """_summary_
 
     Args:
-        DATA_ROOT (Optional[str]): _description_
-        meta (Optional[dict]): _description_
+        DATA_ROOT (str|None): _description_
+        meta (dict|None): _description_
 
     Returns:
         np.ndarray: _description_
@@ -92,7 +91,8 @@ def get_runtime_analysis(DATA_ROOT:Optional[str]=None,
             #if jobs[job_key]['status'] == 'finished':
             
             dir = list(filter(lambda a: a.endswith('-' + str(branch)) and not ('TMP-' in a), dirs))
-            assert(len(dir) == 1)
+            if not len(dir) == 1:
+                raise Exception(f'Critical error: There are more than one result directories for branch <{branch}>. Please delete the unwanted one(s)')
             
             ev = evaluate_runtime(DATA_ROOT=DATA_ROOT, bname=os.path.basename(dir[0]), WITH_EXIT_STATUS=WITH_EXIT_STATUS)
             results.append(ev)
@@ -104,8 +104,8 @@ def get_runtime_analysis(DATA_ROOT:Optional[str]=None,
     return results
 
 def get_adjusted_time_per_event(runtime_analysis:np.ndarray,
-                                 MAX_CAP:Optional[float]=None,
-                                 MIN_CAP:Optional[float]=0.01,
+                                 MAX_CAP:float|None=None,
+                                 MIN_CAP:float|None=0.01,
                                  T0:int=0)->np.ndarray:
     
     """Average for each process (i.e. over each polarization) the processing
@@ -150,3 +150,74 @@ def get_adjusted_time_per_event(runtime_analysis:np.ndarray,
         results['tPE'][results['tPE'] < MIN_CAP] = MIN_CAP
     
     return results
+
+def sgv_runtime(logfile:str):
+    """From a FastSimSGV logfile, returns the src/dst LCIO file,
+    the number of events and the runtime in seconds.
+
+    Args:
+        logfile (str): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    n_events = 0
+    src_file = ''
+    dst_file = ''
+    
+    with open(logfile, 'r') as f:
+        for line in f:
+            if line.startswith('  PROCESSING EVENT'):
+                n_events = int(line[19:].split(' ...')[0].strip())
+            elif line.startswith('SRC='):
+                files = line[4:].split(' DST=')
+                
+                src_file = files[0].strip()
+                dst_file = files[1].strip()
+            elif not line.startswith('-- end --'):
+                continue
+            else:
+                next(f)
+                t_start = next(f).split(': ')[1].split('.')[0]
+                t_end = next(f).split(': ')[1].split('.')[0]
+                break
+    
+    t_start = datetime.strptime(t_start, '%d/%m/%Y %H:%M:%S')
+    t_end   = datetime.strptime(t_end, '%d/%m/%Y %H:%M:%S')
+    
+    return src_file, dst_file, n_events, t_end - t_start 
+
+def sgv_runtime_to_samples(samples:np.ndarray, logs:list[str], T0_SGV:int=3):
+    """Uses a list of log files to create a modified copy of a samples np.ndarray
+    (see ProcessIndex) with two additional columns about SGV runtime and time per
+    event.
+
+    Args:
+        samples (np.ndarray): samples array from the RawIndex
+        logs (list[str]): stdall_*.txt log s in the FastSimSGV directory
+        T0_SGV (int, optional): SGV start up time. Defaults to 3.
+
+    Returns:
+        np.ndarray: samples_w_runtime
+    """
+    dtype = []
+    for dt in samples.dtype.names:
+        dtype.append((dt, samples.dtype[dt]))
+
+    dtype += [('sgv_runtime', 'I')]
+    dtype += [('sgv_time_per_event', 'f')]
+
+    samples_w_runtime = np.zeros(len(samples), dtype=dtype)
+    samples_w_runtime[list(samples.dtype.names)] = samples
+
+    for log in logs:
+        src_file, dst_file, n_events, dt = sgv_runtime(log)
+        
+        if not dst_file in samples['location']:
+            print(f'Warning: dst_file <{dst_file}> was to be produced by SGV but could not be found in the samples index. Regenerate the index or check whether this is intended. File will be skipped.')
+        else:
+            samples_w_runtime['sgv_runtime'][samples_w_runtime['location'] == dst_file] = dt.seconds
+
+    samples_w_runtime['sgv_time_per_event'] = (samples_w_runtime['sgv_runtime'] - T0_SGV) / samples_w_runtime['n_events']
+    
+    return samples_w_runtime

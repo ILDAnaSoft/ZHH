@@ -1,6 +1,6 @@
 import argparse
 from zhh import EventCategories, PreselectionProcessor, \
-    categorize_6q, categorize_2l4q, categorize_llbb, categorize_llhh
+    categorize_6q, categorize_2l4q, categorize_4fsl, categorize_llhh
 import numpy as np
 from tqdm.auto import tqdm
 from zhh import AnalysisChannel, EventCategories
@@ -8,20 +8,20 @@ from zhh import AnalysisChannel, EventCategories
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--llbb', type=str,
-                        default='/data/dust/user/bliewert/zhh/AnalysisCombine/550-llbb-fast-perf',
-                        help='Path to AnalaysisCombine output directory for llbb')
+    parser.add_argument('--f4sl', type=str,
+                        default='/data/dust/user/bliewert/zhh/AnalysisCombine.old/550-4fsl-fast-perf',
+                        help='Path to AnalaysisCombine output directory for 4fsl')
     
     parser.add_argument('--l2q4', type=str,
-                        default='/data/dust/user/bliewert/zhh/AnalysisCombine/550-2l4q-fast-perf.old',
+                        default='/data/dust/user/bliewert/zhh/AnalysisCombine.old/550-2l4q-fast-perf',
                         help='Path to AnalaysisCombine output directory of 2l4q')
 
     parser.add_argument('--llhh', type=str,
-                        default='/data/dust/user/bliewert/zhh/AnalysisCombine/550-llhh-fast-perf',
+                        default='/data/dust/user/bliewert/zhh/AnalysisCombine.old/550-llhh-fast-perf',
                         help='Path to AnalaysisCombine output directory of llhh')
     
     parser.add_argument('--q6', type=str,
-                        default='/data/dust/user/bliewert/zhh/AnalysisCombine/550-6q-fast-perf',
+                        default='/data/dust/user/bliewert/zhh/AnalysisCombine.old/550-6q-fast-perf',
                         help='Path to AnalaysisCombine output directory of 6q')
     
     parser.add_argument('--output', type=str,
@@ -32,12 +32,12 @@ if __name__ == "__main__":
 
     PRESELECTION = 'll'
 
-    llbb = AnalysisChannel(args.llbb, 'llbb')
+    f4sl = AnalysisChannel(args.f4sl, '4fsl')
     l2q4 = AnalysisChannel(args.l2q4, '2l4q')
     llhh = AnalysisChannel(args.llhh, 'llhh')
     q6 = AnalysisChannel(args.q6, '6q')
 
-    sources = [llbb, l2q4, llhh, q6]
+    sources = [f4sl, l2q4, llhh, q6]
 
     for source in tqdm(sources):
         source.combine()
@@ -50,7 +50,7 @@ if __name__ == "__main__":
 
     # categorize each event based on output of FinalStateRecorder
     for analysis_channel, cat_fn, default_category, category_order in [
-        (llbb, categorize_llbb, EventCategories.llbb, None),
+        (f4sl, categorize_4fsl, EventCategories.F4_OTHER, None),
         (l2q4, categorize_2l4q, EventCategories.F6_OTHER, None),
         (llhh, categorize_llhh, None, None),
         (q6, categorize_6q, EventCategories.qqqqqq, [])

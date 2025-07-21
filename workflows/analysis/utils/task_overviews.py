@@ -89,10 +89,10 @@ def chunk_overview(chunks:np.ndarray,
     is_grouped_m2m = 'src_bname' in chunks.dtype.names
     size_prop_name = 'chunk_size' if not is_m2m else 'sub_branch_size'
     n_branches_tot = len(chunks) if not is_m2m else len(np.unique(chunks['branch']))
-    chunk_mode = 'MANY-TO-ONE' if not is_m2m else ('MANY-TO-MANY (GROUPED)' if is_grouped_m2m else 'MANY-TO-MANY (NON-GROUPED)')
+    chunk_mode = 'ONE-TO-MANY' if not is_m2m else ('MANY-TO-MANY (GROUPED)' if is_grouped_m2m else 'MANY-TO-MANY (NON-GROUPED)')
     
     text = f'''+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-{task_name} Overview: Divided submission into {n_branches_tot} chunks
+{task_name} Overview: Divided submission into {n_branches_tot} chunks with {int(np.sum(chunks[size_prop_name])):,} events
 
     Chunk mode : <{chunk_mode}>
     Chunk list : <{chunk_file_path}>

@@ -41,23 +41,21 @@ m_JMP("best_perm_ll") {
 void EventObservablesLL::prepareChannelTree() {
     TTree* ttree = getTTree();
 
+    m_2jetTags = std::vector<std::vector<float>>(2);
     m_bTagValues_2Jets  = std::vector<double>(2, -1.);
     m_bTagValues_2Jets2 = std::vector<double>(2, -1.);
+
+    m_leps4v = std::vector<ROOT::Math::PxPyPzEVector>(m_nAskedIsoLeps());
+    m_2jets4v = std::vector<ROOT::Math::PxPyPzEVector>(2);
 
 	if (m_write_ttree) {
         ttree->Branch("npfosmin4j", &m_npfosmin4j, "npfosmin4j/I");
 		ttree->Branch("npfosmax4j", &m_npfosmax4j, "npfosmax4j/I");
 
-        ttree->Branch("pxl1", &m_pxl1, "pxl1/F");
-		ttree->Branch("pyl1", &m_pyl1, "pyl1/F");
-		ttree->Branch("pzl1", &m_pzl1, "pzl1/F");
-		ttree->Branch("el1", &m_el1, "el1/F");
+        ttree->Branch("lep1_4v", &m_leps4v[0]);
         ttree->Branch("typel1", &m_typel1, "typel1/I");
 
-		ttree->Branch("pxl2", &m_pxl2, "pxl2/F");
-		ttree->Branch("pyl2", &m_pyl2, "pyl2/F");
-		ttree->Branch("pzl2", &m_pzl2, "pzl2/F");
-		ttree->Branch("el2", &m_el2, "el2/F");
+        ttree->Branch("lep2_4v", &m_leps4v[1]);
         ttree->Branch("typel2", &m_typel2, "typel2/I");
 
         ttree->Branch("plmin", &m_plmin, "plmin/F");
@@ -67,17 +65,14 @@ void EventObservablesLL::prepareChannelTree() {
         ttree->Branch("mzll", &m_mzll, "mzll/F");
         ttree->Branch("mzll_pre_pairing", &m_mzll_pre_pairing, "mzll_pre_pairing/F");
         
-
         // 2 jets
-        ttree->Branch("pxj1_2Jets", &m_pxj1_2Jets, "pxj1_2Jets/F");
-		ttree->Branch("pyj1_2Jets", &m_pyj1_2Jets, "pyj1_2Jets/F");
-		ttree->Branch("pzj1_2Jets", &m_pzj1_2Jets, "pzj1_2Jets/F");
-		ttree->Branch("ej1_2Jets", &m_ej1_2Jets, "ej1_2Jets/F");
+        ttree->Branch("2jets_m_inv", &m_2jet_m_inv, "2jets_m_inv/F");
+        
+        ttree->Branch("2jet1_4v", &m_jets4v[0]);
+		ttree->Branch("2jet1_m", &m_2jet1_m, "2jet1_m/F");
 
-		ttree->Branch("pxj2_2Jets", &m_pxj2_2Jets, "pxj2_2Jets/F");
-		ttree->Branch("pyj2_2Jets", &m_pyj2_2Jets, "pyj2_2Jets/F");
-		ttree->Branch("pzj2_2Jets", &m_pzj2_2Jets, "pzj2_2Jets/F");
-		ttree->Branch("ej2_2Jets", &m_ej2_2Jets, "ej2_2Jets/F");
+        ttree->Branch("2jet2_4v", &m_jets4v[0]);
+		ttree->Branch("2jet2_m", &m_2jet2_m, "2jet2_m/F");
 
         ttree->Branch("cosJ1_2Jets", &m_cosJ1_2Jets, "cosJ1_2Jets/F");
         ttree->Branch("cosJ2_2Jets", &m_cosJ2_2Jets, "cosJ2_2Jets/F");
@@ -92,14 +87,13 @@ void EventObservablesLL::prepareChannelTree() {
         ttree->Branch("ptjmax2", &m_ptjmax2, "ptjmax2/F");
         ttree->Branch("pjmax2", &m_pjmax2, "pjmax2/F");
 
-        ttree->Branch("m_inv_2Jets", &m_m_inv_2Jets, "m_inv_2Jets/F");
-
         ttree->Branch("yminus2", &m_yMinus2, "yminus2/F");
         ttree->Branch("yplus2", &m_yPlus2, "yplus2/F");
 
         ttree->Branch("bmax1_2Jets", &m_bmax1_2Jets, "bmax1_2Jets/F");
         ttree->Branch("bmax2_2Jets", &m_bmax2_2Jets, "bmax2_2Jets/F");
 
+        ttree->Branch("2jetTags", &m_2jetTags);
         ttree->Branch("bTagValues_2Jets", &m_bTagValues_2Jets);
 
         if (m_use_tags2) {
@@ -120,16 +114,10 @@ void EventObservablesLL::clearChannelValues() {
     m_npfosmin4j = 0;
     m_npfosmax4j = 0;
 
-    m_pxl1 = 0.;
-    m_pyl1 = 0.;
-    m_pzl1 = 0.;
-    m_el1 = 0.;
+    m_leps4v[0].SetPxPyPzE(0., 0., 0., 0.);
     m_typel1 = 0;
 
-    m_pxl2 = 0.;
-    m_pyl2 = 0.;
-    m_pzl2 = 0.;
-    m_el2 = 0.;
+    m_leps4v[1].SetPxPyPzE(0., 0., 0., 0.);
     m_typel2 = 0;
 
     m_plmin = 0;
@@ -140,15 +128,11 @@ void EventObservablesLL::clearChannelValues() {
 	m_mzll_pre_pairing = 0.;
 
     // 2 jets
-    m_pxj1_2Jets = 0.;
-	m_pyj1_2Jets = 0.;
-	m_pzj1_2Jets = 0.;
-	m_ej1_2Jets  = 0.;
+    m_2jets4v[0].SetPxPyPzE(0., 0., 0., 0.);
+    m_2jet1_m = 0.;
 
-    m_pxj2_2Jets = 0.;
-	m_pyj2_2Jets = 0.;
-	m_pzj2_2Jets = 0.;
-	m_ej2_2Jets  = 0.;
+    m_2jets4v[1].SetPxPyPzE(0., 0., 0., 0.);
+    m_2jet2_m = 0.;
 
     m_ptjmin2 = 0.;
     m_pjmin2 = 0.;
@@ -156,7 +140,7 @@ void EventObservablesLL::clearChannelValues() {
     m_ptjmax2 = 0.;
     m_pjmax2 = 0.;
 
-    m_m_inv_2Jets = 0.;
+    m_2jet_m_inv = 0.;
 
     m_cosJ1_2Jets = 0.;
 	m_cosJ2_2Jets = 0.;
@@ -168,6 +152,8 @@ void EventObservablesLL::clearChannelValues() {
     m_yMinus2 = 0.;
     m_yPlus2 = 0.;
 
+    m_2jetTags[0].clear();
+    m_2jetTags[1].clear();
     m_bTagValues_2Jets.clear();
     m_bTagValues_2Jets2.clear();
 
@@ -239,15 +225,12 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         ROOT::Math::PxPyPzEVector p4J1_2Jets = v4(jets_2Jets[0]);
         ROOT::Math::PxPyPzEVector p4J2_2Jets = v4(jets_2Jets[1]);
 
-        m_pxj1_2Jets = p4J1_2Jets.X();
-        m_pyj1_2Jets = p4J1_2Jets.Y();
-        m_pzj1_2Jets = p4J1_2Jets.Z();
-        m_ej1_2Jets  = p4J1_2Jets.E();
+        m_2jets4v[0] = p4J1_2Jets;
+        m_2jets4v[1] = p4J2_2Jets;
 
-        m_pxj2_2Jets = p4J2_2Jets.X();
-        m_pyj2_2Jets = p4J2_2Jets.Y();
-        m_pzj2_2Jets = p4J2_2Jets.Z();
-        m_ej2_2Jets  = p4J2_2Jets.E();
+        m_2jet1_m = p4J1_2Jets.M();
+        m_2jet2_m = p4J2_2Jets.M();
+        m_2jet_m_inv = (p4J1_2Jets + p4J2_2Jets).M();
 
         double pJ1_2Jets = p4J1_2Jets.P();
         double pJ2_2Jets = p4J2_2Jets.P();
@@ -257,8 +240,6 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
 
         m_ptjmax2 = std::max(p4J1_2Jets.Pt(), p4J2_2Jets.Pt());
         m_pjmax2 = std::max(pJ1_2Jets, pJ2_2Jets);
-
-        m_m_inv_2Jets = (p4J1_2Jets + p4J2_2Jets).M();
 
         TVector3 momentum1_2Jets = jets_2Jets[0]->getMomentum();
         TVector3 momentum2_2Jets = jets_2Jets[1]->getMomentum();
@@ -284,23 +265,35 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
 		int _FTAlgoID2 = m_use_tags2 ? jet2PIDh.getAlgorithmID(m_JetTaggingPIDAlgorithm2) : -1;
 
         int BTagID = jet2PIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterB);
-        //int CTagID = jet2PIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterC);
-
+        int BBarTagID = jet2PIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterBbar);
         int BTagID2 = m_use_tags2 ? jet2PIDh.getParameterIndex(_FTAlgoID2, m_JetTaggingPIDParameterB2) : -1;
-        //int CTagID2 = m_use_tags2 ? jet2PIDh.getParameterIndex(_FTAlgoID2, m_JetTaggingPIDParameterC2) : -1;
 
         // extract flavor tag values
         for (int i=0; i<2; ++i) {
             const ParticleIDImpl& FTImpl = dynamic_cast<const ParticleIDImpl&>(jet2PIDh.getParticleID(jets_2Jets[i], _FTAlgoID));
             const FloatVec& FTPara = FTImpl.getParameters();
 
-            m_bTagValues_2Jets[i] = FTPara[BTagID];
+            m_bTagValues_2Jets[i] = FTPara[BTagID] + FTPara[BBarTagID];
+
+            // write all requested parameters
+            for (size_t j = 0; j < m_JetTaggingPIDParameters.size(); j++) {
+                int param_id = jet2PIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameters[j]);
+                if (param_id + 1 > (int)FTPara.size()) {
+                    std::cerr << "Parameter error: Param " << j << ", value=" << m_JetTaggingPIDParameters[j] << std::endl;
+                    throw EVENT::Exception("No flavor tagging value for parameter");
+                }
+                
+                m_2jetTags[i].push_back(FTPara[param_id]);
+            }
 
             if (m_use_tags2) {
                 const ParticleIDImpl& FTImpl2 = dynamic_cast<const ParticleIDImpl&>(jet2PIDh.getParticleID(jets_2Jets[i], _FTAlgoID2));
                 const FloatVec& FTPara2 = FTImpl2.getParameters();
 
                 m_bTagValues_2Jets2[i] = FTPara2[BTagID2];
+
+                if (std::isnan(m_bTagValues_2Jets[i]) && !std::isnan(m_bTagValues_2Jets2[i]))
+                    m_bTagValues_2Jets[i] = m_bTagValues_2Jets2[i];
             }
         }
 
@@ -311,6 +304,9 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
             m_bmax12_2Jets = std::max(m_bTagValues_2Jets2[0], m_bTagValues_2Jets2[1]);
             m_bmax22_2Jets = std::min(m_bTagValues_2Jets2[0], m_bTagValues_2Jets2[1]);
         }
+
+        // DECAY ANGLES IN Z=qqbar REST FRAME
+        // DONE IN MATRIX ELEMENT CODE SEPARATELY
 
         // END EVALUATE 2 JET COLLECTION
 
@@ -356,16 +352,10 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
             m_errorCodes.push_back(1001);
         }
     
-        m_pxl1 = v4_paired_isolep1.Px();
-        m_pyl1 = v4_paired_isolep1.Py();
-        m_pzl1 = v4_paired_isolep1.Pz();
-        m_el1 = v4_paired_isolep1.E();
+        m_leps4v[0] = v4_paired_isolep1;
         m_typel1 = paired_isolep1->getType();
 
-        m_pxl2 = v4_paired_isolep2.Px();
-        m_pyl2 = v4_paired_isolep2.Py();
-        m_pzl2 = v4_paired_isolep2.Pz();
-        m_el2 = v4_paired_isolep2.E();
+        m_leps4v[1] = v4_paired_isolep2;
         m_typel2 = paired_isolep2->getType();
 
         m_mzll = momentumZv4.M();

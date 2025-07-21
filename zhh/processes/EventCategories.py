@@ -78,6 +78,7 @@ class EVENT_CATEGORY_TRUE:
     
     # SEMILEPTONIC
     lvqq = 65
+    F4_OTHER = 69
 
     # ttbar -> lvbbqq [t->Wb, W->lv/qq, b->bb]
     # so far not accounted: ttbar -> llvvbb (two leptonically decaying W bosons)

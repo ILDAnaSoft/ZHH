@@ -6,6 +6,7 @@
 #include "marlin/VerbosityLevels.h"
 #include "IMPL/LCCollectionVec.h"
 #include "EVENT/ReconstructedParticle.h"
+#include "EVENT/MCParticle.h"
 #include "UTIL/PIDHandler.h"
 #include "lcio.h"
 #include <string>
@@ -27,7 +28,10 @@
 #include "inv_mass.h"
 #include "v4.h"
 #include "EventObservablesFromZZ.h"
-#include <TrueJet_Parser.h>
+
+#ifdef USE_TRUEJET
+	#include <TrueJet_Parser.h>
+#endif
 
 using namespace lcio ;
 using namespace marlin ;
@@ -47,13 +51,18 @@ struct DelMe {
   std::function<void()>  _func;
 };
 
-class EventObservablesBase: public Processor, public TrueJet_Parser
+class EventObservablesBase: public Processor
+#ifdef USE_TRUEJET
+, public TrueJet_Parser
+#endif
 {
 	public:
 		EventObservablesBase(const std::string& name);
 		virtual ~EventObservablesBase() = default;
 		EventObservablesBase(const EventObservablesBase&) = delete;
 		EventObservablesBase& operator=(const EventObservablesBase&) = delete;
+
+		#ifdef USE_TRUEJET
 
 		void delall2() {
 			if (  relfcn != NULL ) { delete relfcn; relfcn = NULL; }
@@ -67,6 +76,8 @@ class EventObservablesBase: public Processor, public TrueJet_Parser
 			if (  initialcns != NULL ) { delete initialcns; initialcns = NULL; }
 			if ( reltrue_tj  != NULL ) { delete reltrue_tj; reltrue_tj = NULL; }
 		};
+
+		#endif
 
 		virtual void init();
         virtual void processRunHeader( LCRunHeader* run );
@@ -152,6 +163,9 @@ class EventObservablesBase: public Processor, public TrueJet_Parser
 		std::string m_inputPfoCollection{};
 		std::string m_inputJetKinFitZHHCollection{};
 		std::string m_inputJetKinFitZZHCollection{};
+		#ifndef USE_TRUEJET
+		std::string m_MCParticleCollectionName{};
+		#endif
 		std::string m_outputFile{};
 		std::string m_whichPreselection{};
 		std::string m_cutDefinitionsJSONFile{};
@@ -159,7 +173,10 @@ class EventObservablesBase: public Processor, public TrueJet_Parser
 		// flavortag
 		std::string m_JetTaggingPIDAlgorithm{};
 		std::string m_JetTaggingPIDParameterB{};
+		std::string m_JetTaggingPIDParameterBbar{};
 		std::string m_JetTaggingPIDParameterC{};
+		std::string m_JetTaggingPIDParameterCbar{};
+		std::vector<string> m_JetTaggingPIDParameters{};
 
 		std::string m_JetTaggingPIDAlgorithm2{};
 		std::string m_JetTaggingPIDParameterB2{};
@@ -286,6 +303,7 @@ class EventObservablesBase: public Processor, public TrueJet_Parser
 		// jets and jet matching to ZHH hypothesis
 		std::vector<ReconstructedParticle*> m_jets{};
 		std::vector<ROOT::Math::PxPyPzEVector> m_jets4v{};
+		std::vector<std::vector<float>> m_jetTags{};
 
 		std::vector<unsigned short> m_zhh_jet_matching{};
 		float m_zhh_mz{};
@@ -369,7 +387,7 @@ class EventObservablesBase: public Processor, public TrueJet_Parser
 
 		short m_trueLeptonN{};
 		std::vector<ROOT::Math::PxPyPzEVector> m_trueLeptonMomenta{};
-		std::vector<int> m_trueLeptonTypes{};
+		std::vector<int> m_trueLeptonPDGs{};
 
 		std::vector<int> m_trueJetICNTypes{};
 		std::vector<int> m_trueJetICNPDGs{};
@@ -378,6 +396,7 @@ class EventObservablesBase: public Processor, public TrueJet_Parser
 		std::vector<int> m_true2RecoJetIndex{};
 		std::vector<int> m_trueJetHiggsICNPairs{};
 
+		#ifdef USE_TRUEJET
 		float getMatchingByAngularSpace(
 			vector<EVENT::ReconstructedParticle*> recoJets,
 			vector<int> &reco2truejetindex,
@@ -385,6 +404,13 @@ class EventObservablesBase: public Processor, public TrueJet_Parser
 			vector<int> &trueHadronicJetIndices,
 			vector<int> &trueLeptonIndices,
 			vector<int> &trueISRIndices );
+		#endif
+
+		float getMatchingByAngularSpace(
+			vector<EVENT::ReconstructedParticle*> recoJets,
+			vector<EVENT::MCParticle*> quarkMCParticles,
+			vector<int> &reco2MCPindex,
+			vector<int> &true2MCPindex );
 
 		bool m_trueRecoJetsMapped{}; // only true if number of true jets is equal to reco jets and they could be mapped by angular overlap 
 

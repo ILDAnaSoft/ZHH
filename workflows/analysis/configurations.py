@@ -1,3 +1,15 @@
+# This file contains task parameters to define so-called tags
+# They are a required argument when calling law via
+#     law run <task> --tag=<tag>
+# These allow to re-use many of the task definitions by only
+# varying input files and other task inputs or dynamically
+# injecting task dependencies.
+# Tasks of different tags may also depend on each other. See
+# the 550-4fsl-fast-perf config which depends on 550-4f-fast-
+# perf. For example, the 4f config defines the input for the
+# FastSimSGV to be all available 4f samples, the 4fsl then
+# depends on 4f and only uses the semileptonic samples.
+
 from analysis.framework import AnalysisConfiguration, zhh_configs
 from glob import glob
 from typing import TYPE_CHECKING
@@ -230,8 +242,12 @@ class Config_550_llhh_fast_pfl(AnalysisConfiguration):
     marlin_globals = {  }
     marlin_constants = { 'CMSEnergy': 550 }
 
-class Config_550_llbb_fast_perf(AnalysisConfiguration):
-    tag = '550-llbb-fast-perf'
+class Config_550_4fsl_fast_perf(AnalysisConfiguration):
+    tag = '550-4fsl-fast-perf'
+    
+    custom_statistics = [
+        (1., 'zz_sl0')
+    ]
     
     def raw_index_requires(self, raw_index_task: 'AbstractIndex'):
         # use the output of 550-4f-fast-perf as input
@@ -485,7 +501,7 @@ zhh_configs.add(Config_550_llhh_full())
 # SGV PERF
 # llHH
 zhh_configs.add(Config_550_llhh_fast_perf())
-zhh_configs.add(Config_550_llbb_fast_perf())
+zhh_configs.add(Config_550_4fsl_fast_perf())
 zhh_configs.add(Config_550_2l4q_fast_perf())
 zhh_configs.add(Config_550_bbbb_fast_perf())
 

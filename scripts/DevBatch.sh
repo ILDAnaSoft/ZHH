@@ -19,13 +19,13 @@ FILE1="/data/dust/user/bliewert/zhh/FastSimSGV/550-llhh-fast-perf/E550-Test.Pe2e
 NAME1="llhh"
 NEVT1=100
 
-#FILE2="/data/dust/user/bliewert/zhh/FastSimSGV/550-llbb-fast-perf/E550_TDR.Pllbb_sl0.Gwhizard-3.1.4.eL.pR.slcio"
-#NAME2="llbb"
-#NEVT2=500
-
-FILE2="/data/dust/user/bliewert/zhh/FastSimSGV/550-llhh-fast-perf/E550-Test.Pe2e2qqh.Gwhizard-2_8_5.eL.pR.I404011.0.slcio"
-NAME2="llqqh"
+FILE2="/data/dust/user/bliewert/zhh/FastSimSGV/550-llbb-fast-perf/E550_TDR.Pllbb_sl0.Gwhizard-3.1.4.eL.pR.slcio"
+NAME2="llbb"
 NEVT2=100
+
+#FILE2="/data/dust/user/bliewert/zhh/FastSimSGV/550-llhh-fast-perf/E550-Test.Pe2e2qqh.Gwhizard-2_8_5.eL.pR.I404011.0.slcio"
+#NAME2="llqqh"
+#NEVT2=100
 
 # how many jobs are spawned PER INPUT FILE
 USE_CLUSTER_N_JOBS=20

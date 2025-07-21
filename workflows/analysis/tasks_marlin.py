@@ -170,6 +170,7 @@ class RecoAbstract(MarlinBaseJob):
     
     check_output_files_exist = ['zhh_reco_FinalStateMeta.json']    
     check_output_root_ttrees = None
+    check_output_lcio_files = ['zhh_reco.slcio']
     
     def workflow_requires(self):
         from .tasks import RawIndex, CreateRecoChunks
