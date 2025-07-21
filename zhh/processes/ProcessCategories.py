@@ -56,6 +56,14 @@ class PROCESS_CATEGORIES:
     # TEST llbb, eebb
     f4_llbb_sl0 = 3195
     f4_eebb_sl0 = 3196
+    
+    # NEW 4f
+    f4_sw_sl0 = 31940
+    f4_sze_sl0 = 31920
+    f4_sznu_sl0 = 33600
+    f4_ww_sl0 = 31930
+    f4_zz_sl0 = 31910
+    f4_zznu_sl0 = 31970
 
     # fffff
     p5_ae_eeevv = 9101

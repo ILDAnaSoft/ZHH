@@ -44,6 +44,7 @@ class EventObservablesLL : public EventObservablesBase {
 		std::string m_inputIsoElectrons{};
 		std::string m_inputIsoMuons{};
 		std::string m_inputIsoTaus{};
+		std::vector<string> m_2JetTaggingPIDParameters{};
 
 		std::string m_JMP{};
 		std::string m_JMSP{};
@@ -53,16 +54,8 @@ class EventObservablesLL : public EventObservablesBase {
 		int m_npfosmax4j{};
 
 		// isolated lepton momenta and energies
-		float m_pxl1{};
-		float m_pyl1{};
-		float m_pzl1{};
-		float m_el1{};
+		std::vector<ROOT::Math::PxPyPzEVector> m_leps4v{};
 		int m_typel1{};
-
-		float m_pxl2{};
-		float m_pyl2{};
-		float m_pzl2{};
-		float m_el2{};
 		int m_typel2{};
 
 		float m_plmin{};
@@ -74,23 +67,17 @@ class EventObservablesLL : public EventObservablesBase {
 		float m_mzll_pre_pairing{};
 
 		// 2 jet
-		float m_pxj1_2Jets{};
-		float m_pyj1_2Jets{};
-		float m_pzj1_2Jets{};
-		float m_ej1_2Jets{};
-
-		float m_pxj2_2Jets{};
-		float m_pyj2_2Jets{};
-		float m_pzj2_2Jets{};
-		float m_ej2_2Jets{};
+		std::vector<std::vector<float>> m_2jetTags{};
+		std::vector<ROOT::Math::PxPyPzEVector> m_2jets4v{};
+		float m_2jet1_m{};
+		float m_2jet2_m{};
+		float m_2jet_m_inv{};
 
 		float m_ptjmin2{};
 		float m_pjmin2{};
 
 		float m_ptjmax2{};
 		float m_pjmax2{};
-
-		float m_m_inv_2Jets{};
 
 		float m_cosJ1_2Jets{};
 		float m_cosJ2_2Jets{};

@@ -7,9 +7,10 @@ import numpy as np
 FinalStateDefinition = Callable[[AnalysisChannel, FinalStateCounts], np.ndarray]
 
 # define llbb
-define_eebb:FinalStateDefinition = lambda ac, fsc: (fsc.n_e   == 2) & (fsc.n_b == 2)
-define_µµbb:FinalStateDefinition = lambda ac, fsc: (fsc.n_mu  == 2) & (fsc.n_b == 2)
-define_ττbb:FinalStateDefinition = lambda ac, fsc: (fsc.n_tau == 2) & (fsc.n_b == 2)
+define_eebb:FinalStateDefinition = lambda ac, fsc: (fsc.n_e   == 2)         & (fsc.n_b == 2)
+define_µµbb:FinalStateDefinition = lambda ac, fsc: (fsc.n_mu  == 2)         & (fsc.n_b == 2)
+define_ττbb:FinalStateDefinition = lambda ac, fsc: (fsc.n_tau == 2)         & (fsc.n_b == 2)
+define_lvqq:FinalStateDefinition = lambda ac, fsc: (fsc.n_charged_lep == 1) & (fsc.n_q == 2) & (fsc.n_neutral_lep == 1)
 
 # categorize l2q4
 define_lvqqqq:FinalStateDefinition = lambda ac, fsc: (fsc.n_charged_lep == 1) & (fsc.n_neutral_lep == 1) & (fsc.n_q == 4) & (fsc.n_b == 0)
@@ -39,12 +40,13 @@ define_llhh_llbbbb:FinalStateDefinition = lambda ac, fsc: np.logical_or.reduce( 
     (ac.getCategoryMask('eeHHbbbb'), ac.getCategoryMask('µµHHbbbb'), ac.getCategoryMask('ττHHbbbb')))
 define_llqqh:FinalStateDefinition = lambda ac, fsc: np.isin(ac.getPreselection()['process'], [ProcessCategories.e1e1qqh, ProcessCategories.e2e2qqh, ProcessCategories.e3e3qqh])
 
-def categorize_llbb(ac:AnalysisChannel):
+def categorize_4fsl(ac:AnalysisChannel):
     from zhh import EventCategories
     
-    ac.registerEventCategory('eebb', define_eebb, EventCategories.llbb)
-    ac.registerEventCategory('µµbb', define_µµbb, EventCategories.llbb)
-    ac.registerEventCategory('ττbb', define_ττbb, EventCategories.llbb)
+    ac.registerEventCategory('eebb', define_eebb, EventCategories.eebb)
+    ac.registerEventCategory('µµbb', define_µµbb, EventCategories.µµbb)
+    ac.registerEventCategory('ττbb', define_ττbb, EventCategories.𝜏𝜏bb)
+    ac.registerEventCategory('lvqq', define_lvqq, EventCategories.lvqq)
 
 def categorize_2l4q(ac:AnalysisChannel):
     from zhh import EventCategories

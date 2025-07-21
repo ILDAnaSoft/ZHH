@@ -107,37 +107,55 @@ EventObservablesBase::EventObservablesBase(const std::string &name) : Processor(
             );
 
 	registerProcessorParameter("JetTaggingPIDAlgorithm",
-            "Number of jet should be in the event",
+            "Name of flavor tagging algo 1",
             m_JetTaggingPIDAlgorithm,
             std::string("weaver")
             );
 
 	registerProcessorParameter("JetTaggingPIDParameterB",
-            "Number of jet should be in the event",
+            "B parameter",
             m_JetTaggingPIDParameterB,
             std::string("mc_b")
             );
+	
+	registerProcessorParameter("JetTaggingPIDParameterBbar",
+            "Bbar parameter",
+            m_JetTaggingPIDParameterBbar,
+            std::string("mc_bbar")
+            );
 
 	registerProcessorParameter("JetTaggingPIDParameterC",
-            "Number of jet should be in the event",
+            "C paramter",
             m_JetTaggingPIDParameterC,
             std::string("mc_c")
             );
 
-	registerProcessorParameter("JetTaggingPIDAlgorithm2",
+	registerProcessorParameter("JetTaggingPIDParameterCbar",
+            "Cbar parameter",
+            m_JetTaggingPIDParameterCbar,
+            std::string("mc_cbar")
+            );
+
+	registerProcessorParameter("JetTaggingPIDParameters",
             "Number of jet should be in the event",
+            m_JetTaggingPIDParameters,
+            std::vector<std::string>{"mc_b mc_bbar mc_c mc_cbar mc_d mc_dbar mc_g mc_s mc_sbar mc_u mc_ubar"}
+            );
+
+	registerProcessorParameter("JetTaggingPIDAlgorithm2",
+            "Name of flavor tagging algo 2",
             m_JetTaggingPIDAlgorithm2,
             std::string("lcfiplus")
             );
 
 	registerProcessorParameter("JetTaggingPIDParameterB2",
-            "Number of jet should be in the event",
+            "B parameter for algo 2",
             m_JetTaggingPIDParameterB2,
             std::string("BTag")
             );
 
 	registerProcessorParameter("JetTaggingPIDParameterC2",
-            "Number of jet should be in the event",
+            "C paramter for algo 2",
             m_JetTaggingPIDParameterC2,
             std::string("CTag")
             );
@@ -233,6 +251,7 @@ EventObservablesBase::EventObservablesBase(const std::string &name) : Processor(
 			);
 
 	// TrueJet_Parser parameters
+#ifdef USE_TRUEJET
   registerInputCollection( LCIO::RECONSTRUCTEDPARTICLE,
                            "TrueJets" ,
                            "Name of the TrueJetCollection input collection"  ,
@@ -293,6 +312,14 @@ EventObservablesBase::EventObservablesBase(const std::string &name) : Processor(
                             _recoMCTruthLink,
                             string("RecoMCTruthLink")
                             );
+#else
+	registerInputCollection( LCIO::MCPARTICLE,
+				 "MCParticleCollection" ,
+				 "Name of the MCParticle collection"  ,
+				 m_MCParticleCollectionName ,
+				 std::string("MCParticlesSkimmed")
+				);
+#endif
 };
 
 void EventObservablesBase::prepareBaseTree()
@@ -397,18 +424,22 @@ void EventObservablesBase::prepareBaseTree()
 		// pxij:pyij:pzij:eij for all dijets i=(1,2) and associated jets (1,2)
 		// that all hypotheses have in common
 		ttree->Branch("jet1_4v", &m_jets4v[0]);
+		ttree->Branch("jet1_tags", &m_jetTags[0]);
 		ttree->Branch("jet1_q", &m_jet1_q, "jet1_q/F");
         ttree->Branch("jet1_qdyn", &m_jet1_qdyn, "jet1_qdyn/F");
 
 		ttree->Branch("jet2_4v", &m_jets4v[1]);
+		ttree->Branch("jet2_tags", &m_jetTags[1]);
 		ttree->Branch("jet2_q", &m_jet2_q, "jet2_q/F");
         ttree->Branch("jet2_qdyn", &m_jet2_qdyn, "jet2_qdyn/F");
 
 		ttree->Branch("jet3_4v", &m_jets4v[2]);
+		ttree->Branch("jet3_tags", &m_jetTags[2]);
 		ttree->Branch("jet3_q", &m_jet3_q, "jet3_q/F");
         ttree->Branch("jet3_qdyn", &m_jet3_qdyn, "jet3_qdyn/F");
 
 		ttree->Branch("jet4_4v", &m_jets4v[3]);
+		ttree->Branch("jet4_tags", &m_jetTags[3]);
 		ttree->Branch("jet4_q", &m_jet4_q, "jet4_q/F");
         ttree->Branch("jet4_qdyn", &m_jet4_qdyn, "jet4_qdyn/F");
 
@@ -433,7 +464,7 @@ void EventObservablesBase::prepareBaseTree()
 		// TrueJet
 		ttree->Branch("trueLeptonN", &m_trueLeptonN, "trueLeptonN/I");
 		ttree->Branch("trueLeptonMomenta", &m_trueLeptonMomenta);
-		ttree->Branch("trueLeptonTypes", &m_trueLeptonTypes);
+		ttree->Branch("trueLeptonPDGs", &m_trueLeptonPDGs);
 
 		ttree->Branch("trueJetN", &m_trueJetN, "trueJetN/I");
 		ttree->Branch("trueJetMomenta", &m_trueJetMomenta);
@@ -639,8 +670,11 @@ void EventObservablesBase::clearBaseValues()
 	*/
 
 	// jet quantities
-	for (int i = 0; i < m_nAskedJets(); i++)
+	for (size_t i = 0; i < m_jets4v.size(); i++)
 		m_jets4v[i].SetPxPyPzE(0., 0., 0., 0.);
+
+	for (size_t i = 0; i < m_jetTags.size(); i++)
+		m_jetTags[i].clear();
 
 	m_jet1_q  = 0.;
 	m_jet1_qdyn = 0.;
@@ -664,7 +698,7 @@ void EventObservablesBase::clearBaseValues()
 	// TrueJet
 	m_trueLeptonN = 0;
 	m_trueLeptonMomenta.clear();
-	m_trueLeptonTypes.clear();
+	m_trueLeptonPDGs.clear();
 
 	m_trueJetN = 0;
 	m_trueJetMomenta.clear();
@@ -795,7 +829,9 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 			int _FTAlgoID2 = m_use_tags2 ? jetPIDh.getAlgorithmID(m_JetTaggingPIDAlgorithm2) : -1;
 
 			int BTagID = jetPIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterB);
+			int BbarTagID = jetPIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterBbar);
 			int CTagID = jetPIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterC);
+			int CbarTagID = jetPIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterCbar);
 
 			int BTagID2 = m_use_tags2 ? jetPIDh.getParameterIndex(_FTAlgoID2, m_JetTaggingPIDParameterB2) : -1;
 			int CTagID2 = m_use_tags2 ? jetPIDh.getParameterIndex(_FTAlgoID2, m_JetTaggingPIDParameterC2) : -1;
@@ -806,11 +842,20 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 				const ParticleIDImpl& FTImpl = dynamic_cast<const ParticleIDImpl&>(jetPIDh.getParticleID(m_jets[i], _FTAlgoID));
 				const FloatVec& FTPara = FTImpl.getParameters();
 
-				streamlog_out(MESSAGE) << "Jet " << i << std::endl << " > Algo1 - B,C = " << FTPara[BTagID] << "," << FTPara[CTagID] << std::endl;
-				//double oTagValue = FTPara[OTagID];
+				m_bTagValues[i] = FTPara[BTagID] + FTPara[BbarTagID];
+				m_cTagValues[i] = FTPara[CTagID] + FTPara[CbarTagID];
+				streamlog_out(MESSAGE) << "Jet " << i << std::endl << " > Algo1 - B,C [B,Bbar; C,Cbar] = " << m_bTagValues[i] << ", " << m_cTagValues[i] << " [" << FTPara[BTagID] << ", " << FTPara[BbarTagID] << ", " << FTPara[CTagID] << ", " << FTPara[CbarTagID] << "]" << std::endl;
 
-				m_bTagValues[i] = FTPara[BTagID];
-				m_cTagValues[i] = FTPara[CTagID];
+				// write all requested parameters
+				for (size_t j = 0; j < m_JetTaggingPIDParameters.size(); j++) {
+					int param_id = jetPIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameters[j]);
+					if (param_id + 1 > (int)FTPara.size()) {
+						std::cerr << "Parameter error: Param " << j << ", value=" << m_JetTaggingPIDParameters[j] << std::endl;
+						throw EVENT::Exception("No flavor tagging value for parameter");
+					}
+					
+					m_jetTags[i].push_back(FTPara[param_id]);
+				}
 
 				if (m_use_tags2) {
 					const ParticleIDImpl& FTImpl2 = dynamic_cast<const ParticleIDImpl&>(jetPIDh.getParticleID(m_jets[i], _FTAlgoID2));
@@ -821,6 +866,11 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 
 					streamlog_out(MESSAGE) << " > Algo2 - B,C = " << FTPara2[BTagID2] << "," << FTPara2[CTagID2] << std::endl;
 					//double oTagValue = FTPara[OTagID];
+
+					// replace weaver value with LCFIPlus value if NaN (ca. 2% of b-jets in µµHH events)
+					if (std::isnan(m_bTagValues[i]) && !std::isnan(m_bTagValues2[i])) {
+						m_bTagValues[i] = m_bTagValues2[i];
+					}
 				}
 			}
 
@@ -948,63 +998,122 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 	}
 
 	if (m_nJets == m_nAskedJets()) {
-		TrueJet_Parser* trueJet = this;
-		trueJet->getall( pLCEvent );
-		//DelMe delme(std::bind(&EventObservablesBase::delall, this));  // TrueJetParser::delall will be called, when this  goes out of scope
-
-		vector<int> trueHadronicJetIndices;
-		vector<int> trueLeptonIndices;
-		vector<int> trueISRIndices;
-		float smallestSumCosAngle = getMatchingByAngularSpace(m_jets, m_reco2TrueJetIndex, m_true2RecoJetIndex, trueHadronicJetIndices, trueLeptonIndices, trueISRIndices);
-
-		// case in which number of hadronic jets == m_nJets
-		m_trueRecoJetsMapped = smallestSumCosAngle < 99;
-
-		// store hadronic true jets
-		m_trueJetN = trueHadronicJetIndices.size();
-
-		for (int index: trueHadronicJetIndices) {
-			const ReconstructedParticle* tjet = trueJet->jet(index);
-
-			m_trueJetMomenta.push_back(v4(tjet));
-			m_trueJetTypes.push_back(type_jet(index));
-			m_trueJetPDGs.push_back(tjet->getParticleIDs()[0]->getPDG());
-		}
-
-		// store leptons
-		m_trueLeptonN = trueLeptonIndices.size();
-
-		for (int index: trueLeptonIndices) {
-			const ReconstructedParticle* tjet = trueJet->jet(index);
-
-			m_trueLeptonMomenta.push_back(v4(tjet));
-			m_trueLeptonTypes.push_back(tjet->getParticleIDs()[0]->getPDG());
-		}
-
-		if (m_trueRecoJetsMapped) {
-			vector<int> truejetpermICNs;
-			int nicn = trueJet->nicn();
-			streamlog_out(DEBUG3) << "number of icns = " << nicn << endl;
+		#ifdef USE_TRUEJET
+			//TrueJet_Parser* trueJet = this;
+			//trueJet->getall( pLCEvent );
 			
-			for (int i_icn = 0; i_icn < nicn; i_icn++) {
-				auto siblings = jets_of_initial_cn(i_icn);
+			vector<int> trueHadronicJetIndices;
+			vector<int> trueLeptonIndices;
+			vector<int> trueISRIndices;
+			float smallestSumCosAngle = getMatchingByAngularSpace(m_jets, m_reco2TrueJetIndex, m_true2RecoJetIndex, trueHadronicJetIndices, trueLeptonIndices, trueISRIndices);
+
+			// case in which number of hadronic jets == m_nJets
+			m_trueRecoJetsMapped = smallestSumCosAngle < 99;
+
+			// store hadronic true jets
+			m_trueJetN = trueHadronicJetIndices.size();
+
+			for (int index: trueHadronicJetIndices) {
+				const ReconstructedParticle* tjet = trueJet->jet(index);
+
+				m_trueJetMomenta.push_back(v4(tjet));
+				m_trueJetTypes.push_back(type_jet(index));
+				m_trueJetPDGs.push_back(tjet->getParticleIDs()[0]->getPDG());
+			}
+
+			// store leptons
+			m_trueLeptonN = trueLeptonIndices.size();
+
+			for (int index: trueLeptonIndices) {
+				const ReconstructedParticle* tjet = trueJet->jet(index);
+
+				m_trueLeptonMomenta.push_back(v4(tjet));
+				m_trueLeptonPDGs.push_back(tjet->getParticleIDs()[0]->getPDG());
+			}
+
+			if (m_trueRecoJetsMapped) {
+				vector<int> truejetpermICNs;
+				int nicn = trueJet->nicn();
+				streamlog_out(DEBUG3) << "number of icns = " << nicn << endl;
 				
-				if (pdg_icn_parent(i_icn) == 25) {
-					for (auto tj : siblings) {
-						auto it = std::find(trueHadronicJetIndices.begin(), trueHadronicJetIndices.end(), tj);
-						
-						if (it != trueHadronicJetIndices.end())
-							truejetpermICNs.push_back(std::distance(trueHadronicJetIndices.begin(), it));
+				for (int i_icn = 0; i_icn < nicn; i_icn++) {
+					auto siblings = jets_of_initial_cn(i_icn);
+					
+					if (pdg_icn_parent(i_icn) == 25) {
+						for (auto tj : siblings) {
+							auto it = std::find(trueHadronicJetIndices.begin(), trueHadronicJetIndices.end(), tj);
+							
+							if (it != trueHadronicJetIndices.end())
+								truejetpermICNs.push_back(std::distance(trueHadronicJetIndices.begin(), it));
+						}
 					}
+				}
+
+				if (truejetpermICNs.size() % 2 == 0) {
+					m_trueJetHiggsICNPairs = truejetpermICNs;
 				}
 			}
 
-			if (truejetpermICNs.size() % 2 == 0) {
-				m_trueJetHiggsICNPairs = truejetpermICNs;
-			}
-		}
+			delall2();
+		#else
+			LCCollection *mcParticles = pLCEvent->getCollection( m_MCParticleCollectionName );
+			
+			IntVec fsIndices;
+        	mcParticles->parameters().getIntVals("FINAL_STATE_PARTICLE_INDICES", fsIndices);
 
-		delall2();
+			vector<MCParticle*> hadronicMCPs;
+			vector<MCParticle*> leptonicMCPs;
+
+			for (size_t i = 0; i < fsIndices.size(); i++) {
+				MCParticle* final_state_mcp = (MCParticle*)mcParticles->getElementAt(fsIndices[i]);
+				int pdg = final_state_mcp->getPDG();
+				m_trueJetTypes.push_back(pdg);
+
+				if (pdg == 25) {
+					MCParticleVec Hdaughters = final_state_mcp->getDaughters();
+
+					if (Hdaughters.size() == 2) {
+						int decay1PDG = abs(Hdaughters[0]->getPDG());
+						int decay2PDG = abs(Hdaughters[1]->getPDG());
+
+						if (decay1PDG == decay2PDG) {
+							if (decay1PDG <= 6) {
+								m_trueJetHiggsICNPairs.push_back(hadronicMCPs.size());
+								hadronicMCPs.push_back(Hdaughters[0]);
+
+								m_trueJetHiggsICNPairs.push_back(hadronicMCPs.size());
+								hadronicMCPs.push_back(Hdaughters[1]);
+							} else if (decay1PDG >= 11 && decay1PDG <= 16) {
+								leptonicMCPs.push_back(Hdaughters[0]);
+								leptonicMCPs.push_back(Hdaughters[1]);
+							}
+						}
+					}
+				} else if (abs(pdg) <= 6) {
+					hadronicMCPs.push_back(final_state_mcp);
+				} else if (abs(pdg) >= 11 && abs(pdg) <= 16) {
+					leptonicMCPs.push_back(final_state_mcp);
+				} 
+			}
+
+			// populate four momenta and PDGs of jets and leptons
+			m_trueJetN = hadronicMCPs.size();
+			for (size_t i = 0; i < hadronicMCPs.size(); i++) {
+				m_trueJetMomenta.push_back(v4(hadronicMCPs[i]));
+				m_trueJetPDGs.push_back(hadronicMCPs[i]->getPDG());
+			}
+
+			m_trueLeptonN = leptonicMCPs.size();
+			for (size_t i = 0; i < leptonicMCPs.size(); i++) {
+				m_trueLeptonMomenta.push_back(v4(leptonicMCPs[i]));
+				m_trueLeptonPDGs.push_back(leptonicMCPs[i]->getPDG());
+			}
+			
+			float smallestSumCosAngle = getMatchingByAngularSpace(m_jets, hadronicMCPs, m_reco2TrueJetIndex, m_true2RecoJetIndex);
+
+			// case in which number of hadronic jets == m_nJets
+			m_trueRecoJetsMapped = smallestSumCosAngle < 99;
+		#endif
 	}
 };
 
@@ -1051,6 +1160,7 @@ void EventObservablesBase::init(){
 	m_true2RecoJetIndex = std::vector<int>(m_nAskedJets(), -1);
 
 	m_jets4v = std::vector<ROOT::Math::PxPyPzEVector>(m_nAskedJets());
+	m_jetTags = std::vector<std::vector<float>>(m_nAskedJets());
 
 	prepareBaseTree();
 	prepareChannelTree();
@@ -1400,6 +1510,8 @@ std::vector<std::pair<int, float>> EventObservablesBase::sortedTagging(LCCollect
 	return sortedTagging(tags_by_jet_order);
 };
 
+#ifdef USE_TRUEJET
+
 float EventObservablesBase::getMatchingByAngularSpace(
 	vector<EVENT::ReconstructedParticle*> recoJets,
 	vector<int> &reco2truejetindex, // reco jet index -> truejet index
@@ -1462,6 +1574,58 @@ float EventObservablesBase::getMatchingByAngularSpace(
 
 	for (int i_jet = 0; i_jet < m_nJets; i_jet++)
 		true2recojetindex[reco2truejetindex[i_jet]] = i_jet;
+	
+	return SmallestSumCosAngle;
+}
+
+#endif
+
+float EventObservablesBase::getMatchingByAngularSpace(
+	vector<EVENT::ReconstructedParticle*> recoJets,
+	vector<EVENT::MCParticle*> quarkMCParticles,
+	vector<int> &reco2MCPindex,
+	vector<int> &true2MCPindex
+)
+{
+	if ((int)quarkMCParticles.size() != m_nJets)
+		return 999;
+
+	vector<int> arr(m_nJets);
+	vector<TVector3> trueUnitVectors(m_nJets);
+	vector<TVector3> recoUnitVectors(m_nJets);
+
+	for (int i_array = 0; i_array < m_nJets; i_array++) {
+		arr[i_array] = i_array;
+
+		TVector3 trueMomentumUnit = quarkMCParticles[i_array]->getMomentum();
+		trueMomentumUnit.SetMag(1.0);
+		trueUnitVectors[i_array] = trueMomentumUnit;
+
+		TVector3 recoMomentumUnit(recoJets.at(i_array)->getMomentum());
+		recoMomentumUnit.SetMag(1.0);
+		recoUnitVectors[i_array] = recoMomentumUnit;
+	}
+
+	float SmallestSumCosAngle = 99999.0;
+	vector<int> matchedRecoJetIndices(m_nJets);
+	do {
+		float sumcosangle = 0.0;
+
+		for (int i_Jet = 0 ; i_Jet < m_nJets; i_Jet++ )
+			sumcosangle += acos(trueUnitVectors[i_Jet].Dot( recoUnitVectors[arr[i_Jet]] ));
+
+		if (sumcosangle < SmallestSumCosAngle) {
+			SmallestSumCosAngle = sumcosangle;
+
+			for (int i_array = 0; i_array < m_nJets; i_array++)
+				matchedRecoJetIndices[i_array] = arr[i_array];
+		}
+	} while (next_permutation(arr.begin(), arr.begin() + m_nJets));
+
+	reco2MCPindex = matchedRecoJetIndices;
+
+	for (int i_jet = 0; i_jet < m_nJets; i_jet++)
+		true2MCPindex[reco2MCPindex[i_jet]] = i_jet;
 	
 	return SmallestSumCosAngle;
 }
