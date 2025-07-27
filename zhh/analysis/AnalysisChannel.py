@@ -1,8 +1,8 @@
 from collections.abc import Callable, Sequence
 from .PreselectionAnalysis import fetch_preselection_data, sample_weight, get_pol_key
-from .PreselectionSummary import PreselectionSummary
+from .TTreeInterface import TTreeInterface
 from zhh.processes import parse_polarization_code, ProcessCategories
-from zhh.analysis.PreselectionSummary import FinalStateCounts
+from zhh.analysis.TTreeInterface import FinalStateCounts
 
 import uproot as ur
 import os.path as osp
@@ -36,9 +36,10 @@ class AnalysisChannel:
         
         # combine()
         self._rf:ur.WritableFile|None = None
+        self._size:int|None = None
         
-        # fetchPreselection()
-        self._preselection:PreselectionSummary|None = None
+        # fetchData()
+        self._preselection:TTreeInterface|None = None
         
         # weight()
         self._processes:np.ndarray|None = None
@@ -51,6 +52,12 @@ class AnalysisChannel:
     
     def __repr__(self)->str:
         return f'AnalysisChannel<name={self._name}>'
+    
+    def __len__(self):
+        if self._size is None:
+            raise Exception('.combine() must be called before accessing data')
+        
+        return self._size        
     
     def getName(self)->str:
         return self._name
@@ -103,6 +110,8 @@ class AnalysisChannel:
             
         if self._rf is None:
             self._rf = cast(ur.WritableFile, ur.open(self._merged_file))
+            
+        self._size = self._rf.num_entries
         
         return self
 
@@ -117,35 +126,30 @@ class AnalysisChannel:
         
         return cast(ur.TTree, self._rf['Merged'])
     
-    def fetchPreselection(self, presel:Literal['ll', 'vv', 'qq'])->PreselectionSummary:
-        """Gives lazily loaded access to preselection data.
-        The pid and weight columns are only populated after
-        weight is called. 
+    def fetchData(self)->TTreeInterface:
+        """Gives lazily loaded access to the tree data and other custom defined
+        properties. The pid and weight columns are only populated after weight
+        is called. 
 
         Args:
             presel (Literal['ll', 'vv', 'qq']): which preselection to use
 
         Returns:
-            PreselectionSummary: named np array-like object with
+            TTreeInterface: named np array-like object with
                 channel specific data.
         """
         assert(self._rf is not None)
         
         if self._preselection is None:
-            self._preselection = PreselectionSummary(cast(ur.TTree, self._rf['Merged']), preselection=presel)
+            self._preselection = TTreeInterface(cast(ur.TTree, self._rf['Merged']))
         
         return self._preselection
     
-    def getData(self)->PreselectionSummary:
-        return self.getPreselection()
-    
-    def getPreselection(self)->PreselectionSummary:
+    def getData(self)->TTreeInterface:
         """Returns the preselection summary object.
-        
-        Will be deprecated soon in favor of .data()
 
         Returns:
-            PreselectionSummary: preselection summary object
+            TTreeInterface: preselection summary object
         """
         
         assert(self._preselection is not None)
@@ -284,11 +288,11 @@ class AnalysisChannel:
             np.ndarray: final state counts
         """
         
-        from .PreselectionSummary import parse_final_state_counts
+        from .TTreeInterface import parse_final_state_counts
         
         assert(self._preselection is not None)
         
-        return parse_final_state_counts(self.getPreselection())
+        return parse_final_state_counts(self.getData())
     
     def registerEventCategory(self, name:str, mask_or_func:Callable|np.ndarray, category:int|None, overwrite:bool=False):
         if (name in self._event_categories or name in self._event_category_resolvers) and not overwrite:
@@ -321,12 +325,12 @@ class AnalysisChannel:
         Returns:
             AnalysisChannel: _description_
         """
-        from .PreselectionSummary import parse_final_state_counts
+        from .TTreeInterface import parse_final_state_counts
         
         if not self._evalutatedEventCategories or force:
             print(f'Evaluating event categories for {self._name}...')
             
-            presel = self.getPreselection()
+            presel = self.getData()
             fsc = parse_final_state_counts(presel)
 
             for name, (mask_func, category) in self._event_category_resolvers.items():
@@ -369,10 +373,10 @@ class AnalysisChannel:
     def getCategoryMask(self, name:str):
         if name not in self._event_categories:
             if name in self._event_category_resolvers:
-                from .PreselectionSummary import parse_final_state_counts
+                from .TTreeInterface import parse_final_state_counts
                 
                 mask_func, category = self._event_category_resolvers[name]
-                mask = mask_func(self, parse_final_state_counts(self.getPreselection()))
+                mask = mask_func(self, parse_final_state_counts(self.getData()))
                 self._event_category_resolvers[name] = (mask, category)
             raise ValueError(f'Event category {name} not registered.')
         

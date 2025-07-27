@@ -94,6 +94,20 @@ EventObservablesBase::EventObservablesBase(const std::string &name) : Processor(
 			std::string("")
 			);
 
+	registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
+			"LeptonsKinFit_solveNu",
+			"Name of the Lepton collection of the 4C kinfit",
+			m_inputLeptonKinFit_solveNuCollection,
+			std::string("LeptonsKinFit_solveNu")
+			);
+
+	registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
+			"JetsKinFit_solveNu",
+			"Name of the Jet collection of the 4C kinfit",
+			m_inputJetKinFit_solveNuCollection,
+			std::string("JetsKinFit_solveNu")
+			);
+
 	registerProcessorParameter("whichPreselection",
             "Which set of cuts to use in the preselection. This will overwrite any input preselection values.",
             m_whichPreselection,
@@ -370,10 +384,6 @@ void EventObservablesBase::prepareBaseTree()
 		ttree->Branch("npfos", &m_npfos, "npfos/I");
 		ttree->Branch("lep_types", &m_lep_types);
 
-		//ttree->Branch("mh1", &m_mh1, "mh1/F");
-		//ttree->Branch("mh2", &m_mh2, "mh2/F");
-		//ttree->Branch("mhh", &m_mhh, "mhh/F");
-
 		ttree->Branch("yminus", &m_yMinus, "yminus/F");
 		ttree->Branch("yplus", &m_yPlus, "yplus/F");
 
@@ -387,6 +397,15 @@ void EventObservablesBase::prepareBaseTree()
 		// jet matching from KinFit
 		ttree->Branch("jet_matching_kinfit_zhh", &m_JMK_ZHH);
 		ttree->Branch("jet_matching_kinfit_zzh", &m_JMK_ZZH);
+
+		ttree->Branch("fitprob_ZHH", &m_fitprob_ZHH, "fitprob_ZHH/F");
+		ttree->Branch("fitprob_ZZH", &m_fitprob_ZZH, "fitprob_ZZH/F");
+
+		/* TODO: 4C fit
+		ttree->Branch("fit4C_mz", &m_fit4C_mz, "fit4C_mz/F");
+		ttree->Branch("fit4C_mh1", &m_fit4C_mh1, "fit4C_mh1/F");
+        ttree->Branch("fit4C_mh2", &m_fit4C_mh2, "fit4C_mh2/F");
+		*/
 
 		// nhbb:njet:chi2:mpt:prob11:prob12:prob21:prob22
 
@@ -424,21 +443,25 @@ void EventObservablesBase::prepareBaseTree()
 		// pxij:pyij:pzij:eij for all dijets i=(1,2) and associated jets (1,2)
 		// that all hypotheses have in common
 		ttree->Branch("jet1_4v", &m_jets4v[0]);
+		ttree->Branch("jet1_m", &m_jetsMasses[0]);
 		ttree->Branch("jet1_tags", &m_jetTags[0]);
 		ttree->Branch("jet1_q", &m_jet1_q, "jet1_q/F");
         ttree->Branch("jet1_qdyn", &m_jet1_qdyn, "jet1_qdyn/F");
 
 		ttree->Branch("jet2_4v", &m_jets4v[1]);
+		ttree->Branch("jet2_m", &m_jetsMasses[1]);
 		ttree->Branch("jet2_tags", &m_jetTags[1]);
 		ttree->Branch("jet2_q", &m_jet2_q, "jet2_q/F");
         ttree->Branch("jet2_qdyn", &m_jet2_qdyn, "jet2_qdyn/F");
 
 		ttree->Branch("jet3_4v", &m_jets4v[2]);
+		ttree->Branch("jet3_m", &m_jetsMasses[2]);
 		ttree->Branch("jet3_tags", &m_jetTags[2]);
 		ttree->Branch("jet3_q", &m_jet3_q, "jet3_q/F");
         ttree->Branch("jet3_qdyn", &m_jet3_qdyn, "jet3_qdyn/F");
 
 		ttree->Branch("jet4_4v", &m_jets4v[3]);
+		ttree->Branch("jet4_m", &m_jetsMasses[3]);
 		ttree->Branch("jet4_tags", &m_jetTags[3]);
 		ttree->Branch("jet4_q", &m_jet4_q, "jet4_q/F");
         ttree->Branch("jet4_qdyn", &m_jet4_qdyn, "jet4_qdyn/F");
@@ -670,8 +693,10 @@ void EventObservablesBase::clearBaseValues()
 	*/
 
 	// jet quantities
-	for (size_t i = 0; i < m_jets4v.size(); i++)
+	for (size_t i = 0; i < m_jets4v.size(); i++) {
 		m_jets4v[i].SetPxPyPzE(0., 0., 0., 0.);
+		m_jetsMasses[i] = 0.;
+	}
 
 	for (size_t i = 0; i < m_jetTags.size(); i++)
 		m_jetTags[i].clear();
@@ -691,6 +716,13 @@ void EventObservablesBase::clearBaseValues()
 	// jet matching
 	m_JMK_ZHH.clear();
 	m_JMK_ZZH.clear();
+
+	m_fitprob_ZHH = 0.;
+	m_fitprob_ZZH = 0.;
+
+	m_fit4C_mz = 0.;
+	m_fit4C_mh1 = 0.;
+	m_fit4C_mh2 = 0.;
 
 	m_JMK_ZHH_perm_idx = -1;
 	m_JMK_ZZH_perm_idx = -1;
@@ -821,6 +853,7 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 
 				m_jets.push_back(jet);
 				m_jets4v[i] = jet_v4;
+				m_jetsMasses[i] = jet_v4.M();
 			}
 			m_invJetMass = jetsum.M();
 
@@ -976,6 +1009,26 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 		m_statusCode = 30;
 	}
 
+	try {
+		LCCollection *inputLKF_solveNuCollection = pLCEvent->getCollection( m_inputLeptonKinFit_solveNuCollection );
+		LCCollection *inputJKF_solveNuCollection = pLCEvent->getCollection( m_inputJetKinFit_solveNuCollection );
+
+		/* to be finalized
+		for (size_t i = 0; i < inputLKF_solveNuCollection->getNumberOfElements(); i++) {
+			ReconstructedParticle* lepton = (ReconstructedParticle*) inputLKF_solveNuCollection->getElementAt(i);
+			m_leps4cKinFit_4v.push_back(v4(lepton));
+		}
+
+		for (size_t i = 0; i < inputJKF_solveNuCollection->getNumberOfElements(); i++) {
+			ReconstructedParticle* jet = (ReconstructedParticle*) inputJKF_solveNuCollection->getElementAt(i);
+			m_jets4cKinFit_4v.push_back(v4(jet));
+		}
+		*/
+	} catch(DataNotAvailableException &e) {
+        streamlog_out(MESSAGE) << "processEvent : Input 4C kinfit jet and lepton collections not found in event " << m_nEvt << std::endl;
+		m_statusCode += 100;
+    }
+
 	// jet matching from kinfit; so far, only for 4 jet case
 	assert(m_nAskedJets() == 4);
 
@@ -985,6 +1038,9 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 
 		inputJKF_ZHHCollection->parameters().getIntVals("permutation", m_JMK_ZHH);
 		inputJKF_ZZHCollection->parameters().getIntVals("permutation", m_JMK_ZZH);
+
+		m_fitprob_ZHH = inputJKF_ZHHCollection->parameters().getFloatVal("fitprob");
+		m_fitprob_ZZH = inputJKF_ZZHCollection->parameters().getFloatVal("fitprob");
 
 		if (static_cast<int>(m_JMK_ZHH.size()) >= m_nAskedJets())
 			getPermutationIndex(m_JMK_ZHH, m_nAskedJets(), m_JMK_ZHH_perm_idx);
@@ -1160,6 +1216,7 @@ void EventObservablesBase::init(){
 	m_true2RecoJetIndex = std::vector<int>(m_nAskedJets(), -1);
 
 	m_jets4v = std::vector<ROOT::Math::PxPyPzEVector>(m_nAskedJets());
+	m_jetsMasses = std::vector<float>(m_nAskedJets());
 	m_jetTags = std::vector<std::vector<float>>(m_nAskedJets());
 
 	prepareBaseTree();

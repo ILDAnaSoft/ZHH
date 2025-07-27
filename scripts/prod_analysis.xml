@@ -289,6 +289,9 @@
         <parameter name="inputPfoCollection" type="string" lcioInType="ReconstructedParticle">${PFOsWithoutOverlayCollection}</parameter>
         <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
 
+        <parameter name="LeptonsKinFit_solveNu" type="string" lcioInType="ReconstructedParticle">LeptonsKinFit_solveNu</parameter>
+        <parameter name="JetsKinFit_solveNu" type="string" lcioInType="ReconstructedParticle">JetsKinFit_solveNu</parameter>
+
         <parameter name="JetsKinFitZHH" type="string" lcioInType="ReconstructedParticle">JetsKinFit_ZHH</parameter>
         <parameter name="JetsKinFitZZH" type="string" lcioInType="ReconstructedParticle">JetsKinFit_ZZH</parameter>
 

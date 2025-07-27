@@ -43,29 +43,28 @@ dtypes = {
 }
 
 
-class PreselectionSummary(MixedLazyTablelike):
+class TTreeInterface(MixedLazyTablelike):
     cache:dict[str, np.ndarray] = {}
     
-    def __init__(self, tree:ur.TTree, preselection:str, final_states:bool=True, prop_prefix:str='', cached:bool=False):
+    def __init__(self, tree:ur.TTree, final_states:bool=True, prop_prefix:str='', cached:bool=False):
         r_size = tree.num_entries
         super().__init__(r_size)
         
-        presel = preselection[:2]
-        
         def fetch(key:str, loc:str|None=None):
             if loc is None:
-                loc = key
+                loc = prop_prefix + key
                 
             if cached:
                 if key in self.cache:
                     return self.cache[key]
                 else:
-                    self.cache[key] = np.array(tree[loc].array(), dtype=dtypes[key])
-                    return self.cache[key]                
+                    self.cache[key] = np.array(tree[loc].array(), dtype=dtypes[key] if key in dtypes else 'f')
+                    return self.cache[key]
             else:
                 # make dtype default to float
                 return np.array(tree[loc].array(), dtype=dtypes[key] if key in dtypes else 'f')
-            
+        
+        # this attaches the properties of the TTree 
         self._defaultHandler = fetch
         
         # writable
@@ -77,15 +76,15 @@ class PreselectionSummary(MixedLazyTablelike):
         self['weight'] = np.nan*np.ones(r_size, dtype='f')
         
         # readonly
-        self['process'] = lambda: fetch('process')
-        self['pol_code'] = lambda: fetch('pol_code', 'polarization_code')
+        self['process'] = lambda intf: fetch('process')
+        self['pol_code'] = lambda intf: fetch('pol_code', 'polarization_code')
         
-        self['event'] = lambda: np.array(tree['event'].array(), dtype='I')
+        self['event'] = lambda intf: np.array(tree['event'].array(), dtype='I')
             
         if final_states:
             from .PreselectionAnalysis import fs_columns
             
-            self['Nb_from_H'] = lambda: fetch('n_b_from_higgs')
+            self['Nb_from_H'] = lambda intf: fetch('n_b_from_higgs')
             
             def fs_counts(column:int|None):
                 if column is not None:
@@ -94,51 +93,30 @@ class PreselectionSummary(MixedLazyTablelike):
                     return np.array(tree['final_state_counts'][1].array(), dtype='B')
             
             def attach_fs_counts(obj, attr, column:int):
-                obj[attr] = lambda: fs_counts(column)
+                obj[attr] = lambda intf: fs_counts(column)
             
             for i in range(len(fs_columns)):
                 attach_fs_counts(self, fs_columns[i], i)
             
             # final state counts
-            self['fsc'] = lambda: fs_counts(None)
-            
-        self['thrust'] = lambda: fetch('thrust', f'{prop_prefix}thrust')
-        self['evis'] = lambda: fetch('evis', f'{prop_prefix}evis')
-        self['ptmiss'] = lambda: fetch('ptmiss', f'{prop_prefix}ptmiss')
-        self['m_miss'] = lambda: fetch('m_miss', f'{prop_prefix}m_miss')
-        self['nisoleptons'] = lambda: fetch('nisoleptons', f'{prop_prefix}nisoleptons')
+            self['fsc'] = lambda intf: fs_counts(None)
         
         # NEW: explicit definition of properties inside TTrees that are of type float are no more necessary
-        #self['zhh_mh1'] = lambda: fetch('zhh_mh1', f'{prop_prefix}zhh_mh1')
-        #self['zhh_mh2'] = lambda: fetch('zhh_mh2', f'{prop_prefix}zhh_mh2')
+        #self['zhh_mh1'] = lambda intf: fetch('zhh_mh1', f'{prop_prefix}zhh_mh1')
+        #self['zhh_mh2'] = lambda intf: fetch('zhh_mh2', f'{prop_prefix}zhh_mh2')
         
-        if presel == 'll':
-            #lepTypes = tree['lepTypes'].array()
-            #pass_ltype11 = np.sum(np.abs(lepTypes) == 11, axis=1) == 2
-            #pass_ltype13 = np.sum(np.abs(lepTypes) == 13, axis=1) == 2
-            #self['ll_dilepton_type'] = pass_ltype11*11 + pass_ltype13*13
-            self['dilepton_type'] = lambda: fetch('dilepton_type', f'{prop_prefix}paired_lep_type')
-            self['mzll'] = lambda: fetch('mzll', f'{prop_prefix}mzll')
-            self['mz_pre_pairing'] = lambda: fetch('mz_pre_pairing', f'{prop_prefix}mzll_pre_pairing')
-            
-        elif presel == 'vv':
-            self['mhh'] = lambda: fetch('mhh', f'{prop_prefix}m_invjet')
-        
-        self['bmax1'] = lambda: fetch('bmax1', f'{prop_prefix}bmax1')
-        self['bmax2'] = lambda: fetch('bmax2', f'{prop_prefix}bmax2')
-        self['bmax3'] = lambda: fetch('bmax3', f'{prop_prefix}bmax3')
-        self['bmax4'] = lambda: fetch('bmax4', f'{prop_prefix}bmax4')
-
-        self['sumBTags'] = lambda: ( fetch('bmax1') + fetch('bmax2') + fetch('bmax3') + fetch('bmax4') )
+        self['mz_pre_pairing'] = lambda intf: fetch('mz_pre_pairing', f'{prop_prefix}mzll_pre_pairing')
+        self['mhh'] = lambda intf: fetch('invJetMass', f'{prop_prefix}invJetMass')
+        self['sumBTags'] = lambda intf: ( fetch('bmax1') + fetch('bmax2') + fetch('bmax3') + fetch('bmax4') )
         
         # old names for compatability:
-        #self[f'{presel}_mh1'] = lambda: self['mh1']
-        #self[f'{presel}_mh2'] = lambda: self['mh2']
+        #self[f'{presel}_mh1'] = lambda intf: self['mh1']
+        #self[f'{presel}_mh2'] = lambda intf: self['mh2']
         
-        #self[f'{presel}_bmax1'] = lambda: self['bmax1']
-        #self[f'{presel}_bmax2'] = lambda: self['bmax2']
-        #self[f'{presel}_bmax3'] = lambda: self['bmax3']
-        #self[f'{presel}_bmax4'] = lambda: self['bmax4']
+        #self[f'{presel}_bmax1'] = lambda intf: self['bmax1']
+        #self[f'{presel}_bmax2'] = lambda intf: self['bmax2']
+        #self[f'{presel}_bmax3'] = lambda intf: self['bmax3']
+        #self[f'{presel}_bmax4'] = lambda intf: self['bmax4']
 
 @dataclass
 class FinalStateCounts:
@@ -162,7 +140,7 @@ class FinalStateCounts:
     
     n_b_from_higgs: np.ndarray
 
-def parse_final_state_counts(presel:PreselectionSummary)->FinalStateCounts:
+def parse_final_state_counts(presel:TTreeInterface)->FinalStateCounts:
     from zhh import PDG2FSC
     
     presel.resetView()

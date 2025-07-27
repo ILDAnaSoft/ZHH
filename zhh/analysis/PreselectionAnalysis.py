@@ -8,7 +8,7 @@ import json
 import numpy as np
 import uproot as ur
 import awkward as ak
-from .PreselectionSummary import PreselectionSummary
+from .TTreeInterface import TTreeInterface
 
 DEFAULTS = {
     'PROD_NAME': '500-TDR_ws',
@@ -675,7 +675,7 @@ def apply_order(categories:List[str], order:Union[List[str], Callable]):
     
         return categories_new
 
-def weighted_counts_by_categories(presel_results:PreselectionSummary, categories_selected:Optional[np.ndarray]=None):
+def weighted_counts_by_categories(presel_results:TTreeInterface, categories_selected:Optional[np.ndarray]=None):
     
     categories = np.array(categories_selected) if categories_selected is not None else np.unique(presel_results['event_category'])
     counts = np.zeros(len(categories), dtype=float)
@@ -685,7 +685,7 @@ def weighted_counts_by_categories(presel_results:PreselectionSummary, categories
         
     return categories, counts
 
-def calc_preselection_by_event_categories(presel_results:PreselectionSummary, processes:np.ndarray,
+def calc_preselection_by_event_categories(presel_results:TTreeInterface, processes:np.ndarray,
                                           quantity:Optional[str]=None,
                                           order:Optional[Union[List[str],Callable]]=None,
                                           categories_selected:Optional[List[int]]=None,
@@ -694,9 +694,9 @@ def calc_preselection_by_event_categories(presel_results:PreselectionSummary, pr
                                           categories:Optional[np.ndarray]=None, counts:Optional[np.ndarray]=None,
                                         xlim:Optional[tuple]=None)->dict[str, np.ndarray]:
     
-    """Processes event categories. For a given PreselectionSummary, in the default case,
+    """Processes event categories. For a given TTreeInterface, in the default case,
     for all event categories, a list of events processes with weight and selected quantity
-    (which must exist in PreselectionSummary) is returned. categories_selected and
+    (which must exist in TTreeInterface) is returned. categories_selected and
     categories_additional can be used to select the event categories to be included dyna-
     mically by their importance. The order of results will be descending with respect to
     the sum of event weights.

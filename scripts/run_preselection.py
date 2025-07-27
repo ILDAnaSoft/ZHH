@@ -1,9 +1,9 @@
 import argparse
-from zhh import EventCategories, PreselectionProcessor, \
+from zhh import EventCategories, CutflowProcessor, \
     categorize_6q, categorize_2l4q, categorize_4fsl, categorize_llhh
 import numpy as np
 from tqdm.auto import tqdm
-from zhh import AnalysisChannel, EventCategories
+from zhh import AnalysisChannel, EventCategories, zhh_cuts
 
 if __name__ == "__main__":
 
@@ -30,7 +30,7 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
 
-    PRESELECTION = 'll'
+    HYPOTHESIS = 'll'
 
     f4sl = AnalysisChannel(args.f4sl, '4fsl')
     l2q4 = AnalysisChannel(args.l2q4, '2l4q')
@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
     for source in tqdm(sources):
         source.combine()
-        source.fetchPreselection(PRESELECTION)
+        source.fetchData()
         source.weight()
 
     # Check that no errors have occured
@@ -64,7 +64,7 @@ if __name__ == "__main__":
         # applied to all events (if given)
         analysis_channel.evaluateEventCategories(default_category=default_category, order=category_order)
 
-    pp = PreselectionProcessor(sources)
+    pp = CutflowProcessor(sources, hypothesis=HYPOTHESIS, cuts=zhh_cuts(HYPOTHESIS))
 
     masks, subsets, last_calc_dicts = pp.process(signal_categories=[
         EventCategories.eeHHbbbb, 

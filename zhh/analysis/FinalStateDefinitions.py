@@ -1,4 +1,4 @@
-from .PreselectionSummary import FinalStateCounts, PreselectionSummary
+from .TTreeInterface import FinalStateCounts, TTreeInterface
 from .AnalysisChannel import AnalysisChannel
 from collections.abc import Callable
 from ..processes.ProcessCategories import ProcessCategories
@@ -31,14 +31,14 @@ define_bbbbqq:FinalStateDefinition = lambda ac, fsc: (fsc.n_charged_lep == 0) & 
 define_bbbbbb:FinalStateDefinition = lambda ac, fsc: (fsc.n_charged_lep == 0) & (fsc.n_neutral_lep == 0) & (fsc.n_q == 6) & (fsc.n_b == 6)
 
 # categorize llhh
-define_llhh:FinalStateDefinition     = lambda ac, fsc: np.isin(ac.getPreselection()['process'], [ProcessCategories.e1e1hh, ProcessCategories.e2e2hh, ProcessCategories.e3e3hh])
+define_llhh:FinalStateDefinition     = lambda ac, fsc: np.isin(ac.getData()['process'], [ProcessCategories.e1e1hh, ProcessCategories.e2e2hh, ProcessCategories.e3e3hh])
 define_eeHHbbbb:FinalStateDefinition = lambda ac, fsc: (fsc.n_e == 2)   & (fsc.n_charged_lep == 2) & (fsc.n_neutral_lep == 0) & (fsc.n_q == 4) & (fsc.n_b_from_higgs == 4)
 define_µµHHbbbb:FinalStateDefinition = lambda ac, fsc: (fsc.n_mu == 2)  & (fsc.n_charged_lep == 2) & (fsc.n_neutral_lep == 0) & (fsc.n_q == 4) & (fsc.n_b_from_higgs == 4)
 define_ττHHbbbb:FinalStateDefinition = lambda ac, fsc: (fsc.n_tau == 2) & (fsc.n_charged_lep == 2) & (fsc.n_neutral_lep == 0) & (fsc.n_q == 4) & (fsc.n_b_from_higgs == 4)
 
 define_llhh_llbbbb:FinalStateDefinition = lambda ac, fsc: np.logical_or.reduce( # required correct naming in registerEventCategory
     (ac.getCategoryMask('eeHHbbbb'), ac.getCategoryMask('µµHHbbbb'), ac.getCategoryMask('ττHHbbbb')))
-define_llqqh:FinalStateDefinition = lambda ac, fsc: np.isin(ac.getPreselection()['process'], [ProcessCategories.e1e1qqh, ProcessCategories.e2e2qqh, ProcessCategories.e3e3qqh])
+define_llqqh:FinalStateDefinition = lambda ac, fsc: np.isin(ac.getData()['process'], [ProcessCategories.e1e1qqh, ProcessCategories.e2e2qqh, ProcessCategories.e3e3qqh])
 
 def categorize_4fsl(ac:AnalysisChannel):
     from zhh import EventCategories

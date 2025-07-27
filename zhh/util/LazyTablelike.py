@@ -122,7 +122,7 @@ class MixedLazyTablelike(LazilyLoadedObject):
         else: 
             res = None
             if key in self._props:
-                res = self._props[key]()
+                res = self._props[key](self)
             elif key in self._items:
                 res = self._items[key]
             elif self._defaultHandler is not None:

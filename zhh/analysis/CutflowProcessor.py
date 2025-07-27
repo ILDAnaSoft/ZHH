@@ -1,26 +1,54 @@
 from .AnalysisChannel import AnalysisChannel
 from .Cuts import Cut
 from ..util.PlotContext import PlotContext
-from typing import Sequence
+from typing import Sequence, Any
 from phc import export_figures
 from copy import deepcopy
 import matplotlib.pyplot as plt
 import numpy as np
 import os.path as osp
 
-class PreselectionProcessor:
+def find_entry(entries:list[tuple[str, Any]], name:str):
+    for entry in entries:
+        if entry[0] == name:
+            return entry
+        
+    raise Exception(f'Entry <{name}> not found')
+
+class CutflowProcessor:
     def __init__(self,
                  sources:list[AnalysisChannel],
+                 hypothesis:str,
+                 signal_categories:list[int],
                  cuts:Sequence[Cut]|None=None,
                  colormap=None,
                  plot_options:dict[str, list[dict]]|None=None,
-                 hypothesis:str='llbbbb',
                  work_dir:str|None=None
     ):
+        """Class used to combine multiple AnalysisChannel items and process
+        cuts over all data. Can be used for preselection analysis and final
+        event selection after MVA outputs are attached. See the process method
+        for more information.
+
+        Args:
+            sources (list[AnalysisChannel]): _description_
+            hypothesis (str): _description_
+            signal_categories (list[int]): list of process categories, see ProcessCategories. Used for plotting later. 
+            cuts (Sequence[Cut] | None, optional): _description_. Defaults to None.
+            colormap (_type_, optional): Cuts used for preselection. Defaults to None.
+            plot_options (dict[str, list[dict]] | None, optional): _description_. Defaults to None.
+            work_dir (str | None, optional): _description_. Defaults to None.
+
+        Raises:
+            ValueError: _description_
+        """
+        
         from zhh import colormap_desy, zhh_cuts, preselection_plot_options
         
         assert(len(sources) > 0)
         self._sources = sources
+        
+        assert(isinstance(signal_categories, list) and len(signal_categories) > 0)
         
         # make sure weighted lumi is the same across all sources
         for source in self._sources:
@@ -32,7 +60,7 @@ class PreselectionProcessor:
             
         self._work_dir = work_dir
         self._luminosity = self._sources[0].getIntegratedLuminosity()
-        self._cuts = cuts if cuts is not None else zhh_cuts('ll')
+        self._cuts:dict[int, Sequence[Cut]] = { 0: zhh_cuts(hypothesis) if cuts is None else cuts }
         self._plot_options:dict[str, list[dict]] = plot_options if plot_options is not None else preselection_plot_options
         self._hypothesis = hypothesis
         
@@ -43,10 +71,10 @@ class PreselectionProcessor:
             colormap = mpl.colormaps['viridis'].resampled(20) # if full, 20 is needed
         
         # process():
-        self._signal_categories:list[int]|None = None
-        self._masks:list[list[tuple[str, np.ndarray]]]|None = None
-        self._calc_dicts:list[dict[str, tuple[np.ndarray, np.ndarray]]]|None = None
-        self._max_before:np.ndarray|None = None # maximum weighted event count accross all categories before cut
+        self._signal_categories = signal_categories
+        self._masks:dict[int, list[list[tuple[str, np.ndarray]]]] = {}
+        self._calc_dicts:dict[int, list[dict[str, tuple[np.ndarray, np.ndarray]]]] = {}
+        self._max_before:dict[int, np.ndarray] = {} # maximum weighted event count accross all categories before cut
         
         # cutflowPlots()
         self._cmap = colormap
@@ -54,46 +82,52 @@ class PreselectionProcessor:
         
         # cutflowTable()
 
-    def process(self, signal_categories:list[int]):
-        """Processes the preselection cuts and stores masks for each event in each source passing each cut in _masks.
-        Also stores for each passing event the quantity (of the associated cut) and weight in _calc_dicts.
-        Masks are AFTER each cut, calc_dicts BEFORE each cut respectively.
+    def process(self, step:int=0, cuts:Sequence[Cut]|None=None):
+        """Processes the preselection cuts and stores masks for each event in
+        each source passing each cut in _masks. Also stores for each passing
+        event the quantity (of the associated cut) and weight in _calc_dicts.
+        Masks are AFTER each cut, calc_dicts BEFORE each cut respectively. The
+        steop property is 0 for the preselection. To analyze following cuts,
+        supply an incrementing integer.
         
-        Args:
-            signal_categories (list[int]): list of process categories, see ProcessCategories. Used for plotting later.       
+        Args: 
+            step (int, optional): n-th cut group. Use 0 for preselection,
+                1 for the first post-preselection cut group, etc.
+                Defaults to 0.
+            cuts (Sequence[Cut]|None): Defaults to None.
 
         Returns:
             _type_: _description_
         """
         
-        assert(len(signal_categories) > 0)
-        self._signal_categories = signal_categories
-        
         from zhh import EventCategories, calc_preselection_by_event_categories
-        
-        for source in self._sources:
-            source.getPreselection().resetView()
                 
         # apply cuts
         masks = []
         calc_dicts = []
+        
+        if step > 0:
+            if cuts is None:
+                raise Exception('Using step > 0 requires additional cuts to be supplied')
+            
+            self._cuts[step] = cuts       
 
         def sorting_key(x):
             id, name, values, weights = x
             
-            if id in signal_categories:
-                return (10**(12 + signal_categories.index(id)))
+            if id in self._signal_categories:
+                return (10**(12 + self._signal_categories.index(id)))
             else:
                 return -np.sum(weights)
 
         subsets = {}
         for source in self._sources:
-            source.getPreselection().resetView()
-            subsets[source.getName()] = source.getPreselection()
+            source.getData().resetView()
+            subsets[source.getName()] = source.getData()
 
         max_before_all = []
 
-        for i, cut in enumerate(self._cuts):
+        for i, cut in enumerate(self._cuts[step]):
             flattened = []
             masks_current_cut = []
             
@@ -102,6 +136,14 @@ class PreselectionProcessor:
             for source in self._sources:
                 source_name = source.getName()
                 subset = subsets[source_name]
+                
+                # for post-preselection cuts, use the very last subset as base
+                if step > 0:
+                    if not (step -1) in self._masks:
+                        raise Exception('step > 0 requires previous cuts to have been applied already')
+                    
+                    subsets[source_name] = subset[self._masks[step - 1]]
+                
                 processes = source.getProcesses()
                 
                 mask = cut(subset)
@@ -136,28 +178,41 @@ class PreselectionProcessor:
             masks.append(masks_current_cut)
             calc_dicts.append(calc_dict)
         
-        self._masks = masks
-        self._calc_dicts = calc_dicts
-        self._max_before = np.array(max_before_all)
+        self._masks[step] = masks
+        self._calc_dicts[step] = calc_dicts
+        self._max_before[step] = np.array(max_before_all)
         
         return masks, subsets, calc_dicts
     
-    def getFinalEventMasks(self)->list[tuple[str, np.ndarray]]:
+    def getFinalEventMasks(self, step:int|None=None)->list[tuple[str, np.ndarray]]:
         """Returns the masks for the preselection cuts.
+        
+        Args: 
+            step (int|none, optional): n-th cut group. Use 0 for preselection,
+                1 for the first post-preselection cut group, etc. If None,
+                the last available cut group will be used.
+                Defaults to None.
 
         Returns:
-            list[tuple[str, np.ndarray]]: list of tuples[name, mask] after the last cut
+            list[tuple[str, np.ndarray]]: list of tuples[name, mask] after
+            the last cut
         """
-        if self._masks is None:
-            raise RuntimeError("Preselection not processed yet. Please call process() first.")
         
-        return self._masks[-1]
+        if step is None:
+            step = len(self._masks)-1
+        
+        if not step in self._masks:
+            raise RuntimeError(f'Cut group <{step} ({"Preselection" if step == 0 else "Post-Preselection/Custom"})> not processed yet. Please call process() first.')
+        
+        return self._masks[step][-1]
     
-    def getFinalEventMaskByName(self, source_name:str)->np.ndarray:
-        """Return the post-preselection event mask for a given source name.
+    def getFinalEventMaskByName(self, source_name:str, step:int|None=None)->np.ndarray:
+        """Return the post-preselection event mask for a given source name
+        after the n-th cut group given by step.
 
         Args:
             source_name (str): name of the source
+            step (int|none, optional): n-th cut group. See getFinalEventMasks()
 
         Raises:
             ValueError: if source name not found in preselection masks
@@ -167,7 +222,7 @@ class PreselectionProcessor:
         """
         post_presel_mask = None
         
-        for name, mask in self.getFinalEventMasks():
+        for name, mask in self.getFinalEventMasks(step=step):
             if name == source_name:
                 post_presel_mask = mask
         
@@ -183,37 +238,65 @@ class PreselectionProcessor:
             for source in self._sources:
                 name = source.getName()
                 
-                source.getPreselection().resetView()
+                source.getData().resetView()
             
                 data = {
                     'passed_preselection': self.getFinalEventMaskByName(name),
-                    'event_weight': source.getPreselection()['weight'],
-                    'event_category': source.getPreselection()['event_category'],
+                    'event_weight': source.getData()['weight'],
+                    'event_category': source.getData()['event_category'],
                 }
                     
                 rf[name] = data
     
-    def cutflowPlots(self, display:bool=True):
+    def cutflowPlots(self, step_start:int=0, step_end:int|None=None, display:bool=True):
         """Creates plots for signal/background separation
-        after each cut. When return_last_calc_dict is True, a separate plot showing the event
-        count per category after the last cut is created. Uses signal_categories (list[int])
-        given to process(). Create multiple PDF files with the plots.
+        after each cut. When return_last_calc_dict is True, a separate plot
+        showing the event count per category after the last cut is created.
+        Creates multiple PDF files with the plots.
         
         Args:
-            display (bool, optional): whether to display the created plots. Defaults to True.
+            step_start (int, optional): First cut group to consider.
+                Defaults to 0.
+            step_end (int, optional): Last cut group to consider. If None, will
+                be set to the last cut group, such that all cuts are considered.
+                Defaults to None.
+            display (bool, optional): whether to display the created plots.
+                Defaults to True.
         
         """
         
-        result = cutflowPlots(self, self._work_dir, display)
+        result = cutflowPlots(self, self._work_dir, display, step_start=step_start,
+                              step_end=step_end if step_end is not None else
+                                len(self._cuts)-1)
         self._plot_context = result[0]
         
         return result
         
-    def cutflowTable(self, final_state_labels_and_names_or_processes:list[tuple[str,str]|tuple[str,str,str]], path:str|None=None):
+    def cutflowTable(self, final_state_labels_and_names_or_processes:list[tuple[str,str]|tuple[str,str,str]],
+                     path:str|None=None, step_start:int=0, step_end:int|None=None):
+        
+        """Creates a cutflow table considering all cuts from groups
+        step_start until step_end.
+
+        Args:
+            final_state_labels_and_names_or_processes (list[tuple[str,str] | tuple[str,str,str]]): _description_
+            path (str | None, optional): _description_. Defaults to None.
+            step_start (int, optional): First cut group to consider.
+                Defaults to 0.
+            step_end (int, optional): Last cut group to consider. If None, will
+                be set to the last cut group, such that all cuts are considered.
+                Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """
         if path is None:
             path = f'{self._work_dir}/cutflow_{self._hypothesis}.pdf'
             
-        return cutflowTable(self, final_state_labels_and_names_or_processes, path)
+        return cutflowTable(self, final_state_labels_and_names_or_processes, path,
+                            step_start=step_start,
+                            step_end=step_end if step_end is not None else
+                            len(self._cuts)-1)
     
     def getPlotContext(self)->PlotContext:
         """Returns the plot context for the preselection processor.
@@ -225,17 +308,52 @@ class PreselectionProcessor:
             raise RuntimeError("Plot context is not set. Please call process() first.")
         
         return self._plot_context
-
-def cutflowPlots(pp:PreselectionProcessor, output_dir:str, display:bool=True):
-    assert(pp._signal_categories is not None and pp._masks is not None and pp._calc_dicts is not None and pp._max_before is not None)
     
-    return cutflowPlotsFn(pp._signal_categories,
-        pp._cuts,
-        pp._calc_dicts,
-        pp._max_before,
-        pp._hypothesis,
-        pp._cmap,
-        pp._plot_options,
+    def _flattenSteps(self, step_end:int, step_start:int=0):
+        """Concatenated masks, cuts, calc_dicts, and max_before accross
+        multiple cut groups given by step_start and step_end. 
+
+        Args:
+            step_end (int): _description_
+            step_start (int, optional): _description_. Defaults to 0.
+
+        Returns:
+            _type_: _description_
+        """
+        
+        assert(step_start in self._masks and step_start in self._calc_dicts and step_start in self._max_before and
+               step_end in self._masks and step_end in self._calc_dicts and step_end in self._max_before)
+        
+        masks:list[list[tuple[str, np.ndarray]]] = []
+        cuts:Sequence[Cut] = []
+        calc_dicts:list[dict[str, tuple[np.ndarray, np.ndarray]]] = []
+        max_before = []
+        
+        print(step_start, step_end+1)
+        for step in range(step_start, step_end+1):
+            masks.extend(self._masks[step])
+            cuts.extend(self._cuts[step])
+            calc_dicts.extend(self._calc_dicts[step])
+            max_before.extend(self._max_before[step])
+            
+            print(self._max_before[step])
+        
+        max_before = np.array(max_before)
+        
+        return masks, cuts, calc_dicts, max_before
+
+def cutflowPlots(cp:CutflowProcessor, output_dir:str, display:bool=True, step_start:int=0, step_end:int=0):
+    assert(cp._signal_categories is not None and step_start in cp._masks and step_end in cp._calc_dicts and step_start in cp._max_before)
+    
+    masks, cuts, calc_dicts, max_before = cp._flattenSteps(step_end, step_start)
+    
+    return cutflowPlotsFn(cp._signal_categories,
+        cuts,
+        calc_dicts,
+        max_before,
+        cp._hypothesis,
+        cp._cmap,
+        cp._plot_options,
         display,
         output_dir)
 
@@ -371,14 +489,16 @@ def cutflowPlotsFn(signal_categories:list[int],
     
     return context, figs_stacked, figs_sigvbkg, fig
 
-def cutflowTable(pp:PreselectionProcessor, final_state_labels_and_names_or_processes:list[tuple[str,str]|tuple[str,str,str]], path:str):
-    assert(pp._masks is not None and pp._luminosity is not None and pp._sources is not None)
+def cutflowTable(cp:CutflowProcessor, final_state_labels_and_names_or_processes:list[tuple[str,str]|tuple[str,str,str]], path:str,
+                 step_start:int, step_end:int):
     
-    return cutflowTableFn(pp._masks,
-                        pp._luminosity,
-                        pp._sources,
+    masks, cuts, calc_dicts, max_before = cp._flattenSteps(step_end, step_start)
+    
+    return cutflowTableFn(masks,
+                        cp._luminosity,
+                        cp._sources,
                         final_state_labels_and_names_or_processes,
-                        pp._cuts,
+                        cuts,
                         path)
 
 def cutflowTableFn(masks,
@@ -420,7 +540,7 @@ def cutflowTableFn(masks,
             if not found:
                 raise ValueError(f"No analysis found containing the final state {mask_name}.")
             
-            presel = analysis.getPreselection()
+            presel = analysis.getData()
             presel.resetView()
             category_mask = analysis.getCategoryMask(mask_name)
             
@@ -436,7 +556,7 @@ def cutflowTableFn(masks,
             for i_cut in range(len(masks)):
                 for source_name, mask in masks[i_cut]:
                     if source_name == analysis.getName():
-                        presel = analysis.getPreselection()
+                        presel = analysis.getData()
                         cut_counts[i_cut] += np.sum(presel['weight'][mask & category_mask])
                         
             #print(label, n_expected, cut_counts)

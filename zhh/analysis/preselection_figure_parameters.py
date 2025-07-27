@@ -1,10 +1,27 @@
 from matplotlib.ticker import MultipleLocator
 
 preselection_plot_options:dict[str, list[dict]]= {
-    'llbbbb': [
-        { 'xlabel': 'IsoLeptons',
+    'eebbbb': [
+        { 'xlabel': 'ISOElectrons',
             'plot_hist_kwargs': { 'int_bins': True },
             'ild_style_kwargs': { 'xminor': False, 'xlocator': MultipleLocator(1), 'ild_text_position': 'upper right' } },
+        { 'xlabel': 'pairedLepType',
+            'plot_hist_kwargs': { 'int_bins': True },
+            'ild_style_kwargs': { 'xminor': False, 'xlocator': MultipleLocator(1), 'legend_kwargs': { 'loc': 'center' } } },
+        { 'xlabel': 'm_{ll}', 'xlim': [0, 300], 'xunit': 'GeV' },
+        { 'xlabel': 'm_{H1}', 'xlim': [0, 300], 'xunit': 'GeV' },
+        { 'xlabel': 'm_{H2}', 'xlim': [0, 300], 'xunit': 'GeV' },
+        { 'xlabel': 'p_{t}^{miss}', 'xlim': [0, 300], 'xunit': 'GeV' },
+        { 'xlabel': 'thrust', 'xlim': [0, 1] },
+        { 'xlabel': 'sum b-tags', 'xlim': [0, 4] }
+    ],
+    'µµbbbb': [
+        { 'xlabel': 'ISOMuons',
+            'plot_hist_kwargs': { 'int_bins': True },
+            'ild_style_kwargs': { 'xminor': False, 'xlocator': MultipleLocator(1), 'ild_text_position': 'upper right' } },
+        { 'xlabel': 'pairedLepType',
+            'plot_hist_kwargs': { 'int_bins': True },
+            'ild_style_kwargs': { 'xminor': False, 'xlocator': MultipleLocator(1), 'legend_kwargs': { 'loc': 'center' } } },
         { 'xlabel': 'm_{ll}', 'xlim': [0, 300], 'xunit': 'GeV' },
         { 'xlabel': 'm_{H1}', 'xlim': [0, 300], 'xunit': 'GeV' },
         { 'xlabel': 'm_{H2}', 'xlim': [0, 300], 'xunit': 'GeV' },

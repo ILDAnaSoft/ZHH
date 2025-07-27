@@ -163,6 +163,8 @@ class EventObservablesBase: public Processor
 		std::string m_inputPfoCollection{};
 		std::string m_inputJetKinFitZHHCollection{};
 		std::string m_inputJetKinFitZZHCollection{};
+		std::string m_inputLeptonKinFit_solveNuCollection{};
+		std::string m_inputJetKinFit_solveNuCollection{};
 		#ifndef USE_TRUEJET
 		std::string m_MCParticleCollectionName{};
 		#endif
@@ -300,11 +302,13 @@ class EventObservablesBase: public Processor
 		float m_yMinus{};
 		float m_yPlus{};
 		
-		// jets and jet matching to ZHH hypothesis
+		// four momenta of leptons + jets and all flavor tags
 		std::vector<ReconstructedParticle*> m_jets{};
 		std::vector<ROOT::Math::PxPyPzEVector> m_jets4v{};
+		std::vector<float> m_jetsMasses{}; 
 		std::vector<std::vector<float>> m_jetTags{};
 
+		// pure mass chi2
 		std::vector<unsigned short> m_zhh_jet_matching{};
 		float m_zhh_mz{};
 		float m_zhh_mh1{};
@@ -371,6 +375,16 @@ class EventObservablesBase: public Processor
 		// jet matching from kinfit
 		std::vector<int> m_JMK_ZHH{};
 		std::vector<int> m_JMK_ZZH{};
+
+		float m_fitprob_ZHH{};
+        float m_fitprob_ZZH{};
+
+		std::vector<ROOT::Math::PxPyPzEVector> m_jets4cKinFit_4v{};
+		std::vector<ROOT::Math::PxPyPzEVector> m_leps4cKinFit_4v{};
+
+		float m_fit4C_mz{};
+		float m_fit4C_mh1{};
+		float m_fit4C_mh2{};
 
 		short m_JMK_ZHH_perm_idx{};
 		short m_JMK_ZZH_perm_idx{};
