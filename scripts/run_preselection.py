@@ -28,9 +28,13 @@ if __name__ == "__main__":
                         default=None,
                         help='Path to a directory where output plots, tables and ROOT files will be stored. Will be this directory if not given.')
     
+    parser.add_argument('--hypothesis', type=str, choices=['µµbbbb', 'eebbbb', 'vv', 'qq'],
+                        default='µµbbbb',
+                        help='Which hypothesis to use.')
+    
     args = parser.parse_args()
 
-    HYPOTHESIS = 'µµbbbb'
+    HYPOTHESIS = args.hypothesis
 
     f4sl = AnalysisChannel(args.f4sl, '4fsl')
     l2q4 = AnalysisChannel(args.l2q4, '2l4q')
