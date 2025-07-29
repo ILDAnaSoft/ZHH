@@ -111,7 +111,7 @@ class AnalysisChannel:
         if self._rf is None:
             self._rf = cast(ur.WritableFile, ur.open(self._merged_file))
             
-        self._size = self._rf.num_entries
+        self._size = self._rf['Merged'].num_entries
         
         return self
 
@@ -145,7 +145,7 @@ class AnalysisChannel:
         
         return self._preselection
     
-    def getData(self)->TTreeInterface:
+    def getStore(self)->TTreeInterface:
         """Returns the preselection summary object.
 
         Returns:
@@ -292,7 +292,7 @@ class AnalysisChannel:
         
         assert(self._preselection is not None)
         
-        return parse_final_state_counts(self.getData())
+        return parse_final_state_counts(self.getStore())
     
     def registerEventCategory(self, name:str, mask_or_func:Callable|np.ndarray, category:int|None, overwrite:bool=False):
         if (name in self._event_categories or name in self._event_category_resolvers) and not overwrite:
@@ -330,7 +330,7 @@ class AnalysisChannel:
         if not self._evalutatedEventCategories or force:
             print(f'Evaluating event categories for {self._name}...')
             
-            presel = self.getData()
+            presel = self.getStore()
             fsc = parse_final_state_counts(presel)
 
             for name, (mask_func, category) in self._event_category_resolvers.items():
@@ -376,7 +376,7 @@ class AnalysisChannel:
                 from .TTreeInterface import parse_final_state_counts
                 
                 mask_func, category = self._event_category_resolvers[name]
-                mask = mask_func(self, parse_final_state_counts(self.getData()))
+                mask = mask_func(self, parse_final_state_counts(self.getStore()))
                 self._event_category_resolvers[name] = (mask, category)
             raise ValueError(f'Event category {name} not registered.')
         

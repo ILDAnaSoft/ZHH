@@ -107,10 +107,10 @@ class CutflowProcessor:
         calc_dicts = []
         
         if step > 0:
-            if cuts is None:
+            if not isinstance(cuts, list):
                 raise Exception('Using step > 0 requires additional cuts to be supplied')
             
-            self._cuts[step] = cuts       
+            self._cuts[step] = cuts
 
         def sorting_key(x):
             id, name, values, weights = x
@@ -122,8 +122,8 @@ class CutflowProcessor:
 
         subsets = {}
         for source in self._sources:
-            source.getData().resetView()
-            subsets[source.getName()] = source.getData()
+            source.getStore().resetView()
+            subsets[source.getName()] = source.getStore()
 
         max_before_all = []
 
@@ -238,12 +238,12 @@ class CutflowProcessor:
             for source in self._sources:
                 name = source.getName()
                 
-                source.getData().resetView()
+                source.getStore().resetView()
             
                 data = {
                     'passed_preselection': self.getFinalEventMaskByName(name),
-                    'event_weight': source.getData()['weight'],
-                    'event_category': source.getData()['event_category'],
+                    'event_weight': source.getStore()['weight'],
+                    'event_category': source.getStore()['event_category'],
                 }
                     
                 rf[name] = data
@@ -540,7 +540,7 @@ def cutflowTableFn(masks,
             if not found:
                 raise ValueError(f"No analysis found containing the final state {mask_name}.")
             
-            presel = analysis.getData()
+            presel = analysis.getStore()
             presel.resetView()
             category_mask = analysis.getCategoryMask(mask_name)
             
@@ -556,7 +556,7 @@ def cutflowTableFn(masks,
             for i_cut in range(len(masks)):
                 for source_name, mask in masks[i_cut]:
                     if source_name == analysis.getName():
-                        presel = analysis.getData()
+                        presel = analysis.getStore()
                         cut_counts[i_cut] += np.sum(presel['weight'][mask & category_mask])
                         
             #print(label, n_expected, cut_counts)

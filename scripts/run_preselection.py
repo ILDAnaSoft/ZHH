@@ -30,7 +30,7 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
 
-    HYPOTHESIS = 'll'
+    HYPOTHESIS = 'µµbbbb'
 
     f4sl = AnalysisChannel(args.f4sl, '4fsl')
     l2q4 = AnalysisChannel(args.l2q4, '2l4q')
@@ -64,14 +64,11 @@ if __name__ == "__main__":
         # applied to all events (if given)
         analysis_channel.evaluateEventCategories(default_category=default_category, order=category_order)
 
-    pp = CutflowProcessor(sources, hypothesis=HYPOTHESIS, cuts=zhh_cuts(HYPOTHESIS))
-
-    masks, subsets, last_calc_dicts = pp.process(signal_categories=[
-        EventCategories.eeHHbbbb, 
-        EventCategories.µµHHbbbb,
-        EventCategories.ττHHbbbb,
-        #EventCategories.llHH
+    pp = CutflowProcessor(sources, hypothesis=HYPOTHESIS, cuts=zhh_cuts(HYPOTHESIS), signal_categories=[
+        EventCategories.µµHHbbbb
     ])
+
+    masks, subsets, last_calc_dicts = pp.process()
 
     print('Creating cutflow plots...')
     pp.cutflowPlots(display=False)
