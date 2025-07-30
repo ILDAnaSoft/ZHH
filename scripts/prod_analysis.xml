@@ -306,7 +306,7 @@
         <parameter name="JetTaggingPIDParameterB2" type="string">BTag</parameter>
         <parameter name="JetTaggingPIDParameterC2" type="string">CTag</parameter>
 
-        <parameter name="cutDefinitionsJSONFile" type="string">${ZHH_REPO_ROOT}/config/preselection_cuts_cd.json</parameter>
+        <!--parameter name="cutDefinitionsJSONFile" type="string">${ZHH_REPO_ROOT}/config/preselection_cuts_cd.json</parameter-->
 
         <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
 
@@ -344,7 +344,7 @@
         <parameter name="JetTaggingPIDParameterB2" type="string">BTag</parameter>
         <parameter name="JetTaggingPIDParameterC2" type="string">CTag</parameter>
 
-        <parameter name="cutDefinitionsJSONFile" type="string">${ZHH_REPO_ROOT}/config/preselection_cuts_cd.json</parameter>
+        <!--parameter name="cutDefinitionsJSONFile" type="string">${ZHH_REPO_ROOT}/config/preselection_cuts_cd.json</parameter-->
 
         <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
 
@@ -368,7 +368,7 @@
         <parameter name="JetTaggingPIDParameterB2" type="string">BTag</parameter>
         <parameter name="JetTaggingPIDParameterC2" type="string">CTag</parameter>
         
-        <parameter name="cutDefinitionsJSONFile" type="string">${ZHH_REPO_ROOT}/config/preselection_cuts_cd.json</parameter>
+        <!--parameter name="cutDefinitionsJSONFile" type="string">${ZHH_REPO_ROOT}/config/preselection_cuts_cd.json</parameter-->
         
         <parameter name="polarizations" type="FloatVec"> 1 0 </parameter>
         <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
