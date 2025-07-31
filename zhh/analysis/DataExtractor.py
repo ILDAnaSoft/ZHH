@@ -47,7 +47,7 @@ class DataExtractor:
         src_2_src_idx:dict[AnalysisChannel, int] = {}
         
         for src_idx, source in enumerate(sources):
-            source.getData().resetView()
+            source.getStore().resetView()
             src_2_src_idx[source] = src_idx
             
         for fs_name, class_label in to_process:
@@ -82,7 +82,7 @@ class DataExtractor:
         
         for fs_name, class_label in to_process:
             source = fs_2_source[fs_name]
-            store = source.getData()
+            store = source.getStore()
             
             mask = events_passed[fs_name]
             nrows = int(mask.sum())

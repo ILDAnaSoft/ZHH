@@ -28,9 +28,13 @@ if __name__ == "__main__":
                         default=None,
                         help='Path to a directory where output plots, tables and ROOT files will be stored. Will be this directory if not given.')
     
+    parser.add_argument('--hypothesis', type=str, choices=['µµbbbb', 'eebbbb', 'vv', 'qq'],
+                        default='µµbbbb',
+                        help='Which hypothesis to use.')
+    
     args = parser.parse_args()
 
-    HYPOTHESIS = 'll'
+    HYPOTHESIS = args.hypothesis
 
     f4sl = AnalysisChannel(args.f4sl, '4fsl')
     l2q4 = AnalysisChannel(args.l2q4, '2l4q')
@@ -64,14 +68,11 @@ if __name__ == "__main__":
         # applied to all events (if given)
         analysis_channel.evaluateEventCategories(default_category=default_category, order=category_order)
 
-    pp = CutflowProcessor(sources, hypothesis=HYPOTHESIS, cuts=zhh_cuts(HYPOTHESIS))
-
-    masks, subsets, last_calc_dicts = pp.process(signal_categories=[
-        EventCategories.eeHHbbbb, 
-        EventCategories.µµHHbbbb,
-        EventCategories.ττHHbbbb,
-        #EventCategories.llHH
+    pp = CutflowProcessor(sources, hypothesis=HYPOTHESIS, cuts=zhh_cuts(HYPOTHESIS), signal_categories=[
+        EventCategories.µµHHbbbb
     ])
+
+    masks, subsets, last_calc_dicts = pp.process()
 
     print('Creating cutflow plots...')
     pp.cutflowPlots(display=False)
