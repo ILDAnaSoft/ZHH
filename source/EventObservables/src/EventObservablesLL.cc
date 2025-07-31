@@ -36,6 +36,21 @@ m_JMP("best_perm_ll") {
         m_inputIsoTaus ,
         std::string("ISOTaus")
         );
+
+    registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
+			    "LeptonsKinFit_solveNu",
+			    "Name of the Lepton collection of the 4C kinfit",
+			    m_inputLeptonKinFit_solveNuCollection,
+			    std::string("LeptonsKinFit_solveNu")
+			    );
+    
+    registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
+			    "JetsKinFit_solveNu",
+			    "Name of the Jet collection of the 4C kinfit",
+			    m_inputJetKinFit_solveNuCollection,
+			    std::string("JetsKinFit_solveNu")
+			    );
+    
 }
 
 void EventObservablesLL::prepareChannelTree() {
@@ -160,6 +175,9 @@ void EventObservablesLL::clearChannelValues() {
     // 4 jets
     m_mbmax12 = 0.;
     m_mbmax34 = 0.;
+
+    m_leps4cKinFit_4v.clear();
+    m_jets4cKinFit_4v.clear();
 };
 
 void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
@@ -168,7 +186,17 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
     LCCollection *inputJetCollection = pLCEvent->getCollection( m_inputJetCollection );
     LCCollection *input2JetCollection = pLCEvent->getCollection( m_input2JetCollection );
     LCCollection *inputLepPairCollection = pLCEvent->getCollection( m_inputLepPairCollection );
-
+    LCCollection *inputLKF_solveNuCollection = NULL;
+    LCCollection *inputJKF_solveNuCollection = NULL;
+    
+    try {
+      inputLKF_solveNuCollection = pLCEvent->getCollection( m_inputLeptonKinFit_solveNuCollection );
+      inputJKF_solveNuCollection = pLCEvent->getCollection( m_inputJetKinFit_solveNuCollection );
+    } catch(DataNotAvailableException &e) {
+      streamlog_out(MESSAGE) << "processEvent : Input 4C kinfit jet and lepton collections not found in event " << m_nEvt << std::endl;
+      m_statusCode += 100;
+    }
+    
     if ( inputLepPairCollection->getNumberOfElements() == m_nAskedIsoLeps() && inputJetCollection->getNumberOfElements() == m_nAskedJets() ) {
         // NPFOS MIN/MAX
         std::tie(m_npfosmin4j, m_npfosmax4j, std::ignore) = nPFOsMinMax(inputJetCollection);
@@ -335,7 +363,36 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
             }
         }
 
-        // mb12 and mb34
+	 for (size_t i = 0; i < inputLKF_solveNuCollection->getNumberOfElements(); i++) {
+	   ReconstructedParticle* lepton = (ReconstructedParticle*) inputLKF_solveNuCollection->getElementAt(i);
+	   m_leps4cKinFit_4v.push_back(v4(lepton));
+	 }
+	 
+	 for (size_t i = 0; i < inputJKF_solveNuCollection->getNumberOfElements(); i++) {
+	   ReconstructedParticle* jet = (ReconstructedParticle*) inputJKF_solveNuCollection->getElementAt(i);
+	   m_jets4cKinFit_4v.push_back(v4(jet));
+	 }
+
+	 m_fit4C_mz = (m_leps4cKinFit_4v[0]+m_leps4cKinFit_4v[1]).M();
+	 std::vector<int> m_JMK_best = (m_fitchi2_ZHH <= m_fitchi2_ZZH ? m_JMK_ZHH : m_JMK_ZZH);
+	 std::vector<float> fit4C_masses;
+	 fit4C_masses.push_back((m_jets4cKinFit_4v[m_JMK_best[0]]+m_jets4cKinFit_4v[m_JMK_best[1]]).M());
+	 fit4C_masses.push_back((m_jets4cKinFit_4v[m_JMK_best[2]]+m_jets4cKinFit_4v[m_JMK_best[3]]).M());
+	 m_fit4C_mh1 = std::min(fit4C_masses[0],zhh_masses[1]); 
+	 m_fit4C_mh2 = std::max(fit4C_masses[0],zhh_masses[1]);
+	 
+	 streamlog_out(MESSAGE) << "lepton energies:" << m_leps4cKinFit_4v[0].E() << ", " << m_leps4cKinFit_4v[1].E() << endl;
+	 streamlog_out(MESSAGE) << "Fit probs: " << m_fitprob_ZHH << ", " << m_fitprob_ZZH << endl;
+	 streamlog_out(MESSAGE) << "Fit chi2s: " << m_fitchi2_ZHH << ", " << m_fitchi2_ZZH << endl;
+	 streamlog_out(MESSAGE) << "ZHH perm: " << m_JMK_ZHH[0] << ", " << m_JMK_ZHH[1] << ", " << m_JMK_ZHH[2] << ", " << m_JMK_ZHH[3] << endl;
+	 streamlog_out(MESSAGE) << "ZZH perm: " << m_JMK_ZZH[0] << ", " << m_JMK_ZZH[1] << ", " << m_JMK_ZZH[2] << ", " << m_JMK_ZZH[3] << endl;
+	 streamlog_out(MESSAGE) << "permuation: " << m_JMK_best[0] << ", " << m_JMK_best[1] << ", " << m_JMK_best[2] << ", " << m_JMK_best[3] << endl;
+	 streamlog_out(MESSAGE) << "jet energies:" << m_jets4cKinFit_4v[m_JMK_best[0]].E() << ", " << m_jets4cKinFit_4v[m_JMK_best[1]].E() << ", " << m_jets4cKinFit_4v[m_JMK_best[2]].E() << ", " << m_jets4cKinFit_4v[m_JMK_best[3]].E() << endl;
+	 streamlog_out(MESSAGE) << "jet energies:" << m_jets4cKinFit_4v[0].E() << ", " << m_jets4cKinFit_4v[1].E() << ", " << m_jets4cKinFit_4v[2].E() << ", " << m_jets4cKinFit_4v[3].E() << endl;
+	 streamlog_out(MESSAGE) << "dijet masses: " << m_fit4C_mz << ", " << m_fit4C_mh1 << ", " << m_fit4C_mh2 << endl;
+
+
+	 // mb12 and mb34
         m_mbmax12 = (
             v4(inputJetCollection->getElementAt(m_bTagsSorted[0].first)) +
             v4(inputJetCollection->getElementAt(m_bTagsSorted[1].first))).M();
@@ -361,7 +418,7 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         m_mzll = momentumZv4.M();
         m_zhh_mz = m_mzll;
 
-        streamlog_out(DEBUG) << "PairedLeptons of type " << m_pairedLepType << " to M=" << m_mzll << std::endl;
+        streamlog_out(MESSAGE) << "PairedLeptons of type " << m_pairedLepType << " to M=" << m_mzll << std::endl;
 
         calculateMatrixElements(m_pairedLepType, 5, v4_paired_isolep1, v4_paired_isolep2,
                                 v4old(inputJetCollection->getElementAt(0)), v4old(inputJetCollection->getElementAt(1)),

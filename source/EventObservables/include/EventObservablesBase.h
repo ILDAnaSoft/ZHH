@@ -377,7 +377,9 @@ class EventObservablesBase: public Processor
 		std::vector<int> m_JMK_ZZH{};
 
 		float m_fitprob_ZHH{};
-        float m_fitprob_ZZH{};
+                float m_fitprob_ZZH{};
+		float m_fitchi2_ZHH{};
+                float m_fitchi2_ZZH{};
 
 		std::vector<ROOT::Math::PxPyPzEVector> m_jets4cKinFit_4v{};
 		std::vector<ROOT::Math::PxPyPzEVector> m_leps4cKinFit_4v{};
