@@ -119,16 +119,16 @@ class p4: public FinalStateResolver {
             if (m_final_state_counts[PDG::b] == 2) {
                 if (m_final_state_counts[PDG::e] == 2)
                     return EVENT_CATEGORY_TRUE::eebb;
-                else if (m_final_state_counts[PDG::µ] == 2)
-                    return EVENT_CATEGORY_TRUE::µµbb;
-                else if (m_final_state_counts[PDG::𝜏] == 2)
-                    return EVENT_CATEGORY_TRUE::𝜏𝜏bb;
+                else if (m_final_state_counts[PDG::μ] == 2)
+                    return EVENT_CATEGORY_TRUE::μμbb;
+                else if (m_final_state_counts[PDG::τ] == 2)
+                    return EVENT_CATEGORY_TRUE::ττbb;
                 else if (m_final_state_counts[PDG::t] == 2)
                     return EVENT_CATEGORY_TRUE::ttbb;
                 else if (
                     m_final_state_counts[PDG::ve] +
-                    m_final_state_counts[PDG::vµ] +
-                    m_final_state_counts[PDG::v𝜏] == 2)
+                    m_final_state_counts[PDG::vμ] +
+                    m_final_state_counts[PDG::vτ] == 2)
                     return EVENT_CATEGORY_TRUE::vvbb;
 
             } else if (m_final_state_counts[PDG::b] == 4) {
@@ -186,7 +186,7 @@ class llvv_sznu : public p4 {
     public: llvv_sznu(): p4( "4f_sznu_l", PROCESS_ID::f4_sznu_l, EVENT_CATEGORY_TRUE::llvv, vector{11,12,13,14,15,16} ) {}; };
 
 class vvqq_sznu : public p4 {
-    public: vvqq_sznu(): p4( "4f_sznu_sl", PROCESS_ID::f4_sznu_l, EVENT_CATEGORY_TRUE::vvqq, vector{12,14,16,1,2,3,4,5,6} ) {}; };
+    public: vvqq_sznu(): p4( "4f_sznu_sl", PROCESS_ID::f4_sznu_sl, EVENT_CATEGORY_TRUE::vvqq, vector{12,14,16,1,2,3,4,5,6} ) {}; };
 
 class llvv_szeorsw : public p4 {
     public: llvv_szeorsw(): p4( "4f_szeorsw_l", PROCESS_ID::f4_szeorsw_l, EVENT_CATEGORY_TRUE::llvv, vector{11,12,13,14,15,16} ) {}; };

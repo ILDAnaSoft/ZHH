@@ -62,6 +62,7 @@ void EventObservablesLL::prepareChannelTree() {
 
     m_leps4v = std::vector<ROOT::Math::PxPyPzEVector>(m_nAskedIsoLeps());
     m_2jets4v = std::vector<ROOT::Math::PxPyPzEVector>(2);
+    m_fit4C_masses = std::vector<float>(m_nAskedJets());
 
 	if (m_write_ttree) {
         ttree->Branch("npfosmin4j", &m_npfosmin4j, "npfosmin4j/I");
@@ -373,13 +374,15 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
 	   m_jets4cKinFit_4v.push_back(v4(jet));
 	 }
 
-	 m_fit4C_mz = (m_leps4cKinFit_4v[0]+m_leps4cKinFit_4v[1]).M();
-	 std::vector<int> m_JMK_best = (m_fitchi2_ZHH <= m_fitchi2_ZZH ? m_JMK_ZHH : m_JMK_ZZH);
-	 std::vector<float> fit4C_masses;
-	 fit4C_masses.push_back((m_jets4cKinFit_4v[m_JMK_best[0]]+m_jets4cKinFit_4v[m_JMK_best[1]]).M());
-	 fit4C_masses.push_back((m_jets4cKinFit_4v[m_JMK_best[2]]+m_jets4cKinFit_4v[m_JMK_best[3]]).M());
-	 m_fit4C_mh1 = std::min(fit4C_masses[0],zhh_masses[1]); 
-	 m_fit4C_mh2 = std::max(fit4C_masses[0],zhh_masses[1]);
+     m_JMK_best = (m_fitchi2_ZHH <= m_fitchi2_ZZH ? m_JMK_ZHH : m_JMK_ZZH);
+
+     if (m_leps4cKinFit_4v.size() == m_nAskedIsoLeps() && (int)m_JMK_best.size() >= m_nAskedJets()) {
+        m_fit4C_mz = (m_leps4cKinFit_4v[0]+m_leps4cKinFit_4v[1]).M();
+        m_fit4C_masses.push_back((m_jets4cKinFit_4v[m_JMK_best[0]]+m_jets4cKinFit_4v[m_JMK_best[1]]).M());
+        m_fit4C_masses.push_back((m_jets4cKinFit_4v[m_JMK_best[2]]+m_jets4cKinFit_4v[m_JMK_best[3]]).M());
+        m_fit4C_mh1 = std::min(m_fit4C_masses[0], m_fit4C_masses[1]); 
+        m_fit4C_mh2 = std::max(m_fit4C_masses[0], m_fit4C_masses[1]);
+     }
 	 
 	 streamlog_out(MESSAGE) << "lepton energies:" << m_leps4cKinFit_4v[0].E() << ", " << m_leps4cKinFit_4v[1].E() << endl;
 	 streamlog_out(MESSAGE) << "Fit probs: " << m_fitprob_ZHH << ", " << m_fitprob_ZZH << endl;

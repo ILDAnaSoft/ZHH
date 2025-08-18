@@ -79,7 +79,8 @@ def plot_weighted_hist(calc_dict, title:str='<title undefined>', xlabel:str='<xl
         'title_postfix': '',
         'title': title,
         'legend_kwargs': { 'loc': 'upper right', 'bbox_to_anchor': (.98, .98), 'fancybox': False },
-        'plot_context': plot_context
+        'plot_context': plot_context,
+        'columns': list(calc_dict.keys())
     } | ild_style_kwargs
     
     legend_labels = []

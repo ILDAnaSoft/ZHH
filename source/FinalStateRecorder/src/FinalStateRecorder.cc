@@ -488,6 +488,9 @@ void FinalStateRecorder::init()
 	this->register_process(new zz_sl0());
 	this->register_process(new zznu_sl0());
 
+	// new mc-2025 tth+ttz production
+	this->register_process(new ptth());
+	this->register_process(new pttz());
 
 
 	streamlog_out(MESSAGE) << "   init finished  " << std::endl;

@@ -117,13 +117,13 @@ class p6: public FinalStateResolver {
 
             int charged_leps =
                 m_final_state_counts[PDG::e] +
-                m_final_state_counts[PDG::µ] +
-                m_final_state_counts[PDG::𝜏];
+                m_final_state_counts[PDG::μ] +
+                m_final_state_counts[PDG::τ];
 
             int neutrinos =
                 m_final_state_counts[PDG::ve] +
-                m_final_state_counts[PDG::vµ] +
-                m_final_state_counts[PDG::v𝜏];
+                m_final_state_counts[PDG::vμ] +
+                m_final_state_counts[PDG::vτ];
 
             // bb
             if (m_final_state_counts[PDG::b] == 2) {
@@ -140,27 +140,27 @@ class p6: public FinalStateResolver {
                             else
                                 return EVENT_CATEGORY_TRUE::evbbqq;
                         }
-                    else if (m_final_state_counts[PDG::µ] == 1 &&
-                             m_final_state_counts[PDG::vµ] == 1) {
+                    else if (m_final_state_counts[PDG::μ] == 1 &&
+                             m_final_state_counts[PDG::vμ] == 1) {
                             if (m_final_state_counts[PDG::c] == 1 &&
                                     m_final_state_counts[PDG::s] == 1)
-                                    return EVENT_CATEGORY_TRUE::µvbbcs;
+                                    return EVENT_CATEGORY_TRUE::μvbbcs;
                                 else if (m_final_state_counts[PDG::u] == 1 &&
                                         m_final_state_counts[PDG::d] == 1)
-                                    return EVENT_CATEGORY_TRUE::µvbbud;
+                                    return EVENT_CATEGORY_TRUE::μvbbud;
                                 else
-                                    return EVENT_CATEGORY_TRUE::µvbbqq;
+                                    return EVENT_CATEGORY_TRUE::μvbbqq;
                         }
-                    else if (m_final_state_counts[PDG::𝜏] == 1 &&
-                             m_final_state_counts[PDG::v𝜏] == 1) {
+                    else if (m_final_state_counts[PDG::τ] == 1 &&
+                             m_final_state_counts[PDG::vτ] == 1) {
                                 if (m_final_state_counts[PDG::c] == 1 &&
                                     m_final_state_counts[PDG::s] == 1)
-                                    return EVENT_CATEGORY_TRUE::𝜏vbbcs;
+                                    return EVENT_CATEGORY_TRUE::τvbbcs;
                                 else if (m_final_state_counts[PDG::u] == 1 &&
                                         m_final_state_counts[PDG::d] == 1)
-                                    return EVENT_CATEGORY_TRUE::𝜏vbbud;
+                                    return EVENT_CATEGORY_TRUE::τvbbud;
                                 else
-                                    return EVENT_CATEGORY_TRUE::𝜏vbbqq;
+                                    return EVENT_CATEGORY_TRUE::τvbbqq;
                             }
                 } else if (non_b == 4) {
                     if (m_final_state_counts[PDG::s] == 2 && m_final_state_counts[PDG::c] == 2)

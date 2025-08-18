@@ -42,12 +42,12 @@ class HTCondorWorkflow(law.contrib.htcondor.HTCondorWorkflow):
     )
     
     rerun_with_higher_requirements = luigi.BoolParameter(
-        default=False,
+        default=True,
         significant=False,
         description="whether or not to run with increased RAM and time requirements if the job is failing; default: True",
     )
-    higher_req_ram_mb = 16000
-    higher_req_time_hours = 12
+    higher_req_ram_mb = 4000
+    higher_req_time_hours = 3
     
     def __init__(self, *args, **kwargs):
         super(HTCondorWorkflow, self).__init__(*args, **kwargs)
@@ -95,15 +95,15 @@ class HTCondorWorkflow(law.contrib.htcondor.HTCondorWorkflow):
             
             session_submissions[name] = 0 if name not in session_submissions else session_submissions[name] + 1
         else:
-            # Default config: 4GB RAM and 3h of runtime
-            config.custom_content.append(('request_memory', '4000 Mb'))
-            if self.max_runtime:
-                config.custom_content.append(('request_runtime', math.floor(cast(int|float, self.max_runtime) * 3600)))
+            # Default config: 2GB RAM and 3h of runtime
+            config.custom_content.append(('request_memory', '3000 Mb'))
+            #if self.max_runtime:
+            #    config.custom_content.append(('request_runtime', math.floor(cast(int|float, self.max_runtime) * 3600)))
                 
             session_submissions[name] = 0
         
         config.custom_content.append(('requirements', 'Machine =!= LastRemoteHost'))
-        config.custom_content.append(('max_idle', 1000))
+        config.custom_content.append(('max_idle', 2000))
         
         #raise Exception('asdf')
 

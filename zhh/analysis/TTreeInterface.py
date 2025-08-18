@@ -47,6 +47,8 @@ class TTreeInterface(MixedLazyTablelike):
     cache:dict[str, np.ndarray] = {}
     
     def __init__(self, tree:ur.TTree, final_states:bool=True, prop_prefix:str='', cached:bool=False):
+        import awkward as ak
+        
         r_size = tree.num_entries
         super().__init__(r_size)
         
@@ -109,14 +111,26 @@ class TTreeInterface(MixedLazyTablelike):
         self['mhh'] = lambda intf: fetch('invJetMass', f'{prop_prefix}invJetMass')
         self['sumBTags'] = lambda intf: ( fetch('bmax1') + fetch('bmax2') + fetch('bmax3') + fetch('bmax4') )
         
-        # old names for compatability:
-        #self[f'{presel}_mh1'] = lambda intf: self['mh1']
-        #self[f'{presel}_mh2'] = lambda intf: self['mh2']
+        # REMOVE ALL once fixed in EventObservables!
+        masses = tree['fit4C_masses'].array()
+        mask = np.array(ak.count(masses, axis=1) == 2, dtype=bool)
         
-        #self[f'{presel}_bmax1'] = lambda intf: self['bmax1']
-        #self[f'{presel}_bmax2'] = lambda intf: self['bmax2']
-        #self[f'{presel}_bmax3'] = lambda intf: self['bmax3']
-        #self[f'{presel}_bmax4'] = lambda intf: self['bmax4']
+        fit4C_mh1 = np.zeros(len(masses))
+        fit4C_mh2 = np.zeros(len(masses))
+        
+        fit4C_mh1[mask] = ak.min(masses, axis=1)[mask]
+        fit4C_mh2[mask] = ak.max(masses, axis=1)[mask]
+        
+        self['fit4C_mh1'] = fit4C_mh1
+        self['fit4C_mh2'] = fit4C_mh2
+        
+        bTags = np.array(tree['bTags'].array())
+        bTags = -np.sort(-bTags, axis=1)
+
+        self['bmax1'] = bTags[:, 0]
+        self['bmax2'] = bTags[:, 1]
+        self['bmax3'] = bTags[:, 2]
+        self['bmax4'] = bTags[:, 3]
 
 @dataclass
 class FinalStateCounts:

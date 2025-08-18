@@ -41,6 +41,10 @@ struct PROCESS_ID {
 		n23n23h = 1015,
 		qqh = 1016,
 
+		// tth, ttz
+		f8_tth = 1021,
+		f8_ttz = 1022,
+
 		// ff
 		f2_z_l = 3170,
 		f2_z_h = 3570,
@@ -275,13 +279,16 @@ struct EVENT_CATEGORY_TRUE {
 		vvH = 2,
 		qqH = 3,
 
+		ttH = 8,
+		ttZ = 9,
+
 		// LEPTONIC
 		OTHER_LL = 10,
 		llHH = 11, // llbbbb (ZHH signal)
 
 		eebb = 12,
-		µµbb = 13,
-		𝜏𝜏bb = 14,
+		μμbb = 13,
+		ττbb = 14,
 		llbbbb = 15,
 		llqqH = 16,
 		ll = 17,
@@ -309,7 +316,6 @@ struct EVENT_CATEGORY_TRUE {
 		qqqqH = 52,
 		qqbbbb = 53,
 		bbbb = 54,
-		ttZ = 55,
 		ttbb = 56,
 		qq = 57,
 		qqqq = 58,
@@ -328,16 +334,16 @@ struct EVENT_CATEGORY_TRUE {
 		// rest: 44.22% (one hadronic, one leptonic decay)
 		OTHER_TTBAR = 70,
 		evbbqq = 71,
-		µvbbqq = 72,
-		𝜏vbbqq = 73,
+		μvbbqq = 72,
+		τvbbqq = 73,
 
 		evbbcs = 74,
-		µvbbcs = 75,
-		𝜏vbbcs = 76,
+		μvbbcs = 75,
+		τvbbcs = 76,
 
 		evbbud = 77,
-		µvbbud = 78,
-		𝜏vbbud = 79,
+		μvbbud = 78,
+		τvbbud = 79,
 
 		// tt/WWZ -> bbqqqq
 		// for tt: tt -> bbqqqq : 2x [t->Wb; W->qq]
@@ -368,10 +374,10 @@ struct PDG {
 		t = 6,
 		e = 11,
 		ve = 12,
-		µ = 13,
-		vµ = 14,
-		𝜏 = 15,
-		v𝜏 = 16
+		μ = 13,
+		vμ = 14,
+		τ = 15,
+		vτ = 16
 	};
 };
 

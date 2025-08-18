@@ -383,6 +383,7 @@ void EventObservablesBase::prepareBaseTree()
 		// jet matching from KinFit
 		ttree->Branch("jet_matching_kinfit_zhh", &m_JMK_ZHH);
 		ttree->Branch("jet_matching_kinfit_zzh", &m_JMK_ZZH);
+		ttree->Branch("jet_matching_kinfit_best", &m_JMK_best);
 
 		ttree->Branch("fitprob_ZHH", &m_fitprob_ZHH, "fitprob_ZHH/F");
 		ttree->Branch("fitprob_ZZH", &m_fitprob_ZZH, "fitprob_ZZH/F");
@@ -390,6 +391,7 @@ void EventObservablesBase::prepareBaseTree()
 		ttree->Branch("fitchi2_ZZH", &m_fitchi2_ZZH, "fitchi2_ZZH/F");
 
 		// 4C fit
+		ttree->Branch("fit4C_masses", &m_fit4C_masses);
 		ttree->Branch("fit4C_mz", &m_fit4C_mz, "fit4C_mz/F");
 		ttree->Branch("fit4C_mh1", &m_fit4C_mh1, "fit4C_mh1/F");
 		ttree->Branch("fit4C_mh2", &m_fit4C_mh2, "fit4C_mh2/F");
@@ -703,12 +705,14 @@ void EventObservablesBase::clearBaseValues()
 	// jet matching
 	m_JMK_ZHH.clear();
 	m_JMK_ZZH.clear();
+	m_JMK_best.clear();
 
 	m_fitprob_ZHH = 0.;
 	m_fitprob_ZZH = 0.;
 	m_fitchi2_ZHH = 0.;
 	m_fitchi2_ZZH = 0.;
 
+	m_fit4C_masses.clear();
 	m_fit4C_mz = 0.;
 	m_fit4C_mh1 = 0.;
 	m_fit4C_mh2 = 0.;
@@ -889,7 +893,7 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 					streamlog_out(MESSAGE) << " > Algo2 - B,C = " << FTPara2[BTagID2] << "," << FTPara2[CTagID2] << std::endl;
 					//double oTagValue = FTPara[OTagID];
 
-					// replace weaver value with LCFIPlus value if NaN (ca. 2% of b-jets in µµHH events)
+					// replace weaver value with LCFIPlus value if NaN (ca. 2% of b-jets in μμHH events)
 					if (std::isnan(m_bTagValues[i]) && !std::isnan(m_bTagValues2[i])) {
 						m_bTagValues[i] = m_bTagValues2[i];
 					}

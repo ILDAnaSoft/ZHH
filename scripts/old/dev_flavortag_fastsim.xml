@@ -4,13 +4,16 @@
   <processor name="AIDA"/>
   <processor name="InitDD4hep"/>
   <processor name="Statusmonitor"/>
+
   <!--processor name="FastJetOverlay"/> -->
+  <!--processor name="ExpandJet"/> -->
 
   <!-- <processor name="MyCheatedMCOverlayRemoval" />
   <processor name="MyIsolatedLeptonTaggingProcessor"/> -->
 
+  <processor name="MyPatchCollections" />
+
   <processor name="JC6FT"/>
-  <processor name="EF6"/>
 
   <if condition="${RundEdxCorrections}">
     <processor name="ComputeCorrectAngulardEdX"/>
@@ -22,19 +25,15 @@
 <!--
   <processor name="ParticleIDFilter"/>-->
   
-  <processor name="MyTrueJet" />
-  <processor name="StoreVariablesForMLTagging_6J" />
-
-  <if condition="${FilterTempPID}">
-    <processor name="ParticleIDFilter_6J"/>
-  </if>
+  <!-- <processor name="MyTrueJet" /> -->
+  <processor name="StoreVariablesForMLTagging" />
   
   <processor name="LCIOOutputProcessor"/>
 </execute>
 
 <global>
   <parameter name="LCIOInputFiles">
-    /pnfs/desy.de/ilc/prod/ilc/mc-opt-3/ild/dst-merged/500-TDR_ws/flavortag/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I110032.Pbbbbbb.eL.pR.n009.d_dstm_10586_20.slcio
+    /data/dust/user/bliewert/zhh/FastSimSGV/550-llhh-fast-perf/E550-Test.Pe3e3hh.Gwhizard-2_8_5.eL.pR.I404003.0.slcio
   </parameter>
   <parameter name="MaxRecordNumber" value="10" />
   <parameter name="SkipNEvents" value="0" />
@@ -46,14 +45,14 @@
   <constant name="ILDConfigDir" value="" />
   <constant name="ZHH_REPO_ROOT" value="" />
   <constant name="OutputDir" value="." />
-  <constant name="OutputSuffix" value="" />
+  <constant name="OutputSuffix" value="tagging" />
   
   <constant name="MCParticleCollectionName" value="MCParticlesSkimmed" />
   <constant name="ProductionDir" value="${ILDConfigDir}/StandardConfig/production" />
   <constant name="RundEdxCorrections" value="true" />
 
-  <constant name="WriteIsOverlay" value="true" />
-  <constant name="WriteJetFlavor" value="true" />
+  <constant name="WriteIsOverlay" value="false" />
+  <constant name="WriteJetFlavor" value="false" />
   <constant name="FilterTempPID" value="true" /> <!-- set to "false" for debugging -->
 </constants>
 
@@ -61,6 +60,10 @@
   <parameter name="Compress" type="int"> 1 </parameter>
   <parameter name="FileName" type="string"> ${OutputDir}/AIDAFile_${OutputSuffix}.root </parameter>
   <parameter name="FileType" type="string"> root </parameter>
+</processor>
+
+<processor name="MyPatchCollections" type="PatchCollections">
+    <parameter name="PatchCollections" type="string">BuildUpVertex_V0 Vertex</parameter>
 </processor>
 
 <processor name="InitDD4hep" type="InitializeDD4hep">
@@ -289,12 +292,6 @@
   </parameter>
 </processor>
 
-<processor name="EF6" type="ErrorFlow">
-  <parameter name="InputPFOCollection" type="string" lcioInType="ReconstructedParticle"> Refined6Jets </parameter>
-  <parameter name="OutputPFOCollection" type="string" lcioInType="ReconstructedParticle"> Refined6JetsEF </parameter>
-  <parameter name="InputMCTruthLinkCollection" type="string" lcioInType="LCRelation"> RecoMCTruthLink </parameter>
-</processor>
-
 <processor name="ComputeCorrectAngulardEdX" type="AngularCorrection_dEdxProcessor">
   <!-- description not set by author -->
   <!--parameter for new angular correction dedx= uncorrected_dedx  / f, with f= pol3(lambda)-->
@@ -415,7 +412,7 @@
 </processor>
 -->
 
-<processor name="StoreVariablesForMLTagging_6J" type="StoreVariablesForMLTagging">
+<processor name="StoreVariablesForMLTagging" type="StoreVariablesForMLTagging">
   <parameter name="CollectionPrimaryVertex" type="string" value="PrimaryVertex" />
   <parameter name="CollectionRefinedJets" type="string" value="Refined6Jets"> </parameter>
   <parameter name="CollectionRefinedVertices" type="string" value="RefinedVertex6Jets" />
@@ -427,25 +424,6 @@
 
   <parameter name="WriteIsOverlay" type="bool" value="${WriteIsOverlay}" />
   <parameter name="WriteJetFlavor" type="bool" value="${WriteJetFlavor}" />
-  <parameter name="WriteDeepjetFeatures" type="bool" value="false"/>
-  <parameter name="ParticleNetFeatures_PFPoints" type="StringVec"> RapidityRelJet PhiRelJet </parameter>
-  <parameter name="ParticleNetFeatures_PFFeatures" type="StringVec"> TransverseMomentumLOG EnergyLOG 
-  TransverseMomentumFracLOG EnergyFracLOG DeltaRJet Charge IsElectron IsMuon IsChargedHadron IsNeutralHadron IsPhoton 
-  RapidityRelJet PhiRelJet Rapidity D0 D0Sig Z0 Z0Sig 3DImpactPar 3DImpactParSig D0bprob D0cprob D0qprob Z0bprob Z0cprob Z0qprob
-  TrackUsedinPrimVertex LeptonMomRelJet Kaoness Chi2NDF LeptonMomFraction WeightedKaonnessMomFrac CPID11ness CPID13ness CPID211ness CPID321ness CPID2212ness
-  MomentumX MomentumY MomentumZ Energy
-  TrackJetDotProductNorm HCalFrac </parameter>
-  <parameter name="ParticleNetFeatures_SVPoints" type="StringVec"> SecondaryVertexRapidityJetAxis SecondaryVertexPhiJetAxis </parameter>
-  <parameter name="ParticleNetFeatures_SVFeatures" type="StringVec"> SecondaryVertexPtLOG SecondaryVertexMass SecondaryVertexNTracks 
-  SecondaryVertexChi2NDF SecondaryVertexD0 SecondaryVertexD0Sig SecondaryVertexImpactPar3d SecondaryVertexImpactPar3dSig 
-  SecondaryVertexRapidityJetAxis SecondaryVertexPhiJetAxis SecondaryVertexCosMomPos SecondaryVertexEnergyJetEnergy
-  SecondaryVertexEnergy SecondaryVertexMomentumX SecondaryVertexMomentumY SecondaryVertexMomentumZ SecondaryVertexRapidity JetRapidity </parameter> 
-</processor>
-
-<processor name="ParticleIDFilter_6J" type="ReconstructedParticleParticleIDFilterProcessor">
-    <parameter name="RecoParticleCollection" type="string" value="PandoraPFOs"/>
-    <parameter name="FilterPIDAlgos" type="StringVev" value="mlflavortagging_pf_features mlflavortagging_pf_points mlflavortagging_sv_features mlflavortagging_sv_points"/>
-    <parameter name="Verbosity" type="string" value="DEBUG"/>
 </processor>
 
 <processor name="LCIOOutputProcessor" type="LCIOOutputProcessor">

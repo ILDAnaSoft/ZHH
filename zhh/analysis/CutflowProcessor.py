@@ -1,9 +1,11 @@
 from .AnalysisChannel import AnalysisChannel
-from .Cuts import Cut
+from .Cuts import Cut, ValueCut
 from ..util.PlotContext import PlotContext
 from typing import Sequence, Any
 from phc import export_figures
 from copy import deepcopy
+from .TTreeInterface import TTreeInterface
+from ..util.deepmerge import deepmerge
 import matplotlib.pyplot as plt
 import numpy as np
 import os.path as osp
@@ -20,9 +22,9 @@ class CutflowProcessor:
                  sources:list[AnalysisChannel],
                  hypothesis:str,
                  signal_categories:list[int],
-                 cuts:Sequence[Cut]|None=None,
+                 cuts:Sequence[ValueCut]|None=None,
                  colormap=None,
-                 plot_options:dict[str, list[dict]]|None=None,
+                 plot_options:dict[str, dict[str, dict]]|None=None,
                  work_dir:str|None=None
     ):
         """Class used to combine multiple AnalysisChannel items and process
@@ -34,16 +36,16 @@ class CutflowProcessor:
             sources (list[AnalysisChannel]): _description_
             hypothesis (str): _description_
             signal_categories (list[int]): list of process categories, see ProcessCategories. Used for plotting later. 
-            cuts (Sequence[Cut] | None, optional): _description_. Defaults to None.
+            cuts (Sequence[ValueCut] | None, optional): _description_. Defaults to None.
             colormap (_type_, optional): Cuts used for preselection. Defaults to None.
-            plot_options (dict[str, list[dict]] | None, optional): _description_. Defaults to None.
+            plot_options (dict[str, dict[str, dict]] | None, optional): _description_. Defaults to None.
             work_dir (str | None, optional): _description_. Defaults to None.
 
         Raises:
             ValueError: _description_
         """
         
-        from zhh import colormap_desy, zhh_cuts, preselection_plot_options
+        from zhh import colormap_desy, zhh_cuts, figure_options
         
         assert(len(sources) > 0)
         self._sources = sources
@@ -60,8 +62,8 @@ class CutflowProcessor:
             
         self._work_dir = work_dir
         self._luminosity = self._sources[0].getIntegratedLuminosity()
-        self._cuts:dict[int, Sequence[Cut]] = { 0: zhh_cuts(hypothesis) if cuts is None else cuts }
-        self._plot_options:dict[str, list[dict]] = plot_options if plot_options is not None else preselection_plot_options
+        self._cuts:dict[int, Sequence[ValueCut]] = { 0: zhh_cuts(hypothesis) if cuts is None else cuts }
+        self._plot_options:dict[str, dict[str, dict]] = plot_options if plot_options is not None else figure_options
         self._hypothesis = hypothesis
         
         if True:
@@ -82,7 +84,23 @@ class CutflowProcessor:
         
         # cutflowTable()
 
-    def process(self, step:int=0, cuts:Sequence[Cut]|None=None):
+    def getSource(self, name:str)->AnalysisChannel:
+        for source in self._sources:
+            if source.getName() == name:
+                return source
+        
+        raise Exception(f'Source <{name}> not found')
+
+    def sorting_key(self, x):
+        id, name, values, weights = x
+        
+        if id in self._signal_categories:
+            return (10**(12 + self._signal_categories.index(id)))
+        else:
+            return -np.sum(weights)
+
+    def process(self, step:int=0, cuts:Sequence[ValueCut]|None=None,
+                weight_prop:str='weight', split:int|None=None):
         """Processes the preselection cuts and stores masks for each event in
         each source passing each cut in _masks. Also stores for each passing
         event the quantity (of the associated cut) and weight in _calc_dicts.
@@ -94,7 +112,10 @@ class CutflowProcessor:
             step (int, optional): n-th cut group. Use 0 for preselection,
                 1 for the first post-preselection cut group, etc.
                 Defaults to 0.
-            cuts (Sequence[Cut]|None): Defaults to None.
+            cuts (Sequence[Cut], optional): Defaults to None.
+            weight_prop (str): Defaults to weight.
+            split (int, optional): Cut on the split column. Will be ignored
+                if None. Defaults to None.
 
         Returns:
             _type_: _description_
@@ -111,14 +132,6 @@ class CutflowProcessor:
                 raise Exception('Using step > 0 requires additional cuts to be supplied')
             
             self._cuts[step] = cuts
-
-        def sorting_key(x):
-            id, name, values, weights = x
-            
-            if id in self._signal_categories:
-                return (10**(12 + self._signal_categories.index(id)))
-            else:
-                return -np.sum(weights)
 
         subsets = {}
         for source in self._sources:
@@ -138,22 +151,29 @@ class CutflowProcessor:
                 subset = subsets[source_name]
                 
                 # for post-preselection cuts, use the very last subset as base
-                if step > 0:
-                    if not (step -1) in self._masks:
+                if i == 0 and step > 0:
+                    if not (step - 1) in self._masks:
                         raise Exception('step > 0 requires previous cuts to have been applied already')
                     
-                    subsets[source_name] = subset[self._masks[step - 1]]
+                    prev_mask = find_entry(self._masks[step - 1][-1], source_name)[1]
+                    
+                    # also apply a split, if one is given
+                    if split is not None:
+                        prev_mask = prev_mask & (subset['split'] == split)
+
+                    subsets[source_name] = subset[prev_mask]
+                    subset = subsets[source_name]
                 
                 processes = source.getProcesses()
                 
                 mask = cut(subset)
                 
-                before = np.sum(subset['weight'])
+                before = np.sum(subset[weight_prop])
                 max_before = max(max_before, before)
-                after = np.sum(subset['weight'][mask])
+                after = np.sum(subset[weight_prop][mask])
                 
                 #categories, counts = weighted_counts_by_categories(subset)
-                calc_dict = calc_preselection_by_event_categories(subset, processes, quantity=cut.quantity, categories_additional=None)
+                calc_dict = calc_preselection_by_event_categories(subset, processes, quantity=cut.quantity, categories_additional=None, weight_prop=weight_prop)
                 
                 for name in calc_dict:
                     values, weights = calc_dict[name]
@@ -168,7 +188,7 @@ class CutflowProcessor:
             
             max_before_all.append(max_before)
             selected_sorted = flattened
-            selected_sorted = sorted(selected_sorted, key=sorting_key)
+            selected_sorted = sorted(selected_sorted, key=self.sorting_key)
             
             # construct the final calc dict
             calc_dict = {}
@@ -248,7 +268,8 @@ class CutflowProcessor:
                     
                 rf[name] = data
     
-    def cutflowPlots(self, step_start:int=0, step_end:int|None=None, display:bool=True):
+    def cutflowPlots(self, step_start:int=0, step_end:int|None=None, display:bool=True,
+                    file:str='cutflow_plots.pdf', hist_kwargs:dict={}):
         """Creates plots for signal/background separation
         after each cut. When return_last_calc_dict is True, a separate plot
         showing the event count per category after the last cut is created.
@@ -262,41 +283,54 @@ class CutflowProcessor:
                 Defaults to None.
             display (bool, optional): whether to display the created plots.
                 Defaults to True.
+            file (str): file in which all plots to store
         
         """
         
-        result = cutflowPlots(self, self._work_dir, display, step_start=step_start,
+        result = cutflowPlots(self, f'{self._work_dir}/{file}', display, step_start=step_start,
                               step_end=step_end if step_end is not None else
-                                len(self._cuts)-1)
-        self._plot_context = result[0]
+                                len(self._cuts)-1, hist_kwargs=hist_kwargs)
+        
+        if self._plot_context is None:
+            self._plot_context = result[0]
         
         return result
         
     def cutflowTable(self, final_state_labels_and_names_or_processes:list[tuple[str,str]|tuple[str,str,str]],
-                     path:str|None=None, step_start:int=0, step_end:int|None=None):
+                     path:str|None=None, step_start:int=0, step_end:int|None=None, weight_prop:str='weight',
+                     filename:str|None=None):
         
         """Creates a cutflow table considering all cuts from groups
         step_start until step_end.
 
         Args:
-            final_state_labels_and_names_or_processes (list[tuple[str,str] | tuple[str,str,str]]): _description_
-            path (str | None, optional): _description_. Defaults to None.
+            final_state_labels_and_names_or_processes (list[tuple[str,str] |
+                tuple[str,str,str]]): _description_
+            path (str | None, optional): PDF Table full path. Defaults to None.
             step_start (int, optional): First cut group to consider.
                 Defaults to 0.
             step_end (int, optional): Last cut group to consider. If None, will
                 be set to the last cut group, such that all cuts are considered.
                 Defaults to None.
+            weight_prop (float, optional): Which property to use for weights
+            filename (): PDF table filename. Will be used together with work_dir
+                if path is None. If None, will be set to cutflow_{self._hypothesis}.pdf.
+                Defaults to None.
 
         Returns:
             _type_: _description_
         """
+        
         if path is None:
-            path = f'{self._work_dir}/cutflow_{self._hypothesis}.pdf'
+            if filename is None:
+                filename = f'cutflow_{self._hypothesis}.pdf'
+            
+            path = f'{self._work_dir}/{filename}'
             
         return cutflowTable(self, final_state_labels_and_names_or_processes, path,
                             step_start=step_start,
                             step_end=step_end if step_end is not None else
-                            len(self._cuts)-1)
+                            len(self._cuts)-1, weight_prop=weight_prop)
     
     def getPlotContext(self)->PlotContext:
         """Returns the plot context for the preselection processor.
@@ -325,24 +359,99 @@ class CutflowProcessor:
                step_end in self._masks and step_end in self._calc_dicts and step_end in self._max_before)
         
         masks:list[list[tuple[str, np.ndarray]]] = []
-        cuts:Sequence[Cut] = []
+        cuts:Sequence[ValueCut] = []
         calc_dicts:list[dict[str, tuple[np.ndarray, np.ndarray]]] = []
         max_before = []
         
-        print(step_start, step_end+1)
+        #print(step_start, step_end+1)
         for step in range(step_start, step_end+1):
             masks.extend(self._masks[step])
             cuts.extend(self._cuts[step])
             calc_dicts.extend(self._calc_dicts[step])
             max_before.extend(self._max_before[step])
             
-            print(self._max_before[step])
+            #print(self._max_before[step])
         
         max_before = np.array(max_before)
         
         return masks, cuts, calc_dicts, max_before
+    
+    def getSubsetsAt(self, step:int|None=None, split:int|None=None)->dict[str, TTreeInterface]:
+        if step == None or step == -1:
+            step = len(self._masks)
+        
+        subsets = {}
+        for source in self._sources:
+            store = source.getStore()
+            store.resetView()
+            subsets[source.getName()] = store
 
-def cutflowPlots(cp:CutflowProcessor, output_dir:str, display:bool=True, step_start:int=0, step_end:int=0):
+        for source_name, subset in subsets.items():  
+            if step > 0:
+                if not (step - 1) in self._masks:
+                    raise Exception('step > 0 requires previous cuts to have been applied already')
+                
+                prev_mask = find_entry(self._masks[step - 1][-1], source_name)[1]
+                
+                # also apply a split, if one is given
+                if split is not None:
+                    prev_mask = prev_mask & (subset['split'] == split)
+
+                subsets[source_name] = subset[prev_mask]
+        
+        return subsets
+        
+    def getCalcDictAt(self, quantity:str, step:int|None=None, split:int|None=None, weight_prop:str='weight'):
+        from zhh import EventCategories, calc_preselection_by_event_categories
+        
+        subsets = self.getSubsetsAt(step=step, split=split)
+        flattened = []
+        
+        for src_name, subset in subsets.items():        
+            source = self.getSource(src_name)
+            processes = source.getProcesses()
+            
+            calc_dict = calc_preselection_by_event_categories(subset, processes, quantity=quantity, categories_additional=None, weight_prop=weight_prop)
+        
+            for name in calc_dict:
+                values, weights = calc_dict[name]
+                assert(len(values) == len(weights))
+                
+                flattened.append((getattr(EventCategories, name), name, values, weights))
+
+        selected_sorted = flattened
+        selected_sorted = sorted(selected_sorted, key=self.sorting_key)
+
+        # construct the final calc dict
+        calc_dict = {}
+        for id, name, values, weights in reversed(selected_sorted):
+            calc_dict[name] = (values, weights)
+            
+        return calc_dict
+            
+    def plotAt(self, quantity:str, step:int|None=None, split:int|None=None, plotTop9:bool=False, signal_category_names:list[str]=[], weight_prop:str='weight', **plot_kwargs):
+        from zhh import plot_preselection_by_calc_dict
+
+        #plot_kwargs['ild_style_kwargs']['title_postfix'] = rf' before cut on ${cut.formula(unit=plot_kwargs["xunit"] if ("xunit" in plot_kwargs) else None)}$'
+        calc_dict = self.getCalcDictAt(quantity, step=step, split=split, weight_prop=weight_prop)
+
+        # stacked plot
+        if not plotTop9:
+            plot_kwargs_defaults = {
+                'bins': 100,
+                'xlabel': quantity,
+                'yscale': 'log',
+                'ild_style_kwargs': {},
+                'plot_hist_kwargs': { 'int_bins': False },
+                'plot_context': self._plot_context
+            }
+            plot_kwargs = deepmerge(plot_kwargs_defaults, plot_kwargs)
+        
+            return plot_preselection_by_calc_dict(calc_dict, hypothesis=self._hypothesis, **plot_kwargs)
+        else:
+            return plotCalcDictTop9(self.getPlotContext(), calc_dict, quantity, signal_category_names, hypothesis=self._hypothesis, plot_options=plot_kwargs)
+
+def cutflowPlots(cp:CutflowProcessor, output_file:str, display:bool=True, step_start:int=0, step_end:int=0, hist_kwargs:dict={}):
     assert(cp._signal_categories is not None and step_start in cp._masks and step_end in cp._calc_dicts and step_start in cp._max_before)
     
     masks, cuts, calc_dicts, max_before = cp._flattenSteps(step_end, step_start)
@@ -355,29 +464,87 @@ def cutflowPlots(cp:CutflowProcessor, output_dir:str, display:bool=True, step_st
         cp._cmap,
         cp._plot_options,
         display,
-        output_dir)
+        output_file,
+        cp._plot_context if cp._plot_context is not None else None,
+        hist_kwargs)
+
+def plotCalcDictTop9(context:PlotContext, calc_dict:dict[str, tuple[np.ndarray, np.ndarray]], quantity:str, signal_category_names:list[str], plot_options:dict={}, hist_kwargs:dict={}, hypothesis:str|None=None):
+    from zhh import plot_preselection_by_calc_dict, annotate_cut, EventCategories, deepmerge
+    
+    fig, axes = plt.subplots(nrows=3, ncols=3, figsize=(18, 18))
+    flattened_axes = axes.flatten()
+
+    categories = list(calc_dict.keys())
+    for sig_cat in signal_category_names:
+        if sig_cat in categories:
+            categories.remove(sig_cat)
+            
+    wt_sum_max = np.max([ cd[1].sum() for cd in calc_dict.values() ])
+
+    for j, key in enumerate(list(reversed(categories))[:9]):    
+        ax = flattened_axes[j]
+
+        hist_kwargs_overwrite = deepcopy(hist_kwargs)
+        hist_kwargs_overwrite[key] = { 'color': context.getColorByKey(key), 'histtype': 'stepfilled' }
+        
+        plot_kwargs = deepmerge({
+            'ax': ax,
+            'bins': 100,
+            'yscale': 'log',
+            'ild_style_kwargs': { 'title': key, 'legend_kwargs': { 'loc': 'upper right' } },
+            'plot_hist_kwargs': {
+                'stacked': False,
+                'show_stats': False,
+                'ylim': [1e-3, wt_sum_max*1.1],
+                'custom_styling': False,
+                'hist_kwargs': { 'hatch': None }
+            },
+            'xlabel': quantity,
+            'plot_context': context,
+            'hypothesis': hypothesis
+        }, deepcopy(plot_options))
+        plot_kwargs['ild_style_kwargs']['ild_text_position'] = 'upper left'
+        
+        if 'hist_kwargs_overwrite' in plot_options:
+            deepmerge(hist_kwargs_overwrite, plot_options['hist_kwargs_overwrite'])
+        
+        plot_dict = { key: calc_dict[key] }
+        for sig_key in signal_category_names:
+            plot_dict[sig_key] = calc_dict[sig_key]
+
+        plot_preselection_by_calc_dict(plot_dict, plot_hist_kwargs_overwrite=hist_kwargs_overwrite, **plot_kwargs);
+        
+    return fig
 
 def cutflowPlotsFn(signal_categories:list[int],
-                 cuts:Sequence[Cut],
+                 cuts:Sequence[ValueCut],
                  calc_dicts:list[dict[str, tuple[np.ndarray, np.ndarray]]],
                  max_before_all:np.ndarray,
                  hypothesis:str,
                  cmap,
-                 plot_options:dict[str, list[dict]],
+                 plot_options:dict[str, dict[str, dict]],
                  display:bool,
-                 output_dir:str):
+                 output_file:str,
+                 context:PlotContext|None,
+                 hist_kwargs:dict):
     
     from zhh import plot_preselection_by_calc_dict, annotate_cut, EventCategories, deepmerge
     
     figs_stacked = []
     figs_sigvbkg = []
         
-    context = PlotContext(cmap)
+    context = context if context is not None else PlotContext(cmap)
     signal_category_names = [EventCategories.inverted[cat] for cat in signal_categories]
     
     for i, cut in enumerate(cuts):
         calc_dict = calc_dicts[i]
         max_before = max_before_all[i]
+        
+        plot_options_quantity = {}
+        if hypothesis in plot_options and cut.quantity in plot_options[hypothesis]:
+            plot_options_quantity = deepcopy(plot_options[hypothesis][cut.quantity])
+        elif 'default' in plot_options and cut.quantity in plot_options['default']:
+            plot_options_quantity = deepcopy(plot_options['default'][cut.quantity])
         
         plot_kwargs = {
             'bins': 100,
@@ -385,65 +552,24 @@ def cutflowPlotsFn(signal_categories:list[int],
             'yscale': 'log',
             'ild_style_kwargs': {},
             'plot_hist_kwargs': {},
-            'plot_context': context
-        } | deepcopy(plot_options[hypothesis][i])
+            'plot_context': context,
+            'hypothesis': hypothesis
+        } | plot_options_quantity
         
         plot_kwargs['ild_style_kwargs']['title_postfix'] = rf' before cut on ${cut.formula(unit=plot_kwargs["xunit"] if ("xunit" in plot_kwargs) else None)}$'
         
         # stacked plot
-        fig1 = plot_preselection_by_calc_dict(calc_dict, hypothesis=hypothesis, **plot_kwargs);
+        fig1 = plot_preselection_by_calc_dict(calc_dict, **plot_kwargs);
         annotate_cut(fig1.axes[0], cut);
         figs_stacked += [fig1]
         
         # non-stacked plot
-        fig2, axes = plt.subplots(nrows=3, ncols=3, figsize=(18, 18))
-        flattened_axes = axes.flatten()
-        
-        categories = list(calc_dict.keys())
-        for sig_cat in signal_category_names:
-            if sig_cat in categories:
-                categories.remove(sig_cat)
-
-        for j, key in enumerate(list(reversed(categories))[:9]):    
-            ax = flattened_axes[j]
-        
-            hist_kwargs_overwrite = {}
-            hist_kwargs_overwrite[key] = { 'color': context.getColorByKey(key), 'histtype': 'stepfilled' }
-            
-            plot_kwargs = deepmerge({
-                'ax': ax,
-                'bins': 100,
-                'xlabel': cut.quantity,
-                'yscale': 'log',
-                'ild_style_kwargs': { 'title': key, 'legend_kwargs': { 'loc': 'upper right' } },
-                'plot_hist_kwargs': {
-                    'stacked': False,
-                    'show_stats': False,
-                    'ylim': [1e-3, max_before*1.5],
-                    'custom_styling': False,
-                    'hist_kwargs': { 'hatch': None }
-                },
-                'plot_context': context,
-            }, deepcopy(plot_options[hypothesis][i]))
-            plot_kwargs['ild_style_kwargs']['ild_text_position'] = 'upper left'
-            
-            plot_dict = { key: calc_dict[key] }
-            for sig_key in signal_category_names:
-                plot_dict[sig_key] = calc_dict[sig_key]
-                
-            #for blabla in plot_dict:
-            #    print('shapes v2: ', blabla, plot_dict[blabla][0].shape, plot_dict[blabla][1].shape)
-
-            plot_preselection_by_calc_dict(plot_dict, hypothesis=hypothesis, plot_hist_kwargs_overwrite=hist_kwargs_overwrite, **plot_kwargs);
-        
-        figs_sigvbkg.append(fig2)
+        fig2 = plotCalcDictTop9(context, calc_dict, cut.quantity, signal_category_names, plot_options_quantity, hist_kwargs=hist_kwargs, hypothesis=hypothesis);
+        figs_sigvbkg += [fig2]
         
         if not display:
             plt.close(fig1)
             plt.close(fig2)
-    
-    export_figures(f'{output_dir}/cuts.pdf', figs_stacked)
-    export_figures(f'{output_dir}/cuts_separate.pdf', figs_sigvbkg)
     
     # create a plot with the event counts per category after the last cut
     from zhh.plot.ild_style import update_plot, legend_kwargs_fn
@@ -480,9 +606,15 @@ def cutflowPlotsFn(signal_categories:list[int],
     ax.set_yscale('log')
     ax.legend(title='Event categories', loc='upper left', **legend_kwargs_fn(context))
     
-    update_plot(ax, x_label=None, y_label='Event count', title='Events after full preselection', context=context)
+    update_plot(ax, x_label=None, y_label='Event count', title='wt. events after selection', context=context)
     
-    export_figures(f'{output_dir}/after_preselection.pdf', [fig])
+    all_figs = []
+    for i in range(len(figs_stacked)):
+        all_figs.append(figs_stacked[i])
+        all_figs.append(figs_sigvbkg[i])
+    all_figs.append(fig)
+        
+    export_figures(output_file, all_figs)
     
     if not display:
         plt.close(fig)
@@ -490,7 +622,7 @@ def cutflowPlotsFn(signal_categories:list[int],
     return context, figs_stacked, figs_sigvbkg, fig
 
 def cutflowTable(cp:CutflowProcessor, final_state_labels_and_names_or_processes:list[tuple[str,str]|tuple[str,str,str]], path:str,
-                 step_start:int, step_end:int):
+                 step_start:int, step_end:int, weight_prop:str='weight'):
     
     masks, cuts, calc_dicts, max_before = cp._flattenSteps(step_end, step_start)
     
@@ -499,20 +631,30 @@ def cutflowTable(cp:CutflowProcessor, final_state_labels_and_names_or_processes:
                         cp._sources,
                         final_state_labels_and_names_or_processes,
                         cuts,
-                        path)
+                        path,
+                        weight_prop,
+                        step_start)
 
 def cutflowTableFn(masks,
                  luminosity:float,
                  sources:list[AnalysisChannel],
-                 final_state_labels_and_names_or_processes:list[tuple[str,str]|tuple[str,str,str]],
+                 final_state_labels_and_names_or_processes:list[tuple[str,str]|tuple[str,str,str]|tuple[str,list[str]]],
                  cuts:Sequence[Cut],
-                 path:str):
+                 path:str,
+                 weight_prop:str,
+                 step_start:int):
     
     from zhh import combined_cross_section, render_table, render_latex
+    
+    using_split = weight_prop != 'weight'
 
     for calc_cut_efficiency in [False, True]:
-        first_column = ['', 'expected events'] + [rf"${cut.__repr__().replace('<Cut on ', '')[:-1]}$" for cut in cuts]
-        if not calc_cut_efficiency:
+        first_column = ['']
+        if not using_split:
+            first_column.append('expected events')
+            
+        first_column += [rf"${cut.__repr__().replace('<Cut on ', '')[:-1]}$" for cut in cuts]
+        if not calc_cut_efficiency and not using_split:
             first_column.insert(1, r'$\sigma$ [fb]')
         columns = [first_column]
 
@@ -525,9 +667,11 @@ def cutflowTableFn(masks,
             else:
                 raise ValueError(f"Entry must be a tuple of length 2 or 3. Found {len(entry)}.")
             
+            mask_names = [mask_name] if isinstance(mask_name, str) else mask_name
+            
             found = False
             for analysis in sources:
-                if analysis.containsFinalState(mask_name):
+                if analysis.containsFinalState(mask_names[0]):
                     if found:
                         raise ValueError(f"Multiple analyses found containing the final state {mask_name}. Support needs to be checked.")
                     else:
@@ -536,19 +680,24 @@ def cutflowTableFn(masks,
                             raise ValueError(f"Process {process} not found in analysis {analysis.getName()} but required.")
                         
                         break
+
+            for i in range(len(mask_names) - 1):
+                assert(analysis.containsFinalState(mask_names[i + 1]))
             
             if not found:
                 raise ValueError(f"No analysis found containing the final state {mask_name}.")
             
             presel = analysis.getStore()
             presel.resetView()
-            category_mask = analysis.getCategoryMask(mask_name)
-            
+            category_mask = analysis.getCategoryMask(mask_names[0])
+            for i in range(len(mask_names) - 1):
+                category_mask = category_mask & analysis.getCategoryMask(mask_names[i + 1])
+                            
             if process is not None:
                 cross_sec = combined_cross_section(analysis.getProcesses(), process)
                 n_expected = int(cross_sec * luminosity * 1000)
             else:
-                n_expected = np.sum(presel['weight'][category_mask])
+                n_expected = np.sum(presel[weight_prop][category_mask])
                 cross_sec = n_expected / (luminosity * 1000)
             
             cut_counts = np.zeros(len(masks), dtype=float)
@@ -557,14 +706,14 @@ def cutflowTableFn(masks,
                 for source_name, mask in masks[i_cut]:
                     if source_name == analysis.getName():
                         presel = analysis.getStore()
-                        cut_counts[i_cut] += np.sum(presel['weight'][mask & category_mask])
+                        cut_counts[i_cut] += np.sum(presel[weight_prop][mask & category_mask])
                         
             #print(label, n_expected, cut_counts)
             # finalize entry to write
-            entry = [
-                rf'$\mathbf{{ {label} }}$',
-                format_counts(n_expected)
-            ]
+            entry = [rf'$\mathbf{{ {label} }}$']
+            
+            if not using_split:
+                entry.append(format_counts(n_expected))
             
             if calc_cut_efficiency:
                 cut_counts_out = np.zeros(cut_counts.shape, dtype=float)
@@ -572,20 +721,23 @@ def cutflowTableFn(masks,
                 for i_cut in range(len(cut_counts)):
                     nom = cut_counts[i_cut]
                     denom = n_expected if i_cut == 0 else cut_counts[i_cut-1]
-                    print(nom, denom)
+                    #print(nom, denom)
                     
                     cut_counts_out[i_cut] = nom / denom if (denom != 0) else 0
                     
                 cut_counts = cut_counts_out
-            else:
+            elif not using_split:
                 entry.insert(1, f'{cross_sec:.3g}')
             
             entry += map(lambda x: f'{x:.2%}'.replace('%', r'\%') if calc_cut_efficiency else format_counts(x), cut_counts)
             columns.append(entry)
 
         table = transpose(columns)
-        table.insert(3, r'\hline')
-        table.insert(6, r'\hline')
+        if not using_split:
+            table.insert(3, r'\hline')
+        
+        if step_start == 0 and not using_split:
+            table.insert(6, r'\hline')
 
         # print(tabulate(table, headers='firstrow', stralign='center', numalign='center', disable_numparse=True)) #tablefmt='latex_raw', ))
         # latex_out = tabulate(table, headers='firstrow', tablefmt='latex_raw', numalign='right', disable_numparse=True)

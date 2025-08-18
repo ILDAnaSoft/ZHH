@@ -7,7 +7,9 @@ class MVAModuleStates:
 MVA_MODULE_STATES = MVAModuleStates()
 
 class MVAModule:
-    def __init__(self, name:str, *args, **kwargs):
+    def __init__(self, features:list[str], path:str, name:str, *args, **kwargs):
+        self._features = features
+        self._path = path
         self._name = name
         self._state = MVA_MODULE_STATES.UNINITIALIZED
         self._model = self.createModel(*args, **kwargs) if not 'model' in kwargs else kwargs['model']
@@ -20,6 +22,9 @@ class MVAModule:
     
     def getModel(self):
         return self._model
+    
+    def getFeatures(self)->list[str]:
+        return self._features
     
     def isTrained(self):
         return self._state == MVA_MODULE_STATES.READY
@@ -49,4 +54,7 @@ class MVAModule:
         raise Exception('Not implemented')
     
     def to_file(self, path: str):
+        raise Exception('Not implemented')
+    
+    def reset(self)->'MVAModule':
         raise Exception('Not implemented')

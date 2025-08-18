@@ -7,19 +7,22 @@ from .RuntimeAnalysis import get_runtime_analysis, evaluate_runtime, get_adjuste
     sgv_runtime, sgv_runtime_to_samples
 from .Normalization import get_sample_chunk_splits, get_process_normalization, get_chunks_factual, \
     CHUNK_SPLIT_MODES, construct_sample_groups
-from .Cuts import Cut, EqualCut, WindowCut, GreaterThanEqualCut, LessThanEqualCut, CutTypes, apply_cuts
+from .Cuts import Cut, EqualCut, WindowCut, GreaterThanEqualCut, LessThanEqualCut, CutTypes, apply_cuts, \
+    CUT_TYPES, SemiInvisibleCut
 from .ZHHCuts import zhh_cuts
 from .TTreeInterface import TTreeInterface, FinalStateCounts, parse_final_state_counts
 from .AnalysisChannel import AnalysisChannel
+from .AnalysisChannelTools import mod_weights_from_split, apply_split
 from .CutflowProcessor import CutflowProcessor, cutflowPlots, cutflowTable
-from .preselection_figure_parameters import preselection_plot_options, preselection_table_options
+from .figure_options import figure_options
 from .FinalStateDefinitions import define_eebb, define_μμbb, define_ττbb, \
-    define_lvqqqq, define_lvbbqq, define_evbbqq, define_µvbbqq, define_τvbbqq, \
+    define_lvqqqq, define_lvbbqq, define_evbbqq, define_μvbbqq, define_τvbbqq, \
     define_lvbbbb, define_llqqqq, define_llbbqq, define_llbbbb, \
     define_vvqqqq, define_vvbbqq, \
     define_bbqqqq, define_bbbbqq, define_bbbbbb, \
-    define_llhh, define_eeHHbbbb, define_µµHHbbbb, define_ττHHbbbb, \
-    define_llhh_llbbbb, define_llqqh, \
+    define_llhh, define_eeHHbbbb, define_μμHHbbbb, define_ττHHbbbb, \
+    define_llhh_llbbbb, define_llqqh, define_ttH, define_ttZ, \
     FinalStateDefinition, \
-    categorize_llhh, categorize_4fsl, categorize_2l4q, categorize_6q
+    categorize_llhh, categorize_4fsl, categorize_2l4q, categorize_6q, \
+    categorize_tthz
 from .DataExtractor import DataExtractor

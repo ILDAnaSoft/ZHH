@@ -10,14 +10,18 @@ colorpalette_desy = [
     '#00b1aa',
     '#917db9',
     '#c3b900',
-    '#fac800',
     '#b92d41',
     '#00a54b',
     '#006987',
     '#8c3c7d',
+    '#fac800',
     '#50509b',
-    '#828728',
+    '#83e1fa',
     '#004a6e',
     '#eb5a2d',
+    '#828728',
+    # added for more colors
+    '#c22400',
+    '#01a52e'
 ]
 colormap_desy = ListedColormap(colorpalette_desy)

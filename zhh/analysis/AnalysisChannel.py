@@ -407,9 +407,3 @@ class AnalysisChannel:
         
         assert(self._processes is not None)
         return (name in self._event_categories or name in self._event_category_resolvers)
-    
-    def run_tmva(self, properties:list[str], train_test_ratio:float=0.2):
-        self._properties = properties
-        self._train_test_ratio = train_test_ratio
-        
-        self._mask_presel = None

@@ -1,8 +1,8 @@
-from .Cuts import Cut, EqualCut, WindowCut, GreaterThanEqualCut, LessThanEqualCut
+from .Cuts import Cut, EqualCut, WindowCut, GreaterThanEqualCut, LessThanEqualCut, ValueCut
 from collections.abc import Sequence
 
 def zhh_cuts(hypothesis:str,
-             disable_cuts:list[str]=[])->Sequence[Cut]:
+             disable_cuts:list[str]=[])->Sequence[ValueCut]:
     
     if hypothesis.lower() == 'eebbbb':
         cuts = [GreaterThanEqualCut('nisoelectrons', 2, label='IsoElectrons'),
@@ -14,7 +14,7 @@ def zhh_cuts(hypothesis:str,
                 LessThanEqualCut('thrust', 0.9, label='thrust'),
                 GreaterThanEqualCut('sumBTags', 1.0, label='sum b-tags')]
         
-    elif hypothesis.lower() == 'µµbbbb':
+    elif hypothesis.lower() == 'μμbbbb':
         cuts = [GreaterThanEqualCut('nisomuons', 2, label='IsoMuons'),
                 EqualCut('pairedLepType', 13, label='Paired Lepton Type'),
                 WindowCut('mzll', 20., 150., label=r'm_{ll}'),
@@ -22,7 +22,26 @@ def zhh_cuts(hypothesis:str,
                 WindowCut('zhh_mh2', 50., 200., label=r'm_{H2}'),
                 LessThanEqualCut('ptmiss', 70., label=r'p_{t}^{miss}'),
                 LessThanEqualCut('thrust', 0.9, label='thrust'),
-                GreaterThanEqualCut('sumBTags', 1.0, label='sum b-tags')]   
+                GreaterThanEqualCut('sumBTags', 1.0, label='sum b-tags')]
+        
+    elif hypothesis.lower() == 'μμbbbb_4c':
+        cuts = [GreaterThanEqualCut('nisomuons', 2, label='IsoMuons'),
+                EqualCut('pairedLepType', 13, label='Paired Lepton Type'),
+                WindowCut('fit4C_mz', 20., 150., label=r'm_{ll}^{4C}'),
+                WindowCut('fit4C_mh1', 50., 200., label=r'm_{H1}^{4C}'),
+                WindowCut('fit4C_mh2', 50., 200., label=r'm_{H2}^{4C}'),
+                LessThanEqualCut('ptmiss', 70., label=r'p_{t}^{miss}'),
+                LessThanEqualCut('thrust', 0.9, label='thrust'),
+                GreaterThanEqualCut('sumBTags', 1.0, label='sum b-tags')]
+        
+    elif hypothesis.lower() == 'µµHH_4c':
+        cuts = [GreaterThanEqualCut('nisomuons', 2, label='IsoMuons'),
+                EqualCut('pairedLepType', 13, label='Paired Lepton Type'),
+                WindowCut('fit4C_mz', 20., 150., label=r'm_{ll}^{4C}'),
+                WindowCut('fit4C_mh1', 50., 200., label=r'm_{H1}^{4C}'),
+                WindowCut('fit4C_mh2', 50., 200., label=r'm_{H2}^{4C}'),
+                LessThanEqualCut('ptmiss', 70., label=r'p_{t}^{miss}'),
+                LessThanEqualCut('thrust', 0.9, label='thrust')] 
                  
     elif hypothesis[:2].lower() == 'vv':
         cuts = [EqualCut('nisoleptons', 0, label='IsoLeptons'),

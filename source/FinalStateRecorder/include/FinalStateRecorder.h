@@ -113,8 +113,8 @@ class FinalStateRecorder : public Processor
 			{ 6, 0 }, // t
 			{ 11, 0 }, // e
 			{ 12, 0 }, // ve
-			{ 13, 0 }, // µ
-			{ 14, 0 }, // vµ
+			{ 13, 0 }, // μ
+			{ 14, 0 }, // vμ
 			{ 15, 0 }, // tau
 			{ 16, 0 }, // vtau
 			{ 21, 0 }, // g
@@ -134,8 +134,8 @@ class FinalStateRecorder : public Processor
 			{ 6, 0 }, // t
 			{ 11, 0 }, // e
 			{ 12, 0 }, // ve
-			{ 13, 0 }, // µ
-			{ 14, 0 }, // vµ
+			{ 13, 0 }, // μ
+			{ 14, 0 }, // vμ
 			{ 15, 0 }, // tau
 			{ 16, 0 }, // vtau
 			{ 21, 0 }, // g

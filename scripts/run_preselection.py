@@ -28,8 +28,8 @@ if __name__ == "__main__":
                         default=None,
                         help='Path to a directory where output plots, tables and ROOT files will be stored. Will be this directory if not given.')
     
-    parser.add_argument('--hypothesis', type=str, choices=['µµbbbb', 'eebbbb', 'vv', 'qq'],
-                        default='µµbbbb',
+    parser.add_argument('--hypothesis', type=str, choices=['μμbbbb', 'eebbbb', 'vv', 'qq'],
+                        default='μμbbbb',
                         help='Which hypothesis to use.')
     
     args = parser.parse_args()
@@ -69,7 +69,7 @@ if __name__ == "__main__":
         analysis_channel.evaluateEventCategories(default_category=default_category, order=category_order)
 
     pp = CutflowProcessor(sources, hypothesis=HYPOTHESIS, cuts=zhh_cuts(HYPOTHESIS), signal_categories=[
-        EventCategories.µµHHbbbb
+        EventCategories.μμHHbbbb
     ])
 
     masks, subsets, last_calc_dicts = pp.process()
@@ -80,10 +80,10 @@ if __name__ == "__main__":
     print('Creating cutflow tables...')
     pp.cutflowTable([
         ('eebb', 'eebb'),
-        ('\\boldsymbol{\\mu\\mu} bb', 'µµbb'),
+        ('\\boldsymbol{\\mu\\mu} bb', 'μμbb'),
         #('lvbbqq', mask_lvbbqq, l2q4, ''),
         ('\\boldsymbol{e \\nu b b q q} ', 'evbbqq'),
-        ('\\boldsymbol{\\mu \\nu b b q q} ', 'µvbbqq'),
+        ('\\boldsymbol{\\mu \\nu b b q q} ', 'μvbbqq'),
         ('\\boldsymbol{\\tau \\nu b b q q} ', 'τvbbqq'),
         ('bbqqqq', 'bbqqqq'),
         ('llbbbb', 'llbbbb'),
@@ -91,8 +91,8 @@ if __name__ == "__main__":
         ('llHH', 'llhh'),
         ('(llbbbb)', 'llhh_llbbbb'),
         ('(eebbbb)', 'eeHHbbbb'),
-        ('(\\mu\\mu bbbb)', 'µµHHbbbb'),
+        ('(\\mu\\mu bbbb)', 'μμHHbbbb'),
     ])
     
-    print('Writing ROOT file with weights, event mask and event categy...')
+    print('Writing ROOT file with weights, event mask and event category...')
     pp.writeROOTFiles()

@@ -24,6 +24,10 @@ class PROCESS_CATEGORIES:
     n1n1h = 1014
     n23n23h = 1015
     qqh = 1016
+    
+    # tth, ttz
+    f8_tth = 1021
+    f8_ttz = 1022
 
     # ff
     f2_z_l = 3170

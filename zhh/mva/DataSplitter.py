@@ -37,7 +37,6 @@ class DataSplitter:
         np.random.shuffle(shuffled_indices)
         
         n_groups = len(fractions)
-        print(len(shuffled_indices))
         idx_mask = np.zeros(len(shuffled_indices), dtype='?')
         
         data = []
@@ -57,7 +56,7 @@ class DataSplitter:
 
             for name in items:
                 item = items[name]
-                chunk[name] = item[idx_mask]
+                chunk[name] = item[shuffled_indices[idx_mask]]
                 
             data.append(chunk)
         

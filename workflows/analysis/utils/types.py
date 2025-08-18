@@ -7,3 +7,4 @@ class WhizardOption(TypedDict):
     process_definition: str
     template_dir: str
     sindarin_file: str
+    iters_per_polarization:dict[str, int]|None

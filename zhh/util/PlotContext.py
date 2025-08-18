@@ -24,6 +24,9 @@ class PlotContext:
     def getColorByKey(self, key):
         if not key in self._keys_idx_map:
             self._keys_idx_map[key] = len(self._keys)
+            if len(cast(list, self._cmap.colors)) == len(self._keys):
+                raise Exception('The colormap does not contain any remaining entries')
+                
             self._keys.append(key)
         
         return cast(list, self._cmap.colors)[self._keys_idx_map[key]]

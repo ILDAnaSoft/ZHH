@@ -47,7 +47,7 @@ class CreateAnalysisChunks(AbstractCreateChunks):
     jobtime:int = cast(int, luigi.IntParameter(description='Maximum runtime of each job. Uses DESY NAF defaults for the vanilla queue.',
                                                default=1800))
     
-    T0_MARLIN = 4
+    T0_MARLIN = 2
     
     def requires(self):
         from analysis.tasks_marlin import AnalysisRuntime
@@ -78,7 +78,7 @@ echo Success""".replace('\n', '  &&  ')
 class AnalysisGroup(BaseTask):
     def requires(self):
         from analysis.configurations import zhh_configs
-        if self.tag == 'LL':
+        if cast(str, self.tag).lower() == 'll':
             return [
                 AnalysisCombine.req(self, tag='550-llhh-fast-perf'),
                 AnalysisCombine.req(self, tag='550-4fsl-fast-perf'),

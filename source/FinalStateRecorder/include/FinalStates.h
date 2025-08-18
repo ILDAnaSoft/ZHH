@@ -9,5 +9,6 @@
 #include "FinalStates_h2f.h"
 #include "FinalStates_h4f.h"
 #include "FinalStates_hh2f.h"
+#include "FinalStates_tth_ttz.h"
 
 #endif

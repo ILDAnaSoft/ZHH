@@ -326,7 +326,7 @@ class EventObservablesBase: public Processor
 		// returns a vector of pairs (jet idx, tag value) sorted ASCENDING by btags
 		static std::vector<std::pair<int, float>> sortedTagging(std::vector<float> tags_by_jet_order);
 
-		static bool jetTaggingComparator ( const JetTaggingPair& l, const JetTaggingPair& r) { return l.first > r.first || std::isnan(r.first); };
+		static bool jetTaggingComparator ( const JetTaggingPair& l, const JetTaggingPair& r) { return l.second > r.second || std::isnan(r.second); };
 		std::vector<JetTaggingPair> m_bTagsSorted{}; // (jet index, btag1value) sorted DESC; first highest, last lowest
 		std::vector<JetTaggingPair> m_bTagsSorted2{}; // (jet index, btag1value) sorted DESC; first highest, last lowest
 		std::vector<double> m_bTagValues{};
@@ -375,15 +375,17 @@ class EventObservablesBase: public Processor
 		// jet matching from kinfit
 		std::vector<int> m_JMK_ZHH{};
 		std::vector<int> m_JMK_ZZH{};
+		std::vector<int> m_JMK_best{};
 
 		float m_fitprob_ZHH{};
-                float m_fitprob_ZZH{};
+        float m_fitprob_ZZH{};
 		float m_fitchi2_ZHH{};
-                float m_fitchi2_ZZH{};
+        float m_fitchi2_ZZH{};
 
 		std::vector<ROOT::Math::PxPyPzEVector> m_jets4cKinFit_4v{};
 		std::vector<ROOT::Math::PxPyPzEVector> m_leps4cKinFit_4v{};
 
+		std::vector<float> m_fit4C_masses{};
 		float m_fit4C_mz{};
 		float m_fit4C_mh1{};
 		float m_fit4C_mh2{};

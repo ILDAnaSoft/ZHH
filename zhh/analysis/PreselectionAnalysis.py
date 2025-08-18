@@ -691,8 +691,9 @@ def calc_preselection_by_event_categories(presel_results:TTreeInterface, process
                                           categories_selected:Optional[List[int]]=None,
                                           categories_additional:Optional[int]=3,
                                           weighted:bool=True,
+                                          weight_prop:str='weight',
                                           categories:Optional[np.ndarray]=None, counts:Optional[np.ndarray]=None,
-                                        xlim:Optional[tuple]=None)->dict[str, np.ndarray]:
+                                          xlim:Optional[tuple]=None)->dict[str, np.ndarray]:
     
     """Processes event categories. For a given TTreeInterface, in the default case,
     for all event categories, a list of events processes with weight and selected quantity
@@ -803,9 +804,9 @@ def calc_preselection_by_event_categories(presel_results:TTreeInterface, process
         category_mask = np.logical_or.reduce(process_masks)
         
         if quantity is None:
-            calc_dict[label] = (None, subset['weight'][category_mask])
+            calc_dict[label] = (None, subset[weight_prop][category_mask])
         else:
-            calc_dict[label] = (subset[quantity][category_mask], subset['weight'][category_mask])
+            calc_dict[label] = (subset[quantity][category_mask], subset[weight_prop][category_mask])
             
     return calc_dict
 

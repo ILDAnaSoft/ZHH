@@ -12,8 +12,8 @@ from ..analysis.Cuts import Cut, EqualCut, WindowCut, GreaterThanEqualCut, LessT
 from ..analysis.ZHHCuts import zhh_cuts
 from ..util.PlotContext import PlotContext
 
-def plot_preselection_by_calc_dict(calc_dict, hypothesis:str, xlabel:str, plot_context:PlotContext,
-                                   xunit:Optional[str]=None,
+def plot_preselection_by_calc_dict(calc_dict, xlabel:str, plot_context:PlotContext,
+                                   hypothesis:str|None=None, xunit:Optional[str]=None,
                                  bins:int=100, xlim:Optional[Iterable]=None, title_label:str='events',
                                  yscale:Optional[str]=None,
                                  ild_style_kwargs:dict={},
@@ -64,7 +64,7 @@ def plot_preselection_by_calc_dict(calc_dict, hypothesis:str, xlabel:str, plot_c
         'ild_offset_x': 0.,
         'ylabel_prefix': 'wt. ',
         'title_postfix': '',
-        'title': rf'ZHH → {hypothesis} analysis ('+ (r"wt. ") + (rf"{title_label}") + ')',
+        'title': rf'ZHH{f" → {hypothesis}" if hypothesis is not None else ""} analysis ('+ (r"wt. ") + (rf"{title_label}") + ')',
         'legend_kwargs': {'loc': 'lower right'},
         'int_bins': plot_hist_kwargs['int_bins'] if 'int_bins' in plot_hist_kwargs else False,
         'plot_context': plot_context

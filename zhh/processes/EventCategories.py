@@ -1,5 +1,14 @@
 class EVENT_CATEGORY_TRUE:
     OTHER = 0
+    
+    # SINGLE HIGGS
+    llH = 1
+    vvH = 2
+    qqH = 3
+
+    ttHZ = 7 # ttH or ttZ
+    ttH = 8
+    ttZ = 9
 
     # LEPTONIC
     OTHER_LL = 10
@@ -7,17 +16,17 @@ class EVENT_CATEGORY_TRUE:
     
     # START Only used in analysis (not in Marlin processor)
     eeHH = 111
-    µµHH = 112
-    𝜏𝜏HH = 113
+    μμHH = 112
+    ττHH = 113
     
     eeHHbbbb = 114
-    µµHHbbbb = 115
-    𝜏𝜏HHbbbb = 116
+    μμHHbbbb = 115
+    ττHHbbbb = 116
     # END
     
     eebb = 12
-    µµbb = 13
-    𝜏𝜏bb = 14
+    μμbb = 13
+    ττbb = 14
     llbbbb = 15
     llqqH = 16
     ll = 17
@@ -69,7 +78,6 @@ class EVENT_CATEGORY_TRUE:
     qqqqH = 52
     bbbbqq = 53
     bbbb = 54
-    ttZ = 55
     ttbb = 56
     qq = 57
     qqqq = 58
@@ -89,16 +97,16 @@ class EVENT_CATEGORY_TRUE:
     # rest: 44.22% (one hadronic, one leptonic decay)
     OTHER_TTBAR = 70
     evbbqq = 71
-    µvbbqq = 72
-    𝜏vbbqq = 73
+    μvbbqq = 72
+    τvbbqq = 73
     
     evbbcs = 74
-    µvbbcs = 75
-    𝜏vbbcs = 76
+    μvbbcs = 75
+    τvbbcs = 76
 
     evbbud = 77
-    µvbbud = 78
-    𝜏vbbud = 79
+    μvbbud = 78
+    τvbbud = 79
 
     # tt/WWZ -> bbqqqq
     # for tt: tt -> bbqqqq : 2x [t->Wb; W->qq]

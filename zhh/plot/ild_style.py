@@ -3,7 +3,8 @@ from matplotlib.patches import Patch
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
 from matplotlib.legend_handler import HandlerTuple
-from typing import Optional, List, Iterable, Union, Tuple, Literal
+from collections.abc import Collection
+from typing import Optional, List, Literal
 from ..util.get_matplotlib_fonts import resolve_fonts
 from ..util.PlotContext import PlotContext
 from ..util.deepmerge import deepmerge
@@ -21,7 +22,7 @@ ild_style_defaults = {
     'polarization_em': -0.8
 }
 
-def fig_ild_style(fig_or_ax:Figure|Axes, xlim:Union[List[float], Tuple[float,float], None]=None, bins:Union[Iterable,int,None]=None,
+def fig_ild_style(fig_or_ax:Figure|Axes, xlim:list[float]|tuple[float,float]|None=None, bins:Collection|int|None=None,
                   xscale:str='linear', xunit:Optional[str]='GeV', xlabel:str='m',
                   yscale:str='linear', yunit:Optional[str]='events', ylabel_prefix:str='',
                   xlocator:Optional[Locator]=None, ylocator:Optional[Locator]=None,
@@ -36,7 +37,8 @@ def fig_ild_style(fig_or_ax:Figure|Axes, xlim:Union[List[float], Tuple[float,flo
                   ild_offset_x:float=ild_style_defaults['ild_offset_x'],
                   ild_offset_y:float=ild_style_defaults['ild_offset_y'],
                   ild_status:str=ild_style_defaults['ild_status'],
-                  show_binning_on_y_scale:bool|None=None)->Figure:
+                  show_binning_on_y_scale:bool|None=None,
+                  columns:list[str]|None=None)->Figure:
     
     if isinstance(fig_or_ax, Axes):
         fig = fig_or_ax.figure
@@ -59,8 +61,10 @@ def fig_ild_style(fig_or_ax:Figure|Axes, xlim:Union[List[float], Tuple[float,flo
         n_patches = len(ax.patches)
         
         if plot_context is not None:
-            if hasattr(fig, 'columns'):
-                colorpalette = plot_context.getColorPalette(fig.columns)
+            if hasattr(fig, 'columns') and isinstance(getattr(fig, 'columns'), list):
+                colorpalette = plot_context.getColorPalette(getattr(fig, 'columns'))
+            elif columns is not None:
+                colorpalette = plot_context.getColorPalette(columns)
             else:
                 colorpalette = plot_context.getColorPalette(plot_context.getColorsAssignedKeys())
                 print('Could not get colors for legend. Using all properties of PlotContext')
@@ -129,7 +133,7 @@ def fig_ild_style(fig_or_ax:Figure|Axes, xlim:Union[List[float], Tuple[float,flo
     if is_hist and show_binning_on_y_scale:
         assert(xlim is not None and bins is not None)
         
-        nbins = len(bins) if isinstance(bins, Iterable) else bins
+        nbins = len(bins) if isinstance(bins, Collection) else bins
         ylabel_binning_val = (xlim[1]-xlim[0])/nbins
         ylabel_binning_str = rf'{ylabel_binning_val:.2f}' if ylabel_binning_val >= 0.1 else rf'{ylabel_binning_val:.2E}'
         y_label += rf' / {ylabel_binning_str}'
@@ -140,6 +144,8 @@ def fig_ild_style(fig_or_ax:Figure|Axes, xlim:Union[List[float], Tuple[float,flo
     x_label = rf'${xlabel}$ [{xunit}]' if (xunit is not None and xunit != '') else xlabel
     
     if is_hist and legend_labels is not None:
+        assert(isinstance(colorpalette, list))
+        
         legend_handles = []
         
         for i in reversed(range(len(legend_labels))):
@@ -159,10 +165,9 @@ def fig_ild_style(fig_or_ax:Figure|Axes, xlim:Union[List[float], Tuple[float,flo
 
 def update_plot(ax:Axes, x_label:str|None=None, y_label:str|None=None, title:str|None=None, fontname:str|None=None, context:PlotContext|None=None,
                 ):    
-    assert(context is not None or fontname is not None)
     
     if fontname is None:
-        fontname = context.getFont()
+        fontname = context.getFont() if context is not None else ild_style_defaults['fontname']
         
     assert(fontname is not None)
     
@@ -190,8 +195,8 @@ def update_plot(ax:Axes, x_label:str|None=None, y_label:str|None=None, title:str
     if title is not None:
         ax.set_title(title, loc='right', fontsize=12, fontname=fontname)
 
-def legend_kwargs_fn(context:PlotContext, size:int=9, titlesize:int=10):
-    fontname = context.getFont()
+def legend_kwargs_fn(context:PlotContext|None=None, size:int=9, titlesize:int=10):
+    fontname = context.getFont() if context is not None else ild_style_defaults['fontname']
     
     return {
         'columnspacing': 0,
