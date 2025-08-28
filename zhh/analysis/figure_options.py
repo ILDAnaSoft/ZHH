@@ -58,7 +58,11 @@ figure_options:dict[str, dict[str, dict]] = {
         'bdtg4': { 'xlabel': 'bdtg4', 'xlim': [0, 1] },
         'bdtg5': { 'xlabel': 'bdtg5', 'xlim': [0, 1] },        
     },
-    'default': {  }
+    'default': {
+        'fit4C_mh1': { 'xlim': [0, 270], 'xunit': 'GeV' },
+        'fit4C_mh2': { 'xlim': [0, 500], 'xunit': 'GeV' },
+        'fit4C_mz': { 'xlim': [0, 550], 'xunit': 'GeV' }
+    }
     #'vvbbbb': [
     #    { 'xlabel': 'IsoLeptons', 'plot_hist_kwargs': { 'int_bins': True }, 'ild_style_kwargs': { 'xminor': False, 'xlocator': MultipleLocator(1) } },
     #    { 'xlabel': 'm_{H1}', 'xlim': [0, 250], 'xunit': 'GeV' },

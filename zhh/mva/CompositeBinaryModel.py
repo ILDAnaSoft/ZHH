@@ -24,7 +24,9 @@ class CompositeBinaryModel(MulticlassModel):
                    plot_features:bool=True,
                    force_retrain_per_clf:list[bool]|None=None,
                    plot_features_bname:str|None=None,
-                   plot_options:dict[str, dict]={}):
+                   plot_options:dict[str, dict]={},
+                   cache:str|None='cache',
+                   train_kwargs:dict[int, dict]={}):
         """Initialized the whole model. Trains the individuals classifiers (if
         needed) and optionally plots the training input distributions and si-
         gnificance curves using the test dataset.
@@ -54,34 +56,67 @@ class CompositeBinaryModel(MulticlassModel):
             
             print(f'\nProcessing step {i}: {sig_class} vs {bkg_class}')
             
+            from os.path import isfile
+            
             if not clf.getState() == MVA_MODULE_STATES.READY or plot_features or force_retrain_per_clf[i]:
                 # step=0 to force extract after preselection
                 # split=0 use first split
-                train_src_idx, train_event_num, \
-                train_labels, train_weight, train_inputs = self._extractor.extract([ (bkg_class, 0), (sig_class, 1) ], clf.getFeatures(), step=0, split=0, weight_prop='weights_split')
+                cache_file = f'{cache}_train_class_{i}.npz' if cache is not None else None
+                
+                if cache_file is not None and isfile(cache_file):
+                    cache_npz = np.load(cache_file)
+                    train_labels, train_weight, train_inputs, features = cache_npz['train_labels'], cache_npz['train_weight'], cache_npz['train_inputs'], cache_npz['features']
+                    features = list(features)
+                    
+                    self._extractor._features = features
+                    self._extractor._labels = np.array([ 0, 1 ], dtype='B')
+                    assert(clf.getFeatures() == features)
+                else:
+                    train_src_idx, train_event_num, \
+                    train_labels, train_weight, train_inputs = self._extractor.extract([ (bkg_class, 0), (sig_class, 1) ], clf.getFeatures(), step=0, split=0, weight_prop='weights_split')
+                    
+                    if cache_file is not None:
+                        np.savez_compressed(cache_file, train_labels=train_labels, train_weight=train_weight, train_inputs=train_inputs, features=clf.getFeatures())
                 
                 if plot_features:
                     self._extractor.plot(train_inputs, train_weight, train_labels, filename=plot_features_bname.replace('$i', str(i)),
-                                         signal_category=sig_class, context=self._extractor._cp.getPlotContext(), label_2_category={ 0: bkg_class, 1: sig_class },
+                                         signal_categories=[sig_class], context=self._extractor._cp.getPlotContext(), label_2_category={ 0: bkg_class, 1: sig_class },
                                          plot_options=plot_options)
                     
                 print(f'Train (count) Signal: {(train_labels == 1).sum()}; Bkg: {(train_labels == 0).sum()}')
                 print(f'Train (wgted) Signal: {train_weight[train_labels == 1].sum()}; Bkg: {train_weight[train_labels == 0].sum()}')
                 
                 if clf.getState() == MVA_MODULE_STATES.READY and force_retrain_per_clf[i]:
-                    clf = self._clfs[i] = clf.reset() 
+                    clf = self._clfs[i] = clf.reset()
 
                 if clf.getState() != MVA_MODULE_STATES.READY:
-                    clf.train(train_inputs, train_labels, train_weight)
+                    train_kwargs_current = {} if not i in train_kwargs else train_kwargs[i]
+                    
+                    clf.train(train_inputs, train_labels, train_weight, **train_kwargs_current)
                     clf.to_file()
+                    print(clf._model.feature_importances_)
             
             if record_stats:
                 print(f'Evaluating test set')
                 
-                # split=1 use second split
-                test_src_idx, test_event_num, \
-                test_labels, test_weight, test_inputs = self._extractor.extract([ (bkg_class, 0), (sig_class, 1) ], clf.getFeatures(),
+                cache_file = f'{cache}_test_class_{i}.npz' if cache is not None else None
+                
+                if cache_file is not None and isfile(cache_file):
+                    cache_npz = np.load(cache_file)
+                    test_labels, test_weight, test_inputs, features = cache_npz['test_labels'], cache_npz['test_weight'], cache_npz['test_inputs'], cache_npz['features']
+                    features = list(features)
+                    
+                    self._extractor._features = features
+                    self._extractor._labels = np.array([ 0, 1 ], dtype='B')
+                    assert(clf.getFeatures() == features)
+                else:
+                    # split=1 use second split
+                    test_src_idx, test_event_num, \
+                    test_labels, test_weight, test_inputs = self._extractor.extract([ (bkg_class, 0), (sig_class, 1) ], clf.getFeatures(),
                                                                                 step=0, split=1, weight_prop='weights_split', MOD_WEIGHT=False)
+                    
+                    if cache_file is not None:
+                        np.savez_compressed(cache_file, test_labels=test_labels, test_weight=test_weight, test_inputs=test_inputs, features=clf.getFeatures())
                 
                 mva_output = clf.predict(test_inputs)[:, 1]
                 

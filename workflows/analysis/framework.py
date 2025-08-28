@@ -42,7 +42,7 @@ class HTCondorWorkflow(law.contrib.htcondor.HTCondorWorkflow):
     )
     
     rerun_with_higher_requirements = luigi.BoolParameter(
-        default=True,
+        default=False,
         significant=False,
         description="whether or not to run with increased RAM and time requirements if the job is failing; default: True",
     )

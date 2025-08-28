@@ -6,7 +6,7 @@ def apply_split(*fracs, source:AnalysisChannel, name:str='split', seed:int=42)->
     """Creates an array of labels with len(fracs)+1 different values.
     In the easiest way, given only one fraction, will only assign 0 to
     the fraction given and 1 to the remainder. Assigns the resulting
-    array to the column given by name in the datasource store.
+    array to the column given by name in the datastore source.
 
     Args:
         source (AnalysisChannel): _description_

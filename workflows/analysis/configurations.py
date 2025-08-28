@@ -91,74 +91,36 @@ if False:
         marlin_constants = { 'CMSEnergy': 550 }
         
 # example how to use Whizard before SGV
-class Config_500_zh4tau_fast_perf(AnalysisConfiguration):
-    tag = '500-zh4tau-fast-perf'
+class Config_500_zh_tau_fast_perf(AnalysisConfiguration):
+    tag = '500-zh-tau-fast-perf'
     
     whizard_options = [
-        { 'process_name': 'e3e3h_e3e3',
+        { 'process_name': 'zh_e3e3nunu',
          'process_definition': '',
          'template_dir': '$REPO_ROOT/workflows/resources/whizard_template',
          'sindarin_file': 'whizard.base500.sin',
-         'iters_per_polarization': {
-             'eL.pL': 10,
-             'eL.pR': 10,
-             'eR.pL': 10,
-             'eR.pR': 10
-          }
-        }
-    ]
-    
-    def sgv_inputs(self, fast_sim_task):
-        from analysis.tasks_reco import FastSimSGV
-        assert(isinstance(fast_sim_task, FastSimSGV))
-        
-        sgv_inputs = fast_sim_task.input()
-        assert('whizard_event_generation' in sgv_inputs)
-        
-        whiz_outputs = sgv_inputs['whizard_event_generation']['collection']
-        
-        input_files:list[str] = []
-        for i in range(len(whiz_outputs)):
-            input_files.append(whiz_outputs[i][0].path)
-        
-        input_options = [{
-            'global_steering.MAXEV': 999999,
-            'global_generation_steering.CMS_ENE': 500,
-            'external_read_generation_steering.GENERATOR_INPUT_TYPE': 'LCIO',
-            'external_read_generation_steering.INPUT_FILENAMES': 'input.slcio',
-            'analysis_steering.CALO_TREATMENT': 'PERF'
-        }] * len(input_files)
-        
-        return input_files, input_options
-    
-    marlin_globals = {  }
-    marlin_constants = { 'CMSEnergy': 500, 'errorflowconfusion': 'False' }
-    
-class Config_500_zh2q_fast_perf(AnalysisConfiguration):
-    tag = '500-zh2q-fast-perf'
-    
-    whizard_options = [
-        { 'process_name': 'z_dd',
+         'iters_per_polarization': { 'eL.pL': 10, 'eL.pR': 10, 'eR.pL': 10, 'eR.pR': 10 }},
+        { 'process_name': 'zh_ddh',
          'process_definition': '',
          'template_dir': '$REPO_ROOT/workflows/resources/whizard_template',
          'sindarin_file': 'whizard.base500.sin',
          'iters_per_polarization': { 'eL.pL': 10, 'eL.pR': 10, 'eR.pL': 10, 'eR.pR': 10 } },
-        { 'process_name': 'z_uu',
+        { 'process_name': 'zh_uuh',
          'process_definition': '',
          'template_dir': '$REPO_ROOT/workflows/resources/whizard_template',
          'sindarin_file': 'whizard.base500.sin',
          'iters_per_polarization': { 'eL.pL': 10, 'eL.pR': 10, 'eR.pL': 10, 'eR.pR': 10 } },
-        { 'process_name': 'z_ss',
+        { 'process_name': 'zh_ssh',
          'process_definition': '',
          'template_dir': '$REPO_ROOT/workflows/resources/whizard_template',
          'sindarin_file': 'whizard.base500.sin',
          'iters_per_polarization': { 'eL.pL': 10, 'eL.pR': 10, 'eR.pL': 10, 'eR.pR': 10 } },
-        { 'process_name': 'z_cc',
+        { 'process_name': 'zh_cch',
          'process_definition': '',
          'template_dir': '$REPO_ROOT/workflows/resources/whizard_template',
          'sindarin_file': 'whizard.base500.sin',
          'iters_per_polarization': { 'eL.pL': 10, 'eL.pR': 10, 'eR.pL': 10, 'eR.pR': 10 } },
-        { 'process_name': 'z_bb',
+        { 'process_name': 'zh_bbh',
          'process_definition': '',
          'template_dir': '$REPO_ROOT/workflows/resources/whizard_template',
          'sindarin_file': 'whizard.base500.sin',
@@ -190,7 +152,69 @@ class Config_500_zh2q_fast_perf(AnalysisConfiguration):
     
     marlin_globals = {  }
     marlin_constants = { 'CMSEnergy': 500, 'errorflowconfusion': 'False' }
+
+class Config_500_zh10_tau_fast_perf(AnalysisConfiguration):
+    tag = '500-zh10-tau-fast-perf'
+    
+    whizard_options = [
+        { 'process_name': 'zh_e3e3nunu',
+         'process_definition': '',
+         'template_dir': '$REPO_ROOT/workflows/resources/whizard_template',
+         'sindarin_file': 'whizard.base500.sin',
+         'iters_per_polarization': { 'eL.pR': 200, 'eR.pL': 200 }},
+        { 'process_name': 'zh_ddh',
+         'process_definition': '',
+         'template_dir': '$REPO_ROOT/workflows/resources/whizard_template',
+         'sindarin_file': 'whizard.base500.sin',
+         'iters_per_polarization': { 'eL.pR': 200, 'eR.pL': 200 } },
+        { 'process_name': 'zh_uuh',
+         'process_definition': '',
+         'template_dir': '$REPO_ROOT/workflows/resources/whizard_template',
+         'sindarin_file': 'whizard.base500.sin',
+         'iters_per_polarization': { 'eL.pR': 200, 'eR.pL': 200 } },
+        { 'process_name': 'zh_ssh',
+         'process_definition': '',
+         'template_dir': '$REPO_ROOT/workflows/resources/whizard_template',
+         'sindarin_file': 'whizard.base500.sin',
+         'iters_per_polarization': { 'eL.pR': 200, 'eR.pL': 200 } },
+        { 'process_name': 'zh_cch',
+         'process_definition': '',
+         'template_dir': '$REPO_ROOT/workflows/resources/whizard_template',
+         'sindarin_file': 'whizard.base500.sin',
+         'iters_per_polarization': { 'eL.pR': 200, 'eR.pL': 200 } },
+        { 'process_name': 'zh_bbh',
+         'process_definition': '',
+         'template_dir': '$REPO_ROOT/workflows/resources/whizard_template',
+         'sindarin_file': 'whizard.base500.sin',
+         'iters_per_polarization': { 'eL.pR': 200, 'eR.pL': 200 } }
+    ]
+    
+    def sgv_inputs(self, fast_sim_task):
+        from analysis.tasks_reco import FastSimSGV
+        assert(isinstance(fast_sim_task, FastSimSGV))
         
+        sgv_inputs = fast_sim_task.input()
+        assert('whizard_event_generation' in sgv_inputs)
+        
+        whiz_outputs = sgv_inputs['whizard_event_generation']['collection']
+        
+        input_files:list[str] = []
+        for i in range(len(whiz_outputs)):
+            input_files.append(whiz_outputs[i][0].path)
+        
+        input_options = [{
+            'global_steering.MAXEV': 999999,
+            'global_generation_steering.CMS_ENE': 500,
+            'external_read_generation_steering.GENERATOR_INPUT_TYPE': 'LCIO',
+            'external_read_generation_steering.INPUT_FILENAMES': 'input.slcio',
+            'analysis_steering.CALO_TREATMENT': 'PERF'
+        }] * len(input_files)
+        
+        return input_files, input_options
+    
+    marlin_globals = {  }
+    marlin_constants = { 'CMSEnergy': 500, 'errorflowconfusion': 'False' }
+
 #################################
 # FULL SIM                      #
 #################################
@@ -250,8 +274,8 @@ class Config_250_ftag_full(AnalysisConfiguration):
         'LCFIPlusML_JSON': f'{environ["REPO_ROOT"]}/dependencies/LCFIPlusConfig/onnx/ilc_nnqq_neutrals/preprocess.json'
     }
         
-class Config_250_ftag_fast_pfl(AnalysisConfiguration):
-    tag = '250-ftag-fast-pfl'
+class Config_250_ftag_fast_perf(AnalysisConfiguration):
+    tag = '250-ftag-fast-perf'
     
     task_kwargs:dict[str, dict] = {
         'MarlinBaseJob': {
@@ -277,7 +301,7 @@ class Config_250_ftag_fast_pfl(AnalysisConfiguration):
             'global_generation_steering.CMS_ENE': 250,
             'external_read_generation_steering.GENERATOR_INPUT_TYPE': 'LCIO',
             'external_read_generation_steering.INPUT_FILENAMES': 'input.slcio',
-            'analysis_steering.CALO_TREATMENT': 'PFL '
+            'analysis_steering.CALO_TREATMENT': 'PERF'
         }] * len(input_files)
         
         return input_files, input_options
@@ -341,6 +365,37 @@ class Config_550_llhh_fast_pfl(AnalysisConfiguration):
     
     marlin_globals = {  }
     marlin_constants = { 'CMSEnergy': 550 }
+
+class Config_550_4fh_fast_perf(AnalysisConfiguration):
+    tag = '550-4fh-fast-perf'
+    
+    def raw_index_requires(self, raw_index_task: 'AbstractIndex'):
+        # use the output of 550-4f-fast-perf as input
+        
+        from analysis.tasks_reco import FastSimSGV
+        from analysis.tasks import RawIndex
+        
+        fast_sim_dep = FastSimSGV.req(raw_index_task, tag='550-4f-fast-perf')
+        raw_index_dep = RawIndex.req(raw_index_task, tag='550-4f-fast-perf') 
+                     
+        return [fast_sim_dep, raw_index_dep]
+    
+    def slcio_files(self, raw_index_task: 'AbstractIndex'):
+        raw_index_4f = raw_index_task.input()[1]
+        samples_4f = np.load(raw_index_4f[1].path)
+        
+        semileptonic_processes = list(filter(lambda p: '_h' in p, np.unique(samples_4f['process']).tolist()))
+
+        input_files = []
+        for proc in semileptonic_processes:
+            input_files += samples_4f['location'][samples_4f['process'] == proc].tolist()
+            
+        input_files.sort()
+
+        return input_files
+    
+    marlin_globals = {  }
+    marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
 
 class Config_550_4fsl_fast_perf(AnalysisConfiguration):
     tag = '550-4fsl-fast-perf'
@@ -627,8 +682,8 @@ class Config_550_bbbb_fast_perf(AnalysisConfiguration):
 
 # legacy
 #zhh_configs.add(Config_500_all_full())
-zhh_configs.add(Config_500_zh4tau_fast_perf())
-zhh_configs.add(Config_500_zh2q_fast_perf())
+zhh_configs.add(Config_500_zh_tau_fast_perf())
+zhh_configs.add(Config_500_zh10_tau_fast_perf())
 
 # FULL SIM
 # ftag
@@ -641,18 +696,18 @@ zhh_configs.add(Config_550_llhh_full())
 # llHH
 zhh_configs.add(Config_550_llhh_fast_perf())
 zhh_configs.add(Config_550_4fsl_fast_perf())
+zhh_configs.add(Config_550_4fh_fast_perf())
 zhh_configs.add(Config_550_2l4q_fast_perf())
 zhh_configs.add(Config_550_bbbb_fast_perf())
 zhh_configs.add(Config_550_tthz_fast_perf())
 zhh_configs.add(Config_550_2l_fast_perf())
+zhh_configs.add(Config_250_ftag_fast_perf())
 
 # qqHH
 zhh_configs.add(Config_550_6q_fast_perf())
 
 
 # SGV PFL
-# ftag
-zhh_configs.add(Config_250_ftag_fast_pfl())
 
 # llHH
 zhh_configs.add(Config_550_llhh_fast_pfl())

@@ -22,7 +22,9 @@ class DataExtractor:
                 MOD_WEIGHT:bool=True,
                 step:int|None=None,
                 split:int|None=None,
-                weight_prop:str='weight')->tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+                weight_prop:str='weight',
+                shuffle:bool=True,
+                seed:int=42)->tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """Extracts numpy arrays containing event weights, feature data and
         labels for the event categories contained in to_process.
 
@@ -115,10 +117,10 @@ class DataExtractor:
                 data = store[feature][mask]                
                 inputs[pointer:pointer + nrows, i] = data
             
-            #weight[pointer:pointer + nrows] = (1/nrows * (1 if fs_name == 'μμbb' else 10)) if MOD_WEIGHT else store['weight'][mask]
             pbar.update(len(data))
             
-            weight[pointer:pointer + nrows] = 1/nrows if MOD_WEIGHT else store[weight_prop][mask]
+            # see https://scikit-learn.org/stable/modules/generated/sklearn.utils.class_weight.compute_sample_weight.html
+            weight[pointer:pointer + nrows] = (1/nrows)*len(labels)/len(to_process) if MOD_WEIGHT else store[weight_prop][mask]
             labels[pointer:pointer + nrows] = class_label
             
             pointer += nrows
@@ -127,12 +129,25 @@ class DataExtractor:
         pbar.close()
             
         self._labels = np.array(labels_unique, dtype='B')
+        
+        if shuffle:
+            shuffled_indices = np.arange(len(labels))
+    
+            rng = np.random.default_rng(42)
+            rng.shuffle(shuffled_indices)
+
+            src_idx = src_idx[shuffled_indices]
+            event_num = event_num[shuffled_indices]
+            labels = labels[shuffled_indices]
+            weight = weight[shuffled_indices]
+            inputs = inputs[shuffled_indices]
             
         return src_idx, event_num, labels, weight, inputs
     
     def plot(self, inputs, weight, labels, filename:str|None='mva_inputs.pdf',
              label_2_category:dict[int, str]|None=None, context:PlotContext|None=None,
-             signal_category:str|None=None, plot_options:dict[str, dict]={}):
+             signal_categories:list|None=None, plot_options:dict[str, dict]={},
+             bkg_hist_kwargs:dict={ 'histtype': 'stepfilled' }):
         
         assert(self._features is not None and self._labels is not None)
         
@@ -151,17 +166,18 @@ class DataExtractor:
             label_2_category[0] = 'Background'
             label_2_category[1] = 'Signal'
             
-            signal_category = 'Signal'
+            signal_categories = ['Signal']
 
         xunits:list[None|str] = [None] * len(features)
         #xunits[0] = 'GeV'
         
         hist_kwargs_overwrite = {}
         for label, category in label_2_category.items():
-            if category == signal_category:
+            if category in signal_categories:
                 hist_kwargs_overwrite[category] = {}
             else:
-                hist_kwargs_overwrite[category] = { 'histtype': 'stepfilled', 'color': context.getColorByKey(category) }
+                hist_kwargs_overwrite[category] = deepcopy(bkg_hist_kwargs)
+                hist_kwargs_overwrite[category]['color'] = context.getColorByKey(category)
 
         plot_kwargs_base = {
             'yscale': 'linear',

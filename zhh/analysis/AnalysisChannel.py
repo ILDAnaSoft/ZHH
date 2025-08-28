@@ -39,7 +39,7 @@ class AnalysisChannel:
         self._size:int|None = None
         
         # fetchData()
-        self._preselection:TTreeInterface|None = None
+        self._store:TTreeInterface|None = None
         
         # weight()
         self._processes:np.ndarray|None = None
@@ -126,7 +126,7 @@ class AnalysisChannel:
         
         return cast(ur.TTree, self._rf['Merged'])
     
-    def fetchData(self)->TTreeInterface:
+    def fetchData(self, snapshot:str|None=None)->TTreeInterface:
         """Gives lazily loaded access to the tree data and other custom defined
         properties. The pid and weight columns are only populated after weight
         is called. 
@@ -140,10 +140,10 @@ class AnalysisChannel:
         """
         assert(self._rf is not None)
         
-        if self._preselection is None:
-            self._preselection = TTreeInterface(cast(ur.TTree, self._rf['Merged']))
+        if self._store is None:
+            self._store = TTreeInterface(cast(ur.TTree, self._rf['Merged']), snapshot=snapshot)
         
-        return self._preselection
+        return self._store
     
     def getStore(self)->TTreeInterface:
         """Returns the preselection summary object.
@@ -152,9 +152,9 @@ class AnalysisChannel:
             TTreeInterface: preselection summary object
         """
         
-        assert(self._preselection is not None)
+        assert(self._store is not None)
         
-        return self._preselection
+        return self._store
     
     def plotFinalStateCounts(self):
         assert(self._rf is not None)
@@ -183,7 +183,7 @@ class AnalysisChannel:
             tuple[np.ndarray,np.ndarray]: weight_data, processes
         """
         
-        assert(self._rf is not None and self._preselection is not None)
+        assert(self._rf is not None and self._store is not None)
         
         self._lumi_inv_ab = lumi_inv_ab
         
@@ -253,8 +253,8 @@ class AnalysisChannel:
                 
                 idx += 1
                 
-        self._preselection['pid'] = weight_data['pid']
-        self._preselection['weight'] = weight_data['weight']
+        self._store['pid'] = weight_data['pid']
+        self._store['weight'] = weight_data['weight']
         self._processes = processes
                 
         return weight_data, processes
@@ -290,7 +290,7 @@ class AnalysisChannel:
         
         from .TTreeInterface import parse_final_state_counts
         
-        assert(self._preselection is not None)
+        assert(self._store is not None)
         
         return parse_final_state_counts(self.getStore())
     
@@ -377,8 +377,9 @@ class AnalysisChannel:
                 
                 mask_func, category = self._event_category_resolvers[name]
                 mask = mask_func(self, parse_final_state_counts(self.getStore()))
-                self._event_category_resolvers[name] = (mask, category)
-            raise ValueError(f'Event category {name} not registered.')
+                self._event_categories[name] = (mask, category)
+            else:
+                raise ValueError(f'Event category {name} not registered.')
         
         return self._event_categories[name][0]
     

@@ -213,7 +213,7 @@ void FinalStateRecorder::init()
 		m_pTTree->Branch("final_state_counts", &m_final_state_counts);
 
 		m_pTTree->Branch("higgs_final_states", &m_higgs_final_states);
-		m_pTTree->Branch("higgs_final_state_counts", &m_final_state_counts);
+		m_pTTree->Branch("higgs_final_state_counts", &m_higgs_final_state_counts);
 
 		m_pTTree->Branch("process", &m_process);
 		m_pTTree->Branch("process_id", &m_process_id);
@@ -487,6 +487,10 @@ void FinalStateRecorder::init()
 	this->register_process(new ww_sl0());
 	this->register_process(new zz_sl0());
 	this->register_process(new zznu_sl0());
+
+	this->register_process(new ww_h0());
+	this->register_process(new zz_h0());
+	this->register_process(new zzorww_h0());
 
 	// new mc-2025 tth+ttz production
 	this->register_process(new ptth());

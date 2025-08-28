@@ -174,6 +174,7 @@ private:
   float m_BSEnergyTrue{};
   float m_HHMassHardProcess{};
   int m_FitErrorCode{};
+  int m_invalidCovMatrixAtJet{};
   float m_pxcstartvalue{};
   float m_pycstartvalue{};
   float m_pzcstartvalue{};

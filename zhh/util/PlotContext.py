@@ -36,3 +36,9 @@ class PlotContext:
     
     def getColorPalette(self, keys:list):
         return [self.getColorByKey(key) for key in keys]
+    
+    def __copy__(self):
+        raise Exception('PlotContext instances are unique')
+
+    def __deepcopy__(self, memo):
+        raise Exception('PlotContext instances are unique')

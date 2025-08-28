@@ -9,7 +9,7 @@ class MulticlassModel:
         pass
     
     @staticmethod
-    def threshold_scan(sections_lin:int=512, sections_asympt:int=64, rounding:int=7):
+    def threshold_scan(sections_lin:int=512, sections_asympt:int=256, rounding:int=7):
         """Returns an array of floats for a classifier threshold scan. Linear
         from 0 to 0.9 and from then on asymptotically closer to 1.
 

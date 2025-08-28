@@ -35,7 +35,8 @@ class MixedLazyTablelike(LazilyLoadedObject):
     Items are writable properties, props are read-only and must be
     set via the assignment operator and given a callback. If a given
     value is a callable, it is treated as a property, otherwise as
-    an item.
+    an item. Resolution order for a given key is props first, then
+    items, then the default handler (if specified).
 
     Args:
         LazilyLoadedObject (_type_): _description_

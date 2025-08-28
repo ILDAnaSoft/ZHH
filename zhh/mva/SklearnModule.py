@@ -19,9 +19,9 @@ class SklearnModule(MVAModule):
         print(model_kwargs)
         return factory(**model_kwargs)
     
-    def _train(self, inputs:np.ndarray, labels:np.ndarray, weights:np.ndarray|None):
+    def _train(self, inputs:np.ndarray, labels:np.ndarray, weights:np.ndarray|None, **kwargs):
         assert(not self.isTrained())
-        self._model.fit(inputs, labels, sample_weight=weights if weights is None else None)
+        self._model.fit(inputs, labels, sample_weight=weights if weights is None else None, **kwargs)
         return True
     
     def predict(self, inputs:np.ndarray):

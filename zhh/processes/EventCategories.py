@@ -22,6 +22,7 @@ class EVENT_CATEGORY_TRUE:
     eeHHbbbb = 114
     μμHHbbbb = 115
     ττHHbbbb = 116
+    llhh_llnonbbbb = 117
     # END
     
     eebb = 12
@@ -127,7 +128,7 @@ class EVENT_CATEGORY_TRUE:
     F6_OTHER = 98
     
     def __init__(self) -> None:
-        self.map = { key:value for key, value in EVENT_CATEGORY_TRUE.__dict__.items() if not key.startswith('__') and not callable(key)}
-        self.inverted = { v: k for k, v in self.map.items() }
+        self.map:dict[str, int]      = { key:value for key, value in EVENT_CATEGORY_TRUE.__dict__.items() if not key.startswith('__') and not callable(key)}
+        self.inverted:dict[int, str] = { v: k for k, v in self.map.items() }
     
 EventCategories = EVENT_CATEGORY_TRUE()

@@ -23,22 +23,23 @@ ild_style_defaults = {
 }
 
 def fig_ild_style(fig_or_ax:Figure|Axes, xlim:list[float]|tuple[float,float]|None=None, bins:Collection|int|None=None,
-                  xscale:str='linear', xunit:Optional[str]='GeV', xlabel:str='m',
-                  yscale:str='linear', yunit:Optional[str]='events', ylabel_prefix:str='',
-                  xlocator:Optional[Locator]=None, ylocator:Optional[Locator]=None,
-                  xminor:Optional[int]=5, yminor:Optional[int]=5,
+                  xscale:str='linear', xunit:str|None='GeV', xlabel:str='m',
+                  yscale:str='linear', yunit:str|None='events', ylabel_prefix:str='',
+                  xlocator:Locator|None=None, ylocator:Locator|None=None,
+                  xminor:int|None=5, yminor:int|None=5,
                   beam_spec:bool=True, beam_energy:int=ild_style_defaults['beam_energy'], ax_index:int=0,
-                  title:Optional[str]=None, title_postfix:str='',
-                  legend_labels:Optional[List]=None,
+                  title:str|None=None, title_postfix:str='',
+                  legend_labels:list|None=None,
                   legend_kwargs={},
-                  colorpalette:Optional[List]=ild_style_defaults['colorpalette'],
+                  colorpalette:list|None=ild_style_defaults['colorpalette'],
                   plot_context:PlotContext|None=None, int_bins:bool=False,
-                  ild_text_position:Optional[Literal['upper left','upper right']]='upper left',
+                  ild_text_position:Literal['upper left','upper right']|None='upper left',
                   ild_offset_x:float=ild_style_defaults['ild_offset_x'],
                   ild_offset_y:float=ild_style_defaults['ild_offset_y'],
                   ild_status:str=ild_style_defaults['ild_status'],
                   show_binning_on_y_scale:bool|None=None,
-                  columns:list[str]|None=None)->Figure:
+                  columns:list[str]|None=None,
+                  return_legend_kwargs:bool=False)->Figure|tuple[Figure,dict]:
     
     if isinstance(fig_or_ax, Axes):
         fig = fig_or_ax.figure
@@ -48,6 +49,8 @@ def fig_ild_style(fig_or_ax:Figure|Axes, xlim:list[float]|tuple[float,float]|Non
         ax = fig.get_axes()[ax_index]
     else:
         raise TypeError('fig_or_ax must be a Figure or Axes instance')
+    
+    assert(isinstance(fig, Figure))
     
     if show_binning_on_y_scale is None:
         show_binning_on_y_scale = int_bins
@@ -133,9 +136,9 @@ def fig_ild_style(fig_or_ax:Figure|Axes, xlim:list[float]|tuple[float,float]|Non
     if is_hist and show_binning_on_y_scale:
         assert(xlim is not None and bins is not None)
         
-        nbins = len(bins) if isinstance(bins, Collection) else bins
+        nbins = (len(bins) if isinstance(bins, Collection) else bins) if not int_bins else int(round(xlim[1] - xlim[0]))
         ylabel_binning_val = (xlim[1]-xlim[0])/nbins
-        ylabel_binning_str = rf'{ylabel_binning_val:.2f}' if ylabel_binning_val >= 0.1 else rf'{ylabel_binning_val:.2E}'
+        ylabel_binning_str = (rf'{ylabel_binning_val:.2f}' if ylabel_binning_val >= 0.1 else rf'{ylabel_binning_val:.2E}') if not int_bins else f'bin'
         y_label += rf' / {ylabel_binning_str}'
         
         if (xunit != '' and xunit is not None):
@@ -143,25 +146,20 @@ def fig_ild_style(fig_or_ax:Figure|Axes, xlim:list[float]|tuple[float,float]|Non
             
     x_label = rf'${xlabel}$ [{xunit}]' if (xunit is not None and xunit != '') else xlabel
     
+    legend_call_kwargs = {}
     if is_hist and legend_labels is not None:
         assert(isinstance(colorpalette, list))
+
+        legend_call_kwargs = deepmerge(legend_kwargs_fn(plot_context) if plot_context is not None else legend_kwargs_fn(), deepcopy(legend_kwargs))
         
-        legend_handles = []
-        
-        for i in reversed(range(len(legend_labels))):
-            process_name = legend_labels[i]
-            legend_handles.append(Patch(color=colorpalette[i], linewidth=0, label=process_name))
-        
-        if plot_context is not None:
-            legend_call_kwargs = deepmerge(legend_kwargs_fn(plot_context), deepcopy(legend_kwargs))
-        else:
-            legend_call_kwargs = deepcopy(legend_kwargs)
-        
-        ax.legend(handles=legend_handles, **legend_call_kwargs)
+        ax.legend(**legend_call_kwargs)
     
     update_plot(ax, x_label=x_label, y_label=y_label, title=title, context=plot_context)
     
-    return fig
+    if return_legend_kwargs:
+        return fig, legend_call_kwargs
+    else:
+        return fig
 
 def update_plot(ax:Axes, x_label:str|None=None, y_label:str|None=None, title:str|None=None, fontname:str|None=None, context:PlotContext|None=None,
                 ):    

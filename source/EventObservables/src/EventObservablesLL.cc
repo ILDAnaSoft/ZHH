@@ -205,11 +205,10 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         //m_mzll = inputLepPairCollection->parameters().getFloatVal("RecoLepsInvMass");
         //m_m_diff_z = fabs( m_mzll - 91.2 );
         m_mzll_pre_pairing = inputLepPairCollection->parameters().getFloatVal("IsoLepsInvMass");
-        
-        int pairedLeptonType = inputLepPairCollection->parameters().getIntVal("PairedType");
+
         LCCollection *inputLeptonCollection;
 
-        switch(pairedLeptonType) {
+        switch(m_pairedLepType) {
             case 11: inputLeptonCollection = pLCEvent->getCollection( m_inputIsoElectrons ); break;
             case 13: inputLeptonCollection = pLCEvent->getCollection( m_inputIsoMuons ); break;
             case 15: inputLeptonCollection = pLCEvent->getCollection( m_inputIsoTaus ); break;
@@ -233,7 +232,7 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         m_plmin = min(v4_paired_isolep1.P(), v4_paired_isolep2.P());
         m_plmax = max(v4_paired_isolep1.P(), v4_paired_isolep2.P());
 
-        if (pairedLeptonType == 11 || pairedLeptonType == 13) {
+        if (m_pairedLepType == 11 || m_pairedLepType == 13) {
             FloatVec mvaOutputIsoLepTagging;
             inputLeptonCollection->getParameters().getFloatVals("ISOLepTagging", mvaOutputIsoLepTagging);
 

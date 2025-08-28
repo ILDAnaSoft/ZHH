@@ -29,8 +29,8 @@ class MVAModule:
     def isTrained(self):
         return self._state == MVA_MODULE_STATES.READY
     
-    def train(self, inputs:np.ndarray, labels:np.ndarray, weights:np.ndarray|None=None):
-        if self._train(inputs, labels, weights):
+    def train(self, inputs:np.ndarray, labels:np.ndarray, weights:np.ndarray|None=None, **kwargs):
+        if self._train(inputs, labels, weights, **kwargs):
             self._state = MVA_MODULE_STATES.READY
         else:
             raise Exception('Error training the model')
@@ -47,7 +47,7 @@ class MVAModule:
     def createModel(self, *args, **kwargs):
         raise Exception('Not implemented')
     
-    def _train(self, inputs:np.ndarray, labels:np.ndarray, weights:np.ndarray|None=None):
+    def _train(self, inputs:np.ndarray, labels:np.ndarray, weights:np.ndarray|None=None, **kwargs):
         raise Exception('Not implemented')
     
     def predict(self, inputs:np.ndarray)->np.ndarray:

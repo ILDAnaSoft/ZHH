@@ -305,6 +305,7 @@ void ZHHKinFit::init()
   m_pTTree->Branch("BSEnergyTrue",&m_BSEnergyTrue,"BSEnergyTrue/F") ;
   m_pTTree->Branch("HHMassHardProcess",&m_HHMassHardProcess,"HHMassHardProcess/F") ;
   m_pTTree->Branch( "FitErrorCode" , &m_FitErrorCode , "FitErrorCode/I" );
+  m_pTTree->Branch( "invalidCovMatrixAtJet" , &m_invalidCovMatrixAtJet , "invalidCovMatrixAtJet/I" );
   m_pTTree->Branch( "pxcstartvalue", &m_pxcstartvalue, "pxcstartvalue/F" );
   m_pTTree->Branch( "pycstartvalue", &m_pycstartvalue, "pycstartvalue/F" );
   m_pTTree->Branch( "pzcstartvalue", &m_pzcstartvalue, "pzcstartvalue/F" );
@@ -370,6 +371,7 @@ void ZHHKinFit::Clear()
   m_BSEnergyTrue = 0.0;
   m_HHMassHardProcess = 0.0;
   m_FitErrorCode = 1;
+  m_invalidCovMatrixAtJet = -1;
   m_pxcstartvalue = 0.0;
   m_pycstartvalue = 0.0;
   m_pzcstartvalue = 0.0;
@@ -582,6 +584,19 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     m_Sigma_PyE.push_back(jet->getCovMatrix()[7]);
     m_Sigma_PzE.push_back(jet->getCovMatrix()[8]);
     m_Sigma_E2.push_back(jet->getCovMatrix()[9]);
+
+    if (m_Sigma_Px2.back() == 0 ||
+        m_Sigma_Py2.back() == 0 ||
+        m_Sigma_Pz2.back() == 0 ||
+        m_Sigma_E2.back() == 0) {
+      m_invalidCovMatrixAtJet = i_jet;
+    }
+  }
+
+  if (m_invalidCovMatrixAtJet >= 0) {
+    streamlog_out(MESSAGE) << "	Skipping event due to at least one zero diagonal element for jet " << m_invalidCovMatrixAtJet << std::endl ;
+    m_pTTree->Fill();
+    return;
   }
 
   vector<ReconstructedParticleImpl*> startjets;

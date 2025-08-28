@@ -215,4 +215,14 @@ class zz_sl0 : public p4 {
 class zznu_sl0 : public p4 {
     public: zznu_sl0(): p4( "zznu_sl0", PROCESS_ID::f4_zznu_sl0, EVENT_CATEGORY_TRUE::vvqq, vector{1,2,3,4,5,6,12,14,16} ) {}; };
 
+// NEW MC-2025 PROD
+class ww_h0 : public p4 {
+    public: ww_h0(): p4( "ww_h0", PROCESS_ID::f4_ww_h, EVENT_CATEGORY_TRUE::qqqq, vector{1,2,3,4,5,6} ) {}; };
+
+class zz_h0 : public p4 {
+    public: zz_h0(): p4( "zz_h0", PROCESS_ID::f4_zz_h, EVENT_CATEGORY_TRUE::qqqq, vector{1,2,3,4,5,6} ) {}; };
+
+class zzorww_h0 : public p4 {
+    public: zzorww_h0(): p4( "zzorww_h0", PROCESS_ID::f4_zzorww_h, EVENT_CATEGORY_TRUE::qqqq, vector{1,2,3,4,5,6} ) {}; };
+
 #endif

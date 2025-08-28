@@ -7,14 +7,14 @@ def zhh_cuts(hypothesis:str,
     if hypothesis.lower() == 'eebbbb':
         cuts = [GreaterThanEqualCut('nisoelectrons', 2, label='IsoElectrons'),
                 EqualCut('pairedLepType', 11, label='Paired Lepton Type'),
-                WindowCut('mzll', 20., 200., label=r'm_{ll}'),
-                WindowCut('zhh_mh1', 50., 200., label=r'm_{H1}'),
-                WindowCut('zhh_mh2', 50., 200., label=r'm_{H2}'),
+                WindowCut('fit4C_mz', 20., 150., label=r'm_{ll}^{4C}'),
+                WindowCut('fit4C_mh1', 50., 200., label=r'm_{H1}^{4C}'),
+                WindowCut('fit4C_mh2', 50., 200., label=r'm_{H2}^{4C}'),
                 LessThanEqualCut('ptmiss', 70., label=r'p_{t}^{miss}'),
                 LessThanEqualCut('thrust', 0.9, label='thrust'),
                 GreaterThanEqualCut('sumBTags', 1.0, label='sum b-tags')]
-        
-    elif hypothesis.lower() == 'μμbbbb':
+    
+    elif False and hypothesis.lower() == 'μμbbbb':
         cuts = [GreaterThanEqualCut('nisomuons', 2, label='IsoMuons'),
                 EqualCut('pairedLepType', 13, label='Paired Lepton Type'),
                 WindowCut('mzll', 20., 150., label=r'm_{ll}'),
@@ -24,7 +24,7 @@ def zhh_cuts(hypothesis:str,
                 LessThanEqualCut('thrust', 0.9, label='thrust'),
                 GreaterThanEqualCut('sumBTags', 1.0, label='sum b-tags')]
         
-    elif hypothesis.lower() == 'μμbbbb_4c':
+    elif hypothesis.lower() == 'μμbbbb': # μμbbbb_4c
         cuts = [GreaterThanEqualCut('nisomuons', 2, label='IsoMuons'),
                 EqualCut('pairedLepType', 13, label='Paired Lepton Type'),
                 WindowCut('fit4C_mz', 20., 150., label=r'm_{ll}^{4C}'),
