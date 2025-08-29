@@ -84,7 +84,12 @@ class CutflowProcessor:
         self._max_before:dict[int, np.ndarray] = {} # maximum weighted event count accross all categories before cut
         
         # cutflowPlots()
-        self._plot_context:PlotContext = plot_context if plot_context is not None else PlotContext(colormap)
+        plot_context = plot_context if plot_context is not None else PlotContext(colormap)
+        for sig_cat in signal_categories:
+            from zhh import EventCategories
+            plot_context.getColorByKey(EventCategories.inverted[sig_cat])
+        
+        self._plot_context:PlotContext = plot_context
         
         # cutflowTable()
 
@@ -579,7 +584,7 @@ def cutflowPlotsFn(signal_category_names:list[str],
         NBINS = 100
         plot_kwargs = {
             'bins': NBINS,
-            'xlabel': cut.quantity,
+            'xlabel': cut.label, #rf'${cut.quantity}$',
             'yscale': 'log',
             'ild_style_kwargs': {},
             'plot_hist_kwargs': {}, # hist_kwargs
@@ -596,7 +601,7 @@ def cutflowPlotsFn(signal_category_names:list[str],
         figs_stacked.append(fig1)
         
         # non-stacked plot
-        fig2 = plotCalcDictTop9(plot_context, calc_dict, cut.quantity, signal_category_names, plot_options_quantity, hist_kwargs=hist_kwargs, hypothesis=hypothesis, bins=NBINS);
+        fig2 = plotCalcDictTop9(plot_context, calc_dict, cut.label, signal_category_names, plot_options_quantity, hist_kwargs=hist_kwargs, hypothesis=hypothesis, bins=NBINS);
         figs_sigvbkg.append(fig2)
         
         if not display:
@@ -684,11 +689,13 @@ def cutflowTableFn(masks,
     
     using_split = weight_prop != 'weight'
     
-    cross_sections:dict[str, float] = {}
-    expected_events:dict[str, float] = {}
+    cross_sections:dict[str, float]  = { 'OTHBKGS': 0. }
+    expected_events:dict[str, float] = { 'OTHBKGS': 0. }
     counts_abs:dict[str, np.ndarray] = {}
     first_signal_pos = -1
     is_signal:dict[str, bool] = {}
+    source_2_mask:dict[str, dict[str, np.ndarray]] = {}
+    other_bkg_count_tot = np.zeros(len(masks))
 
     for calc_cut_efficiency in [False, True]: # [False]: # 
         first_column = ['']
@@ -736,8 +743,8 @@ def cutflowTableFn(masks,
             if not found:
                 raise ValueError(f"No analysis found containing the final state {mask_name}.")
             
-            presel = analysis.getStore()
-            presel.resetView()
+            store = analysis.getStore()
+            store.resetView()
             category_mask = analysis.getCategoryMask(mask_names[0])
             for i in range(len(mask_names) - 1):
                 category_mask = category_mask & analysis.getCategoryMask(mask_names[i + 1])
@@ -748,8 +755,18 @@ def cutflowTableFn(masks,
                 for i_cut in range(len(masks)):
                     for source_name, mask in masks[i_cut]:
                         if source_name == analysis.getName():
-                            presel = analysis.getStore()
-                            cut_counts[i_cut] += np.sum(presel[weight_prop][mask & category_mask])
+                            store = analysis.getStore()
+                            has_passed_and_in_category = mask & category_mask
+                            cut_counts[i_cut] += np.sum(store[weight_prop][has_passed_and_in_category])
+                            
+                            # keep track of masks accounted for, to treat remaining as background
+                            if not source_name in source_2_mask:
+                                source_2_mask[source_name] = {}
+                            
+                            if not name_concat in source_2_mask[source_name]:
+                                source_2_mask[source_name][name_concat] = [category_mask, []]
+                            
+                            source_2_mask[source_name][name_concat][1].append(mask)
                 
                 counts_abs[name_concat] = cut_counts
                 
@@ -757,7 +774,7 @@ def cutflowTableFn(masks,
                     cross_sec = combined_cross_section(analysis.getProcesses(), process)
                     n_expected = int(cross_sec * luminosity * 1000)
                 else:
-                    n_expected = np.sum(presel[weight_prop][category_mask])
+                    n_expected = np.sum(store[weight_prop][category_mask])
                     cross_sec = n_expected / (luminosity * 1000)
                 
                 cross_sections[name_concat] = cross_sec
@@ -776,13 +793,11 @@ def cutflowTableFn(masks,
                 entry.append(format_counts(n_expected))
             
             if calc_cut_efficiency:
-                #print(cut_counts)
                 cut_counts_out = np.zeros(cut_counts.shape, dtype=float)
                 
                 for i_cut in range(len(cut_counts)):
                     nom = cut_counts[i_cut]
-                    denom = n_expected if i_cut == 0 else cut_counts[i_cut-1]
-                    
+                    denom = n_expected if i_cut == 0 else cut_counts[i_cut-1]             
                     #print(name_concat, i_cut, nom/denom, nom, denom)
                     
                     cut_counts_out[i_cut] = nom / denom if (denom != 0) else 0
@@ -796,40 +811,93 @@ def cutflowTableFn(masks,
             
             #print(f'{name_concat} n={len(entry)}', entry)
             columns.append(entry)
-            
-        # add sum of backgrounds
-        background_categories = []
-        for cat, flag in is_signal.items():
-            if not flag:
-                background_categories.append(cat)
         
-        if first_signal_pos != -1:
-            entry = [r'\textbf{Background}']
-            nrows = len(counts_abs[background_categories[0]])
-            counts_bkg = np.zeros(nrows)
-            cross_sec_bkg = 0
-            n_expected_bkg = 0
+        # other backgrounds        
+        if not calc_cut_efficiency:  
+            for source in sources:
+                source_name = source.getName()
+                store = source.getStore()
+                store.resetView()
+                
+                other_bkg_count = np.zeros(len(masks))
+                other_bkg_mask_total = np.ones(len(store), dtype=bool)
+                
+                for i_cut in range(len(masks)):
+                    has_passed = find_entry(masks[i_cut], source_name)[1]
+                    if source_name in source_2_mask:
+                        for mask_name, category_mask_and_cut_masks in source_2_mask[source_name].items():
+                            category_mask, cut_masks = category_mask_and_cut_masks
+                            has_passed_and_in_category = category_mask & cut_masks[i_cut]
+                            
+                            # count everything that has passed and
+                            # that which not included in another mask                        
+                            has_passed = has_passed & (~has_passed_and_in_category)
+                            
+                            # to estimate total count + xsec of non-accounted bkg events
+                            if i_cut == 0:
+                                other_bkg_mask_total = other_bkg_mask_total & (~category_mask)
+                    
+                    other_bkg_count[i_cut] = store[weight_prop][has_passed].sum()
+                        
+                #print(f'{source_name}: other_bkg_count', other_bkg_count)
+                other_bkg_count_tot += other_bkg_count
+                
+                expected_events['OTHBKGS'] += store[weight_prop][other_bkg_mask_total].sum()
             
-            for category in background_categories:
-                if category not in ignore_categories:
-                    counts_bkg += counts_abs[category]
-                    cross_sec_bkg += cross_sections[category]
-                    n_expected_bkg += expected_events[category]
+            cross_sections['OTHBKGS'] += expected_events['OTHBKGS'] / (luminosity * 1000)
+            
+            #print('other_bkg_count_tot', other_bkg_count_tot)
+        
+        # add other backgrounds
+        if first_signal_pos != -1:
+            entry = [r'\textbf{Other bkgs}']
             
             if not using_split:
                 if not calc_cut_efficiency:
-                    entry.append(f'{cross_sec_bkg:.3g}')
+                    entry.append(format_counts(cross_sections['OTHBKGS']))
                 
-                entry.append(format_counts(n_expected_bkg))
+                entry.append(format_counts(expected_events['OTHBKGS']))
                 
-            for j, count in enumerate(counts_bkg):
+            for j, count in enumerate(other_bkg_count_tot):
                 nom = count
-                denom = (n_expected_bkg if j == 0 else counts_bkg[j - 1]) if calc_cut_efficiency else 1.
-                #print(j, nom / denom, nom, denom)
+                denom = (expected_events['OTHBKGS'] if j == 0 else other_bkg_count_tot[j - 1]) if calc_cut_efficiency else 1.
                 
                 entry.append(f'{(nom/denom):.2%}'.replace('%', r'\%') if calc_cut_efficiency else format_counts(nom / denom))
                 
             columns.insert(first_signal_pos + 1, entry)
+        
+        # add sum of all + other backgrounds
+        background_categories = []
+        for category, flag in is_signal.items():
+            if not flag and not category in ignore_categories:
+                background_categories.append(category)
+        
+        if first_signal_pos != -1:
+            entry = [r'\textbf{Total bkg}']
+            nrows = len(counts_abs[background_categories[0]])
+            counts_bkg = np.zeros(nrows)
+            cross_sec_bkg = cross_sections['OTHBKGS'] # 0
+            n_expected_bkg = expected_events['OTHBKGS'] # 0
+            
+            for category in background_categories:
+                counts_bkg += counts_abs[category]
+                cross_sec_bkg += cross_sections[category]
+                n_expected_bkg += expected_events[category]
+            
+            if not using_split:
+                if not calc_cut_efficiency:
+                    entry.append(format_counts(cross_sec_bkg))
+                
+                entry.append(format_counts(n_expected_bkg))
+                
+            for j, count in enumerate(counts_bkg):
+                nom = count + other_bkg_count_tot[j]
+                denom = (n_expected_bkg if j == 0 else (counts_bkg[j - 1] + other_bkg_count_tot[j - 1])) if calc_cut_efficiency else 1.
+                #print(j, nom / denom, nom, denom)
+                
+                entry.append(f'{(nom/denom):.2%}'.replace('%', r'\%') if calc_cut_efficiency else format_counts(nom / denom))
+                
+            columns.insert(first_signal_pos + 2, entry)
             
         table = transpose(columns)
         if not using_split:
