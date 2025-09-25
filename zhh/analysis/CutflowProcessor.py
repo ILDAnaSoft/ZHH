@@ -298,8 +298,10 @@ class CutflowProcessor:
                 rf[name] = data
     
     def cutflowPlots(self, step_start:int=0, step_end:int|None=None, display:bool=True,
-                    file:str='cutflow_plots.pdf', hist_kwargs:dict={},
-                    signal_categories:list[str]|None=None):
+                    file:str|None='cutflow_plots.pdf',
+                    hist_kwargs:dict={}, plot_options_call:dict[str, dict]={},
+                    signal_categories:list[str]|None=None, bins:int|np.ndarray=100,
+                    annotate_cut:bool=True):
         """Creates plots for signal/background separation
         after each cut. When return_last_calc_dict is True, a separate plot
         showing the event count per category after the last cut is created.
@@ -325,8 +327,9 @@ class CutflowProcessor:
         context_and_figures = cutflowPlots(self, f'{self._work_dir}/{file}', display,
                               step_start=step_start,
                               step_end=step_end if step_end is not None else len(self._cuts)-1,
-                              hist_kwargs=hist_kwargs,
-                              signal_categories=signal_categories)
+                              hist_kwargs=hist_kwargs, plot_options_call=plot_options_call,
+                              signal_categories=signal_categories,
+                              bins=bins, annotate_cut=annotate_cut)
         
         return context_and_figures
         
@@ -398,14 +401,11 @@ class CutflowProcessor:
         calc_dicts:list[dict[str, tuple[np.ndarray, np.ndarray]]] = []
         max_before = []
         
-        #print(step_start, step_end+1)
         for step in range(step_start, step_end+1):
             masks.extend(self._masks[step])
             cuts.extend(self._cuts[step])
             calc_dicts.extend(self._calc_dicts[step])
             max_before.extend(self._max_before[step])
-            
-            #print(self._max_before[step])
         
         max_before = np.array(max_before)
         
@@ -486,7 +486,10 @@ class CutflowProcessor:
         else:
             return plotCalcDictTop9(self.getPlotContext(), calc_dict, quantity, signal_category_names, hypothesis=self._hypothesis, plot_options=plot_kwargs)
 
-def cutflowPlots(cp:CutflowProcessor, output_file:str, display:bool=True, step_start:int=0, step_end:int=0, hist_kwargs:dict={}, signal_categories:list[str]|None=None):
+def cutflowPlots(cp:CutflowProcessor, output_file:str|None, display:bool=True, step_start:int=0, step_end:int=0,
+                 hist_kwargs:dict={}, plot_options_call:dict[str, dict]={}, signal_categories:list[str]|None=None, bins:int|np.ndarray=100,
+                 annotate_cut:bool=True):
+    
     assert(cp._signal_categories is not None and step_start in cp._masks and step_end in cp._calc_dicts and step_start in cp._max_before)
     
     from zhh import EventCategories
@@ -500,10 +503,13 @@ def cutflowPlots(cp:CutflowProcessor, output_file:str, display:bool=True, step_s
         calc_dicts,
         cp._hypothesis,
         cp._plot_options,
+        plot_options_call,
         display,
         output_file,
         cp._plot_context,
-        hist_kwargs)
+        hist_kwargs,
+        bins,
+        annotate_cut)
 
 def plotCalcDictTop9(context:PlotContext, calc_dict:dict[str, tuple[np.ndarray, np.ndarray]], quantity:str, signal_category_names:list[str],
                      plot_options:dict={}, hist_kwargs:dict={}, hypothesis:str|None=None, bins:int=100):
@@ -562,10 +568,13 @@ def cutflowPlotsFn(signal_category_names:list[str],
                  calc_dicts:list[dict[str, tuple[np.ndarray, np.ndarray]]],
                  hypothesis:str,
                  plot_options:dict[str, dict[str, dict]],
+                 plot_options_call:dict[str, dict[str, dict]],
                  display:bool,
-                 output_file:str,
+                 output_file:str|None,
                  plot_context:PlotContext,
-                 hist_kwargs:dict):
+                 hist_kwargs:dict,
+                 bins,
+                 do_annotate_cut):
     
     from zhh import plot_combined_hist, annotate_cut, EventCategories, deepmerge
     
@@ -580,10 +589,12 @@ def cutflowPlotsFn(signal_category_names:list[str],
             plot_options_quantity = deepcopy(plot_options[hypothesis][cut.quantity])
         elif 'default' in plot_options and cut.quantity in plot_options['default']:
             plot_options_quantity = deepcopy(plot_options['default'][cut.quantity])
+            
+        if cut.quantity in plot_options_call:
+            plot_options_quantity = deepmerge(plot_options_quantity, plot_options_call[cut.quantity])
         
-        NBINS = 100
         plot_kwargs = {
-            'bins': NBINS,
+            'bins': bins,
             'xlabel': cut.label, #rf'${cut.quantity}$',
             'yscale': 'log',
             'ild_style_kwargs': {},
@@ -594,14 +605,18 @@ def cutflowPlotsFn(signal_category_names:list[str],
         plot_kwargs = deepmerge(plot_kwargs, plot_options_quantity)
         plot_kwargs['ild_style_kwargs']['title_postfix'] = rf' before cut on ${cut.formula(unit=plot_kwargs["xunit"] if ("xunit" in plot_kwargs) else None)}$'
         
+        if cut.xlim_view is not None:
+            plot_kwargs['xlim'] = cut.xlim_view
+        
         # stacked plot
         fig1 = plot_combined_hist(calc_dict, plot_context=plot_context, **deepcopy(plot_kwargs));
-        annotate_cut(fig1.axes[0], cut);
+        if do_annotate_cut:
+            annotate_cut(fig1.axes[0], cut);
         
         figs_stacked.append(fig1)
         
         # non-stacked plot
-        fig2 = plotCalcDictTop9(plot_context, calc_dict, cut.label, signal_category_names, plot_options_quantity, hist_kwargs=hist_kwargs, hypothesis=hypothesis, bins=NBINS);
+        fig2 = plotCalcDictTop9(plot_context, calc_dict, cut.label, signal_category_names, plot_options_quantity, hist_kwargs=hist_kwargs, hypothesis=hypothesis, bins=bins);
         figs_sigvbkg.append(fig2)
         
         if not display:
@@ -650,8 +665,9 @@ def cutflowPlotsFn(signal_category_names:list[str],
         all_figs.append(figs_stacked[i])
         all_figs.append(figs_sigvbkg[i])
     all_figs.append(fig)
-        
-    export_figures(output_file, all_figs)
+    
+    if output_file is not None:
+        export_figures(output_file, all_figs)
     
     if not display:
         plt.close(fig)

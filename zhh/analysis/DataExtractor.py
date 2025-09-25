@@ -149,9 +149,20 @@ class DataExtractor:
              signal_categories:list|None=None, plot_options:dict[str, dict]={},
              bkg_hist_kwargs:dict={ 'histtype': 'stepfilled' }):
         
-        assert(self._features is not None and self._labels is not None)
+        return plotFn(self, inputs, weight, labels, filename=filename,
+                      label_2_category=label_2_category, context=context,
+                      signal_categories=signal_categories, plot_options=plot_options,
+                      bkg_hist_kwargs=bkg_hist_kwargs)
+            
+def plotFn(de:DataExtractor, inputs:np.ndarray, weight:np.ndarray, labels:np.ndarray,
+           filename:str|None='mva_inputs.pdf', label_2_category:dict[int, str]|None=None,
+           context:PlotContext|None=None, signal_categories:list|None=None,
+           plot_options:dict[str, dict]={},
+           bkg_hist_kwargs:dict={ 'histtype': 'stepfilled' }):
         
-        features = self._features
+        assert(de._features is not None and de._labels is not None)
+        
+        features = de._features
         
         from zhh import colormap_desy, plot_weighted_hist, figure_options, deepmerge
         from phc import export_figures
@@ -162,7 +173,7 @@ class DataExtractor:
         if label_2_category is None:
             label_2_category = {}
             
-            assert(0 in self._labels and 1 in self._labels)
+            assert(0 in de._labels and 1 in de._labels)
             label_2_category[0] = 'Background'
             label_2_category[1] = 'Signal'
             
@@ -177,7 +188,8 @@ class DataExtractor:
                 hist_kwargs_overwrite[category] = {}
             else:
                 hist_kwargs_overwrite[category] = deepcopy(bkg_hist_kwargs)
-                hist_kwargs_overwrite[category]['color'] = context.getColorByKey(category)
+            
+            hist_kwargs_overwrite[category]['color'] = context.getColorByKey(category)
 
         plot_kwargs_base = {
             'yscale': 'linear',
@@ -185,10 +197,13 @@ class DataExtractor:
                 'stacked': False,
                 'show_stats': False,
                 'normalize': True,
-                'hist_kwargs': { 'hatch': None }
+                'hist_kwargs': { 'hatch': None },
+                'figsize': (5, 4)
             },
             'ild_style_kwargs': {
-                'legend_kwargs': { 'loc': 'upper right', 'bbox_to_anchor': (.98, .98), 'fancybox': False }
+                'legend_kwargs': { 'loc': 'upper right', 'bbox_to_anchor': (.98, .98), 'fancybox': False },
+                'labelsize': 15,
+                'ild_offset_beamspec_mult': 1.05
             }
         }
 
@@ -211,8 +226,12 @@ class DataExtractor:
             if feature in plot_options:
                 plot_kwargs = deepmerge(plot_kwargs, plot_options[feature])
             
-            fig = plot_weighted_hist(plot_dict, title=f'MVA Input <{feature}>', xunit=xunits[i],
-                                        plot_context=context, plot_hist_kwargs_overwrite=hist_kwargs_overwrite, **plot_kwargs)
+            if 'xunit' not in plot_kwargs:
+                plot_kwargs['xunit'] = xunits[i]
+            
+            fig = plot_weighted_hist(plot_dict, title=None, plot_context=context,
+                                     plot_hist_kwargs_overwrite=hist_kwargs_overwrite, **plot_kwargs)
+            fig.set_tight_layout(True)
             
             figures.append(fig)
             

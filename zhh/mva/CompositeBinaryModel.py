@@ -2,6 +2,7 @@ import numpy as np
 from .MulticlassModel import MulticlassModel
 from .MVAModule import MVA_MODULE_STATES, MVAModule
 from ..analysis.DataExtractor import DataExtractor
+from ..util.PlotContext import PlotContext
 
 class CompositeBinaryModel(MulticlassModel):
     def __init__(self, extractor:DataExtractor, classes:list[tuple[str, int]], clfs:list[MVAModule], threshold_scan:np.ndarray|None=None):        
@@ -26,7 +27,8 @@ class CompositeBinaryModel(MulticlassModel):
                    plot_features_bname:str|None=None,
                    plot_options:dict[str, dict]={},
                    cache:str|None='cache',
-                   train_kwargs:dict[int, dict]={}):
+                   train_kwargs:dict[int, dict]={},
+                   plot_context:PlotContext|bool=True):
         """Initialized the whole model. Trains the individuals classifiers (if
         needed) and optionally plots the training input distributions and si-
         gnificance curves using the test dataset.
@@ -49,8 +51,16 @@ class CompositeBinaryModel(MulticlassModel):
         if plot_features_bname is None:
             plot_features_bname = 'mva_inputs_$i.pdf'
         
+        generate_plot_context = plot_context == True
+        use_plot_context_in = not generate_plot_context and isinstance(plot_context, PlotContext)
+        
         for i in range(self._nclasses - 1):
             sig_class, bkg_class = self._classes[0][0], self._classes[i + 1][0]
+            if not use_plot_context_in:
+                if generate_plot_context:
+                    plot_context = None
+                else:
+                    plot_context = self._extractor._cp.getPlotContext()                
             
             clf = self._clfs[i]
             
@@ -80,7 +90,7 @@ class CompositeBinaryModel(MulticlassModel):
                 
                 if plot_features:
                     self._extractor.plot(train_inputs, train_weight, train_labels, filename=plot_features_bname.replace('$i', str(i)),
-                                         signal_categories=[sig_class], context=self._extractor._cp.getPlotContext(), label_2_category={ 0: bkg_class, 1: sig_class },
+                                         signal_categories=[sig_class], context=plot_context, label_2_category={ 0: bkg_class, 1: sig_class },
                                          plot_options=plot_options)
                     
                 print(f'Train (count) Signal: {(train_labels == 1).sum()}; Bkg: {(train_labels == 0).sum()}')

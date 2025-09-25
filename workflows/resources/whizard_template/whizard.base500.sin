@@ -13,18 +13,18 @@ alias ele = e1:E1
 alias mus = e2:E2
 alias taus = e3:E3
 alias quark = u:d:s:c:b:U:D:S:C:B
+alias nus = n1:n2:n3:N1:N2:N3
    
 ! Process - modify to taste, and change the name if modified
 
-process e3e3h_e3e3 = e1, E1 => e3, E3, h { $restrictions = "1+2~Z" }
-process Hdec = h => taus, taus
+! process Hdec = h => quark, quark
 
-process z_tautau = e1, E1 => e3, E3 { $restrictions = "1+2~Z" }
-process z_dd = e1, E1 => dq, dq { $restrictions = "1+2~Z" }
-process z_uu = e1, E1 => uq, uq { $restrictions = "1+2~Z" }
-process z_ss = e1, E1 => sq, sq { $restrictions = "1+2~Z" }
-process z_cc = e1, E1 => cq, cq { $restrictions = "1+2~Z" }
-process z_bb = e1, E1 => bq, bq { $restrictions = "1+2~Z" }
+process zh_e3e3nunu = e1, E1 => e3, E3, h { $restrictions = "1+2~Z" }
+process zh_ddh = e1, E1 => dq, dq, h { $restrictions = "1+2~Z" }
+process zh_uuh = e1, E1 => uq, uq, h { $restrictions = "1+2~Z" }
+process zh_ssh = e1, E1 => sq, sq, h { $restrictions = "1+2~Z" }
+process zh_cch = e1, E1 => cq, cq, h { $restrictions = "1+2~Z" }
+process zh_bbh = e1, E1 => bq, bq, h { $restrictions = "1+2~Z" }
 
 ! these cuts are OK for most cases, but *not* for gamma-gamma etc.
 ! They become more complicated in such processes
@@ -48,9 +48,6 @@ polarized e1, e2 , e3, u, d, c, s, t, n1, n2, n3, E1, E2, E3, U, D, C, S, T, N1,
  ms = 0
  mc = 0
  mb = 0
-
-! No higgs in the general SM samples, to avoid double
-! counting with the dedicated higgs samples:
 
 ! no gluons in Whizard, to avoid double-counting with Pythia-PS : 
 
@@ -89,9 +86,8 @@ $shower_method = "PYTHIA6"
 ps_tauola_dec_mode1 = 0
 ps_tauola_dec_mode2 = 0
 
-integrate (Hdec){ ?vis_channels = true }
-
-show(results)
+! integrate (Hdec){ ?vis_channels = true }
+! show(results)
 
 beams = e1, E1  => circe2 => isr, isr
 
@@ -109,13 +105,13 @@ $circe2_file="500_TDR_ws_ee021.circe"
 ! change names here if the process was modified (and polarization for the sample name)
 
 !luminosity = 4 / 1 abarn
-n_events = 100000
+n_events = 10000
 
 sqrts = 500 GeV 
 beams_pol_density = @($BEAMPOL1),@($BEAMPOL2)
 beams_pol_fraction = 1.0,1.0
 
-unstable h (Hdec)
+! unstable h (Hdec) { ?auto_decays = true }
 
 show(results) 
 ?rebuild_events = true

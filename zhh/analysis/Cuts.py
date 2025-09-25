@@ -10,10 +10,11 @@ class CutTypes():
 CUT_TYPES = CutTypes()
 
 class Cut():
-    def __init__(self, quantity:str, label:str|None=None):
+    def __init__(self, quantity:str, label:str|None=None, xlim_view:tuple[float|int, float|int]|None=None):
         self.quantity = quantity
         self.label = quantity if label is None else label
         self.type:int|None = None
+        self.xlim_view = xlim_view
         
     def __call__(self, arg):
         raise NotImplementedError('Method __call__ not implemented')
@@ -48,9 +49,9 @@ class SemiInvisibleCut(Cut):
             return ((self.visible(arg)) | (self.hidden(arg))) 
     
 class ValueCut(Cut):
-    def __init__(self, quantity:str, label:str|None=None):
-        self.quantity = quantity
-        self.label = quantity if label is None else label
+    def __init__(self, quantity:str, label:str|None=None, **cut_kwargs):
+        super().__init__(quantity, label, **cut_kwargs)
+        
         self.type:int|None = None
         
     def raw(self, arg):

@@ -10,7 +10,7 @@
 #include <TTree.h>
 #include <vector>
 #include "TLorentzVector.h"
-#include <EventCategory.h>
+#include "../../CommonTools/include/EventCategory.h"
 
 class TFile;
 class TH1F;

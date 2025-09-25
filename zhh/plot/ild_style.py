@@ -36,7 +36,9 @@ def fig_ild_style(fig_or_ax:Figure|Axes, xlim:list[float]|tuple[float,float]|Non
                   ild_text_position:Literal['upper left','upper right']|None='upper left',
                   ild_offset_x:float=ild_style_defaults['ild_offset_x'],
                   ild_offset_y:float=ild_style_defaults['ild_offset_y'],
+                  ild_offset_beamspec_mult:float=1.,
                   ild_status:str=ild_style_defaults['ild_status'],
+                  labelsize:int=12, titlesize:int|None=None,
                   show_binning_on_y_scale:bool|None=None,
                   columns:list[str]|None=None,
                   return_legend_kwargs:bool=False)->Figure|tuple[Figure,dict]:
@@ -98,8 +100,8 @@ def fig_ild_style(fig_or_ax:Figure|Axes, xlim:list[float]|tuple[float,float]|Non
     ax.text(ild_offset_x, ild_offset_y, f'ILD {ild_status}', fontsize=12, weight='bold', fontname=fontname, transform=ax.transAxes)
     
     if beam_spec:
-        ax.text(ild_offset_x, ild_offset_y-.035, rf'$\sqrt{{s}} = {beam_energy}$ GeV, $L_{{int}} = {ild_style_defaults["luminosity_inv_ab"]}$ab$^{{-1}}$', fontsize=8, fontname=fontname, transform=ax.transAxes)
-        ax.text(ild_offset_x, ild_offset_y-.065, rf'$P(e^{{+}}, e^{{-}}) = ({ild_style_defaults["polarization_ep"]:+.1}, {ild_style_defaults["polarization_em"]:+.1})$', fontsize=8, fontname=fontname, transform=ax.transAxes)
+        ax.text(ild_offset_x, ild_offset_y-.035*ild_offset_beamspec_mult, rf'$\sqrt{{s}} = {beam_energy}$ GeV, $L_{{int}} = {ild_style_defaults["luminosity_inv_ab"]}$ab$^{{-1}}$', fontsize=8, fontname=fontname, transform=ax.transAxes)
+        ax.text(ild_offset_x, ild_offset_y-.065*ild_offset_beamspec_mult, rf'$P(e^{{+}}, e^{{-}}) = ({ild_style_defaults["polarization_ep"]:+.1}, {ild_style_defaults["polarization_em"]:+.1})$', fontsize=8, fontname=fontname, transform=ax.transAxes)
         
     if xscale =='linear':
         if xminor is not None:
@@ -154,7 +156,7 @@ def fig_ild_style(fig_or_ax:Figure|Axes, xlim:list[float]|tuple[float,float]|Non
         
         ax.legend(**legend_call_kwargs)
     
-    update_plot(ax, x_label=x_label, y_label=y_label, title=title, context=plot_context)
+    update_plot(ax, x_label=x_label, y_label=y_label, title=title, labelsize=labelsize, titlesize=titlesize, context=plot_context)
     
     if return_legend_kwargs:
         return fig, legend_call_kwargs
@@ -162,7 +164,10 @@ def fig_ild_style(fig_or_ax:Figure|Axes, xlim:list[float]|tuple[float,float]|Non
         return fig
 
 def update_plot(ax:Axes, x_label:str|None=None, y_label:str|None=None, title:str|None=None, fontname:str|None=None, context:PlotContext|None=None,
-                ):    
+                labelsize:int=12, titlesize:int|None=None):
+    
+    if titlesize is None:
+        titlesize = labelsize
     
     if fontname is None:
         fontname = context.getFont() if context is not None else ild_style_defaults['fontname']
@@ -179,19 +184,19 @@ def update_plot(ax:Axes, x_label:str|None=None, y_label:str|None=None, title:str
     x_label = x_label if x_label != '' else None
         
     if x_label is not None:
-        ax.set_xlabel(x_label, fontsize=12, fontname=fontname)
+        ax.set_xlabel(x_label, fontsize=labelsize, fontname=fontname)
         
     y_label = y_label if y_label is not None else ax.get_ylabel()
     y_label = y_label if y_label != '' else None
         
     if y_label is not None:
-        ax.set_ylabel(y_label, fontsize=12, fontname=fontname)
+        ax.set_ylabel(y_label, fontsize=labelsize, fontname=fontname)
     
     title = title if title is not None else ax.get_title()
     title = title if title != '' else None
     
     if title is not None:
-        ax.set_title(title, loc='right', fontsize=12, fontname=fontname)
+        ax.set_title(title, loc='right', fontsize=titlesize, fontname=fontname)
 
 def legend_kwargs_fn(context:PlotContext|None=None, size:int=9, titlesize:int=10):
     fontname = context.getFont() if context is not None else ild_style_defaults['fontname']

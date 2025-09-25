@@ -1,0 +1,18 @@
+executable = per_job.sh
+
+arguments = $(OUTPUT_BDIR) $(OUTPUT_BNAME) $(REPO_ROOT) $(raw_file)
+should_transfer_files = True
+transfer_executable = True
+
+max_retries = 3
+Requirements = (Machine =!= LastRemoteHost)
+request_cpus = 1
+request_memory = 4000 Mb
+
+log = /data/dust/user/bliewert/FTag3/log/$(JobId).log
+output = /data/dust/user/bliewert/FTag3/log/$(JobId).out
+error = /data/dust/user/bliewert/FTag3/log/$(JobId).err
+
+transfer_output_files = ""
+
+queue OUTPUT_BDIR,OUTPUT_BNAME,REPO_ROOT,raw_file from queue.txt

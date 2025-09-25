@@ -59,9 +59,14 @@ figure_options:dict[str, dict[str, dict]] = {
         'bdtg5': { 'xlabel': 'bdtg5', 'xlim': [0, 1] },        
     },
     'default': {
-        'fit4C_mh1': { 'xlim': [0, 270], 'xunit': 'GeV' },
-        'fit4C_mh2': { 'xlim': [0, 500], 'xunit': 'GeV' },
-        'fit4C_mz': { 'xlim': [0, 550], 'xunit': 'GeV' }
+        'fit4C_mh1': { 'xunit': 'GeV', 'xlabel': 'm_{H1}^{4C}' },
+        'fit4C_mh2': { 'xunit': 'GeV', 'xlabel': 'm_{H2}^{4C}' },
+        'fit4C_mz': { 'xunit': 'GeV', 'xlabel': 'm_{ll}^{4C}' },
+        'm_invjet': { 'xunit': 'GeV', 'xlabel': 'm_{HH}' },
+        'jet1_m': { 'xunit': 'GeV', 'xlabel': 'm_{jet1}', 'xlim': [0, 30] },
+        'jet2_m': { 'xunit': 'GeV', 'xlabel': 'm_{jet2}', 'xlim': [0, 40] },
+        'jet3_m': { 'xunit': 'GeV', 'xlabel': 'm_{jet3}', 'xlim': [0, 60] },
+        'jet4_m': { 'xunit': 'GeV', 'xlabel': 'm_{jet4}', 'xlim': [0, 100] },
     }
     #'vvbbbb': [
     #    { 'xlabel': 'IsoLeptons', 'plot_hist_kwargs': { 'int_bins': True }, 'ild_style_kwargs': { 'xminor': False, 'xlocator': MultipleLocator(1) } },

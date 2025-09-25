@@ -74,7 +74,7 @@
         <parameter name="Collection" type="string" lcioInType="ReconstructedParticle"> RefinedJets4 </parameter>
         <parameter name="PIDAlgorithm1" type="string"> weaver </parameter>
         <parameter name="PIDAlgorithm2" type="string"> lcfiplus </parameter>
-        <parameter name="PIDParameters1" type="StringVev"> mc_b mc_c </parameter>
+        <parameter name="PIDParameters1" type="StringVev"> mc_b mc_bbar mc_c mc_cbar mc_d mc_dbar mc_g mc_s mc_sbar mc_u mc_ubar </parameter>
         <parameter name="PIDParameters2" type="StringVev"> BTag CTag </parameter>
         <parameter name="RootFile" type="string"></parameter>
         <parameter name="Verbosity" type="string"> DEBUG </parameter>
