@@ -338,6 +338,9 @@ void ZHHKinFit::init()
   m_pTTree->Branch( "pullLeptonInvPt" , &m_pullLeptonInvPt );
   m_pTTree->Branch( "pullLeptonTheta" , &m_pullLeptonTheta );
   m_pTTree->Branch( "pullLeptonPhi" , &m_pullLeptonPhi );
+  m_pTTree->Branch( "pullInvPx" , &m_pullInvPx );
+  m_pTTree->Branch( "pullInvPy" , &m_pullInvPy );
+  m_pTTree->Branch( "pullInvPz" , &m_pullInvPz );
   m_pTTree->Branch( "TrueNeutrinoEnergy", &m_TrueNeutrinoEnergy );
   m_pTTree->Branch( "RecoNeutrinoEnergy", &m_RecoNeutrinoEnergy );
   m_pTTree->Branch( "RecoNeutrinoEnergyKinfit", &m_RecoNeutrinoEnergyKinfit );
@@ -403,6 +406,9 @@ void ZHHKinFit::Clear()
   m_pullLeptonInvPt.clear();
   m_pullLeptonTheta.clear();
   m_pullLeptonPhi.clear();
+  m_pullInvPx.clear();
+  m_pullInvPy.clear();
+  m_pullInvPz.clear();
   m_TrueNeutrinoEnergy.clear();
   m_RecoNeutrinoEnergy.clear();
   m_RecoNeutrinoEnergyKinfit.clear();
@@ -623,7 +629,7 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
   streamlog_out(MESSAGE) << "Performed fit without neutrino correction" << endl;
   if (!woNuFitResult.fitter) {
     streamlog_out(MESSAGE) << "Did not find a functioning fit" << endl;
-  } else {
+  } else { //succesful fit
     //Fill root branches
     m_FitErrorCode = woNuFitResult.fitter->getError();
     m_FitProbability = woNuFitResult.fitter->getProbability();
@@ -779,7 +785,41 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
       m_pullLeptonTheta.push_back(pulls[1]);
       m_pullLeptonPhi.push_back(pulls[2]);
     }
-
+    if (m_signature == "vvbbbb"){
+      //calculate 4-momentum of Z->invisible
+      ROOT::Math::PxPyPzEVector seenFourMomentum(0.,0.,0.,0.);
+      for (int i_jet = 0; i_jet < m_nJets; i_jet++) {
+	seenFourMomentum += ROOT::Math::PxPyPzEVector(Jets[ i_jet ]->getMomentum()[0],Jets[ i_jet ]->getMomentum()[1],Jets[ i_jet ]->getMomentum()[2], Jets[ i_jet ]->getEnergy());
+      }
+      double startZinv[3] = {-seenFourMomentum.Px(), -seenFourMomentum.Py(), -seenFourMomentum.Pz()};
+      float errorsZinv[3] = {m_ZinvisiblePxPyError, m_ZinvisiblePxPyError, m_ZinvisiblePzError};
+      //get Zinv fit object
+      string fitname = "Zinvisible";
+      auto fitZinv = find_if(fitobjects->begin(), fitobjects->end(), [&fitname](const std::shared_ptr<BaseFitObject> obj) {return obj->getName() == fitname;});
+      if (fitZinv == fitobjects->end()) {
+	streamlog_out(MESSAGE) << "Did not find " << fitname <<endl;
+      } else {
+	std::shared_ptr<ZinvisibleFitObjectNew> castfitZinv =  std::dynamic_pointer_cast<ZinvisibleFitObjectNew>(*fitZinv);
+	//calculate pulls
+	vector<double> pulls;
+	for (int ipar = 0; ipar < 3; ipar++) {
+	  double fitted = castfitZinv->getParam(ipar);
+	  double start = startZinv[ipar];
+	  double errfit = castfitZinv->getError(ipar);
+	  double errmea = errorsZinv[ipar];
+	  double sigma = errmea*errmea-errfit*errfit;
+	  streamlog_out(DEBUG3) << "fitted = " << fitted << ", start = " << start << std::endl ;
+	  streamlog_out(DEBUG3) << "errfit = " << errfit << ", errmea = " << errmea << ", sigma = " << sigma << std::endl ;
+	  if (sigma > 0) {
+	    sigma = sqrt(sigma);
+	    pulls.push_back((fitted - start)/sigma);
+	  }
+	}
+	m_pullInvPx.push_back(pulls[0]);
+	m_pullInvPy.push_back(pulls[1]);
+	m_pullInvPz.push_back(pulls[2]);
+      }
+    } //if vvbbbb --> calculate Zinv pulls
   }
   if (m_solveNu) {
     streamlog_out(MESSAGE) << "	||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||" << std::endl ;
@@ -1028,7 +1068,10 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     m_pullLeptonInvPt.clear();
     m_pullLeptonTheta.clear();
     m_pullLeptonPhi.clear();
-      
+    m_pullInvPx.clear();
+    m_pullInvPy.clear();
+    m_pullInvPz.clear();
+    
     for (int i = 0; i < m_nJets; ++i) {   
       //set pre fit objects
       ReconstructedParticleImpl* startjet = new ReconstructedParticleImpl;
@@ -1104,7 +1147,42 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
       m_pullLeptonTheta.push_back(pulls[1]);
       m_pullLeptonPhi.push_back(pulls[2]);
     }
-    
+    if (m_signature == "vvbbbb"){
+      //calculate 4-momentum of Z->invisible
+      ROOT::Math::PxPyPzEVector seenFourMomentum(0.,0.,0.,0.);
+      for (int i_jet = 0; i_jet < m_nJets; i_jet++) {
+	seenFourMomentum += ROOT::Math::PxPyPzEVector(Jets[ i_jet ]->getMomentum()[0],Jets[ i_jet ]->getMomentum()[1],Jets[ i_jet ]->getMomentum()[2], Jets[ i_jet ]->getEnergy());
+      }
+      double startZinv[3] = {-seenFourMomentum.Px(), -seenFourMomentum.Py(), -seenFourMomentum.Pz()};
+      float errorsZinv[3] = {m_ZinvisiblePxPyError, m_ZinvisiblePxPyError, m_ZinvisiblePzError};
+      //get Zinv fit object
+      string fitname = "Zinvisible";
+      auto fitZinv = find_if(fitobjects->begin(), fitobjects->end(), [&fitname](const std::shared_ptr<BaseFitObject> obj) {return obj->getName() == fitname;});
+      if (fitZinv == fitobjects->end()) {
+	streamlog_out(MESSAGE) << "Did not find " << fitname <<endl;
+      } else {
+	std::shared_ptr<ZinvisibleFitObjectNew> castfitZinv =  std::dynamic_pointer_cast<ZinvisibleFitObjectNew>(*fitZinv);
+	//calculate pulls
+	vector<double> pulls;
+	for (int ipar = 0; ipar < 3; ipar++) {
+	  double fitted = castfitZinv->getParam(ipar);
+	  double start = startZinv[ipar];
+	  double errfit = castfitZinv->getError(ipar);
+	  double errmea = errorsZinv[ipar];
+	  double sigma = errmea*errmea-errfit*errfit;
+	  streamlog_out(DEBUG3) << "fitted = " << fitted << ", start = " << start << std::endl ;
+	  streamlog_out(DEBUG3) << "errfit = " << errfit << ", errmea = " << errmea << ", sigma = " << sigma << std::endl ;
+	  if (sigma > 0) {
+	    sigma = sqrt(sigma);
+	    pulls.push_back((fitted - start)/sigma);
+	  }
+	}
+	m_pullInvPx.push_back(pulls[0]);
+	m_pullInvPy.push_back(pulls[1]);
+	m_pullInvPz.push_back(pulls[2]);
+      }
+    } //if vvbbbb --> calculate Zinv pulls
+
     /*
       m_ZMassBeforeFit // "ZMassBeforeFit/F" );
       m_H1MassBeforeFit // "H1MassBeforeFit/F" );
@@ -1633,7 +1711,6 @@ ZHHKinFit::FitResult ZHHKinFit::performvvbbbbFIT( pfoVector jets, bool traceEven
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //calculate 4-momentum of Z->invisible 
   ROOT::Math::PxPyPzEVector seenFourMomentum(0.,0.,0.,0.);
-  std::vector<ReconstructedParticle*> Jets{};
   for (int i_jet = 0; i_jet < m_nJets; i_jet++) {
     seenFourMomentum += ROOT::Math::PxPyPzEVector(jets[ i_jet ]->getMomentum()[0],jets[ i_jet ]->getMomentum()[1],jets[ i_jet ]->getMomentum()[2], jets[ i_jet ]->getEnergy());
   }
@@ -2385,7 +2462,6 @@ std::pair<std::vector<double>,std::vector<double>> ZHHKinFit::calculateInitialVa
   }
   //calculate 4-momentum of Z->invisible
   ROOT::Math::PxPyPzEVector seenFourMomentum(0.,0.,0.,0.);
-  std::vector<ReconstructedParticle*> Jets{};
   for (int i_jet = 0; i_jet < m_nJets; i_jet++) {
     seenFourMomentum += ROOT::Math::PxPyPzEVector(jets[ i_jet ]->getMomentum()[0],jets[ i_jet ]->getMomentum()[1],jets[ i_jet ]->getMomentum()[2], jets[ i_jet ]->getEnergy());
   }

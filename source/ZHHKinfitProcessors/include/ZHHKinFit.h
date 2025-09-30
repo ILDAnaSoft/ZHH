@@ -206,6 +206,9 @@ private:
   std::vector<float> m_pullLeptonInvPt{};
   std::vector<float> m_pullLeptonTheta{};
   std::vector<float> m_pullLeptonPhi{};
+  std::vector<float> m_pullInvPx{};
+  std::vector<float> m_pullInvPy{};
+  std::vector<float> m_pullInvPz{};
   std::vector<float> m_TrueNeutrinoEnergy{};
   std::vector<float> m_RecoNeutrinoEnergy{};
   std::vector<float> m_RecoNeutrinoEnergyKinfit{};
