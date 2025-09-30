@@ -97,7 +97,7 @@ public:
 							      LCRelationNavigator* SLDNuNav,
 							      EVENT::ReconstructedParticle* neutrino);
   FitResult performllbbbbFIT( pfoVector jets,pfoVector leptons,bool traceEvent);	    
-  FitResult performvvbbbbFIT( pfoVector jets,bool traceEvent);	    
+  FitResult performvvbbbbFIT( pfoVector jets,bool traceEvent, LCCollection *inputMCParticleCollection);	    
   FitResult performqqbbbbFIT( pfoVector jets,bool traceEvent);	    
   virtual void	getJetParameters( ReconstructedParticle* jet , float (&parameters)[ 3 ] , float (&errors)[ 3 ] );
   virtual void	getLeptonParameters( ReconstructedParticle* lepton , float (&parameters)[ 3 ] , float (&errors)[ 3 ] );
@@ -172,7 +172,9 @@ private:
   int m_nCorrectedSLD{};
   float m_ISREnergyTrue{};
   float m_BSEnergyTrue{};
+  float m_ZMassHardProcess{};
   float m_HHMassHardProcess{};
+  float m_ZHHMassHardProcess{};
   int m_FitErrorCode{};
   int m_invalidCovMatrixAtJet{};
   float m_pxcstartvalue{};

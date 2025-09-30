@@ -145,7 +145,7 @@ ZHHKinFit::ZHHKinFit() :
   registerProcessorParameter("ZinvisiblePzError" ,
 			     "Error on pz for Z->invisible fit object",
 			     m_ZinvisiblePzError,
-			     float(0.0f)
+			     float(10.0f)
 			     );
   
   registerProcessorParameter("includeISR",
@@ -303,7 +303,9 @@ void ZHHKinFit::init()
   m_pTTree->Branch("nCorrectedSLD",&m_nCorrectedSLD,"nCorrectedSLD/I") ;
   m_pTTree->Branch("ISREnergyTrue",&m_ISREnergyTrue,"ISREnergyTrue/F") ;
   m_pTTree->Branch("BSEnergyTrue",&m_BSEnergyTrue,"BSEnergyTrue/F") ;
+  m_pTTree->Branch("ZMassHardProcess",&m_ZMassHardProcess,"ZMassHardProcess/F") ;
   m_pTTree->Branch("HHMassHardProcess",&m_HHMassHardProcess,"HHMassHardProcess/F") ;
+  m_pTTree->Branch("ZHHMassHardProcess",&m_ZHHMassHardProcess,"ZHHMassHardProcess/F") ;
   m_pTTree->Branch( "FitErrorCode" , &m_FitErrorCode , "FitErrorCode/I" );
   m_pTTree->Branch( "invalidCovMatrixAtJet" , &m_invalidCovMatrixAtJet , "invalidCovMatrixAtJet/I" );
   m_pTTree->Branch( "pxcstartvalue", &m_pxcstartvalue, "pxcstartvalue/F" );
@@ -372,7 +374,9 @@ void ZHHKinFit::Clear()
   m_nCorrectedSLD = 0;
   m_ISREnergyTrue = 0.0;
   m_BSEnergyTrue = 0.0;
+  m_ZMassHardProcess = 0.0;
   m_HHMassHardProcess = 0.0;
+  m_ZHHMassHardProcess = 0.0;
   m_FitErrorCode = 1;
   m_invalidCovMatrixAtJet = -1;
   m_pxcstartvalue = 0.0;
@@ -542,13 +546,29 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
   else streamlog_out(WARNING) << "Not photons:" << ISR1->getPDG() << " and " << ISR2->getPDG() << endl;
   streamlog_out(MESSAGE) << "ISR energies: " << ISR1->getEnergy() << ", " << ISR2->getEnergy() << endl;
   streamlog_out(MESSAGE) << "Picked ISR energy: " << m_ISREnergyTrue << endl;
-  //HH mass in hard process
+  //Z, HH and ZHH masses in hard process
+  MCParticle *fermion1 = dynamic_cast<EVENT::MCParticle*>(inputMCParticleCollection->getElementAt(8));
+  MCParticle *fermion2 = dynamic_cast<EVENT::MCParticle*>(inputMCParticleCollection->getElementAt(9));
   std::vector<MCParticle*> mchiggs{};
   for (int i = 0; i < inputMCParticleCollection->getNumberOfElements(); ++i) {
     MCParticle *mcp = dynamic_cast<EVENT::MCParticle*>(inputMCParticleCollection->getElementAt(i));
     if (mcp->getPDG() == 25) mchiggs.push_back(mcp);
   }
-  if (mchiggs.size() == 2) m_HHMassHardProcess = inv_mass(mchiggs.at(0), mchiggs.at(1)); 
+  if (mchiggs.size() == 2) {
+    m_HHMassHardProcess = inv_mass(mchiggs.at(0), mchiggs.at(1));
+    m_ZMassHardProcess = inv_mass(fermion1, fermion2);
+    ROOT::Math::PxPyPzEVector zhhFourMomentum(0.,0.,0.,0.);
+    zhhFourMomentum +=  ROOT::Math::PxPyPzEVector( fermion1->getMomentum()[0], fermion1->getMomentum()[1], fermion1->getMomentum()[2] , fermion1->getEnergy() );
+    zhhFourMomentum +=  ROOT::Math::PxPyPzEVector( fermion2->getMomentum()[0], fermion2->getMomentum()[1], fermion2->getMomentum()[2] , fermion2->getEnergy() );
+    zhhFourMomentum +=  ROOT::Math::PxPyPzEVector( mchiggs.at(0)->getMomentum()[0], mchiggs.at(0)->getMomentum()[1], mchiggs.at(0)->getMomentum()[2] , mchiggs.at(0)->getEnergy() );
+    zhhFourMomentum +=  ROOT::Math::PxPyPzEVector( mchiggs.at(1)->getMomentum()[0], mchiggs.at(1)->getMomentum()[1], mchiggs.at(1)->getMomentum()[2] , mchiggs.at(1)->getEnergy() );
+    m_ZHHMassHardProcess = zhhFourMomentum.M();
+  }
+
+  streamlog_out(MESSAGE) << "Hard process Z mass: " << m_ZMassHardProcess << endl;
+  streamlog_out(MESSAGE) << "Hard process HH mass: " << m_HHMassHardProcess << endl;
+  streamlog_out(MESSAGE) << "Hard process ZHH mass: " << m_ZHHMassHardProcess << endl;
+  
   else streamlog_out(WARNING) << "////////////////////////////////////////////////// MC Higgs pair not found //////////////////////////////////////////////////" << endl;
 
   if (m_signature == "llbbbb") {
@@ -619,7 +639,7 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     woNuFitResult = performllbbbbFIT( Jets, Leptons, traceEvent );
   }
   if (m_signature == "vvbbbb") {
-    woNuFitResult = performvvbbbbFIT( Jets, traceEvent );
+    woNuFitResult = performvvbbbbFIT( Jets, traceEvent , inputMCParticleCollection);
   }
   if (m_signature == "qqbbbb") {
     woNuFitResult = performqqbbbbFIT( Jets, traceEvent );
@@ -745,6 +765,7 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
       fittedjets.push_back(fittedjet);
       //calculate pulls
       vector<double> pulls = calculatePulls(castfitjet, Jets[i], 1);
+      streamlog_out(MESSAGE) << "pulls jet" << i << ": " << pulls[0] << ", " << pulls[1] << ", " << pulls[2] << endl;
       m_pullJetEnergy.push_back(pulls[0]);
       m_pullJetTheta.push_back(pulls[1]);
       m_pullJetPhi.push_back(pulls[2]);
@@ -786,12 +807,17 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
       m_pullLeptonPhi.push_back(pulls[2]);
     }
     if (m_signature == "vvbbbb"){
-      //calculate 4-momentum of Z->invisible
+      //calculate 4-momentum of Z->invisible 
+      // correct for crossing angle 
+      float target_p_due_crossing_angle = m_ECM * 0.007; // crossing angle = 14 mrad 
+      double E_lab = 2 * sqrt( std::pow( 0.548579909e-3 , 2 ) + std::pow( m_ECM / 2 , 2 ) + std::pow( target_p_due_crossing_angle , 2 ) + 0. + 0.);
+      ROOT::Math::PxPyPzEVector ecms(target_p_due_crossing_angle,0.,0.,E_lab) ;
       ROOT::Math::PxPyPzEVector seenFourMomentum(0.,0.,0.,0.);
       for (int i_jet = 0; i_jet < m_nJets; i_jet++) {
 	seenFourMomentum += ROOT::Math::PxPyPzEVector(Jets[ i_jet ]->getMomentum()[0],Jets[ i_jet ]->getMomentum()[1],Jets[ i_jet ]->getMomentum()[2], Jets[ i_jet ]->getEnergy());
       }
-      double startZinv[3] = {-seenFourMomentum.Px(), -seenFourMomentum.Py(), -seenFourMomentum.Pz()};
+      ROOT::Math::PxPyPzEVector missingFourMomentum = ecms-seenFourMomentum;
+      double startZinv[3] = {missingFourMomentum.Px(), missingFourMomentum.Py(), missingFourMomentum.Pz()};
       float errorsZinv[3] = {m_ZinvisiblePxPyError, m_ZinvisiblePxPyError, m_ZinvisiblePzError};
       //get Zinv fit object
       string fitname = "Zinvisible";
@@ -808,12 +834,16 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
 	  double errfit = castfitZinv->getError(ipar);
 	  double errmea = errorsZinv[ipar];
 	  double sigma = errmea*errmea-errfit*errfit;
-	  streamlog_out(DEBUG3) << "fitted = " << fitted << ", start = " << start << std::endl ;
-	  streamlog_out(DEBUG3) << "errfit = " << errfit << ", errmea = " << errmea << ", sigma = " << sigma << std::endl ;
+	  //streamlog_out(MESSAGE) << "fitted = " << fitted << ", start = " << start << std::endl ;
+	  //streamlog_out(MESSAGE) << "errfit = " << errfit << ", errmea = " << errmea << ", sigma = " << sigma << std::endl ;
 	  if (sigma > 0) {
 	    sigma = sqrt(sigma);
+	    streamlog_out(MESSAGE) << "pull = " << (fitted - start)/sigma << std::endl ;
 	    pulls.push_back((fitted - start)/sigma);
-	  }
+	  } else {
+	    streamlog_out(DEBUG3) << "NOT GOOD...................." << std::endl ;
+	    pulls.push_back(-999.);
+	  }	  
 	}
 	m_pullInvPx.push_back(pulls[0]);
 	m_pullInvPy.push_back(pulls[1]);
@@ -821,6 +851,7 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
       }
     } //if vvbbbb --> calculate Zinv pulls
   }
+  
   if (m_solveNu) {
     streamlog_out(MESSAGE) << "	||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||" << std::endl ;
     streamlog_out(MESSAGE) << "	||||||||||||||||||||||||||||  FEED NEUTRINO CORRECTION TO KINFIT  ||||||||||||||||||||||||||||" << std::endl ;
@@ -877,7 +908,7 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
 	fitResult = performllbbbbFIT( CorrectedJets, Leptons, traceEvent );
       }
       if (m_signature == "vvbbbb") {
-	fitResult = performvvbbbbFIT( CorrectedJets, traceEvent );
+	fitResult = performvvbbbbFIT( CorrectedJets, traceEvent, inputMCParticleCollection );
       }
       if (m_signature == "qqbbbb") {
 	fitResult = performqqbbbbFIT( CorrectedJets, traceEvent );
@@ -1107,6 +1138,7 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
       fittedjets.push_back(fittedjet);
       //calculate pulls
       vector<double> pulls = calculatePulls(castfitjet, bestJets[i], 1);
+      streamlog_out(MESSAGE) << "pulls jet" << i << ": " << pulls[0] << ", " << pulls[1] << ", " << pulls[2] << endl;
       m_pullJetEnergy.push_back(pulls[0]);
       m_pullJetTheta.push_back(pulls[1]);
       m_pullJetPhi.push_back(pulls[2]);
@@ -1147,13 +1179,19 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
       m_pullLeptonTheta.push_back(pulls[1]);
       m_pullLeptonPhi.push_back(pulls[2]);
     }
+    streamlog_out(MESSAGE) << "Calculating Z->inv pull " << endl;
     if (m_signature == "vvbbbb"){
-      //calculate 4-momentum of Z->invisible
+      //calculate 4-momentum of Z->invisible 
+      // correct for crossing angle 
+      float target_p_due_crossing_angle = m_ECM * 0.007; // crossing angle = 14 mrad 
+      double E_lab = 2 * sqrt( std::pow( 0.548579909e-3 , 2 ) + std::pow( m_ECM / 2 , 2 ) + std::pow( target_p_due_crossing_angle , 2 ) + 0. + 0.);
+      ROOT::Math::PxPyPzEVector ecms(target_p_due_crossing_angle,0.,0.,E_lab) ;
       ROOT::Math::PxPyPzEVector seenFourMomentum(0.,0.,0.,0.);
       for (int i_jet = 0; i_jet < m_nJets; i_jet++) {
 	seenFourMomentum += ROOT::Math::PxPyPzEVector(Jets[ i_jet ]->getMomentum()[0],Jets[ i_jet ]->getMomentum()[1],Jets[ i_jet ]->getMomentum()[2], Jets[ i_jet ]->getEnergy());
       }
-      double startZinv[3] = {-seenFourMomentum.Px(), -seenFourMomentum.Py(), -seenFourMomentum.Pz()};
+      ROOT::Math::PxPyPzEVector missingFourMomentum = ecms-seenFourMomentum;
+      double startZinv[3] = {missingFourMomentum.Px(), missingFourMomentum.Py(), missingFourMomentum.Pz()};
       float errorsZinv[3] = {m_ZinvisiblePxPyError, m_ZinvisiblePxPyError, m_ZinvisiblePzError};
       //get Zinv fit object
       string fitname = "Zinvisible";
@@ -1170,11 +1208,14 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
 	  double errfit = castfitZinv->getError(ipar);
 	  double errmea = errorsZinv[ipar];
 	  double sigma = errmea*errmea-errfit*errfit;
-	  streamlog_out(DEBUG3) << "fitted = " << fitted << ", start = " << start << std::endl ;
-	  streamlog_out(DEBUG3) << "errfit = " << errfit << ", errmea = " << errmea << ", sigma = " << sigma << std::endl ;
+	  streamlog_out(MESSAGE) << "fitted = " << fitted << ", start = " << start << std::endl ;
+	  streamlog_out(MESSAGE) << "errfit = " << errfit << ", errmea = " << errmea << ", sigma = " << sigma << std::endl ;
 	  if (sigma > 0) {
 	    sigma = sqrt(sigma);
 	    pulls.push_back((fitted - start)/sigma);
+	  } else {
+	    streamlog_out(DEBUG3) << "NOT GOOD...................." << std::endl ;
+	    pulls.push_back(-999.);
 	  }
 	}
 	m_pullInvPx.push_back(pulls[0]);
@@ -1686,7 +1727,7 @@ ZHHKinFit::FitResult ZHHKinFit::performllbbbbFIT( pfoVector jets, pfoVector lept
   return bestFitResult;
 }
 
-ZHHKinFit::FitResult ZHHKinFit::performvvbbbbFIT( pfoVector jets, bool traceEvent) {
+ZHHKinFit::FitResult ZHHKinFit::performvvbbbbFIT( pfoVector jets, bool traceEvent, LCCollection *inputMCParticleCollection) {
   shared_ptr<vector<shared_ptr<JetFitObject>>> jfo = make_shared<vector<shared_ptr<JetFitObject>>>();
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //////												  //////
@@ -1709,15 +1750,28 @@ ZHHKinFit::FitResult ZHHKinFit::performvvbbbbFIT( pfoVector jets, bool traceEven
   //////                                        Set ZinvisibleFitObject                                   //////
   //////                                                                                                  //////
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //calculate 4-momentum of Z->invisible 
+  //calculate 4-momentum of Z->invisible
+  // correct for crossing angle
+  float target_p_due_crossing_angle = m_ECM * 0.007; // crossing angle = 14 mrad
+  double E_lab = 2 * sqrt( std::pow( 0.548579909e-3 , 2 ) + std::pow( m_ECM / 2 , 2 ) + std::pow( target_p_due_crossing_angle , 2 ) + 0. + 0.);
+  ROOT::Math::PxPyPzEVector ecms(target_p_due_crossing_angle,0.,0.,E_lab) ;
   ROOT::Math::PxPyPzEVector seenFourMomentum(0.,0.,0.,0.);
   for (int i_jet = 0; i_jet < m_nJets; i_jet++) {
     seenFourMomentum += ROOT::Math::PxPyPzEVector(jets[ i_jet ]->getMomentum()[0],jets[ i_jet ]->getMomentum()[1],jets[ i_jet ]->getMomentum()[2], jets[ i_jet ]->getEnergy());
   }
-  ROOT::Math::PxPyPzMVector ZinvFourMomentum(-seenFourMomentum.Px(), -seenFourMomentum.Py(), -seenFourMomentum.Pz(),91.1880); // M_Z PDG average in 2024 review
+  ROOT::Math::PxPyPzEVector missingFourMomentum = ecms-seenFourMomentum;
+  //ROOT::Math::PxPyPzMVector ZinvFourMomentum(-seenFourMomentum.Px(), -seenFourMomentum.Py(), -seenFourMomentum.Pz(),91.1880); // M_Z PDG average in 2024 review
   //shared_ptr<ZinvisibleFitObject> zfo = make_shared<ZinvisibleFitObject> (ZinvFourMomentum.E(), ZinvFourMomentum.Theta(), ZinvFourMomentum.Phi(), 1.0, 0.1, 0.1,91.1880);
-  shared_ptr<ZinvisibleFitObjectNew> zfo = make_shared<ZinvisibleFitObjectNew> (ZinvFourMomentum.Px(), ZinvFourMomentum.Py(), ZinvFourMomentum.Pz(), m_ZinvisiblePxPyError, m_ZinvisiblePxPyError, m_ZinvisiblePzError, 91.1880);
+  //shared_ptr<ZinvisibleFitObjectNew> zfo = make_shared<ZinvisibleFitObjectNew> (ZinvFourMomentum.Px(), ZinvFourMomentum.Py(), ZinvFourMomentum.Pz(), m_ZinvisiblePxPyError, m_ZinvisiblePxPyError, m_ZinvisiblePzError, 91.1880);
+  MCParticle *fermion1 = dynamic_cast<EVENT::MCParticle*>(inputMCParticleCollection->getElementAt(8));
+  MCParticle *fermion2 = dynamic_cast<EVENT::MCParticle*>(inputMCParticleCollection->getElementAt(9));
+  ROOT::Math::PxPyPzEVector vvFourMomentum(0.,0.,0.,0.);
+  vvFourMomentum +=  ROOT::Math::PxPyPzEVector( fermion1->getMomentum()[0], fermion1->getMomentum()[1], fermion1->getMomentum()[2] , fermion1->getEnergy() );
+  vvFourMomentum +=  ROOT::Math::PxPyPzEVector( fermion2->getMomentum()[0], fermion2->getMomentum()[1], fermion2->getMomentum()[2] , fermion2->getEnergy() );
+  //shared_ptr<ZinvisibleFitObjectNew> zfo = make_shared<ZinvisibleFitObjectNew> (vvFourMomentum.Px(), vvFourMomentum.Py(), vvFourMomentum.Pz(), m_ZinvisiblePxPyError, m_ZinvisiblePxPyError, m_ZinvisiblePzError, 91.1880);
+  shared_ptr<ZinvisibleFitObjectNew> zfo = make_shared<ZinvisibleFitObjectNew> (missingFourMomentum.Px(), missingFourMomentum.Py(), missingFourMomentum.Pz(), m_ZinvisiblePxPyError, m_ZinvisiblePxPyError, m_ZinvisiblePzError, 91.1880);
   zfo->setName("Zinvisible");
+  streamlog_out(MESSAGE)  << "==== Zinv errors ==== " << m_ZinvisiblePxPyError << ", " << m_ZinvisiblePzError << endl;
   
   const int NZINVISIBLES = 1;
   
@@ -1816,7 +1870,11 @@ ZHHKinFit::FitResult ZHHKinFit::performvvbbbbFIT( pfoVector jets, bool traceEven
     //////					Set ISR PhotonFitObjects					//////
     //////													//////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    
+    MCParticle* ISR1 = (MCParticle*) inputMCParticleCollection->getElementAt(6);
+    MCParticle* ISR2 = (MCParticle*) inputMCParticleCollection->getElementAt(7);
+    float trueisrpx;
+    if (ISR1->getPDG() == 22 && ISR2->getPDG() == 22) trueisrpx = (ISR1->getEnergy() > ISR2->getEnergy()) ? ISR1->getMomentum()[2] : ISR2->getMomentum()[2];
+    //shared_ptr<ISRPhotonFitObject> photon = make_shared<ISRPhotonFitObject>(0., 0., trueisrpx, b, ISRPzMaxB);
     shared_ptr<ISRPhotonFitObject> photon = make_shared<ISRPhotonFitObject>(0., 0., -pzc->getValue(), b, ISRPzMaxB);
     photon->setName("photon");
     if( m_fitISR ) {
@@ -2461,15 +2519,18 @@ std::pair<std::vector<double>,std::vector<double>> ZHHKinFit::calculateInitialVa
     jfo_perm->push_back(jsp);
   }
   //calculate 4-momentum of Z->invisible
+  // correct for crossing angle
+  float target_p_due_crossing_angle = m_ECM * 0.007; // crossing angle = 14 mrad
+  double E_lab = 2 * sqrt( std::pow( 0.548579909e-3 , 2 ) + std::pow( m_ECM / 2 , 2 ) + std::pow( target_p_due_crossing_angle , 2 ) + 0. + 0.);
+  ROOT::Math::PxPyPzEVector ecms(target_p_due_crossing_angle,0.,0.,E_lab) ;
   ROOT::Math::PxPyPzEVector seenFourMomentum(0.,0.,0.,0.);
   for (int i_jet = 0; i_jet < m_nJets; i_jet++) {
     seenFourMomentum += ROOT::Math::PxPyPzEVector(jets[ i_jet ]->getMomentum()[0],jets[ i_jet ]->getMomentum()[1],jets[ i_jet ]->getMomentum()[2], jets[ i_jet ]->getEnergy());
   }
-  ROOT::Math::PxPyPzMVector ZinvFourMomentum(-seenFourMomentum.Px(), -seenFourMomentum.Pz(), -seenFourMomentum.Pz(),91.1880); // M_Z PDG average in 2024 review    
-  shared_ptr<ZinvisibleFitObjectNew> zfo = make_shared<ZinvisibleFitObjectNew> (ZinvFourMomentum.Px(), ZinvFourMomentum.Py(), ZinvFourMomentum.Pz(), 1.0, 1.0, 1.0,91.1880);
+  ROOT::Math::PxPyPzEVector missingFourMomentum = ecms-seenFourMomentum;
+  shared_ptr<ZinvisibleFitObjectNew> zfo = make_shared<ZinvisibleFitObjectNew> (missingFourMomentum.Px(), missingFourMomentum.Py(), missingFourMomentum.Pz(), 1.0, 1.0, 1.0, missingFourMomentum.M());
   zfo->setName("Zinvisible");
 
-  float target_p_due_crossing_angle = m_ECM * 0.007; // crossing angle = 14 mrad                                                                                                                                 
   shared_ptr<MomentumConstraint> pxc = make_shared<MomentumConstraint>( 0 , 1 , 0 , 0 , target_p_due_crossing_angle);//Factor for: (energy sum, px sum, py sum,pz sum,target value of sum)                       
   pxc->setName("sum(p_x)");
   for (auto j : *jfo_perm) pxc->addToFOList(*j);
@@ -2488,7 +2549,6 @@ std::pair<std::vector<double>,std::vector<double>> ZHHKinFit::calculateInitialVa
   for (auto l : *lfo) pzc->addToFOList(*l);
   if (m_signature == "vvbbbb") pzc->addToFOList(*zfo);
   
-  double E_lab = 2 * sqrt( std::pow( 0.548579909e-3 , 2 ) + std::pow( m_ECM / 2 , 2 ) + std::pow( target_p_due_crossing_angle , 2 ) + 0. + 0.); //TODO: check equation                                           
   shared_ptr<MomentumConstraint> ec = make_shared<MomentumConstraint>(1, 0, 0, 0, E_lab);
   ec->setName("sum(E)");
   for (auto j : *jfo_perm) ec->addToFOList(*j);
@@ -2650,15 +2710,16 @@ std::vector<double> ZHHKinFit::calculatePulls(std::shared_ptr<ParticleFitObject>
     errfit = fittedobject->getError(ipar);
     errmea = errors[ipar];
     sigma = errmea*errmea-errfit*errfit;
-    streamlog_out(DEBUG3) << "fitted = " << fitted << ", start = " << start << std::endl ;
-    streamlog_out(DEBUG3) << "errfit = " << errfit << ", errmea = " << errmea << ", sigma = " << sigma << std::endl ;
+    //streamlog_out(MESSAGE) << "fitted = " << fitted << ", start = " << start << std::endl ;
+    //streamlog_out(MESSAGE) << "errfit = " << errfit << ", errmea = " << errmea << ", sigma = " << sigma << std::endl ;
     if (sigma > 0) {
       sigma = sqrt(sigma);
+      //streamlog_out(MESSAGE) << "pull = " << (fitted - start)/sigma << std::endl ;
       pulls.push_back((fitted - start)/sigma);
     }
     else {
       streamlog_out(DEBUG3) << "NOT GOOD...................." << std::endl ;
-      pulls.push_back(-4.5);
+      pulls.push_back(-999.);
     }
   }
   return pulls;
