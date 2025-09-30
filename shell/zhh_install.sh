@@ -199,10 +199,20 @@ function zhh_install_deps() {
         source "$REPO_ROOT/shell/sgv_install.sh" $sgv_dir
     fi
 
+    # default ilc prod path
+    local default_ilc_prod_dir="/pnfs/desy.de/ilc/prod/ilc"
+
+    if [[ -d $default_ilc_prod_dir ]]; then  
+        export ILC_PROD_PATH=$default_ilc_prod_dir
+    else
+        get_input_arg "Where do you want to install SGV? ($default_sgv_dir) " sgv_dir "$default_sgv_dir"
+    fi
+
     # Save directories to .env
     # For $ZHH_ENV_NAME, see zhh_install_venv.sh
     cat > "$REPO_ROOT/.env" <<EOF
 REPO_ROOT="$REPO_ROOT"
+ILC_PROD_PATH="$ILC_PROD_PATH"
 ZHH_K4H_RELEASE="$ZHH_K4H_RELEASE"
 MarlinMLFlavorTagging="$MarlinMLFlavorTagging"
 FlavorTagging_ML="$FlavorTagging_ML"

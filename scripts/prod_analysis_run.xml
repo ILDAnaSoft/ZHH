@@ -15,10 +15,9 @@
         In the job submission script, all channels are run
         -->
         <constant name="Runllbbbb" value="true" />
-        <constant name="Runvvbbbb" value="false" />
+        <constant name="Runvvbbbb" value="true" />
         <constant name="Runqqbbbb" value="false" />
         <constant name="RunTruthRecoComparison" value="false" />
-        <constant name="KinFitSignature" value="llbbbb" />
         <constant name="WriteLCIO" value="false" />
 
         <!-- These must be chosen depending on fast/full simulation options -->
@@ -74,7 +73,7 @@
         <!-- limit the number of processed records (run+evt): -->
         <!--parameter name="MaxRecordNumber" value="0" /to process all events--> 
         <!--parameter name="MaxRecordNumber" value="1000" /to process 1000 events--> 
-        <parameter name="MaxRecordNumber" value="500"/>
+        <parameter name="MaxRecordNumber" value="50"/>
         <parameter name="SkipNEvents" value="0" />
         <parameter name="SupressCheck" value="false" />
         <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT">SILENT</parameter>

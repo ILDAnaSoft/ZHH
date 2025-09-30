@@ -89,6 +89,28 @@ void EventObservablesVV::updateChannelValues(EVENT::LCEvent *pLCEvent) {
     LCCollection *input5JetCollection = pLCEvent->getCollection( m_input5JetCollection );
     LCCollection *input6JetCollection = pLCEvent->getCollection( m_input6JetCollection );
 
+    // VANILLA JET MATCHING
+    std::vector<float> zhh_masses;
+    std::vector<ROOT::Math::PxPyPzEVector> jet_v4 = v4(m_jets);
+
+    std::tie(m_zhh_jet_matching, zhh_masses, m_zhh_chi2) = pairJetsByMass(jet_v4, { 25, 25 });
+
+    m_zhh_mh1 = std::min(zhh_masses[0], zhh_masses[1]);
+    m_zhh_mh2 = std::max(zhh_masses[0], zhh_masses[1]);
+    m_zhh_mhh = (jet_v4[0] + jet_v4[1] + jet_v4[2] + jet_v4[3]).M();
+
+    std::vector<ROOT::Math::PxPyPzEVector> dijets = {
+        jet_v4[m_zhh_jet_matching[0]] + jet_v4[m_zhh_jet_matching[1]],
+        jet_v4[m_zhh_jet_matching[2]] + jet_v4[m_zhh_jet_matching[3]]
+    };
+
+    for (ROOT::Math::PxPyPzEVector dijet: dijets) {
+        if (dijet.P() > m_zhh_p1st) {
+            m_zhh_p1st = dijet.P();
+            m_zhh_cosTh1st = cos(dijet.Theta());
+        }
+    }
+
     // TREAT 5 JET COLLECTION
 
     // assume jet given by jet5IDxPFOsMin with least No of PFOs is the tau jet

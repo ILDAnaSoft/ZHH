@@ -35,22 +35,7 @@ m_JMP("best_perm_ll") {
         "Name of the isolated tau collection"  ,
         m_inputIsoTaus ,
         std::string("ISOTaus")
-        );
-
-    registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
-			    "LeptonsKinFit_solveNu",
-			    "Name of the Lepton collection of the 4C kinfit",
-			    m_inputLeptonKinFit_solveNuCollection,
-			    std::string("LeptonsKinFit_solveNu")
-			    );
-    
-    registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
-			    "JetsKinFit_solveNu",
-			    "Name of the Jet collection of the 4C kinfit",
-			    m_inputJetKinFit_solveNuCollection,
-			    std::string("JetsKinFit_solveNu")
-			    );
-    
+        );    
 }
 
 void EventObservablesLL::prepareChannelTree() {
@@ -187,16 +172,6 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
     LCCollection *inputJetCollection = pLCEvent->getCollection( m_inputJetCollection );
     LCCollection *input2JetCollection = pLCEvent->getCollection( m_input2JetCollection );
     LCCollection *inputLepPairCollection = pLCEvent->getCollection( m_inputLepPairCollection );
-    LCCollection *inputLKF_solveNuCollection = NULL;
-    LCCollection *inputJKF_solveNuCollection = NULL;
-    
-    try {
-      inputLKF_solveNuCollection = pLCEvent->getCollection( m_inputLeptonKinFit_solveNuCollection );
-      inputJKF_solveNuCollection = pLCEvent->getCollection( m_inputJetKinFit_solveNuCollection );
-    } catch(DataNotAvailableException &e) {
-      streamlog_out(MESSAGE) << "processEvent : Input 4C kinfit jet and lepton collections not found in event " << m_nEvt << std::endl;
-      m_statusCode += 100;
-    }
     
     if ( inputLepPairCollection->getNumberOfElements() == m_nAskedIsoLeps() && inputJetCollection->getNumberOfElements() == m_nAskedJets() ) {
         // NPFOS MIN/MAX
@@ -422,9 +397,11 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
 
         streamlog_out(MESSAGE) << "PairedLeptons of type " << m_pairedLepType << " to M=" << m_mzll << std::endl;
 
+        #ifdef CALC_ME
         calculateMatrixElements(m_pairedLepType, 5, v4_paired_isolep1, v4_paired_isolep2,
                                 v4old(inputJetCollection->getElementAt(0)), v4old(inputJetCollection->getElementAt(1)),
                                 v4old(inputJetCollection->getElementAt(2)), v4old(inputJetCollection->getElementAt(3)), false);
+        #endif
 
         // TODO: try calculating with kinfit outputs
     }

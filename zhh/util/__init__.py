@@ -10,3 +10,4 @@ from .LocalShellTask import LocalShellTask, execute_tasks, timestampms
 from .fs_tools import dirs_inside, files_inside
 from .CustomContext import CustomContext
 from .h5open import h5_open_wait
+from .glob_exp import glob_exp
