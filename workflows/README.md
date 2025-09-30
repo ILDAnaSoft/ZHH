@@ -11,7 +11,9 @@ An example on the NAF can be found [here](https://github.com/riga/law/tree/maste
 For the ZHH analysis, this framework has been developed with law+luigi to minimize job times by running with the highest possible number of parallel jobs.
 
 ## Implementation and Configuration
-Running an analysis requires defining and registering a configuration in `configurations.py` with a tag (name), a list of SLCIO source files and, optionally, a list of globals/constants for Marlin. Then, an index of available SLCIO files (number of events) and encountered physics processes including cross section is created. It follows a runtime analysis for a subset of each physics process sample (e.g. e2e2hh, 2f_Z_hadronic etc.) and the calculation of the chunks such that they fit the default queue of the NAF. Only after that, the jobs are finally submitted.
+Running an analysis requires defining and registering a configuration in `configurations.py` with a tag (name), a list of SLCIO source files and, optionally, a list of globals/constants for Marlin.
+
+Then, an index of available SLCIO files (number of events) and encountered physics processes including cross section is created. It follows a runtime analysis for a subset of each physics process sample (e.g. e2e2hh, 2f_Z_hadronic etc.) and the calculation of the chunks such that they fit the default queue of the NAF. Only after that, the jobs are finally submitted.
 
 Some standard configurations are given, see e.g. the tags `500-all-full`, `550-hh-fast` and `550-hh-full`.
 
@@ -40,15 +42,20 @@ law run AnalysisSummary --poll-interval=120sec --tag=500-all-full
 
 This will run the tasks RawIndex, AnalysisRuntime, CreateAnalysisChunks and then AnalysisFinal one after another and make use of the NAF when called at DESY. Each task will create a folder of the same name under `$DATA_PATH`. The results are stored in a sub-directory that starts with the tag value.
 
+### Error Handling for Condor Jobs / Law Workflows
+In case jobs fail, use `condor_q -h` or take a look at the log files for why jobs have failed. The default location of log files for some task `X` is in `$DATA_ROOT/X` as `stdall_y.txt` where y is the branch number of the job. 
+
+If the reported HOLD_REASON is "Job runtime longer than reserved", make sure that Marlin processes respective input files correctly. If you cannot find the issue, it might just randomly happen that the runtime exceeds the reserved runtime limit. As a quick fix, you may use `condor_rm $(whoami)` and afterwards rerun the law command with the optional argument `--initial-run-with-higher-requirements=True`. This will enforce higher runtime and RAM limits (6h and 4GB per default). 
+
 ### Task Overview
 
 | Task name                 | Batch job | Description                                                                                                         | Parameters with defaults |
 |---------------------------|-----------|---------------------------------------------------------------------------------------------------------------------|--------------------------|
-| RawIndex            | No        | Creates an index of all readable sample files and physics processes associated to them. See `ProcessIndex`.          | - |
-| AnalysisRuntime           | Yes       | Runs the Marlin analysis for each proc_pol (process polarization) combination over 50 events to estimate the runtime per event.            | - |
+| RawIndex                  | No        | Creates an index of all readable sample files and physics processes associated to them. See `ProcessIndex`.         | - |
+| AnalysisRuntime           | Yes       | Runs Marlin prod_reco_run.xml for each proc_pol (process polarization) combination over 50 events to estimate the runtime per event.            | - |
 | CreateAnalysisChunks      | No        | Calculates chunks according to a desired target, physics sample size and maximum duration per job (2h, to stay below limit of 3h). `ratio` controls the number of desired events as fraction of the number of expected events (`1.` equates to ca. 45M events of the available 60M). Setting this to `None` will use all available data.     | `jobtime=7200` <br> `ratio=1.` |
 | AnalysisFinal             | Yes       | Runs the Marlin analysis with the chunking as given above.                                                          | - |
-| AnalysisSummary           | Yes       | Extracts data for analyzing the preselection and final selection, kinematic distributions etc.                      | - |
+| AnalysisCombine           | Yes       | Extracts data for analyzing the preselection and final selection, kinematic distributions etc.                      | - |
 
 To use the maximum number of jobs, the chunking is done in a way such that only the normal quota is used (see [here](https://docs.desy.de/naf/documentation/job-requirements/)). 
 
@@ -157,4 +164,5 @@ A detailed table of the resulting data is given in the following. The quantities
 | qq_bmax3           | float `f`               | See above.                           |
 | qq_bmax4           | float `f`               | See above.                           |
     
-
+### Implementation Specifics
+The `configurations.py` includes instructions to dynamically inject task dependencies. This is important for all tasks which have the obligatory `--tag` parameter. 

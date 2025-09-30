@@ -15,10 +15,9 @@
         In the job submission script, all channels are run
         -->
         <constant name="Runllbbbb" value="true" />
-        <constant name="Runvvbbbb" value="false" />
+        <constant name="Runvvbbbb" value="true" />
         <constant name="Runqqbbbb" value="false" />
         <constant name="RunTruthRecoComparison" value="false" />
-        <constant name="KinFitSignature" value="llbbbb" />
 
         <!-- These must be chosen depending on fast/full simulation options -->
         <constant name="IsFastSim" value="true" />

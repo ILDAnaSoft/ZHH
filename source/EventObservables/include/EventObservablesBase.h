@@ -184,6 +184,10 @@ class EventObservablesBase: public Processor
 		std::string m_JetTaggingPIDParameterB2{};
 		std::string m_JetTaggingPIDParameterC2{};
 
+		// collections
+		LCCollection *inputLKF_solveNuCollection{};
+    	LCCollection *inputJKF_solveNuCollection{};
+
 		// outputs
 		bool m_write_ttree{};
 		TFile *m_pTFile{};

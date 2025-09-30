@@ -1,5 +1,7 @@
-from glob import glob
+import os.path as osp
+from glob import glob as glob_fn
 from typing import Optional, Union
+from .util.glob_exp import glob_exp
 
 default_locations = [
     '2f_Z_bhabhaNg',
@@ -67,13 +69,13 @@ def get_raw_files(locations:Optional[Union[str,list[str]]]=None,
     
     arr = []
     for location in locations:
-        root_location = '/pnfs/desy.de/ilc/prod/ilc/ild/copy'
+        root_location = '$ILC_PROD_PATH/ild/copy'
         
         if location.startswith('hh:'):
-            root_location = '/pnfs/desy.de/ilc/prod/ilc/mc-2020/ild'
-            carr = glob(f"{root_location}/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02/**/*.{location.replace('hh:', '')}.*.slcio", recursive=True)
+            root_location = '$ILC_PROD_PATH/mc-2020/ild'
+            carr = glob_exp(f"{root_location}/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02/**/*.{location.replace('hh:', '')}.*.slcio", recursive=True)
         else:
-            carr = glob(f"{root_location}/dst-merged/500-TDR_ws/{location}/ILD_l5_o1_v02/**/*.slcio", recursive=True)
+            carr = glob_exp(f"{root_location}/dst-merged/500-TDR_ws/{location}/ILD_l5_o1_v02/**/*.slcio", recursive=True)
             
         carr.sort()
         

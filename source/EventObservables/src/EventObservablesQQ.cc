@@ -214,10 +214,12 @@ void EventObservablesQQ::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         else if (cTagSum > oTagSum && cTagSum > bTagSum)
             z1_decay_pdg = 4; // c
 
+        #ifdef CALC_ME
         // assume remaining jets to be b-jets
         calculateMatrixElements(z1_decay_pdg, 5, v4_jet_from_z1, v4_jet_from_z2,
                                 v4old(m_jets[2 + m_zhh_jet_matching[0]]), v4old(m_jets[2 + m_zhh_jet_matching[1]]),
                                 v4old(m_jets[2 + m_zhh_jet_matching[2]]), v4old(m_jets[2 + m_zhh_jet_matching[3]]), true);
+        #endif
     }
 };
 

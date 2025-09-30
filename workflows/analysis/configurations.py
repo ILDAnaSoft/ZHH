@@ -11,10 +11,10 @@
 # depends on 4f and only uses the semileptonic samples.
 
 from analysis.framework import AnalysisConfiguration, zhh_configs
-from glob import glob
 from typing import TYPE_CHECKING
 from os import environ
 import numpy as np
+from zhh import glob_exp
 
 if TYPE_CHECKING:
     from analysis.tasks import RawIndex, AbstractIndex
@@ -224,10 +224,10 @@ class Config_550_llhh_full(AnalysisConfiguration):
     
     def slcio_files(self, raw_index_task: 'RawIndex'):
         result = []
-        base = '/pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/550-Test/hh/ILD_l5_o1_v02/v02-02-03'
+        base = '$ILC_PROD_PATH/mc-2020/ild/dst-merged/550-Test/hh/ILD_l5_o1_v02/v02-02-03'
         
         for mask in ['Pe1e1', 'Pe2e2', 'Pe3e3']:
-            result += glob(f'{base}/**/*{mask}*.slcio', recursive=True)  
+            result += glob_exp(f'{base}/**/*{mask}*.slcio', recursive=True)  
         
         return result
     
@@ -255,10 +255,10 @@ class Config_250_ftag_full(AnalysisConfiguration):
     
     def slcio_files(self, raw_index_task: 'RawIndex'):
         result = []
-        base = '/pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/250-SetA/flavortag/ILD_l5_o1_v02/v02-02'
+        base = '$ILC_PROD_PATH/mc-2020/ild/dst-merged/250-SetA/flavortag/ILD_l5_o1_v02/v02-02'
         
         for mask in ['zz_dddd', 'zz_uuuu', 'zz_ssss', 'zz_cccc', 'zz_bbbb']:
-            result += glob(f'{base}/**/*{mask}*.slcio', recursive=True)
+            result += glob_exp(f'{base}/**/*{mask}*.slcio', recursive=True)
 
         result.sort()
         
@@ -289,10 +289,10 @@ class Config_250_ftag_fast_perf(AnalysisConfiguration):
     
     def sgv_inputs(self, fast_sim_task):
         input_files = []
-        base = '/pnfs/desy.de/ilc/prod/ilc/mc-2020/generated/250-SetA/flavortag'
+        base = '$ILC_PROD_PATH/mc-2020/generated/250-SetA/flavortag'
         
         for mask in ['zz_dddd', 'zz_uuuu', 'zz_ssss', 'zz_cccc', 'zz_bbbb']:
-            input_files += glob(f'{base}/*{mask}*.slcio')
+            input_files += glob_exp(f'{base}/*{mask}*.slcio')
         
         input_files.sort()
         
@@ -322,10 +322,33 @@ class Config_550_llhh_fast_perf(AnalysisConfiguration):
     tag = '550-llhh-fast-perf'
     
     def sgv_inputs(self, fast_sim_task):
-        input_files:list[str] = sum(map(glob, [
-            '/pnfs/desy.de/ilc/prod/ilc/mc-2020/generated/550-Test/hh/*Pe1e1*.slcio',
-            '/pnfs/desy.de/ilc/prod/ilc/mc-2020/generated/550-Test/hh/*Pe2e2*.slcio',
-            '/pnfs/desy.de/ilc/prod/ilc/mc-2020/generated/550-Test/hh/*Pe3e3*.slcio'
+        input_files:list[str] = sum(map(glob_exp, [
+            '$ILC_PROD_PATH/mc-2020/generated/550-Test/hh/*Pe1e1*.slcio',
+            '$ILC_PROD_PATH/mc-2020/generated/550-Test/hh/*Pe2e2*.slcio',
+            '$ILC_PROD_PATH/mc-2020/generated/550-Test/hh/*Pe3e3*.slcio'
+        ]), [])
+        input_files.sort()
+        
+        input_options = [{
+            'global_steering.MAXEV': 999999,
+            'global_generation_steering.CMS_ENE': 550,
+            'external_read_generation_steering.GENERATOR_INPUT_TYPE': 'LCIO',
+            'external_read_generation_steering.INPUT_FILENAMES': 'input.slcio',
+            'analysis_steering.CALO_TREATMENT': 'PERF'
+        }] * len(input_files)
+        
+        return input_files, input_options
+    
+    marlin_globals = {  }
+    marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
+
+class Config_550_vvhh_fast_perf(AnalysisConfiguration):
+    tag = '550-vvhh-fast-perf'
+    
+    def sgv_inputs(self, fast_sim_task):
+        input_files:list[str] = sum(map(glob_exp, [
+            '$ILC_PROD_PATH/mc-2020/generated/550-Test/hh/*Pn1n1*.slcio',
+            '$ILC_PROD_PATH/mc-2020/generated/550-Test/hh/*Pn23n23*.slcio',
         ]), [])
         input_files.sort()
         
@@ -346,10 +369,10 @@ class Config_550_llhh_fast_pfl(AnalysisConfiguration):
     tag = '550-llhh-fast-pfl'
     
     def sgv_inputs(self, fast_sim_task):
-        input_files:list[str] = sum(map(glob, [
-            '/pnfs/desy.de/ilc/prod/ilc/mc-2020/generated/550-Test/hh/*Pe1e1*.slcio',
-            '/pnfs/desy.de/ilc/prod/ilc/mc-2020/generated/550-Test/hh/*Pe2e2*.slcio',
-            '/pnfs/desy.de/ilc/prod/ilc/mc-2020/generated/550-Test/hh/*Pe3e3*.slcio'
+        input_files:list[str] = sum(map(glob_exp, [
+            '$ILC_PROD_PATH/mc-2020/generated/550-Test/hh/*Pe1e1*.slcio',
+            '$ILC_PROD_PATH/mc-2020/generated/550-Test/hh/*Pe2e2*.slcio',
+            '$ILC_PROD_PATH/mc-2020/generated/550-Test/hh/*Pe3e3*.slcio'
         ]), [])
         input_files.sort()
         
@@ -436,14 +459,14 @@ class Config_550_4f_fast_perf(AnalysisConfiguration):
     tag = '550-4f-fast-perf'
     
     def sgv_inputs(self, fast_sim_task):
-        input_files = glob('/pnfs/desy.de/ilc/prod/ilc/mc-2025/generated/550-TDR_ws/4f/*.slcio')
+        input_files = glob_exp('$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/*.slcio')
         input_files = list(filter(lambda path: 'pilot.slcio' not in path and '.0.slcio' not in path, input_files))
 
         invalid_files = [
-            '/pnfs/desy.de/ilc/prod/ilc/mc-2025/generated/550-TDR_ws/4f/E550-TDR_ws.P4f_sznu_sl.Gwhizard-3_1_4.eL.pR.I501050.22.slcio',
-            '/pnfs/desy.de/ilc/prod/ilc/mc-2025/generated/550-TDR_ws/4f/E550-TDR_ws.P4f_zz_sl.Gwhizard-3_1_4.eL.pR.I501014.3.slcio',
-            '/pnfs/desy.de/ilc/prod/ilc/mc-2025/generated/550-TDR_ws/4f/E550-TDR_ws.P4f_zznu_sl.Gwhizard-3_1_4.eL.pR.I501018.11.slcio',
-            '/pnfs/desy.de/ilc/prod/ilc/mc-2025/generated/550-TDR_ws/4f/E550-TDR_ws.P4f_sze_sl.Gwhizard-3_1_4.eL.pR.I501042.97.slcio']
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/E550-TDR_ws.P4f_sznu_sl.Gwhizard-3_1_4.eL.pR.I501050.22.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/E550-TDR_ws.P4f_zz_sl.Gwhizard-3_1_4.eL.pR.I501014.3.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/E550-TDR_ws.P4f_zznu_sl.Gwhizard-3_1_4.eL.pR.I501018.11.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/E550-TDR_ws.P4f_sze_sl.Gwhizard-3_1_4.eL.pR.I501042.97.slcio']
 
         input_files = list(set(input_files) - set(invalid_files))
         input_files.sort()
@@ -465,7 +488,7 @@ class Config_550_tthz_fast_perf(AnalysisConfiguration):
     tag = '550-tthz-fast-perf'
     
     def sgv_inputs(self, fast_sim_task):
-        input_files = glob('/pnfs/desy.de/ilc/prod/ilc/mc-2025/generated/550-TDR_ws/8f/*.slcio')
+        input_files = glob_exp('$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/8f/*.slcio')
         input_files.sort()
         
         input_options = [{
@@ -485,7 +508,7 @@ class Config_550_2l_fast_perf(AnalysisConfiguration):
     tag = '550-2l-fast-perf'
     
     def sgv_inputs(self, fast_sim_task):
-        input_files = glob('/pnfs/desy.de/ilc/prod/ilc/mc-2025/generated/550-TDR_ws/2f/*P2f_z_l*.slcio')
+        input_files = glob_exp('$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/2f/*P2f_z_l*.slcio')
         input_files.sort()
         
         input_options = [{
@@ -526,7 +549,7 @@ class Config_550_2l4q_fast_perf(AnalysisConfiguration):
         
         input_files:list[str] = []
         for process_mask in process_mask_2l4q:
-            input_files += glob(f'/pnfs/desy.de/ilc/prod/ilc/mc-2025/generated/550-TDR_ws/6f/*{process_mask}*.slcio')
+            input_files += glob_exp(f'$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/6f/*{process_mask}*.slcio')
         
         input_options = [{
             'global_steering.MAXEV': 999999,
@@ -566,7 +589,7 @@ class Config_550_2l4q_fast_pfl(AnalysisConfiguration):
         
         input_files:list[str] = []
         for process_mask in process_mask_2l4q:
-            input_files += glob(f'/pnfs/desy.de/ilc/prod/ilc/mc-2025/generated/550-TDR_ws/6f/*{process_mask}*.slcio')
+            input_files += glob_exp(f'$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/6f/*{process_mask}*.slcio')
         
         input_options = [{
             'global_steering.MAXEV': 999999,
@@ -596,7 +619,7 @@ class Config_550_6q_fast_perf(AnalysisConfiguration):
         
         input_files:list[str] = []
         for process_mask in process_mask_6q:
-            input_files += glob(f'/pnfs/desy.de/ilc/prod/ilc/mc-2025/generated/550-TDR_ws/6f/*{process_mask}*.slcio')
+            input_files += glob_exp(f'$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/6f/*{process_mask}*.slcio')
         
         # filter out invalid files
         input_files = list(filter(lambda x: 'E550-TDR_ws.P6f_yyuyyu.Gwhizard-3_1_5.eL.pR.I410212.2.slcio' not in x, input_files))
@@ -629,7 +652,7 @@ class Config_550_6q_fast_pfl(AnalysisConfiguration):
         
         input_files:list[str] = []
         for process_mask in process_mask_6q:
-            input_files += glob(f'/pnfs/desy.de/ilc/prod/ilc/mc-2025/generated/550-TDR_ws/6f/*{process_mask}*.slcio')
+            input_files += glob_exp(f'$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/6f/*{process_mask}*.slcio')
         
         # filter out invalid files
         input_files = list(filter(lambda x: 'E550-TDR_ws.P6f_yyuyyu.Gwhizard-3_1_5.eL.pR.I410212.2.slcio' not in x, input_files))
@@ -706,6 +729,8 @@ zhh_configs.add(Config_250_ftag_fast_perf())
 # qqHH
 zhh_configs.add(Config_550_6q_fast_perf())
 
+# vvHH
+zhh_configs.add(Config_550_vvhh_fast_perf())
 
 # SGV PFL
 

@@ -94,6 +94,20 @@ EventObservablesBase::EventObservablesBase(const std::string &name) : Processor(
 			std::string("")
 			);
 
+	registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
+			"LeptonsKinFit_solveNu",
+			"Name of the Lepton collection of the 4C kinfit",
+			m_inputLeptonKinFit_solveNuCollection,
+			std::string("LeptonsKinFit_solveNu")
+			);
+
+registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
+			"JetsKinFit_solveNu",
+			"Name of the Jet collection of the 4C kinfit",
+			m_inputJetKinFit_solveNuCollection,
+			std::string("JetsKinFit_solveNu")
+			);
+
 	registerProcessorParameter("whichPreselection",
             "Which set of cuts to use in the preselection. This will overwrite any input preselection values.",
             m_whichPreselection,
@@ -576,6 +590,10 @@ void EventObservablesBase::clearBaseValues()
 {
 	streamlog_out(DEBUG) << "   Clear called  " << std::endl;
 
+	// collections
+	inputLKF_solveNuCollection = NULL;
+	inputJKF_solveNuCollection = NULL;
+
 	m_statusCode = 0;
 	m_errorCodes.clear();
 
@@ -755,6 +773,15 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 		m_nJets = inputJetCollection->getNumberOfElements();
 		if (m_nJets != m_nAskedJets())
 			throw EVENT::Exception("Unexpected number of input jets");
+
+		// Handle kinfit
+		try {
+			inputLKF_solveNuCollection = pLCEvent->getCollection( m_inputLeptonKinFit_solveNuCollection );
+			inputJKF_solveNuCollection = pLCEvent->getCollection( m_inputJetKinFit_solveNuCollection );
+		} catch(DataNotAvailableException &e) {
+			streamlog_out(MESSAGE) << "processEvent : Input kinfit solveNu jet and lepton collections not found in event " << m_nEvt << std::endl;
+			m_statusCode += 100;
+		}
 
 		// ---------- NUMBER OF ISOLATED LEPTONS and PFOs ----------
 		m_nIsoLeps = inputLeptonCollection->getNumberOfElements();
@@ -1202,7 +1229,7 @@ void EventObservablesBase::init(){
 };
 
 void EventObservablesBase::processEvent( LCEvent* evt ){
-	streamlog_out(DEBUG) << "START updateBaseValues";
+	streamlog_out(DEBUG) << "START updateBaseValues" << std::endl;
 	updateBaseValues(evt);
 	streamlog_out(DEBUG) << "END updateBaseValues -> status code " << m_statusCode << std::endl;
 
@@ -1344,6 +1371,8 @@ ReconstructedParticleVec EventObservablesBase::getElements(LCCollection *collect
 	return vec;
 };
 
+// Hint: For debugging and flexibility reasons, the matrix element will be calculated post using Python code
+// see zhh/mem/Physsim
 void EventObservablesBase::calculateMatrixElements(
 	int b1_decay_pdg,
 	int b2_decay_pdg,

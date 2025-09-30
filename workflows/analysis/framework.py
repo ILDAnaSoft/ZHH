@@ -35,6 +35,7 @@ class HTCondorWorkflow(law.contrib.htcondor.HTCondorWorkflow):
         description="transfer job logs to the output directory; default: True",
     )
     
+    # use in the console: --initial-run-with-higher-requirements=True
     initial_run_with_higher_requirements = luigi.BoolParameter(
         default=False,
         significant=False,
@@ -47,7 +48,7 @@ class HTCondorWorkflow(law.contrib.htcondor.HTCondorWorkflow):
         description="whether or not to run with increased RAM and time requirements if the job is failing; default: True",
     )
     higher_req_ram_mb = 4000
-    higher_req_time_hours = 3
+    higher_req_time_hours = 6
     
     def __init__(self, *args, **kwargs):
         super(HTCondorWorkflow, self).__init__(*args, **kwargs)
@@ -215,7 +216,9 @@ class AnalysisConfiguration:
             
             self.slcio_files = slcio_files
             
-        self.analysis_combine_ttrrees = ['FinalStates', f'EventObservables{mode}', 'KinFit_solveNu', 'KinFit_ZHH', 'KinFit_ZZH']
+        self.analysis_combine_ttrrees = ['FinalStates',
+                                         'EventObservablesLL', 'KinFitLL_solveNu', 'KinFitLL_ZHH', 'KinFitLL_ZZH',
+                                         'EventObservablesVV', 'KinFitVV_solveNu', 'KinFitVV_ZHH', 'KinFitVV_ZZH']
         
 
 class Registry():
