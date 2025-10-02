@@ -476,6 +476,7 @@ void EventObservablesBase::prepareBaseTree()
 		//ttree->Branch("using_mass_chi2", &m_using_mass_chi2, "using_mass_chi2/B");
 
 		// matrix elements
+		#ifdef CALC_ME
 		if (m_use_matrix_elements()) {
 			ttree->Branch("me_zhh_raw", &m_lcme_zhh_raw);
 			ttree->Branch("me_zzh_raw", &m_lcme_zzh_raw);
@@ -486,6 +487,7 @@ void EventObservablesBase::prepareBaseTree()
 			ttree->Branch("me_jmk_zhh_log", &m_lcme_jmk_zhh_log, "me_jmk_zhh_log/D");
 			ttree->Branch("me_jmk_zzh_log", &m_lcme_jmk_zzh_log, "me_jmk_zzh_log/D");
 		}
+		#endif
 
 		// TrueJet
 		ttree->Branch("trueLeptonN", &m_trueLeptonN, "trueLeptonN/I");
@@ -673,6 +675,7 @@ void EventObservablesBase::clearBaseValues()
 	m_zhh_p1st = 0.;
 	m_zhh_cosTh1st = 0.;
 
+	#ifdef CALC_ME
 	m_lcme_zhh_log = 0.;
 	m_lcme_zzh_log = 0.;
 
@@ -682,6 +685,7 @@ void EventObservablesBase::clearBaseValues()
 	m_lcme_weights.clear();
 	m_lcme_zhh_raw.clear();
 	m_lcme_zzh_raw.clear();
+	#endif
 	
 	/*
 	m_dileptonMassPrePairing = -999.;
@@ -735,8 +739,8 @@ void EventObservablesBase::clearBaseValues()
 	m_fit4C_mh1 = 0.;
 	m_fit4C_mh2 = 0.;
 
-	m_JMK_ZHH_perm_idx = -1;
-	m_JMK_ZZH_perm_idx = -1;
+	//m_JMK_ZHH_perm_idx = -1;
+	//m_JMK_ZZH_perm_idx = -1;
 
 	// TrueJet
 	m_trueLeptonN = 0;
@@ -771,13 +775,32 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 		LCCollection *inputPfoCollection = pLCEvent->getCollection( m_inputPfoCollection );
 
 		m_nJets = inputJetCollection->getNumberOfElements();
-		if (m_nJets != m_nAskedJets())
+		if (m_nJets != m_nAskedJets()) {
+			m_statusCode = 1;
 			throw EVENT::Exception("Unexpected number of input jets");
+		}
 
 		// Handle kinfit
 		try {
 			inputLKF_solveNuCollection = pLCEvent->getCollection( m_inputLeptonKinFit_solveNuCollection );
 			inputJKF_solveNuCollection = pLCEvent->getCollection( m_inputJetKinFit_solveNuCollection );
+
+			LCCollection *inputJKF_ZHHCollection = pLCEvent->getCollection( m_inputJetKinFitZHHCollection );
+			LCCollection *inputJKF_ZZHCollection = pLCEvent->getCollection( m_inputJetKinFitZZHCollection );
+
+			inputJKF_ZHHCollection->parameters().getIntVals("permutation", m_JMK_ZHH);
+			inputJKF_ZZHCollection->parameters().getIntVals("permutation", m_JMK_ZZH);
+
+			m_fitprob_ZHH = inputJKF_ZHHCollection->parameters().getFloatVal("fitprob");
+			m_fitprob_ZZH = inputJKF_ZZHCollection->parameters().getFloatVal("fitprob");
+			m_fitchi2_ZHH = inputJKF_ZHHCollection->parameters().getFloatVal("fitchi2");
+			m_fitchi2_ZZH = inputJKF_ZZHCollection->parameters().getFloatVal("fitchi2");
+
+			//if (static_cast<int>(m_JMK_ZHH.size()) >= m_nAskedJets())
+			//	getPermutationIndex(m_JMK_ZHH, m_nAskedJets(), m_JMK_ZHH_perm_idx);
+			
+			//if (static_cast<int>(m_JMK_ZZH.size()) >= m_nAskedJets())
+			//	getPermutationIndex(m_JMK_ZZH, m_nAskedJets(), m_JMK_ZZH_perm_idx);
 		} catch(DataNotAvailableException &e) {
 			streamlog_out(MESSAGE) << "processEvent : Input kinfit solveNu jet and lepton collections not found in event " << m_nEvt << std::endl;
 			m_statusCode += 100;
@@ -1032,29 +1055,6 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 	// jet matching from kinfit; so far, only for 4 jet case
 	assert(m_nAskedJets() == 4);
 
-	try {
-		LCCollection *inputJKF_ZHHCollection = pLCEvent->getCollection( m_inputJetKinFitZHHCollection );
-		LCCollection *inputJKF_ZZHCollection = pLCEvent->getCollection( m_inputJetKinFitZZHCollection );
-
-		inputJKF_ZHHCollection->parameters().getIntVals("permutation", m_JMK_ZHH);
-		inputJKF_ZZHCollection->parameters().getIntVals("permutation", m_JMK_ZZH);
-
-		m_fitprob_ZHH = inputJKF_ZHHCollection->parameters().getFloatVal("fitprob");
-		m_fitprob_ZZH = inputJKF_ZZHCollection->parameters().getFloatVal("fitprob");
-		m_fitchi2_ZHH = inputJKF_ZHHCollection->parameters().getFloatVal("fitchi2");
-		m_fitchi2_ZZH = inputJKF_ZZHCollection->parameters().getFloatVal("fitchi2");
-
-		if (static_cast<int>(m_JMK_ZHH.size()) >= m_nAskedJets())
-			getPermutationIndex(m_JMK_ZHH, m_nAskedJets(), m_JMK_ZHH_perm_idx);
-		
-		if (static_cast<int>(m_JMK_ZZH.size()) >= m_nAskedJets())
-			getPermutationIndex(m_JMK_ZZH, m_nAskedJets(), m_JMK_ZZH_perm_idx);
-
-	} catch(DataNotAvailableException &e) {
-		streamlog_out(MESSAGE) << "processEvent : Input collections not found in event " << m_nEvt << std::endl;
-		m_statusCode += 100;
-	}
-
 	if (m_nJets == m_nAskedJets()) {
 		#ifdef USE_TRUEJET
 			//TrueJet_Parser* trueJet = this;
@@ -1203,8 +1203,10 @@ void EventObservablesBase::init(){
 		throw EVENT::Exception("Unexpected number of input jets");
 
 	// A.2. prepare the matrix elements
+	#ifdef CALC_ME
 	m_lcmezhh = new LCMEZHH("LCMEZHH", "ZHH", 125., Pem, Pep);
 	m_lcmezzh = new LCMEZZH("LCMEZZH", "ZZH", 125., Pem, Pep);
+	#endif
 
 	// A.3. flavor tagging variables
 	m_bTagValues = std::vector<double>(m_nAskedJets(), -1.);
@@ -1229,24 +1231,7 @@ void EventObservablesBase::init(){
 };
 
 void EventObservablesBase::processEvent( LCEvent* evt ){
-	streamlog_out(DEBUG) << "START updateBaseValues" << std::endl;
-	updateBaseValues(evt);
-	streamlog_out(DEBUG) << "END updateBaseValues -> status code " << m_statusCode << std::endl;
 
-	// all channel specific processors require that at least acquiring the base values succeeds
-	if (m_statusCode == 0) {
-		streamlog_out(DEBUG) << "START updateChannelValues" << std::endl;
-		calculateSimpleZHHChi2();
-		updateChannelValues(evt);
-		streamlog_out(DEBUG) << "END updateChannelValues" << std::endl;
-	} else
-		streamlog_out(MESSAGE) << "skipping updateChannelValues due to non-zero state " << m_statusCode << std::endl;
-
-	if (m_write_ttree)
-		getTTree()->Fill();
-
-	clearBaseValues();
-	clearChannelValues();
 	streamlog_out(MESSAGE) << "cleared. event " << m_nEvt << " processed" << std::endl;
 };
 
@@ -1371,6 +1356,7 @@ ReconstructedParticleVec EventObservablesBase::getElements(LCCollection *collect
 	return vec;
 };
 
+#ifdef CALC_ME
 // Hint: For debugging and flexibility reasons, the matrix element will be calculated post using Python code
 // see zhh/mem/Physsim
 void EventObservablesBase::calculateMatrixElements(
@@ -1464,18 +1450,19 @@ void EventObservablesBase::calculateMatrixElements(
 		}
 	}
 
-	m_lcme_zhh_log = std::log(result_zhh);
-	m_lcme_zzh_log = std::log(result_zzh);
+	//m_lcme_zhh_log = std::log(result_zhh);
+	//m_lcme_zzh_log = std::log(result_zzh);
 
-	if (m_JMK_ZHH_perm_idx != -1)
-		m_lcme_jmk_zhh_log = std::log(m_lcme_zhh_raw[m_JMK_ZHH_perm_idx]);
+	//if (m_JMK_ZHH_perm_idx != -1)
+	//	m_lcme_jmk_zhh_log = std::log(m_lcme_zhh_raw[m_JMK_ZHH_perm_idx]);
 
-	if (m_JMK_ZZH_perm_idx != -1)
-		m_lcme_jmk_zzh_log = std::log(m_lcme_zzh_raw[m_JMK_ZZH_perm_idx]);
+	//if (m_JMK_ZZH_perm_idx != -1)
+	//	m_lcme_jmk_zzh_log = std::log(m_lcme_zzh_raw[m_JMK_ZZH_perm_idx]);
 
 	streamlog_out(MESSAGE) << " log(LCMEZHH)=" << m_lcme_zhh_log << std::endl;
 	streamlog_out(MESSAGE) << " log(LCMEZZH)=" << m_lcme_zzh_log << std::endl;
 };
+#endif
 
 std::tuple<int, int, int> EventObservablesBase::nPFOsMinMax(LCCollection *collection) {
 	int min_res = 999;

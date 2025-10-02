@@ -4,6 +4,7 @@ function usage() {
     echo "Usage: source install.sh [-r <key4hep-release>] [--install-dir ./dependencies] [--compile]"
     echo "       -r <release> : setup a specific release, if not specified the latest release will be used"
     echo "       --setup      : re-writes the setup.sh file"
+    echo "       --auto       : uses default settings everywhere, will skip all user inputs"
     echo "       --install-dir, -d: defaults to dependencies"
     echo "       --help, -h: print this help message"
     echo ""

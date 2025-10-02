@@ -1,34 +1,42 @@
 import argparse
 from zhh import EventCategories, CutflowProcessor, \
-    categorize_6q, categorize_2l4q, categorize_4fsl, categorize_llhh
+    categorize_6q, categorize_2l4q, categorize_4fsl, categorize_llhh, categorize_vvhh
 import numpy as np
 from tqdm.auto import tqdm
 from zhh import AnalysisChannel, EventCategories, zhh_cuts
 
+final_states_config = {
+    'f4sl': (categorize_4fsl, EventCategories.F4_OTHER, None),
+    'l2q4': (categorize_2l4q, EventCategories.F6_OTHER, None),
+    'llhh': (categorize_llhh, None, None),
+    'q6': (categorize_6q, EventCategories.qqqqqq, []),
+    'vvhh': (categorize_vvhh, None, None)
+}
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--f4sl', type=str,
-                        default='/data/dust/user/bliewert/zhh/AnalysisCombine.old/550-4fsl-fast-perf',
-                        help='Path to AnalaysisCombine output directory for 4fsl')
+    parser.add_argument('f4sl', type=str,
+                        default=None,
+                        help='Path to AnalysisCombine output directory for 4fsl; eg. $DATA_ROOT/AnalysisCombine/550-4fsl-fast-perf')
     
-    parser.add_argument('--l2q4', type=str,
+    parser.add_argument('l2q4', type=str,
                         default='/data/dust/user/bliewert/zhh/AnalysisCombine.old/550-2l4q-fast-perf',
-                        help='Path to AnalaysisCombine output directory of 2l4q')
+                        help='Path to AnalysisCombine output directory of 2l4q')
 
-    parser.add_argument('--llhh', type=str,
+    parser.add_argument('llhh', type=str,
                         default='/data/dust/user/bliewert/zhh/AnalysisCombine.old/550-llhh-fast-perf',
-                        help='Path to AnalaysisCombine output directory of llhh')
+                        help='Path to AnalysisCombine output directory of llhh')
     
-    parser.add_argument('--q6', type=str,
+    parser.add_argument('q6', type=str,
                         default='/data/dust/user/bliewert/zhh/AnalysisCombine.old/550-6q-fast-perf',
-                        help='Path to AnalaysisCombine output directory of 6q')
+                        help='Path to AnalysisCombine output directory of 6q')
     
-    parser.add_argument('--output', type=str,
+    parser.add_argument('output', type=str,
                         default=None,
                         help='Path to a directory where output plots, tables and ROOT files will be stored. Will be this directory if not given.')
     
-    parser.add_argument('--hypothesis', type=str, choices=['μμbbbb', 'eebbbb', 'vv', 'qq'],
+    parser.add_argument('hypothesis', type=str, choices=['μμbbbb', 'eebbbb', 'vv', 'qq'],
                         default='μμbbbb',
                         help='Which hypothesis to use.')
     
@@ -53,6 +61,9 @@ if __name__ == "__main__":
         assert((np.array(source.getTTree()['error_code'].array()) == 0).all())
 
     # categorize each event based on output of FinalStateRecorder
+    for source in sources:
+        analysis_channel, cat_fn, default_category, category_order = final_states_config[source.getName()]
+        
     for analysis_channel, cat_fn, default_category, category_order in [
         (f4sl, categorize_4fsl, EventCategories.F4_OTHER, None),
         (l2q4, categorize_2l4q, EventCategories.F6_OTHER, None),

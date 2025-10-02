@@ -24,5 +24,5 @@ from .FinalStateDefinitions import define_eebb, define_μμbb, define_ττbb, \
     define_llhh_llbbbb, define_llqqh, define_ttH, define_ttZ, \
     FinalStateDefinition, \
     categorize_llhh, categorize_4fsl, categorize_2l4q, categorize_6q, \
-    categorize_tthz
+    categorize_tthz, categorize_vvhh
 from .DataExtractor import DataExtractor

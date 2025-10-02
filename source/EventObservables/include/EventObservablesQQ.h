@@ -26,9 +26,6 @@ class EventObservablesQQ : public EventObservablesBase, public EventObservablesF
 
 		int m_nAskedJets() { return 6; };
 		int m_nAskedIsoLeps() { return 0; };
-		
-		std::string m_jetMatchingParameter() { return m_JMP; };
-		std::string m_jetMatchingSourceParameter() { return m_JMSP; };
 
 		virtual bool m_use_matrix_elements() { return true; };
 
@@ -43,9 +40,6 @@ class EventObservablesQQ : public EventObservablesBase, public EventObservablesF
 		// meta parameters
 		std::string m_input4JetCollection{};
 		std::string m_zhhKinfitJetCollection{};
-
-		std::string m_JMP{};
-		std::string m_JMSP{};
 
 		// overriden parent functions
 		void setJetCharges();

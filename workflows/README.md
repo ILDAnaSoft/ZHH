@@ -34,10 +34,10 @@ Note II: In case you get an error that the local condor scheduler does not run, 
 
 Note III: Per default, all batch jobs are 
 
-To run all tasks including `AnalysisSummary`, execute
+To run all tasks including `AnalysisCombine`, execute
 
 ```shell
-law run AnalysisSummary --poll-interval=120sec --tag=500-all-full
+law run AnalysisGroup --poll-interval=120sec --tag=550-all-full
 ```
 
 This will run the tasks RawIndex, AnalysisRuntime, CreateAnalysisChunks and then AnalysisFinal one after another and make use of the NAF when called at DESY. Each task will create a folder of the same name under `$DATA_PATH`. The results are stored in a sub-directory that starts with the tag value.
@@ -46,6 +46,14 @@ This will run the tasks RawIndex, AnalysisRuntime, CreateAnalysisChunks and then
 In case jobs fail, use `condor_q -h` or take a look at the log files for why jobs have failed. The default location of log files for some task `X` is in `$DATA_ROOT/X` as `stdall_y.txt` where y is the branch number of the job. 
 
 If the reported HOLD_REASON is "Job runtime longer than reserved", make sure that Marlin processes respective input files correctly. If you cannot find the issue, it might just randomly happen that the runtime exceeds the reserved runtime limit. As a quick fix, you may use `condor_rm $(whoami)` and afterwards rerun the law command with the optional argument `--initial-run-with-higher-requirements=True`. This will enforce higher runtime and RAM limits (6h and 4GB per default). 
+
+### Removing task outputs
+
+To force restart a task `X` with configuration tag `Y`, you have two options:
+
+1. Use the command line interface: run `law run X --tag=Y --remove-output=<recursionDepth>` with recursionDepth=1.
+
+2. Delete the directory `$DATA_ROOT$/X/Y`
 
 ### Task Overview
 
@@ -120,49 +128,7 @@ Copy of `chunks.npy` with an additional column `chunk_size_factual` of integer t
 
 ### Analysis Results
 
-The task `AnalysisSummary` will extract data from the output of the different PreSelection processor runs and the final state recorder. Per default, this includes relevant physical distributions, b-tagging information, and truth information about the final state (which particles were produces, how many b quarks from Higgs decays). The data of many runs will be aggregated together to a number of larger chunks saved as numpy arrays.
-
-A detailed table of the resulting data is given in the following. The quantities starting with `xx` are same for all channels, those starting with `ll`, `vv` and `vv` are different for the respective channels.
-
-| Column             | Data type               | Description                          |
-|--------------------|-------------------------|--------------------------------------|
-| branch             | integer `I`             | Branch ID                            |
-| pid                | unsigned short `H`      | Process ID.                          |
-| event              | unsigned int `I`        | Event number.                        |
-| event_category     | unsigned byte `B`       | Event category.                      |
-| ll_pass            | unsigned byte `B`       | llHH pass flag (from PreSelection processor) |
-| vv_pass            | unsigned byte `B`       | vvHH pass flag (-).                  |
-| qq_pass            | unsigned byte `B`       | qqHH pass flag (-).                  |
-| thrust          | float `f`               | Thrust value.                        |
-| e_vis           | float `f`               | Visible energy.                      |
-| pt_miss         | float `f`               | Missing transverse momentum.         |
-| invmass_miss    | float `f`               | Invariant mass of the missing pT     |
-| nisoleps        | unsigned byte `B`       | Number of isolated leptons.          |
-| ll_mh1             | float `f`               | Mass of the first H boson in llHH.   |
-| ll_mh2             | float `f`               | Mass of the second H boson in llHH.  |
-| ll_nbjets          | unsigned byte `B`       | Number of b-jets in llHH.            |
-| ll_dilepton_type   | unsigned byte `B`       | Dilepton type in llHH.               |
-| ll_mz              | float `f`               | Z boson mass in llHH.                |
-| ll_mz_pre_pairing  | float `f`               | Z boson mass before pairing in llHH. |
-| vv_mh1             | float `f`               | See above.                           |
-| vv_mh2             | float `f`               | See above.                           |
-| vv_nbjets          | unsigned byte `B`       | Number of b-jets in vvHH.            |
-| vv_mhh             | float `f`               | Invariant mass of the HH system in vvHH |
-| qq_mh1             | float `f`               | See above.                           |
-| qq_mh2             | float `f`               | See above.                           |
-| qq_nbjets          | unsigned byte `B`       | Number of b-jets in qqHH.            |
-| ll_bmax1           | float `f`               | Largest b-tag in llHH.               |
-| ll_bmax2           | float `f`               | Second largest b-tag score in llHH.  |
-| ll_bmax3           | float `f`               | Third largest b-tag score in llHH.   |
-| ll_bmax4           | float `f`               | Fourth largest b-tag score in llHH.  |
-| vv_bmax1           | float `f`               | See above.                           |
-| vv_bmax2           | float `f`               | See above.                           |
-| vv_bmax3           | float `f`               | See above.                           |
-| vv_bmax4           | float `f`               | See above.                           |
-| qq_bmax1           | float `f`               | See above.                           |
-| qq_bmax2           | float `f`               | See above.                           |
-| qq_bmax3           | float `f`               | See above.                           |
-| qq_bmax4           | float `f`               | See above.                           |
+The task `AnalysisCombine` will extract and combine the output from the AnalysisFinal task. This covers the TTrees EventObservablesLL/VV and FinalStateRecorder. All data of one tag will be aggregated together in one ROOT file.
     
 ### Implementation Specifics
 The `configurations.py` includes instructions to dynamically inject task dependencies. This is important for all tasks which have the obligatory `--tag` parameter. 

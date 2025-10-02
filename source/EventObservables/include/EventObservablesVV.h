@@ -26,9 +26,6 @@ class EventObservablesVV : public EventObservablesBase, public EventObservablesF
 
 		int m_nAskedJets() { return 4; };
 		int m_nAskedIsoLeps() { return 0; };
-		
-		std::string m_jetMatchingParameter() { return m_JMP; };
-		std::string m_jetMatchingSourceParameter() { return m_JMSP; };
 
 		bool m_use_matrix_elements() { return false; };
 
@@ -42,9 +39,6 @@ class EventObservablesVV : public EventObservablesBase, public EventObservablesF
 		// meta parameters
 		std::string m_input5JetCollection{};
 		std::string m_input6JetCollection{};
-
-		std::string m_JMP{};
-		std::string m_JMSP{};
 
 		// data members
 		std::vector<ReconstructedParticle*> m_5jets{};

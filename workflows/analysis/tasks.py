@@ -85,6 +85,13 @@ class AnalysisGroup(BaseTask):
                 AnalysisCombine.req(self, tag='550-6q-fast-perf'),
                 AnalysisCombine.req(self, tag='550-2l4q-fast-perf')
             ]
+        elif cast(str, self.tag).lower() == 'vv':
+            return [
+                AnalysisCombine.req(self, tag='550-vvhh-fast-perf'),
+                AnalysisCombine.req(self, tag='550-4fsl-fast-perf'),
+                AnalysisCombine.req(self, tag='550-6q-fast-perf'),
+                AnalysisCombine.req(self, tag='550-2l4q-fast-perf')
+            ]
         else:
             raise Exception(f'Unknown group tag <{self.tag}>')
     

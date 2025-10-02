@@ -26,9 +26,6 @@ class EventObservablesLL : public EventObservablesBase {
 
 		int m_nAskedJets() { return 4; };
 		int m_nAskedIsoLeps() { return 2; };
-		
-		std::string m_jetMatchingParameter() { return m_JMP; };
-		std::string m_jetMatchingSourceParameter() { return m_JMSP; };
 
 		bool m_use_matrix_elements() { return true; };
 
@@ -45,9 +42,6 @@ class EventObservablesLL : public EventObservablesBase {
 		std::string m_inputIsoMuons{};
 		std::string m_inputIsoTaus{};
 		std::vector<string> m_2JetTaggingPIDParameters{};
-
-		std::string m_JMP{};
-		std::string m_JMSP{};
 
 		// data members
 		int m_npfosmin4j{};

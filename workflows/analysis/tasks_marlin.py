@@ -202,9 +202,12 @@ class AnalysisAbstract(MarlinBaseJob):
     check_output_files_exist = ['zhh_FinalStateMeta.json']
     check_output_root_ttrees = [
         ('zhh_AIDA.root', 'EventObservablesLL'),
+        ('zhh_AIDA.root', 'EventObservablesVV'),
         ('zhh_AIDA.root', 'FinalStates'),
-        ('zhh_AIDA.root', 'KinFit_ZHH'),
-        ('zhh_AIDA.root', 'KinFit_ZZH'),
+        ('zhh_AIDA.root', 'KinFitLL_ZHH'),
+        ('zhh_AIDA.root', 'KinFitLL_ZZH'),
+        ('zhh_AIDA.root', 'KinFitVV_ZHH'),
+        ('zhh_AIDA.root', 'KinFitVV_ZZH'),
     ]
     
     def workflow_requires(self):

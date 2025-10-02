@@ -5,8 +5,7 @@
 
 EventObservablesVV aEventObservablesVV;
 
-EventObservablesVV::EventObservablesVV(): EventObservablesBase("EventObservablesVV"),
-m_JMP("best_perm_vv") {
+EventObservablesVV::EventObservablesVV(): EventObservablesBase("EventObservablesVV") {
     _description = "EventObservablesVV writes relevant observables to root-file " ;
 
     registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,

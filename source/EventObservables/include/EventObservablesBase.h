@@ -149,8 +149,6 @@ class EventObservablesBase: public Processor
 		virtual TTree* getTTree() = 0;
 		virtual int m_nAskedJets() = 0;
 		virtual int m_nAskedIsoLeps() = 0;
-		virtual std::string m_jetMatchingParameter() = 0; // e.g. best_perm_ll
-		virtual std::string m_jetMatchingSourceParameter() = 0; // e.g. best_perm_ll_from_kinfit ; 1 for "from mass chi2", 2 for "from kinfit"
 		virtual std::string m_yMinusParameter() = 0;
 		virtual std::string m_yPlusParameter() = 0;
 		virtual bool m_use_matrix_elements() = 0;
@@ -211,57 +209,7 @@ class EventObservablesBase: public Processor
 		float m_ECM{};
 		std::vector <float> m_polarizations{};
 		float m_jetChargeKappa{};
-
-		// matrix elements; here given as log of the mean over 4 permutations, and over the given polarization
-		double m_lcme_zhh_log{};
-		double m_lcme_zzh_log{};
-
-		vector<float> m_lcme_weights{};
-		vector<double> m_lcme_zhh_raw{};
-		vector<double> m_lcme_zzh_raw{};
-
-		lcme::LCMEZHH *m_lcmezhh{}; // ZHH MEM calculator instance
-		lcme::LCMEZZH *m_lcmezzh{}; // ZZH MEM calculator instance
-
-		// assumptions:
-		// - from_z1 + from_z2 come from Z, relates to z_decay_pdg; can be any of (ll, vv, qq)
-		// - jet3 + jet4 come from either H, or Z (if H, then simply Hdijet=jet3+jet4), relates to z_or_h_decay_pdg
-		// - dijet: a Higgs present in both ZHH and ZZH
-		// flavor of jet3, jet4 
-		void calculateMatrixElements(
-			int z1_decay_pdg, // Z=dijet1
-			int dj2_decay_pdg, // dijet2
-			TLorentzVector from_z1, TLorentzVector from_z2,
-			TLorentzVector jet1, TLorentzVector jet2,
-			TLorentzVector jet3, TLorentzVector jet4,
-			bool permute_from_z);
-
-		void calculateMatrixElements(
-			int z1_decay_pdg, // Z=dijet1
-			int dj2_decay_pdg, // dijet2
-			TLorentzVector from_z1, TLorentzVector from_z2,
-			TLorentzVector jet1, TLorentzVector jet2,
-			TLorentzVector jet3, TLorentzVector jet4,
-			bool permute_from_z,
-			unsigned short nperms,
-			std::vector<float> weights
-			);
 		
-		// the following is energy dependant; if ECM changes, this may need to be updated!!!
-		std::map<int, int> m_pdg_to_lcme_mode = {
-			{  1,  9 },
-			{  2,  7 },
-			{  3, 10 },
-			{  4,  8 },
-			{  5, 11 },
-			{ 11,  4 },
-			{ 12,  1 },
-			{ 13,  5 },
-			{ 14,  2 },
-			{ 15,  6 },
-			{ 16,  3 }
-		};
-
 		// meta information and observables
 		int m_nRun;
 		int m_nEvt;
@@ -394,11 +342,64 @@ class EventObservablesBase: public Processor
 		float m_fit4C_mh1{};
 		float m_fit4C_mh2{};
 
-		short m_JMK_ZHH_perm_idx{};
-		short m_JMK_ZZH_perm_idx{};
+		//short m_JMK_ZHH_perm_idx{};
+		//short m_JMK_ZZH_perm_idx{};
 
+		#ifdef CALC_ME
+		// matrix element code
 		double m_lcme_jmk_zhh_log{};
 		double m_lcme_jmk_zzh_log{};
+
+		// log of the mean over all permutations, and over the given polarization
+		double m_lcme_zhh_log{};
+		double m_lcme_zzh_log{};
+
+		vector<float> m_lcme_weights{};
+		vector<double> m_lcme_zhh_raw{};
+		vector<double> m_lcme_zzh_raw{};
+
+		lcme::LCMEZHH *m_lcmezhh{}; // ZHH MEM calculator instance
+		lcme::LCMEZZH *m_lcmezzh{}; // ZZH MEM calculator instance
+
+		// the following is energy dependant; if ECM changes, this may need to be updated!!!
+		std::map<int, int> m_pdg_to_lcme_mode = {
+			{  1,  9 },
+			{  2,  7 },
+			{  3, 10 },
+			{  4,  8 },
+			{  5, 11 },
+			{ 11,  4 },
+			{ 12,  1 },
+			{ 13,  5 },
+			{ 14,  2 },
+			{ 15,  6 },
+			{ 16,  3 }
+		};
+
+		// assumptions:
+		// - from_z1 + from_z2 come from Z, relates to z_decay_pdg; can be any of (ll, vv, qq)
+		// - jet3 + jet4 come from either H, or Z (if H, then simply Hdijet=jet3+jet4), relates to z_or_h_decay_pdg
+		// - dijet: a Higgs present in both ZHH and ZZH
+		// flavor of jet3, jet4 
+		void calculateMatrixElements(
+			int z1_decay_pdg, // Z=dijet1
+			int dj2_decay_pdg, // dijet2
+			TLorentzVector from_z1, TLorentzVector from_z2,
+			TLorentzVector jet1, TLorentzVector jet2,
+			TLorentzVector jet3, TLorentzVector jet4,
+			bool permute_from_z);
+
+		void calculateMatrixElements(
+			int z1_decay_pdg, // Z=dijet1
+			int dj2_decay_pdg, // dijet2
+			TLorentzVector from_z1, TLorentzVector from_z2,
+			TLorentzVector jet1, TLorentzVector jet2,
+			TLorentzVector jet3, TLorentzVector jet4,
+			bool permute_from_z,
+			unsigned short nperms,
+			std::vector<float> weights
+			);
+		#endif
 
 		// TrueJet information
 		short m_trueJetN{};

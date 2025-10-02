@@ -5,8 +5,7 @@
 
 EventObservablesQQ aEventObservablesQQ;
 
-EventObservablesQQ::EventObservablesQQ(): EventObservablesBase("EventObservablesQQ"),
-m_JMP("best_perm_qq") {
+EventObservablesQQ::EventObservablesQQ(): EventObservablesBase("EventObservablesQQ") {
     _description = "EventObservablesQQ writes relevant observables to root-file " ;
 
     registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,

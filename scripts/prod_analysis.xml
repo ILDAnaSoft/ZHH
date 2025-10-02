@@ -554,7 +554,7 @@
 
         <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
 
-        <parameter name="Verbosity" type="string">DEBUG</parameter>
+        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
     </processor>
 </group>
 
