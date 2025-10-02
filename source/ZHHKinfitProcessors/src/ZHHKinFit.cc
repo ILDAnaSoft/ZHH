@@ -2654,7 +2654,21 @@ std::vector<double> ZHHKinFit::calculateMassesFromSimpleChi2Pairing(pfoVector je
   double z = 0. ;
   double h1 = 0. ;
   double h2 = 0. ;
-  z = inv_mass(leptons.at(0),leptons.at(1));
+  if (m_signature == "llbbbb") {
+    z = inv_mass(leptons.at(0),leptons.at(1));
+  } else if (m_signature == "vvbbbb") {
+      //calculate 4-momentum of Z->invisible
+    // correct for crossing angle
+    float target_p_due_crossing_angle = m_ECM * 0.007; // crossing angle = 14 mrad
+    double E_lab = 2 * sqrt( std::pow( 0.548579909e-3 , 2 ) + std::pow( m_ECM / 2 , 2 ) + std::pow( target_p_due_crossing_angle , 2 ) + 0. + 0.);
+    ROOT::Math::PxPyPzEVector ecms(target_p_due_crossing_angle,0.,0.,E_lab) ;
+    ROOT::Math::PxPyPzEVector seenFourMomentum(0.,0.,0.,0.);
+    for (int i_jet = 0; i_jet < m_nJets; i_jet++) {
+      seenFourMomentum += ROOT::Math::PxPyPzEVector(jets[ i_jet ]->getMomentum()[0],jets[ i_jet ]->getMomentum()[1],jets[ i_jet ]->getMomentum()[2], jets[ i_jet ]->getEnergy());
+    }
+    ROOT::Math::PxPyPzEVector missingFourMomentum = ecms-seenFourMomentum;
+    z = missingFourMomentum.M();
+  }
   ROOT::Math::PxPyPzEVector hhFourMomentum(0.,0.,0.,0.);
   ROOT::Math::PxPyPzEVector zhhFourMomentum(0.,0.,0.,0.);
   for (auto jet : jets) {
