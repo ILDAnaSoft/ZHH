@@ -1231,7 +1231,24 @@ void EventObservablesBase::init(){
 };
 
 void EventObservablesBase::processEvent( LCEvent* evt ){
+	streamlog_out(DEBUG) << "START updateBaseValues" << std::endl;
+	updateBaseValues(evt);
+	streamlog_out(DEBUG) << "END updateBaseValues -> status code " << m_statusCode << std::endl;
 
+	// all channel specific processors require that at least acquiring the base values succeeds
+	if (m_statusCode == 0) {
+		streamlog_out(DEBUG) << "START updateChannelValues" << std::endl;
+		calculateSimpleZHHChi2();
+		updateChannelValues(evt);
+		streamlog_out(DEBUG) << "END updateChannelValues" << std::endl;
+	} else
+		streamlog_out(MESSAGE) << "skipping updateChannelValues due to non-zero state " << m_statusCode << std::endl;
+
+	if (m_write_ttree)
+		getTTree()->Fill();
+
+	clearBaseValues();
+	clearChannelValues();
 	streamlog_out(MESSAGE) << "cleared. event " << m_nEvt << " processed" << std::endl;
 };
 
