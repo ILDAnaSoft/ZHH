@@ -363,6 +363,8 @@ def get_sample_chunk_splits_m2m_grouped(samples:np.ndarray,
                 time_per_event = atpe['tPE'][atpe['process'] == process][0] #np.average(atpe['tPE'][atpe['process'] == process])
                 max_chunk_size = floor(MAXIMUM_TIME_PER_JOB/time_per_event)
             
+            print(proc_pol, max_chunk_size)
+            
             for src_bname in sample_group:
                 sample_ids = sample_group[src_bname]
                 n_branch_tot += 1

@@ -1,0 +1,124 @@
+# event categories are used for plotting/cutflow tables and assigned using MC truth information
+# each event will be assigned an 'id' (event_category column) in the following order:
+# 1  (deprecated) the TTree branch event_category is read; the value might be overwritten by 2. and 3. (if defined)
+# 2. a default value can be used to overwrite for all events of a data source (see sources section below)
+# 3. the value of the last matching registered (see event_categorization.items for each source, below) category is used, where
+#    the order is given either explicitly (event_categorization.order) or the order of definition is used.
+# plots use the id to uniquely identify categories, whereas cutflow tables can make use of the named categorization and thus
+# use different categories/be more granular (the logic to make sure no double counting occurs happens in the background :))
+
+# 4f
+- name: eebb
+  handler: FinalStateDefinitions.define_eebb
+  id: EventCategories.eebb
+- name: μμbb
+  handler: FinalStateDefinitions.define_μμbb
+  id: EventCategories.μμbb
+- name: ττbb
+  handler: FinalStateDefinitions.define_ττbb
+  id: EventCategories.ττbb
+- name: lvqq
+  handler: FinalStateDefinitions.define_lvqq
+  id: EventCategories.lvqq
+
+# 2l4q
+- name: lvqqqq
+  handler: FinalStateDefinitions.define_lvqqqq
+  id: EventCategories.lvqqqq
+- name: lvbbqq
+  handler: FinalStateDefinitions.define_lvbbqq
+  id: EventCategories.lvbbqq
+# next three are part of lvbbqq. setting id != null would plot them as a separate category
+# due to lack of colors, this is not done
+- name: evbbqq
+  handler: FinalStateDefinitions.define_evbbqq
+  id: null
+- name: μvbbqq
+  handler: FinalStateDefinitions.define_μvbbqq
+  id: null
+- name: τvbbqq
+  handler: FinalStateDefinitions.define_τvbbqq
+  id: null
+- name: lvbbbb
+  handler: FinalStateDefinitions.define_lvbbbb
+  id: EventCategories.lvbbbb
+- name: llqqqq
+  handler: FinalStateDefinitions.define_llqqqq
+  id: EventCategories.llqqqq
+- name: llbbqq
+  handler: FinalStateDefinitions.define_llbbqq
+  id: null
+- name: llbbbb
+  handler: FinalStateDefinitions.define_llbbbb
+  id: null
+- name: vvqqqq
+  handler: FinalStateDefinitions.define_vvqqqq
+  id: EventCategories.vvqqqq
+- name: vvbbqq
+  handler: FinalStateDefinitions.define_vvbbqq
+  id: null
+
+# 6q
+- name: bbqqqq
+  handler: FinalStateDefinitions.define_bbqqqq
+  id: EventCategories.bbqqqq
+- name: bbbbqq
+  handler: FinalStateDefinitions.define_bbbbqq
+  id: EventCategories.bbbbqq
+- name: bbbbbb
+  handler: FinalStateDefinitions.define_bbbbbb
+  id: EventCategories.bbbbbb
+
+# llhh
+- name: llhh
+  handler: FinalStateDefinitions.define_llhh
+  id: EventCategories.llHH
+- name: eeHHbbbb
+  handler: FinalStateDefinitions.define_eeHHbbbb
+  id: EventCategories.eeHHbbbb
+- name: μμHHbbbb
+  handler: FinalStateDefinitions.define_μμHHbbbb
+  id: EventCategories.μμHHbbbb
+- name: ττHHbbbb
+  handler: FinalStateDefinitions.define_ττHHbbbb
+  id: EventCategories.ττHHbbbb
+- name: llhh_llbbbb
+  handler: FinalStateDefinitions.define_llbbbb
+  id: null
+- name: llhh_llnonbbbb
+  handler: FinalStateDefinitions.define_llhh_llnonbbbb
+  id: null
+- name: llqqh
+  handler: FinalStateDefinitions.define_llqqh
+  id: EventCategories.llqqH
+
+# vvhh
+- name: vvhh
+  handler: FinalStateDefinitions.define_vvhh
+  id: EventCategories.vvHH
+- name: v1v1HHbbbb
+  handler: FinalStateDefinitions.define_v1v1HHbbbb
+  id: EventCategories.v1v1HHbbbb
+- name: v23v23HHbbbb
+  handler: FinalStateDefinitions.define_v23v23HHbbbb
+  id: EventCategories.v23v23HHbbbb
+- name: vvhh_vvbbbb
+  handler: FinalStateDefinitions.define_vvhh_vvbbbb
+  id: null
+- name: vvhh_vvnonbbbb
+  handler: FinalStateDefinitions.define_vvhh_vvnonbbbb
+  id: null
+- name: vvqqh
+  handler: FinalStateDefinitions.define_vvqqh
+  id: EventCategories.vvqqH
+
+# ttH/ttZ
+- name: ttH
+  handler: FinalStateDefinitions.define_ttH
+  id: EventCategories.ttH
+- name: vvhh_vvnonbbbb
+  handler: FinalStateDefinitions.define_ttZ
+  id: EventCategories.ttZ
+- name: vvqqh
+  handler: FinalStateDefinitions.define_ttHZ
+  id: EventCategories.ttHZ

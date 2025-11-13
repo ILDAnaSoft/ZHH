@@ -1,0 +1,201 @@
+# Steering file for cutflow.py
+# 2025/11/05 - Bryan Bliewert / DESY / bryan.bliewert@desy.de
+
+# Changes:
+# 2025/11: following globals are allowed: EventCategories, FinalStateDefinitions
+#          following environment variables are assumed: REPO_ROOT, DATA_PATH
+
+hypothesis: μμbbbb
+signal_categories:
+- EventCategories.μμHHbbbb
+
+# used to calculate event weights and absolute event counts. unit: ab^-1
+luminosity: 2.
+
+# set to true for a clean run; i.e. delete previous run through cutflow (plots/tables),
+# MVA training files + any plots/tables. can also be set individually per source in the
+# sources section below
+reset: false
+
+# use automatic caching for faster data access. if True, reads data once from ROOT TTrees
+# and writes into a HDF5 (feature data, I/O much faster than uproot) and npz (metadata)
+# file. see the path option in the sources section. may require a few GB.
+# info: this also saves event category data. if you add/change the categorization, you
+# need to clear the cache by setting reset to true for the respective source.
+use_caching: true
+
+# definition of event categories
+# the registration of event categories to specific sources is done in the sources section 
+event_categories: '$REPO_ROOT/config/event_categories.yaml'
+
+# definition of input data and information about the event categorization
+# path                : path to a directory containing Merged.root file whose content
+#                       must be compliant to the one output from the AnalysisCombine
+#                       workflow task. if use_caching=True, the directory must be wri-
+#                       table to store the cache files
+# event_categorization: items: the categories to register for the respective source
+#                       default: optional default category to apply first
+#                       order: optional, will use the order used in items if null or
+#                              not apply any category beyond the default one if []
+#                       
+#                       for configuring the items for event_categorization, see
+#                         config/event_categories.yaml
+# file                : optional, default: Merged.root; ROOT file with EventObservables*,
+#                       KinFit*, FinalStates TTrees etc.
+sources:
+  - name: 4fsl
+    path: $DATA_PATH/AnalysisCombine/550-4fsl-fast-perf
+    file: Merged.old.root
+    root_files: $DATA_PATH/AnalysisFinal/550-4fsl-fast-perf
+    event_categorization:
+      default: EventCategories.F4_OTHER
+      order: null
+      items: [ eebb, μμbb, ττbb, lvqq ]
+    disabled: false
+    reset: false
+
+  - name: 2l4q
+    path: $DATA_PATH/AnalysisCombine/550-2l4q-fast-perf
+    root_files: $DATA_PATH/AnalysisFinal/550-2l4q-fast-perf
+    event_categorization:
+      default: EventCategories.F6_OTHER
+      order: null
+      items: [ lvqqqq, lvbbqq, evbbqq, μvbbqq, τvbbqq, lvbbbb, llqqqq, llbbqq, llbbbb, vvqqqq, vvbbqq ]
+    disabled: false
+    reset: false
+
+  - name: llhh
+    path: $DATA_PATH/AnalysisCombine/550-llhh-fast-perf
+    root_files: $DATA_PATH/AnalysisFinal/550-llhh-fast-perf
+    event_categorization:
+      default: null
+      order: null
+      items: [ llhh, eeHHbbbb, μμHHbbbb, ττHHbbbb, llhh_llbbbb, llhh_llnonbbbb, llqqh ]
+    disabled: false
+    reset: false
+
+  - name: 6q
+    path: $DATA_PATH/AnalysisCombine/550-6q-fast-perf
+    root_files: $DATA_PATH/AnalysisFinal/550-6q-fast-perf
+    event_categorization:
+      default: EventCategories.qqqqqq
+      order: []
+      items: [ bbqqqq, bbbbqq, bbbbbb ]
+    disabled: false
+    reset: false
+
+  - name: tthz
+    path: $DATA_PATH/AnalysisCombine/550-tthz-fast-perf
+    root_files: $DATA_PATH/AnalysisFinal/550-tthz-fast-perf
+    event_categorization:
+      default: EventCategories.ttHZ
+      order: null
+      items: [ ttH, ttZ, ttHZ ]
+    disabled: true
+    reset: false
+
+# serialization
+# manages how data from ROOT input files should be converted to columnar format
+# two different implementations are supported:
+# 1. interpret: simply interpret a branch of a TTree
+features:
+  interpret:
+  - { name: id, dtype: int32, auto_increment: true }
+  - { name: event_category, tree: FinalStates, dtype: uint8 }
+  - { name: pid, tree: FinalStates, dtype: int32 }
+  
+
+  serialize:
+  - { handler: Serializers.JetMasses, provides: [ jet0_m, jet1_m, jet2_m, jet4_m ] }
+
+# cutflow_table
+# defines the event categories and the order with which they should be appear in the
+# cutflow table and also which of them are considered to belong to the signal (these
+# are appended to the rightmost part of the table).
+# items/category: name of the event category
+# items/label: column label (supports LaTeX)
+# items/is_signal: optional, defaults to false; whether or not this category belongs to
+#                  the signal
+# ignore_categories: for each background category A that includes another category B,
+#                    category B must be given here to avoid double counting
+
+cutflow_table:
+  items:
+    - category: μμbb
+      label: '\\boldsymbol{\\mu\\mu} bb'
+    - category: μvbbqq
+      label: '\\boldsymbol{\\mu \\nu b b q q}'
+    - category: bbqqqq
+      label: bbqqqq
+    - category: llqqqq
+      label: llqqqq
+    - category: llbbbb
+      label: (llbbbb)
+    - category: llqqh
+      label: llqqh
+    - category: llhh
+      label: llhh
+      is_signal: true
+    - category: μμHHbbbb
+      label: (\\mu\\mu bbbb)
+      is_signal: true
+  ignore_categories: llbbbb
+
+# general note about cuts:
+# they appear in groups composed of at least one cut and are denoted in code by the
+# parameter 'step'
+# the first group is preselection (group/step=0). <counter> starts at 0 too
+# every stage of MVA will add another group (1,2,3 etc.)
+# future TODO: assig an ID to cuts as in cut<group>.<counter>
+
+# preselection:
+# this sections controls the preselection cuts and output of cutflow tables/plots
+#
+# parameters:
+# preselection.cuts.quantity: (name in data store/ROOT TTree), operator (see below),
+#                             value or lower+upper, label (description to use in plots) 
+# preselection.cuts.operator: any of gte (greater than or equal), lte (lower than or
+#                             eqal), eq (equal) or within_bounds
+# preselection.cuts.{value/lower/upper}: cut parameters
+#
+# all parameters (except of operator) are passed directly to the respective constructors
+# of Less/GreaterThan/Equal/WithinBoundsCut cuts can be disabled by commenting out the
+# line or adding disabled: true
+
+preselection:
+  cuts:
+    - { quantity: nisomuons, operator: gte, value: 2, label: IsoMuons }
+    - { quantity: pairedLepType, operator: eq, value: 13, label: Paired Lepton Type }
+    - { quantity: fit4C_mz, operator: within_bounds, lower: 20., upper: 150., label: 'm_{ll}^{4C}', xlim_view: [0, 270] }
+    - { quantity: fit4C_mh1, operator: within_bounds, lower: 50., upper: 200., label: 'm_{H1}^{4C}', xlim_view: [0, 500] }
+    - { quantity: fit4C_mh2, operator: within_bounds, lower: 50., upper: 200., label: 'm_{H2}^{4C}', xlim_view: [0, 550] }
+    - { quantity: ptmiss, operator: lte, value: 70., label: 'p_{t}^{miss}' }
+    - { quantity: thrust, operator: lte, value: 0.9, label: 'thrust' }
+    - { quantity: sumBTags, operator: gte, value: 1., label: 'sum b-tags', disabled: true }
+
+  cutflow_table: 'cutflow_preselection_table.pdf'
+  cutflow_plots: 'cutflow_preselection_plots.pdf'
+
+# Allowed operators are: <=, >= and ==. Spaces must be used between quantity, operator
+# and values to guarantee correct parsing
+# For a cut window, use the notation lower <= quantity <= upper
+# For an equal cut (==), order must be quantity == value
+
+mva_modules:
+  - name: bdt1
+    type: CompositeBinaryModel
+    models:
+      - type: XGBClassifier
+        kwargs:
+          - n_estimators: 500
+          - max_depth: 3
+          - random_state: 42
+          - verbose: 2
+          - learning_rate': 0.12
+        features: [
+        # BASE_FEATURES
+          bmax1, bmax2, bmax3, bmax4, jet1_m, jet2_m, jet3_m, jet4_m,
+          m_invjet, fit4C_mz, fit4C_mh1, fit4C_mh2, npfos,
+        # MVA specific features
+          thrust, costhrust, pjmax2, cosjzmax, npfosmin4j, yplus, yminus_mod100]
+      

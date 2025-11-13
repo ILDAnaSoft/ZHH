@@ -114,9 +114,10 @@ class CutflowProcessor:
         """Processes the preselection cuts and stores masks for each event in
         each source passing each cut in _masks. Also stores for each passing
         event the quantity (of the associated cut) and weight in _calc_dicts.
-        Masks are AFTER each cut, calc_dicts BEFORE each cut respectively. The
-        steop property is 0 for the preselection. To analyze following cuts,
-        supply an incrementing integer.
+        For each cut, a mask for AFTER the cut is stored, and an item is for
+        calc_dicts is added BEFORE applying the cut. The step property is 0
+        for the preselection. To analyze following cuts, supply an incrementing
+        integer.
         
         Args: 
             step (int, optional): n-th cut group. Use 0 for preselection,
@@ -126,6 +127,11 @@ class CutflowProcessor:
             weight_prop (str): Defaults to weight.
             split (int, optional): Cut on the split column. Will be ignored
                 if None. Defaults to None.
+            cache (str, optional): If a string, will be used as filepath to
+                                    cache the result of the cut in LZMA com-
+                                    pressed pickle format. If None, no file
+                                    will be read (use this to study different
+                                    cut values) 
 
         Returns:
             _type_: _description_

@@ -1,41 +1,47 @@
-from collections.abc import Callable, Sequence
-from .PreselectionAnalysis import fetch_preselection_data, sample_weight, get_pol_key
+from collections.abc import Callable
+from .PreselectionAnalysis import sample_weight, get_pol_key
 from .TTreeInterface import TTreeInterface
 from zhh.processes import parse_polarization_code, ProcessCategories
 from zhh.analysis.TTreeInterface import FinalStateCounts
 
 import uproot as ur
 import os.path as osp
-import os, subprocess, numpy as np
-from tqdm.auto import tqdm
-from typing import cast, Optional, Literal
+import os, numpy as np
+from typing import cast, TYPE_CHECKING
 
-config = {
-    'N_CORES': 8
-}
+config = { 'N_CORES': 8 }
 
 class AnalysisChannel:
-    def __init__(self, work_root:str, name:str=''):
+    def __init__(self, work_root:str, name:str='', fname:str='Merged.root'):
         """Helper class to combine ROOT files+TTrees, calculate weights
         and prepare data for TMVA.
+
+        NEW: if fname ends with .h5, we assume we can read columnar feature data from
+        it straight away (see the ROOT2HDF5Converter class). This is the recommended
+        workflow. The default argument will remain for backwards compatability.
 
         Args:
             work_root (str): directory to store Merged.root. must be user writable
             name (str, optional): _description_. Defaults to ''.
         """
-        
-        import ROOT
-        if config['N_CORES'] is not None:
-            ROOT.EnableImplicitMT(config['N_CORES'])
+
+        self._is_ready = False
+        self._use_root = fname.endswith('.root')
+
+        if self._use_root:
+            import ROOT
+            if config['N_CORES'] is not None and not TYPE_CHECKING:
+                ROOT.EnableImplicitMT(config['N_CORES'])
+
+            self._root_files = []
+            self._rf:ur.WritableFile|None = None
         
         self._work_root = work_root
         
         self._name = name
-        self._root_files = []
-        self._merged_file = f'{work_root}/Merged.root'
+        self._merged_file = f'{work_root}/{fname}'
         
         # combine()
-        self._rf:ur.WritableFile|None = None
         self._size:int|None = None
         
         # fetchData()
@@ -86,27 +92,27 @@ class AnalysisChannel:
         if not os.path.isfile(self._merged_file):
             assert(isinstance(root_files, list) and isinstance(trees, list))
             
-            ROOT.gInterpreter.GenerateDictionary("ROOT::VecOps::RVec<vector<double>>", "vector;ROOT/RVec.hxx")
-            ROOT.gInterpreter.GenerateDictionary("ROOT::VecOps::RVec<ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>>>", "vector;ROOT/RVec.hxx;Math/Vector4D.h")
+            if not TYPE_CHECKING:
+                ROOT.gInterpreter.GenerateDictionary("ROOT::VecOps::RVec<vector<double>>", "vector;ROOT/RVec.hxx")
+                ROOT.gInterpreter.GenerateDictionary("ROOT::VecOps::RVec<ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>>>", "vector;ROOT/RVec.hxx;Math/Vector4D.h")
             
-            chain = ROOT.TChain(trees[0])
-            friends = []
-            for t in trees[1:]:
-                friend = ROOT.TChain(t)
-                friends.append(friend)
+                chain = ROOT.TChain(trees[0])
+                friends = []
+                for t in trees[1:]:
+                    friend = ROOT.TChain(t)
+                    friends.append(friend)
 
-            for file in root_files:
+                for file in root_files:
+                    for friend in friends:
+                        friend.Add(file)
+
+                    chain.Add(file)
+                    
                 for friend in friends:
-                    friend.Add(file)
-
-                chain.Add(file)
+                    chain.AddFriend(friend)
                 
-            for friend in friends:
-                chain.AddFriend(friend)
-            
-            #c.Add("/home/ilc/bliewert/jobresults/550-2l4q-ana/E550-TDR_ws.P6f_eexxxx.Gwhizard-3_1_5.eL.pL.I410026.1-0_AIDA.root")
-            df = ROOT.RDataFrame(chain)
-            df.Snapshot('Merged', self._merged_file)
+                df = ROOT.RDataFrame(chain)
+                df.Snapshot('Merged', self._merged_file)
             
         if self._rf is None:
             self._rf = cast(ur.WritableFile, ur.open(self._merged_file))
@@ -116,7 +122,8 @@ class AnalysisChannel:
         return self
 
     def getTTree(self)->ur.TTree:
-        """Returns the TTree object of the Merged.root file.
+        """Returns the TTree object of the Merged.root file if ROOT
+        is used as underlying data provider.
 
         Returns:
             ur.TTree: TTree object of the Merged.root file.
@@ -126,19 +133,85 @@ class AnalysisChannel:
         
         return cast(ur.TTree, self._rf['Merged'])
     
-    def fetchData(self, snapshot:str|None=None)->TTreeInterface:
-        """Gives lazily loaded access to the tree data and other custom defined
-        properties. The pid and weight columns are only populated after weight
-        is called. 
+    def initialize(self, lumi_inv_ab:float, evt_cat_default:int|None, evt_cat_order:list|None,
+                    reset:bool=False, use_cache:bool=True, snapshot:str|None=None):
+        """Convenience function which fully initializes the AnalysisChannel. Either
+        loads weights from cache or calculates them and makes them available there,
+        if use_cache is True. Also evaluates the event_category column for each
+        event using the categories that have been registered previously using
+        registerEventCategory, and using the default and order parameter too.
 
         Args:
-            presel (Literal['ll', 'vv', 'qq']): which preselection to use
+            lumi_inv_ab (float): integrated luminosity
+            evt_cat_default (int | None): if None, no default category is applied
+            evt_cat_order (list | None): if None, the order in which they were re-
+                                        gistered is used for evaluation. if [], no
+                                        category is registered after the default one
+            reset (bool, optional): whether or not to delete all existing cache files.
+                                    Defaults to False.
+            use_cache (bool, optional): whether or not to use HDF5/NPZ caching for faster
+                                        IO. Defaults to True.
+            snapshot (str | None, optional): path to readable (writable) dir if use_cache
+                                             is False (True). if None, will default to 
+                                             f'{self._work_root}/snapshot'
+        """
+
+        if self._rf is None:
+            raise Exception('Before fetch()-ing, combine()-must be called')
+
+        from os import unlink
+
+        if snapshot is None: 
+            snapshot = f'{self._work_root}/snapshot'
+
+        if reset or not osp.isfile(f'{snapshot}.h5') or not osp.isfile(f'{snapshot}.npz') or not use_cache:            
+            if reset:
+                for f in [f'{snapshot}.h5', f'{snapshot}.npz']:
+                    if osp.isfile(f):
+                        unlink(f)
+                
+            self.fetchData()
+            weight_data, processes = self.weight(lumi_inv_ab=lumi_inv_ab)
+            
+            # parses the final state counts, find the first matching category,
+            # or set to default_category
+            # if category_order is [], the default category is applied to all
+            # events
+            self.evaluateEventCategories(default_category=evt_cat_default, order=evt_cat_order)
+            
+            if use_cache and snapshot is not None:
+                # store the HDF5 file
+                store = self.getStore()
+                store.itemsSnapshot(snapshot)
+
+                # store processes in NPZ file
+                np.savez_compressed(f'{snapshot}.npz', processes=processes, weight_data=weight_data, lumi_inv_ab=lumi_inv_ab)
+        else:
+            print(f'  Reading data from snapshot in <{snapshot}>')
+
+            # fetch from HDF5 and NPZ
+            self.fetchData(snapshot=snapshot)
+            npz = np.load(f'{snapshot}.npz')            
+            self._processes = npz['processes']
+            self._lumi_inv_ab = npz['lumi_inv_ab']
+    
+    def fetchData(self, snapshot:str|None=None)->TTreeInterface:
+        """Gives access to the tree data and other custom defined properties
+        via a lazily loaded interface. The process, event category and weight
+        columns are populated only after weight() is called. Also prepares the
+        cache if snapshot is a path to a writable directory.
+
+        Args:
+            snapshot (str|None): path to a writable directory, if caching
+                                should be used
 
         Returns:
-            TTreeInterface: named np array-like object with
-                channel specific data.
+            TTreeInterface: "named np array"-like object with
+                data from the ROOT TTree "Merged".
         """
-        assert(self._rf is not None)
+        
+        if self._rf is None:
+            raise Exception('Before fetchData(), combine() must be called such that the ._rf points to a valid TFile object')
         
         if self._store is None:
             self._store = TTreeInterface(cast(ur.TTree, self._rf['Merged']), snapshot=snapshot)
@@ -146,10 +219,10 @@ class AnalysisChannel:
         return self._store
     
     def getStore(self)->TTreeInterface:
-        """Returns the preselection summary object.
+        """Returns the data store.
 
         Returns:
-            TTreeInterface: preselection summary object
+            TTreeInterface: columnar interface to all event data
         """
         
         assert(self._store is not None)
@@ -308,7 +381,7 @@ class AnalysisChannel:
         
         return self
     
-    def evaluateEventCategories(self, default_category:int|None, force:bool=False, order:Optional[list[str]]=None)->'AnalysisChannel':
+    def evaluateEventCategories(self, default_category:int|None, force:bool=False, order:list[str]|None=None)->'AnalysisChannel':
         """Evaluates event category definitions and saves them as numpy masks.
         default_category is assigned to all events first, if not None.
         After that, all categories for which the category paraemter in the
@@ -318,7 +391,7 @@ class AnalysisChannel:
         Args:
             default_category (int | None): _description_
             force (bool, optional): _description_. Defaults to False.
-            order (Optional[list[str]], optional): if None, all categories are considered
+            order (list[str]|None, optional): if None, all categories are considered
                 in the order they were registered. If a list, ONLY the contained categories
                 are considered. Defaults to None.
 
@@ -364,13 +437,27 @@ class AnalysisChannel:
             
             n_assigned = np.sum(mask_sum > 0)
             
-            print(f' Total: Event categories assigned to {n_assigned:d} events ({(n_assigned / len(mask_sum)):.2%})')
+            print(f' Total:{ " (after default category)" if default_category is None else "" } Event categories assigned to {n_assigned:d} events ({(n_assigned / len(mask_sum)):.2%})')
                 
             self._evalutatedEventCategories = True
         
         return self
     
-    def getCategoryMask(self, name:str):
+    def getCategoryMask(self, name:str)->np.ndarray:
+        """Returns a binary mask specifying whether or not an event belongs to the
+        event category given by name. 
+
+        Args:
+            name (str): event category; must be registered using registerEventCategory
+                        before usage 
+
+        Raises:
+            ValueError: _description_
+
+        Returns:
+            _type_: _description_
+        """
+
         if name not in self._event_categories:
             if name in self._event_category_resolvers:
                 from .TTreeInterface import parse_final_state_counts

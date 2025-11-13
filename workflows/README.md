@@ -53,7 +53,7 @@ To force restart a task `X` with configuration tag `Y`, you have two options:
 
 1. Use the command line interface: run `law run X --tag=Y --remove-output=<recursionDepth>` with recursionDepth=1.
 
-2. Delete the directory `$DATA_ROOT$/X/Y`
+2. Delete the directory `$DATA_ROOT/X/Y`
 
 ### Task Overview
 

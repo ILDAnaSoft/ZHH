@@ -6,54 +6,15 @@ import os.path as osp
 from dataclasses import dataclass
 from tqdm.auto import tqdm
 from math import ceil
+from .TTreeInterface import dtypes
 
-dtypes = {
-    'id': 'I',
-    'process':  'I', # H=np.uint16
-    'pid': 'I',
-    'pol_code': 'B', # np.uint8
-    'event': 'I', # max. encountered: 15 797 803 << 4 294 967 295 (max of uint32)
-    'event_category': 'B', # np.uint8
-    'n_b_from_higgs': 'B',
-    
-    'is_sig': '?',
-    'is_bkg': '?',
-    
-    'thrust': 'f',
-    'evis': 'f',
-    'ptmiss': 'f',
-    'm_miss': 'f',
-    'nisoleptons': 'B',
-    'xx_paired_isoleptype': 'B',
-    
-    'passed': 'B',
-    'weight': 'f',
-    
-    'bmax1': 'f',
-    'bmax2': 'f',
-    'bmax3': 'f',
-    'bmax4': 'f',
-    
-    'zhh_mh1': 'f',
-    'zhh_mh2': 'f',
-    
-    # ll
-    'dilepton_type': 'B',
-    'mzll': 'f',
-    'mz_pre_pairing': 'f',
-    
-    # vv
-    'zhh_mhh': 'f',
-}
-
-
-class TTreeInterface(MixedLazyTablelike):
+class TTreeInterface2(MixedLazyTablelike):
     cache:dict[str, np.ndarray] = {}
     
     def __init__(self, tree:ur.TTree, final_states:bool=True,
                  prop_prefix:str='', in_memory:bool=False,
                  n_jets:int=4, full_final_states:bool=False,
-                 snapshot:str|None=None, snapshot_open_mode:str='r'):
+                 snapshot:str|None=None):
         import awkward as ak
         
         r_size = tree.num_entries
@@ -145,29 +106,7 @@ class TTreeInterface(MixedLazyTablelike):
         self['mz_pre_pairing'] = lambda intf: fetch('mz_pre_pairing', f'{prop_prefix}mzll_pre_pairing')
         self['mhh'] = lambda intf: fetch('invJetMass', f'{prop_prefix}invJetMass')
         self['sumBTags'] = lambda intf: ( fetch('bmax1') + fetch('bmax2') + fetch('bmax3') + fetch('bmax4') )
-        
-        # REMOVE ALL once fixed in EventObservables!
-        if False:
-            masses = tree['fit4C_masses'].array()
-            mask = np.array(ak.count(masses, axis=1) == 2, dtype=bool)
-            
-            fit4C_mh1 = np.zeros(len(masses))
-            fit4C_mh2 = np.zeros(len(masses))
-            
-            fit4C_mh1[mask] = ak.min(masses, axis=1)[mask]
-            fit4C_mh2[mask] = ak.max(masses, axis=1)[mask]
-            
-            self['fit4C_mh1'] = fit4C_mh1
-            self['fit4C_mh2'] = fit4C_mh2
-            
-            bTags = np.array(tree['bTags'].array())
-            bTags = -np.sort(-bTags, axis=1)
 
-            self['bmax1'] = bTags[:, 0]
-            self['bmax2'] = bTags[:, 1]
-            self['bmax3'] = bTags[:, 2]
-            self['bmax4'] = bTags[:, 3]
-        
         self['yminus_mod100'] = lambda intf: np.mod(intf['yminus'], 100)
         self['cosjzmax'] = lambda intf: np.stack([
             intf['cosJ1Z_2Jets'],
@@ -288,70 +227,3 @@ def mk_ref(bname, item):
             return hf[item][:]
             
     return ref
-
-@dataclass
-class FinalStateCounts:
-    n_d: np.ndarray
-    n_u: np.ndarray
-    n_s: np.ndarray
-    n_c: np.ndarray
-    n_b: np.ndarray
-    n_t: np.ndarray
-    n_q: np.ndarray
-    
-    n_ve: np.ndarray
-    n_vmu: np.ndarray
-    n_vtau: np.ndarray
-    n_neutral_lep: np.ndarray
-    
-    n_e: np.ndarray
-    n_mu: np.ndarray
-    n_tau: np.ndarray
-    n_charged_lep: np.ndarray
-    
-    n_b_from_higgs: np.ndarray
-
-def parse_final_state_counts(store:TTreeInterface)->FinalStateCounts:
-    from zhh import PDG2FSC
-    
-    store.resetView()
-    n_b_from_higgs = store['Nb_from_H']
-    
-    n_d = store['Nd']
-    n_u = store['Nu']
-    n_s = store['Ns']
-    n_c = store['Nc']
-    n_b = store['Nb']
-    n_t = store['Nt']
-    n_q = n_d + n_u + n_s + n_c + n_b + n_t
-    
-    n_ve   = store['Nv1']
-    n_vmu  = store['Nv2']
-    n_vtau = store['Nv3']
-    n_neutral_lep = n_ve + n_vmu + n_vtau
-    
-    n_e   = store['Ne1']
-    n_mu  = store['Ne2']
-    n_tau = store['Ne3']
-    n_charged_lep = n_e + n_mu + n_tau
-    
-    return FinalStateCounts(
-        n_d=n_d,
-        n_u=n_u,
-        n_s=n_s,
-        n_c=n_c,
-        n_b=n_b,
-        n_t=n_t,
-        n_q=n_q,
-        
-        n_ve=n_ve,
-        n_vmu=n_vmu,
-        n_vtau=n_vtau,
-        n_neutral_lep=n_neutral_lep,
-        
-        n_e=n_e,
-        n_mu=n_mu,
-        n_tau=n_tau,
-        n_charged_lep=n_charged_lep,
-        n_b_from_higgs=n_b_from_higgs
-    )
