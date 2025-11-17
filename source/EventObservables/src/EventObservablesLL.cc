@@ -163,6 +163,7 @@ void EventObservablesLL::clearChannelValues() {
 
     m_leps4cKinFit_4v.clear();
     m_jets4cKinFit_4v.clear();
+    m_fit4C_masses.clear();
 };
 
 void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
@@ -350,23 +351,23 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
      m_JMK_best = (m_fitchi2_ZHH <= m_fitchi2_ZZH ? m_JMK_ZHH : m_JMK_ZZH);
 
      if (m_leps4cKinFit_4v.size() == m_nAskedIsoLeps() && (int)m_JMK_best.size() >= m_nAskedJets()) {
-        m_fit4C_mz = (m_leps4cKinFit_4v[0]+m_leps4cKinFit_4v[1]).M();
-        m_fit4C_masses.push_back((m_jets4cKinFit_4v[m_JMK_best[0]]+m_jets4cKinFit_4v[m_JMK_best[1]]).M());
-        m_fit4C_masses.push_back((m_jets4cKinFit_4v[m_JMK_best[2]]+m_jets4cKinFit_4v[m_JMK_best[3]]).M());
-        m_fit4C_mh1 = std::min(m_fit4C_masses[0], m_fit4C_masses[1]); 
-        m_fit4C_mh2 = std::max(m_fit4C_masses[0], m_fit4C_masses[1]);
-	 
-        streamlog_out(MESSAGE) << "lepton energies:" << m_leps4cKinFit_4v[0].E() << ", " << m_leps4cKinFit_4v[1].E() << endl;
-        streamlog_out(MESSAGE) << "Fit probs: " << m_fitprob_ZHH << ", " << m_fitprob_ZZH << endl;
-        streamlog_out(MESSAGE) << "Fit chi2s: " << m_fitchi2_ZHH << ", " << m_fitchi2_ZZH << endl;
-        streamlog_out(MESSAGE) << "ZHH perm: " << m_JMK_ZHH[0] << ", " << m_JMK_ZHH[1] << ", " << m_JMK_ZHH[2] << ", " << m_JMK_ZHH[3] << endl;
-        streamlog_out(MESSAGE) << "ZZH perm: " << m_JMK_ZZH[0] << ", " << m_JMK_ZZH[1] << ", " << m_JMK_ZZH[2] << ", " << m_JMK_ZZH[3] << endl;
-        streamlog_out(MESSAGE) << "permuation: " << m_JMK_best[0] << ", " << m_JMK_best[1] << ", " << m_JMK_best[2] << ", " << m_JMK_best[3] << endl;
-        streamlog_out(MESSAGE) << "jet energies:" << m_jets4cKinFit_4v[m_JMK_best[0]].E() << ", " << m_jets4cKinFit_4v[m_JMK_best[1]].E() << ", " << m_jets4cKinFit_4v[m_JMK_best[2]].E() << ", " << m_jets4cKinFit_4v[m_JMK_best[3]].E() << endl;
-        streamlog_out(MESSAGE) << "jet energies:" << m_jets4cKinFit_4v[0].E() << ", " << m_jets4cKinFit_4v[1].E() << ", " << m_jets4cKinFit_4v[2].E() << ", " << m_jets4cKinFit_4v[3].E() << endl;
-        streamlog_out(MESSAGE) << "dijet masses: " << m_fit4C_mz << ", " << m_fit4C_mh1 << ", " << m_fit4C_mh2 << endl;
+       m_fit4C_mz = (m_leps4cKinFit_4v[0]+m_leps4cKinFit_4v[1]).M();
+       m_fit4C_masses.push_back((m_jets4cKinFit_4v[m_JMK_best[0]]+m_jets4cKinFit_4v[m_JMK_best[1]]).M());
+       m_fit4C_masses.push_back((m_jets4cKinFit_4v[m_JMK_best[2]]+m_jets4cKinFit_4v[m_JMK_best[3]]).M());
+       m_fit4C_mh1 = std::min(m_fit4C_masses[0], m_fit4C_masses[1]); 
+       m_fit4C_mh2 = std::max(m_fit4C_masses[0], m_fit4C_masses[1]);
+       
+       streamlog_out(MESSAGE) << "lepton energies:" << m_leps4cKinFit_4v[0].E() << ", " << m_leps4cKinFit_4v[1].E() << endl;
+       streamlog_out(MESSAGE) << "Fit probs: " << m_fitprob_ZHH << ", " << m_fitprob_ZZH << endl;
+       streamlog_out(MESSAGE) << "Fit chi2s: " << m_fitchi2_ZHH << ", " << m_fitchi2_ZZH << endl;
+       streamlog_out(MESSAGE) << "ZHH perm: " << m_JMK_ZHH[0] << ", " << m_JMK_ZHH[1] << ", " << m_JMK_ZHH[2] << ", " << m_JMK_ZHH[3] << endl;
+       streamlog_out(MESSAGE) << "ZZH perm: " << m_JMK_ZZH[0] << ", " << m_JMK_ZZH[1] << ", " << m_JMK_ZZH[2] << ", " << m_JMK_ZZH[3] << endl;
+       streamlog_out(MESSAGE) << "permuation: " << m_JMK_best[0] << ", " << m_JMK_best[1] << ", " << m_JMK_best[2] << ", " << m_JMK_best[3] << endl;
+       streamlog_out(MESSAGE) << "jet energies:" << m_jets4cKinFit_4v[m_JMK_best[0]].E() << ", " << m_jets4cKinFit_4v[m_JMK_best[1]].E() << ", " << m_jets4cKinFit_4v[m_JMK_best[2]].E() << ", " << m_jets4cKinFit_4v[m_JMK_best[3]].E() << endl;
+       streamlog_out(MESSAGE) << "jet energies:" << m_jets4cKinFit_4v[0].E() << ", " << m_jets4cKinFit_4v[1].E() << ", " << m_jets4cKinFit_4v[2].E() << ", " << m_jets4cKinFit_4v[3].E() << endl;
+       streamlog_out(MESSAGE) << "dijet masses: " << m_fit4C_mz << ", " << m_fit4C_mh1 << ", " << m_fit4C_mh2 << endl;
      } else {
-        streamlog_out(MESSAGE) << "Kinfit failed, will be skipped for EventObservablesLL" << endl;
+       streamlog_out(MESSAGE) << "Kinfit failed, will be skipped for EventObservablesLL" << endl;
      }
 
 

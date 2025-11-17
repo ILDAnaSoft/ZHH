@@ -26,7 +26,9 @@ EventObservablesVV::EventObservablesVV(): EventObservablesBase("EventObservables
 void EventObservablesVV::prepareChannelTree() {
     TTree* ttree = getTTree();
 
-	if (m_write_ttree) {
+    m_fit4C_masses = std::vector<float>(m_nAskedJets());
+
+    if (m_write_ttree) {
         ttree->Branch("ptjmax6", &m_ptjmax6, "ptjmax6/F");
         ttree->Branch("pjmax6", &m_pjmax6, "pjmax6/F");
 
@@ -80,6 +82,9 @@ void EventObservablesVV::clearChannelValues() {
 
     // ZZ
     zz_clear();
+
+    m_jets4cKinFit_4v.clear();
+    m_fit4C_masses.clear();
 };
 
 void EventObservablesVV::updateChannelValues(EVENT::LCEvent *pLCEvent) {
@@ -110,6 +115,36 @@ void EventObservablesVV::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         }
     }
 
+    for (int i = 0; i < inputJKF_solveNuCollection->getNumberOfElements(); i++) {
+      ReconstructedParticle* jet = (ReconstructedParticle*) inputJKF_solveNuCollection->getElementAt(i);
+      m_jets4cKinFit_4v.push_back(v4(jet));
+    }
+    
+    streamlog_out(MESSAGE) << "ladida" << endl;
+    m_JMK_best = (m_fitchi2_ZHH <= m_fitchi2_ZZH ? m_JMK_ZHH : m_JMK_ZZH);
+    streamlog_out(MESSAGE) << "ladida" << endl;
+    streamlog_out(MESSAGE) << "ZHH perm: " << m_JMK_ZHH[0] << ", " << m_JMK_ZHH[1] << ", " << m_JMK_ZHH[2] << ", " << m_JMK_ZHH[3] << endl;
+    streamlog_out(MESSAGE) << "ZZH perm: " << m_JMK_ZZH[0] << ", " << m_JMK_ZZH[1] << ", " << m_JMK_ZZH[2] << ", " << m_JMK_ZZH[3] << endl;
+    streamlog_out(MESSAGE) << "permuation: " << m_JMK_best[0] << ", " << m_JMK_best[1] << ", " << m_JMK_best[2] << ", " << m_JMK_best[3] << endl;
+
+    streamlog_out(MESSAGE) << m_leps4cKinFit_4v.size() << " vs " << m_nAskedIsoLeps() << endl;
+    streamlog_out(MESSAGE) << (int)m_JMK_best.size() << " vs " << m_nAskedJets() << endl;
+      
+    if ((int)m_leps4cKinFit_4v.size() == m_nAskedIsoLeps() && (int)m_JMK_best.size() >= m_nAskedJets()) {
+      streamlog_out(MESSAGE) << "ladida" << endl;
+      streamlog_out(MESSAGE) << "jet energies:" << m_jets4cKinFit_4v[m_JMK_best[0]].E() << ", " << m_jets4cKinFit_4v[m_JMK_best[1]].E() << ", " << m_jets4cKinFit_4v[m_JMK_best[2]].E() << ", " << m_jets4cKinFit_4v[m_JMK_best[3]].E() << endl;
+      streamlog_out(MESSAGE) << "jet energies:" << m_jets4cKinFit_4v[0].E() << ", " << m_jets4cKinFit_4v[1].E() << ", " << m_jets4cKinFit_4v[2].E() << ", " << m_jets4cKinFit_4v[3].E() << endl;
+      m_fit4C_masses.push_back((m_jets4cKinFit_4v[m_JMK_best[0]]+m_jets4cKinFit_4v[m_JMK_best[1]]).M());
+      m_fit4C_masses.push_back((m_jets4cKinFit_4v[m_JMK_best[2]]+m_jets4cKinFit_4v[m_JMK_best[3]]).M());
+      m_fit4C_mh1 = std::min(m_fit4C_masses[0], m_fit4C_masses[1]);
+      m_fit4C_mh2 = std::max(m_fit4C_masses[0], m_fit4C_masses[1]);
+      streamlog_out(MESSAGE) << "Fit probs: " << m_fitprob_ZHH << ", " << m_fitprob_ZZH << endl;
+      streamlog_out(MESSAGE) << "Fit chi2s: " << m_fitchi2_ZHH << ", " << m_fitchi2_ZZH << endl;    
+      streamlog_out(MESSAGE) << "dijet masses: " << m_fit4C_mz << ", " << m_fit4C_mh1 << ", " << m_fit4C_mh2 << endl;
+    } else {
+      streamlog_out(MESSAGE) << "Kinfit failed, will be skipped for EventObservablesVV" << endl;
+    }      
+    
     // TREAT 5 JET COLLECTION
 
     // assume jet given by jet5IDxPFOsMin with least No of PFOs is the tau jet
