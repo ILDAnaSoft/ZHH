@@ -11,9 +11,10 @@ from .Cuts import Cut, EqualCut, WindowCut, GreaterThanEqualCut, LessThanEqualCu
     CUT_TYPES, SemiInvisibleCut, WithinBoundsCut
 from .ZHHCuts import zhh_cuts
 from .TTreeInterface import TTreeInterface, FinalStateCounts, parse_final_state_counts
-from .TTreeInterface2 import TTreeInterface2
 from .AnalysisChannel import AnalysisChannel
-from .AnalysisChannelTools import mod_weights_from_split, apply_split
+from .DataStore import DataStore
+from .DataSource import DataSource
+from .DataSourceTools import mod_weights_from_split, apply_split
 from .CutflowProcessor import CutflowProcessor, cutflowPlots, cutflowTable
 from .figure_options import figure_options
 from .FinalStateDefinitions import define_eebb, define_μμbb, define_ττbb, \

@@ -186,7 +186,7 @@ class TTreeInterface(MixedLazyTablelike):
         self['id'] = np.arange(len(self), dtype=dtypes['id'])
         self['event_category'] = np.array(tree['event_category'].array(), dtype='B')
         
-        # writable; attached by AnalysisChannel.weight()
+        # writable; attached by DataSource.weight()
         self['pid'] = np.nan*np.ones(len(self), dtype='I')
         self['weight'] = np.nan*np.ones(len(self), dtype='f')
         

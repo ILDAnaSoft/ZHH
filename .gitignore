@@ -23,6 +23,7 @@ view*.ipynb
 Ranlux.coonf
 dependencies
 dependencies/**
+source/bin/*
 *.csv
 *_local.*
 *.pyc
@@ -33,6 +34,8 @@ dependencies/**
 *.npy
 *.pickle
 *.log
+*.h5
+*.hdf5
 *.txt
 !CMakeLists.txt
 *.aux

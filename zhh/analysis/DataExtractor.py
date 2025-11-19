@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from .CutflowProcessor import CutflowProcessor
-from .AnalysisChannel import AnalysisChannel
+from .DataSource import DataSource
 from copy import deepcopy
 from tqdm.auto import tqdm
 from ..util.PlotContext import PlotContext
@@ -9,7 +9,7 @@ from ..util.PlotContext import PlotContext
 class DataExtractor:
     def __init__(self,
                  cutflow_processor:CutflowProcessor,
-                 sources:list[AnalysisChannel]|None=None):
+                 sources:list[DataSource]|None=None):
         
         self._cp = cutflow_processor
         self._sources = sources if sources is not None else cutflow_processor._sources
@@ -32,7 +32,7 @@ class DataExtractor:
             to_process (list[tuple[str, int]]): list of tuples of structure
                 [<categoryName>, <classLabel>]
             features (list[str]): list of features present in the data-
-                stores of each AnalysisChannel (can be ROOT branches or
+                stores of each DataSource (can be ROOT branches or
                 features attached via store['feature'] = data)
             MOD_WEIGHT (bool, optional): _description_. Defaults to True.
             step (int | None, optional): _description_. Defaults to None.
@@ -58,8 +58,8 @@ class DataExtractor:
         self._features = features
         
         events_passed:dict[str, np.ndarray] = {}
-        fs_2_source:dict[str, AnalysisChannel] = {}
-        src_2_src_idx:dict[AnalysisChannel, int] = {}
+        fs_2_source:dict[str, DataSource] = {}
+        src_2_src_idx:dict[DataSource, int] = {}
         
         for src_idx, source in enumerate(sources):
             source.getStore().resetView()

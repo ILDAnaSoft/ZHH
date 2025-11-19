@@ -9,7 +9,11 @@ hypothesis: μμbbbb
 signal_categories:
 - EventCategories.μμHHbbbb
 
-# used to calculate event weights and absolute event counts. unit: ab^-1
+# used to calculate event weights and absolute event counts
+# polarization of [ electronBeam, positronBeam ]
+beam_polarization: [ -0.8, +0.3 ] 
+
+# unit: ab^-1
 luminosity: 2.
 
 # set to true for a clean run; i.e. delete previous run through cutflow (plots/tables),
@@ -45,8 +49,7 @@ event_categories: '$REPO_ROOT/config/event_categories.yaml'
 sources:
   - name: 4fsl
     path: $DATA_PATH/AnalysisCombine/550-4fsl-fast-perf
-    file: Merged.old.root
-    root_files: $DATA_PATH/AnalysisFinal/550-4fsl-fast-perf
+    root_files: $DATA_PATH/AnalysisFinal/550-4fsl-fast-perf/*.root
     event_categorization:
       default: EventCategories.F4_OTHER
       order: null
@@ -56,7 +59,7 @@ sources:
 
   - name: 2l4q
     path: $DATA_PATH/AnalysisCombine/550-2l4q-fast-perf
-    root_files: $DATA_PATH/AnalysisFinal/550-2l4q-fast-perf
+    root_files: $DATA_PATH/AnalysisFinal/550-2l4q-fast-perf/*.root
     event_categorization:
       default: EventCategories.F6_OTHER
       order: null
@@ -66,7 +69,7 @@ sources:
 
   - name: llhh
     path: $DATA_PATH/AnalysisCombine/550-llhh-fast-perf
-    root_files: $DATA_PATH/AnalysisFinal/550-llhh-fast-perf
+    root_files: $DATA_PATH/AnalysisFinal/550-llhh-fast-perf/*.root
     event_categorization:
       default: null
       order: null
@@ -76,7 +79,7 @@ sources:
 
   - name: 6q
     path: $DATA_PATH/AnalysisCombine/550-6q-fast-perf
-    root_files: $DATA_PATH/AnalysisFinal/550-6q-fast-perf
+    root_files: $DATA_PATH/AnalysisFinal/550-6q-fast-perf/*.root
     event_categorization:
       default: EventCategories.qqqqqq
       order: []
@@ -86,7 +89,7 @@ sources:
 
   - name: tthz
     path: $DATA_PATH/AnalysisCombine/550-tthz-fast-perf
-    root_files: $DATA_PATH/AnalysisFinal/550-tthz-fast-perf
+    root_files: $DATA_PATH/AnalysisFinal/550-tthz-fast-perf/*.root
     event_categorization:
       default: EventCategories.ttHZ
       order: null
@@ -94,19 +97,47 @@ sources:
     disabled: true
     reset: false
 
-# serialization
-# manages how data from ROOT input files should be converted to columnar format
-# two different implementations are supported:
-# 1. interpret: simply interpret a branch of a TTree
+# feature definition
+# controls how data from ROOT input files of each source should be interpreted and
+# converted to columnar format. assumes that branches are in regular shape, i.e.
+# have same number of rows (and also columns for 2D branches)
 features:
-  interpret:
-  - { name: id, dtype: int32, auto_increment: true }
-  - { name: event_category, tree: FinalStates, dtype: uint8 }
-  - { name: pid, tree: FinalStates, dtype: int32 }
-  
 
-  serialize:
-  - { handler: Serializers.JetMasses, provides: [ jet0_m, jet1_m, jet2_m, jet4_m ] }
+  # interpret a branch of a TTree as either 1D or 2D array, supports 1D+2D branches
+  # all properties defined here will be readonly in analysis code
+  # Arguments:
+  # interpret/name: name of output dataset in HDF5 file. data is accessed using this key
+  #                 as hdf5file[name] or dataStore[name] in analysis code. see also names
+  # interpret/tree: TTree and name
+  # interpret/branch: (optional) branch name; name will be used, if not provided
+  # interpret/columns: (for 2D arrays only) how many columns are expected to exist
+  #                    they will be saved as <name>.dim<i> with i=0,..,<columns>
+  # interpret/auto_increment: if True, this will be filled with np.arange(nrows, [dtype=
+  #                           interpret/dtype, defaults to uint32])
+  # interpret/names: list of names; can be used to create multiple entries within the
+  #                  interpret section with different name. this enforces branch = name
+  interpret:
+  - { name: id, dtype: uint32, auto_increment: true }
+  - { name: event, tree: FinalStates, dtype: uint32 }
+  #- { name: event_category, tree: FinalStates, dtype: uint8 }
+  - { name: cross_section, tree: FinalStates, dtype: float }
+  #- { name: pid, tree: FinalStates, branch: process_id, dtype: uint16 }
+  - { name: final_state_counts, tree: FinalStates, branch: final_state_counts.second, columns: 17, dtype: uint8 }
+  - { name: n_b_from_higgs, tree: FinalStates, dtype: uint8 }
+  - { name: pol_code, tree: FinalStates, branch: polarization_code, dtype: uint8 }
+  - { name: process, tree: FinalStates, dtype: uint32 }
+
+  # physics quantities
+  - { names: [ bmax1, bmax2, bmax3, bmax4 ], tree: EventObservablesLL, dtype: float32 }
+  - { names: [ jet1_m, jet2_m, jet3_m, jet4_m ], tree: EventObservablesLL, dtype: float32 }
+  - { name: mz_pre_pairing, tree: EventObservablesLL, branch: mzll_pre_pairing, dtype: float32 }
+  - { name: mhh, tree: EventObservablesLL, branch: m_invjet, dtype: float32 }
+  - { names: [ fit4C_mz, fit4C_mh1, fit4C_mh2, ptmiss, thrust, evis ], tree: EventObservablesLL, dtype: float32 }
+  - { names: [ nisomuons, pairedLepType ], tree: EventObservablesLL, dtype: uint8 }
+  
+  # TODO: ability to use custom handlers to attach these
+  # serialize:
+  # - { handler: Serializers.JetMasses, provides: [ jet0_m, jet1_m, jet2_m, jet4_m ] }
 
 # cutflow_table
 # defines the event categories and the order with which they should be appear in the

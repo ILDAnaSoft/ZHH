@@ -1,7 +1,7 @@
 import uproot as ur
 import numpy as np
 from collections.abc import Callable
-from ..analysis.AnalysisChannel import AnalysisChannel
+from ..analysis.DataSource import DataSource
 
 class ROOTFeatureProvider:
     def __init__(self, branches:list[str]):
@@ -18,10 +18,10 @@ class ROOTFeatureProvider:
         self._resolved_branches = []
         self._resolved = False
         self._mapping = {}
-        self._analysis:AnalysisChannel|None = None
+        self._analysis:DataSource|None = None
         self._registered_features = {}
     
-    def resolve(self, analysis:AnalysisChannel):        
+    def resolve(self, analysis:DataSource):        
         if not self._resolved:
             tree = analysis.getTTree()
                 
@@ -66,7 +66,7 @@ class ROOTFeatureProvider:
         else:
             raise Exception(f'Feature {key} not registered')
     
-    def setSource(self, analysis:AnalysisChannel):
+    def setSource(self, analysis:DataSource):
         assert(self._resolved)
         
         keys = analysis.getTTree()

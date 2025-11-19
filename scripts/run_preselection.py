@@ -3,11 +3,11 @@ from zhh import EventCategories, CutflowProcessor, \
     categorize_6q, categorize_2l4q, categorize_4fsl, categorize_llhh, categorize_vvhh
 import numpy as np
 from tqdm.auto import tqdm
-from zhh import AnalysisChannel, EventCategories, zhh_cuts
+from zhh import DataSource, EventCategories, zhh_cuts
 
 # The following dictionary defines how event categories should be managed
 # It consists of a tuple of [
-#   1. callback function given an AnalysisChannel to assign final states. see FinalStateDefinitions.py and the FinalStateDefinition type,
+#   1. callback function given an DataSource to assign final states. see FinalStateDefinitions.py and the FinalStateDefinition type,
 #   2. the default class to be assigned,
 #   3. an optional category to be used. ignored if None. if [], will only assign the default class to all events  
 #]
@@ -60,10 +60,10 @@ if __name__ == "__main__":
 
     HYPOTHESIS = args.hypothesis
 
-    f4sl = AnalysisChannel(args.f4sl, '4fsl')
-    l2q4 = AnalysisChannel(args.l2q4, '2l4q')
-    llhh = AnalysisChannel(args.llhh, 'llhh')
-    q6 = AnalysisChannel(args.q6, '6q')
+    f4sl = DataSource(args.f4sl, '4fsl')
+    l2q4 = DataSource(args.l2q4, '2l4q')
+    llhh = DataSource(args.llhh, 'llhh')
+    q6 = DataSource(args.q6, '6q')
 
     sources = [f4sl, l2q4, llhh, q6]
 

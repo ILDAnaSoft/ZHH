@@ -1,6 +1,6 @@
 import argparse
 from glob import glob
-from zhh import AnalysisChannel
+from zhh import DataSource
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
@@ -35,5 +35,5 @@ if __name__=="__main__":
     
     assert(len(files))
     
-    analysis = AnalysisChannel(work_root)
+    analysis = DataSource(work_root)
     analysis.combine(trees=ttrees, root_files=files)

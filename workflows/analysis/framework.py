@@ -104,7 +104,7 @@ class HTCondorWorkflow(law.contrib.htcondor.HTCondorWorkflow):
             session_submissions[name] = 0
         
         config.custom_content.append(('requirements', 'Machine =!= LastRemoteHost'))
-        config.custom_content.append(('max_idle', 2000))
+        config.custom_content.append(('max_idle', 4000))
         
         #raise Exception('asdf')
 

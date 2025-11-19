@@ -1,11 +1,14 @@
-import yaml
-import os.path as osp
+import yaml, os, os.path as osp, h5py, numpy as np
 from collections.abc import Callable
 from copy import deepcopy
-from ..analysis.Cuts import Cut, EqualCut, GreaterThanEqualCut, LessThanEqualCut, WithinBoundsCut, ValueCut
-from ..analysis.AnalysisChannel import AnalysisChannel
+from glob import glob
+from ..analysis.Cuts import EqualCut, GreaterThanEqualCut, LessThanEqualCut, WithinBoundsCut, ValueCut
+from ..analysis.DataSource import DataSource
 from .replace_properties import replace_properties
 from .replace_references import replace_references
+from ..data.ROOT2HDF5Converter import ROOT2HDF5Converter
+from typing import TypedDict, NotRequired, TYPE_CHECKING
+from copy import deepcopy
 
 def parse_steering_file(loc:str):
     """Loads a YAML steering file, replaces references within them
@@ -32,7 +35,7 @@ def parse_steering_file(loc:str):
 
 def process_steering(steer:dict):
     """Processes a parsed steering dictionary. Returns two dictionaries:
-    First a dict<name, AnalysisChannel> and second, a dict holding 
+    First a dict<name, DataSource> and second, a dict holding 
     <name, [cat_register_fn, cat_default, cat_order]>.
     
     Args:
@@ -45,7 +48,7 @@ def process_steering(steer:dict):
         _type_: _description_
     """
 
-    source_map:dict[str, AnalysisChannel] = {}
+    source_map:dict[str, DataSource] = {}
     final_state_configs:dict[str, tuple[Callable, int|None, list|None]] = {}
     reset_sources:list[str] = []
 
@@ -53,12 +56,16 @@ def process_steering(steer:dict):
     
     def per_source(name):
         path = osp.expandvars(source_spec['path'])
-        fname = source_spec.get('file', 'Merged.root')
+        fname = source_spec.get('file', f'{steer["hypothesis"]}.h5')
+        fpath = osp.join(path, fname)
+        
+        if 'interpret' in steer['features']:
+            print(f'  Reading file from <{fpath}>')
+            provision_feature_interpretations(steer['features']['interpret'],
+                                              source_spec['root_files'], path, fname)
 
-        print(f'  Reading files from <{path}>')
-        source = AnalysisChannel(path, name, fname=fname)
-        source.combine()
-        print(f'  Found {len(source)} events')
+        source = DataSource(fpath, name, work_root=path)
+        #print(f'  Found {len(source)} events')
 
         # Register event category definitions
         event_categorization = source_spec['event_categorization']
@@ -79,9 +86,8 @@ def process_steering(steer:dict):
             if not found:
                 raise Exception(f'Could not resolve event category <{item}>')
 
-        def cat_register_fn(ac:AnalysisChannel):
+        def cat_register_fn(ac:DataSource):
             for item in items:
-                print(item)
                 ac.registerEventCategory(*item)
         
         source_map[name] = source
@@ -103,7 +109,146 @@ def process_steering(steer:dict):
 
     return source_map, final_state_configs, reset_sources
 
-def initialize_sources(sources:list[AnalysisChannel], final_state_configs,
+class Interpretation(TypedDict):
+    name: NotRequired[str]
+    tree: NotRequired[str]
+    branch: NotRequired[str]
+    dtype: NotRequired[str]
+    auto_increment: NotRequired[bool]
+    columns: NotRequired[int]
+    names: NotRequired[str]
+
+def provision_feature_interpretations(interpretations:list[Interpretation],
+                                      root_files_glob:str, path:str, file:str,
+                                      integrity_check:bool=True,
+                                      base_tree:str='FinalStates'):
+    """_summary_
+
+    Args:
+        interpretations (list[Interpretation]): _description_
+        root_files_glob (str): _description_
+        path (str): _description_
+        file (str): _description_
+        integrity_check (bool, optional): _description_. Defaults to True.
+        base_tree (str, optional): _description_. Defaults to 'FinalStates'.
+
+    Raises:
+        Exception: _description_
+        Exception: _description_
+
+    Returns:
+        _type_: _description_
+    """
+
+    from zhh import tree_n_rows
+
+    ds_path = osp.expandvars(f'{path}/{file}')
+    ds_meta_file = f'{osp.splitext(ds_path)[0]}.files.txt'
+
+    root_files = sorted(glob(osp.expandvars(root_files_glob)))
+    if not len(root_files):
+        raise Exception(f'No ROOT files found for search mask <{root_files_glob}>')
+
+    nrows = 0
+    ds_keys = []
+
+    # make sure files exist and nrows is set
+    # read from existing files (if exist)
+    if not osp.isfile(ds_path) or not osp.isfile(ds_meta_file):
+        os.makedirs(osp.dirname(ds_path), exist_ok=True)
+        
+    with h5py.File(ds_path, 'a') as hf:
+        if 'nrows' in hf.attrs:
+            nrows = int(hf.attrs.get('nrows', 0))
+            if nrows == 0:
+                raise Exception(f'File <{ds_path}> is corrupted as it does not contain any size information.'+
+                                ' Please delete the file and run provision_feature_interpretations again')
+        
+        ds_keys = list(hf.keys())
+
+    if nrows == 0:
+        nrows = tree_n_rows(root_files, base_tree, use_uproot=True)
+        with h5py.File(ds_path, 'a') as hf:
+            hf.attrs['nrows'] = nrows
+    
+    if integrity_check and osp.isfile(ds_meta_file):
+        with open(ds_meta_file, 'rt') as tf:
+            expected = tf.read()
+            
+        found = '\n'.join(root_files)
+
+        if expected != found:
+            expected_list = expected.split('\n')
+
+            print('Samples expected, but not found: ', set(expected_list) - set(found))
+            print('Samples found, but not expected: ', set(found) - set(expected_list))
+
+            raise Exception('List of input files is different! Please regenerate the cache')
+    
+    # create HDF5 entries inside here
+    bname = f'{path}/items'
+    os.makedirs(osp.dirname(bname), exist_ok=True)
+    print('bname=', bname)
+
+    to_sync = []
+
+    def per_interpretation(feature:Interpretation):
+        name = feature.get('name', '')
+        assert(name != '')
+
+        if 'auto_increment' in feature and feature['auto_increment']:
+            if not name in ds_keys:
+                with h5py.File(ds_path, 'a') as hf:
+                    hf[name] = np.arange(nrows, dtype=feature['dtype'] if 'dtype' in feature else 'uint32')
+            else:
+                print(f'Found <{name}> (auto_increment=ON)')
+        elif 'tree' in feature:
+            tree = feature['tree']
+            branch = feature['branch'] if 'branch' in feature else name
+            columns = feature['columns'] if 'columns' in feature else None
+
+            if columns is not None:
+                for col in range(columns):
+                    if f'{name}.dim{col}' not in ds_keys:
+                        return (name, tree, branch, feature['dtype'] if 'dtype' in feature else None)
+                        break
+            elif name not in ds_keys and f'{name}.dim0' not in ds_keys:
+                return (name, tree, branch, feature['dtype'] if 'dtype' in feature else None)
+            else:
+                print(f'Found <{name}>')
+        else:
+            print(feature)
+            raise Exception('Cannot interpret entry')
+
+    for feature in interpretations:
+        if not 'names' in feature:
+            res = per_interpretation(feature)
+            if res is not None:
+                to_sync.append(res)
+        else:
+            for name in feature['names']:
+                entry = deepcopy(feature)
+                del entry['names']
+                entry['name'] = name
+
+                res = per_interpretation(entry)
+                if res is not None:
+                    to_sync.append(res)
+
+    for item in to_sync:
+        print(f'Syncing', item)
+        name, tree, branch, dtype = item
+
+        conv = ROOT2HDF5Converter(root_files, ds_path, tree, branch,
+                                  osp.expandvars(f'{bname}/{tree}.{branch}/item'), name, dtype)
+        conv.convertLocal(nrows=nrows, check_existing=True)
+
+    # meta file exists = everything successful
+    if not osp.isfile(ds_meta_file):
+        with open(ds_meta_file, 'wt') as tf:
+            tf.write('\n'.join(root_files))
+
+def initialize_sources(sources:list[DataSource], final_state_configs,
                        lumi_inv_ab:float, reset_sources:list[str]=[]):
     
     n_sources = len(sources)

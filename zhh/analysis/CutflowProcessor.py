@@ -1,4 +1,4 @@
-from .AnalysisChannel import AnalysisChannel
+from .DataSource import DataSource
 from .Cuts import Cut, ValueCut
 from ..util.PlotContext import PlotContext
 from typing import Sequence, Any
@@ -21,7 +21,7 @@ def find_entry(entries:list[tuple[str, Any]], name:str):
 
 class CutflowProcessor:
     def __init__(self,
-                 sources:list[AnalysisChannel],
+                 sources:list[DataSource],
                  hypothesis:str,
                  signal_categories:list[int],
                  cuts:Sequence[ValueCut]|None=None,
@@ -30,13 +30,13 @@ class CutflowProcessor:
                  plot_context:PlotContext|None=None,
                  work_dir:str|None=None
     ):
-        """Class used to combine multiple AnalysisChannel items and process
+        """Class used to combine multiple DataSource items and process
         cuts over all data. Can be used for preselection analysis and final
         event selection after MVA outputs are attached. See the process method
         for more information.
 
         Args:
-            sources (list[AnalysisChannel]): _description_
+            sources (list[DataSource]): _description_
             hypothesis (str): _description_
             signal_categories (list[int]): list of process categories, see ProcessCategories. Used for plotting later. 
             cuts (Sequence[ValueCut] | None, optional): _description_. Defaults to None.
@@ -93,7 +93,7 @@ class CutflowProcessor:
         
         # cutflowTable()
 
-    def getSource(self, name:str)->AnalysisChannel:
+    def getSource(self, name:str)->DataSource:
         for source in self._sources:
             if source.getName() == name:
                 return source
@@ -698,7 +698,7 @@ def cutflowTable(cp:CutflowProcessor, final_state_labels_and_names_or_processes:
 
 def cutflowTableFn(masks,
                  luminosity:float,
-                 sources:list[AnalysisChannel],
+                 sources:list[DataSource],
                  final_state_labels_and_names_or_processes:list[tuple[str,str]|tuple[str,str,str]|tuple[str,list[str]]],
                  cuts:Sequence[Cut],
                  path:str,
@@ -950,7 +950,7 @@ def format_counts(x:float):
 def transpose(columns)->list:
     return list(map(list, zip(*columns)))
 
-def calc_cross_section(analysis:AnalysisChannel, process:str):
+def calc_cross_section(analysis:DataSource, process:str):
     from zhh import combined_cross_section
     return combined_cross_section(analysis.getProcesses(), process)
 
