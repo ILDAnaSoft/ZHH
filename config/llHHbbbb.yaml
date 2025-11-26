@@ -11,7 +11,7 @@ signal_categories:
 
 # used to calculate event weights and absolute event counts
 # polarization of [ electronBeam, positronBeam ]
-beam_polarization: [ -0.8, +0.3 ] 
+beam_polarization: [ -0.8, +0.3 ]
 
 # unit: ab^-1
 luminosity: 2.
@@ -74,7 +74,7 @@ sources:
       default: null
       order: null
       items: [ llhh, eeHHbbbb, μμHHbbbb, ττHHbbbb, llhh_llbbbb, llhh_llnonbbbb, llqqh ]
-    disabled: false
+    disabled: true
     reset: false
 
   - name: 6q
@@ -135,6 +135,16 @@ features:
   - { names: [ fit4C_mz, fit4C_mh1, fit4C_mh2, ptmiss, thrust, evis ], tree: EventObservablesLL, dtype: float32 }
   - { names: [ nisomuons, pairedLepType ], tree: EventObservablesLL, dtype: uint8 }
   
+  # for MVA analysis
+  - { names: [ npfos ], tree: EventObservablesLL, dtype: uint16 }
+  - { names: [ costhrust, pjmax2, npfosmin4j, yplus, plmin, mbmax34, ptmiss, mvalepminus ], tree: EventObservablesLL, dtype: float32 }
+  - { name: ZHH_FitChi2, tree: KinFitLL_ZHH, branch: FitChi2, dtype: float32 }
+  - { name: ZZH_FitChi2, tree: KinFitLL_ZZH, branch: FitChi2, dtype: float32 }
+  - { name: ZHH_p1stBeforeFit, tree: KinFitLL_ZHH, branch: p1stBeforeFit, dtype: float32 }
+  - { name: ZZH_p1stBeforeFit, tree: KinFitLL_ZZH, branch: p1stBeforeFit, dtype: float32 }
+  - { name: ZHH_cosThBeforeFit, tree: KinFitLL_ZHH, branch: cosThBeforeFit, dtype: float32 }
+  - { name: ZZH_cosThBeforeFit, tree: KinFitLL_ZZH, branch: cosThBeforeFit, dtype: float32 }
+  
   # TODO: ability to use custom handlers to attach these
   # serialize:
   # - { handler: Serializers.JetMasses, provides: [ jet0_m, jet1_m, jet2_m, jet4_m ] }
@@ -153,9 +163,9 @@ features:
 cutflow_table:
   items:
     - category: μμbb
-      label: '\\boldsymbol{\\mu\\mu} bb'
+      label: '\boldsymbol{\mu\mu} bb'
     - category: μvbbqq
-      label: '\\boldsymbol{\\mu \\nu b b q q}'
+      label: '\boldsymbol{\mu \nu b b q q}'
     - category: bbqqqq
       label: bbqqqq
     - category: llqqqq
@@ -168,7 +178,7 @@ cutflow_table:
       label: llhh
       is_signal: true
     - category: μμHHbbbb
-      label: (\\mu\\mu bbbb)
+      label: (\mu\mu bbbb)
       is_signal: true
   ignore_categories: llbbbb
 
@@ -228,5 +238,8 @@ mva_modules:
           bmax1, bmax2, bmax3, bmax4, jet1_m, jet2_m, jet3_m, jet4_m,
           m_invjet, fit4C_mz, fit4C_mh1, fit4C_mh2, npfos,
         # MVA specific features
-          thrust, costhrust, pjmax2, cosjzmax, npfosmin4j, yplus, yminus_mod100]
+          thrust, costhrust, pjmax2, cosjzmax, npfosmin4j, yplus, yminus_mod100,
+          plmin, mbmax34, ptmiss, mvalepminus, KinFit_ZHH_FitChi2, KinFit_ZZH_FitChi2,
+          KinFit_ZHH_p1stBeforeFit, KinFit_ZZH_p1stBeforeFit,
+          KinFit_ZHH_cosThBeforeFit, KinFit_ZZH_cosThBeforeFit]
       

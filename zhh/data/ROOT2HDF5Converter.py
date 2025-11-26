@@ -8,6 +8,9 @@ from typing import TYPE_CHECKING, cast
 from multiprocessing import Pool, cpu_count
 from tqdm.auto import tqdm
 from math import ceil
+from ..task.AbstractTask import AbstractTask
+
+ChunkedConversionResult = tuple[int, tuple[tuple[int, int]|tuple[int], str]]
 
 # for creating ROOT dicts
 # if not TYPE_CHECKING:
@@ -15,7 +18,7 @@ from math import ceil
 # ROOT.gInterpreter.GenerateDictionary("ROOT::VecOps::RVec<ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>>>", "vector;ROOT/RVec.hxx;Math/Vector4D.h")
 
 def create_chunks(tree:str, branch:str, root_files:list[str], out_bname:str, chunk_size:int=256,
-                  overwrite_if_exists:bool=False, read_size:int=16, dtype:int|None=None)->list[tuple[int, str, str, list[str], str, bool, int, str]]:
+                  overwrite_if_exists:bool=True, read_size:int=16, dtype:int|None=None)->list[tuple[int, str, str, list[str], str, bool, int, str]]:
 
     chunks = []
     chunk_idx = 0
@@ -85,6 +88,11 @@ class ROOT2HDF5Converter:
 
                 if osp.isfile(out_file):
                     with h5py.File(out_file) as hf:
+                        if not 'shape' in hf:
+                            print(f'File found at {out_file} is corrupted. Existing files for Tree:Branch={chunks[0][1]}:{chunks[0][2]} considered missing')
+                            already_done = False
+                            break
+
                         shape = np.array(hf['shape'], dtype=int)
                         sizes.append(shape[0])
                         ncols_found = 1 if len(shape) == 1 else shape[1]
@@ -108,10 +116,12 @@ class ROOT2HDF5Converter:
                             print('branch=', hf.attrs['branch'], self._branch)
                             print('input_files=', hf.attrs['input_files'], chunk_files)
 
-                            raise Exception(f'File <{out_file}> for chunk <{chunk_idx}> does not fit to expected data structure. See above print for property=<found> <expected>')
+                            raise Exception(f'File <{out_file}> for chunk <{chunk_idx}> does not fit to expected '+
+                                            'data structure. See above print for property=<found> <expected>')
                 else:
                     already_done = False
-                    raise Exception(f'File <{out_file}> for chunk <{chunk_idx}> does not exist. Please delete all chunks to make sure everything is consistent')
+                    raise Exception(f'File <{out_file}> for chunk <{chunk_idx}> does not exist.'+
+                                    ' Please delete all chunks to make sure everything is consistent')
 
                 #chunk_idx, tree, branch, root_files[i:i+chunk_size], f'{out_bname}.{chunk_idx}.h5', overwrite_if_exists, read_size, dtype = chunk
                 #fpath = f'{self._output_bname}.{chunk_idx}.h5'
@@ -120,21 +130,65 @@ class ROOT2HDF5Converter:
         
         shape = [nrows_found] if ncols_found < 2 else [nrows_found, ncols_found]
 
-        return (already_done, shape, sizes)  
+        return (already_done, shape, sizes)
 
-    def convertLocal(self, nrows:int|None=None, check_existing:bool=False, **kwargs):
+    def convertLazy(self, nrows:int|None=None, check_existing:bool=False, **kwargs)->tuple[AbstractTask, list[AbstractTask]]:
+        """Returns one or multiple tasks which represent the ROOT->HDF5 conversion
+        See ProcessRunner for a tool to execute them.
+
+        Args:
+            nrows (int | None, optional): _description_. Defaults to None.
+            check_existing (bool, optional): _description_. Defaults to False.
+
+        Returns:
+            AbstractTask: _description_
+        """
+
         chunks = self.getChunks(**kwargs)
+
         done = False
+        ncols = 1
+        sizes = []
 
         # check if potentially existing chunks are valid
-        # this can take a while
+        if check_existing:
+            done, shape, sizes = self.checkExisting(chunks)
+            ncols = shape[1] if len(shape) == 2 else shape[0]
+        else:
+            print(f'No existing (first) chunk found for Tree:Branch <{self._tree}:{self._branch}>. '+
+                  f'Proceeding with conversion...')
 
+        h5_files = [chunk[4] for chunk in chunks]
+        conversion_tasks = [] if done else [AbstractTask(f'ROOT2HDF5Task:{self._tree}.{self._branch}', per_chunk, (chunk, )) for chunk in chunks]
+        create_vds_task = CreateVDSTask(f'CreateVDS:{self._tree}.{self._branch}',
+                                        args=(h5_files, self._vds_file, self._output_name, self._dtype, done, sizes, ncols))
+        create_vds_task.requires('conversion', conversion_tasks)
+
+        return create_vds_task, conversion_tasks
+
+    def convert(self, nrows:int|None=None, check_existing:bool=False, **kwargs):
+        """_summary_
+
+        Args:
+            nrows (int | None, optional): _description_. Defaults to None.
+            check_existing (bool, optional): _description_. Defaults to False.
+
+        Raises:
+            Exception: _description_
+        """
+
+        chunks = self.getChunks(**kwargs)
+
+        done = False
         nrows_found = 0
         ncols = 1
         sizes = []
 
+        # check if potentially existing chunks are valid
         if check_existing:
             done, shape, sizes = self.checkExisting(chunks)
+            ncols = shape[1] if len(shape) == 2 else shape[0]
+            nrows_found = int(np.sum(sizes))
         else:
             print(f'No existing (first) chunk found for Tree:Branch <{self._tree}:{self._branch}>. Proceeding with conversion...')
 
@@ -202,6 +256,25 @@ def createVDS(h5_files:list[str], output_file:str, output_name:str, nrows:int, n
             # Add virtual dataset to output file
             hf.create_virtual_dataset(f'{output_name}.dim{col}' if ncols > 1 else output_name, layout, fillvalue=np.nan)
 
+    return True
+
+class CreateVDSTask(AbstractTask):
+    def work(self, h5_files:list[str], vds_file:str, output_name:str, dtype:str|None, done:bool, sizes:list[int], ncols:int, **kwargs):
+        if not done:
+            conversion:list[ChunkedConversionResult] = kwargs['conversion']
+
+            first_entry = conversion[0][1]
+            first_shape = first_entry[0]
+            first_dtype = first_entry[1]
+
+            dtype = first_dtype if dtype is None else dtype
+
+            sizes = [c[1][0][0] for c in conversion]        
+            ncols = first_shape[1] if len(first_shape) == 2 else 1
+
+        #return True
+        return createVDS(h5_files, vds_file, output_name, nrows=np.sum(sizes), ncols=ncols, dtype=dtype, sizes=sizes)
+
 def tree_n_rows(sources:list[str], tree:str, use_uproot:bool=True, use_mp:bool=True)->int:
     nrows = 0
 
@@ -225,10 +298,33 @@ def tree_n_rows(sources:list[str], tree:str, use_uproot:bool=True, use_mp:bool=T
 
         return nrows
     else:
+        if not TYPE_CHECKING:
+            if use_uproot:
+                for s in sources:
+                    with ur.open(s) as uf:
+                        nrows += uf[tree].num_entries
+            else:
+                import ROOT
+
+                chain = ROOT.TChain(tree)
+
+                for file in sources:
+                    chain.Add(file)
+
+                nrows = chain.GetEntries()
+        
+        return nrows
+
+def translate_item(sources:list[str], tree:str, names:str|list[str], use_uproot:bool=True)->list[ak.Array]:
+    result:list[ak.Array] = []
+
+    if not TYPE_CHECKING:
         if use_uproot:
-            for s in sources:
-                with ur.open(s) as uf:
-                    nrows += uf[tree].num_entries
+            import uproot as ur        
+
+            for f in sources:
+                with ur.open(f) as rf:
+                    result.append(rf[f'{tree}/{names}'].array())            
         else:
             import ROOT
 
@@ -237,36 +333,9 @@ def tree_n_rows(sources:list[str], tree:str, use_uproot:bool=True, use_mp:bool=T
             for file in sources:
                 chain.Add(file)
 
-            nrows = chain.GetEntries()
-        
-        return nrows
+            result.append(ak.from_rdataframe(ROOT.RDataFrame(chain), columns=names))
 
-def translate_item(sources:list[str], tree:str, names:str|list[str], use_uproot:bool=True)->list[ak.Array]:
-    if use_uproot:
-        import uproot as ur
-
-        result:list[ak.Array] = []
-
-        for f in sources:
-            with ur.open(f) as rf:
-                result.append(rf[f'{tree}/{names}'].array())
-
-        return result
-            
-    else:
-        import ROOT
-
-        chain = ROOT.TChain(tree)
-
-        for file in sources:
-            chain.Add(file)
-
-        df = ROOT.RDataFrame(chain)
-
-        if False:
-            return df.AsNumpy(names)
-        else:
-            return [ak.from_rdataframe(df, columns=names)]
+    return result
 
 def translate_item_lazy(sources:list[str], tree:str, names:str|list[str], n_per_iter:int, use_uproot:bool=True):
     from math import ceil
@@ -279,7 +348,7 @@ def translate_item_lazy(sources:list[str], tree:str, names:str|list[str], n_per_
         yield translate_item(sources[counter:counter+size], tree, names, use_uproot)
         counter += size
 
-def per_chunk(args):
+def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None, str|None])->ChunkedConversionResult:
     """Attempts to read tree/branch from all ROOT files in file_paths.
     Depending on the value of outp_or_None:
     1. None -> (chunk_idx, result=list[ak.array]) will be returned
@@ -321,16 +390,16 @@ def per_chunk(args):
     # load from HDF5
     if osp.isfile(output_file) and not overwrite_if_exists:
         with h5py.File(output_file, 'r') as hf:
-            shape = hf['shape'].shape
-            dtype_read = str(hf['dim0'].dtype)
+            shape = tuple(cast(h5py.Dataset, hf['shape'])[:])
+            dtype_read = str(cast(h5py.Dataset, hf['dim0']).dtype)
 
             if dtype is not None and dtype != dtype_read:
                 raise Exception(f'dtype mismatch: expected <{dtype}> but found <{dtype_read}>')
 
-        return (chunk_idx, (shape, dtype))
+        return (chunk_idx, (shape, dtype_read))
     
     # convert from ROOT files
-    translated = translate_item_lazy(file_paths, tree, branch, n_per_iter=read_size) if read_size is not None else translate_item(file_paths, tree, branch)
+    translated = translate_item_lazy(file_paths, tree, branch, n_per_iter=read_size) if read_size is not None else [translate_item(file_paths, tree, branch)]
     nrows = 0
     ncols = 0
     is_1d = False
@@ -343,8 +412,6 @@ def per_chunk(args):
         hf.attrs['input_files'] = file_paths
 
         for i_result, result in enumerate(translated):
-            assert(isinstance(result[0], ak.Array))
-
             is_1d = result[0].ndim == 1
             is_2d = result[0].ndim == 2
 
@@ -369,12 +436,13 @@ def per_chunk(args):
 
             for col in range(ncols):
                 if i_result:
-                    hf[f'dim{col}'].resize((nrows+size, ))
+                    cast(h5py.Dataset, hf[f'dim{col}']).resize((nrows+size, ))
                 
                 counter = 0
                 for arr in result:
                     arr_size = len(arr)
-                    hf[f'dim{col}'][(nrows+counter):(nrows+counter+arr_size)] = arr[:, col] if is_2d else arr
+                    dataset:h5py.Dataset = cast(h5py.Dataset, hf[f'dim{col}'])
+                    dataset[(nrows+counter):(nrows+counter+arr_size)] = arr[:, col] if is_2d else arr
                     counter += arr_size
 
                 assert(counter == size)
@@ -382,7 +450,9 @@ def per_chunk(args):
             nrows += size
 
         hf['shape'] = np.array([nrows] if is_1d else [nrows, ncols], dtype=int)
-            
+    
+    assert(isinstance(dtype, str))
+
     return (chunk_idx, ((nrows, ncols) if is_2d else (nrows, ), dtype))
 
 def process_chunks(chunks, n_files:int|None=None):

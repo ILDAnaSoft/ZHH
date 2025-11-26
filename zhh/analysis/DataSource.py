@@ -84,7 +84,7 @@ class DataSource:
             
             # store the HDF5 file
             store = self.getStore()
-            store.itemsSnapshot()
+            store.itemsSnapshot(overwrite=True)
 
             # store processes in NPZ file
             self.setAttribute('lumi_inv_ab', lumi_inv_ab)
@@ -212,7 +212,7 @@ class DataSource:
             return hf.attrs[name] if name in hf.attrs else if_not_exists                 
         
     def setAttribute(self, name:str, value):
-        with h5py.File(self._h5_file) as hf:
+        with h5py.File(self._h5_file, 'a') as hf:
             hf.attrs[name] = value
     
     def getIntegratedLuminosity(self)->float:

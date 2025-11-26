@@ -716,7 +716,7 @@ def cutflowTableFn(masks,
     counts_abs:dict[str, np.ndarray] = {}
     first_signal_pos = -1
     is_signal:dict[str, bool] = {}
-    source_2_mask:dict[str, dict[str, np.ndarray]] = {}
+    source_2_mask:dict[str, dict[str, list]] = {}
     other_bkg_count_tot = np.zeros(len(masks))
 
     for calc_cut_efficiency in [False, True]: # [False]: # 

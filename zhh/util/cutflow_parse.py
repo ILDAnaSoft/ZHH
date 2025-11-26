@@ -2,11 +2,13 @@ import yaml, os, os.path as osp, h5py, numpy as np
 from collections.abc import Callable
 from copy import deepcopy
 from glob import glob
+from ..analysis.PreselectionAnalysis import set_polarization
 from ..analysis.Cuts import EqualCut, GreaterThanEqualCut, LessThanEqualCut, WithinBoundsCut, ValueCut
 from ..analysis.DataSource import DataSource
 from .replace_properties import replace_properties
 from .replace_references import replace_references
 from ..data.ROOT2HDF5Converter import ROOT2HDF5Converter
+from ..task.ConcurrentFuturesRunner import ProcessRunner
 from typing import TypedDict, NotRequired, TYPE_CHECKING
 from copy import deepcopy
 
@@ -54,6 +56,14 @@ def process_steering(steer:dict):
 
     n_sources = len(steer['sources'])
     
+    # process beam polarization; adjust if not ILC-like
+    beam_pol = steer['beam_polarization']
+    assert(-1 <= beam_pol[0] <= 1)
+    assert(-1 <= beam_pol[1] <= 1)
+
+    if beam_pol[0] != -0.8 or beam_pol[1] != 0.3:
+        set_polarization(beam_pol)
+    
     def per_source(name):
         path = osp.expandvars(source_spec['path'])
         fname = source_spec.get('file', f'{steer["hypothesis"]}.h5')
@@ -63,9 +73,27 @@ def process_steering(steer:dict):
             print(f'  Reading file from <{fpath}>')
             provision_feature_interpretations(steer['features']['interpret'],
                                               source_spec['root_files'], path, fname)
-
+            
         source = DataSource(fpath, name, work_root=path)
-        #print(f'  Found {len(source)} events')
+
+        # make sure beam polarization fits
+        with h5py.File(fpath, 'a') as hf:
+            if 'beam_polarization' in hf.attrs:
+                beam_pol_read = hf.attrs.get('beam_polarization', None)
+                if beam_pol_read is not None:
+                    assert(len(beam_pol_read) == 2)
+                    assert(-1 <= beam_pol_read[0] <= 1)
+                    assert(-1 <= beam_pol_read[1] <= 1)
+
+                    if beam_pol[0] != beam_pol_read[0] or beam_pol[1] != beam_pol_read[1]:
+                        # calculating the NPZ file will force source.initialize() to be called -> correct reweighting will be done automatically
+                        confirm = input(f'The requested beam pol {beam_pol} does not match the saved {beam_pol_read}: Do you want to automatically reweight the events? y/n (n)').lower()
+
+                        assert(confirm == 'y')
+                        if osp.isfile(source._npz_file):
+                            os.remove(source._npz_file)
+            else:
+                hf.attrs['beam_polarization'] = beam_pol
 
         # Register event category definitions
         event_categorization = source_spec['event_categorization']
@@ -140,7 +168,7 @@ def provision_feature_interpretations(interpretations:list[Interpretation],
         _type_: _description_
     """
 
-    from zhh import tree_n_rows
+    from zhh import tree_n_rows, AbstractTask
 
     ds_path = osp.expandvars(f'{path}/{file}')
     ds_meta_file = f'{osp.splitext(ds_path)[0]}.files.txt'
@@ -188,7 +216,7 @@ def provision_feature_interpretations(interpretations:list[Interpretation],
     # create HDF5 entries inside here
     bname = f'{path}/items'
     os.makedirs(osp.dirname(bname), exist_ok=True)
-    print('bname=', bname)
+    #print('bname=', bname)
 
     to_sync = []
 
@@ -200,8 +228,8 @@ def provision_feature_interpretations(interpretations:list[Interpretation],
             if not name in ds_keys:
                 with h5py.File(ds_path, 'a') as hf:
                     hf[name] = np.arange(nrows, dtype=feature['dtype'] if 'dtype' in feature else 'uint32')
-            else:
-                print(f'Found <{name}> (auto_increment=ON)')
+            #else:
+            #    print(f'Found <{name}> (auto_increment=ON)')
         elif 'tree' in feature:
             tree = feature['tree']
             branch = feature['branch'] if 'branch' in feature else name
@@ -214,17 +242,23 @@ def provision_feature_interpretations(interpretations:list[Interpretation],
                         break
             elif name not in ds_keys and f'{name}.dim0' not in ds_keys:
                 return (name, tree, branch, feature['dtype'] if 'dtype' in feature else None)
-            else:
-                print(f'Found <{name}>')
+            #else:
+            #    print(f'Found <{name}>')
         else:
             print(feature)
             raise Exception('Cannot interpret entry')
 
+    found = []
+
     for feature in interpretations:
-        if not 'names' in feature:
+        if 'names' not in feature:
+            assert('name' in feature)
+            
             res = per_interpretation(feature)
             if res is not None:
                 to_sync.append(res)
+            else:
+                found.append(feature['name'])
         else:
             for name in feature['names']:
                 entry = deepcopy(feature)
@@ -234,14 +268,39 @@ def provision_feature_interpretations(interpretations:list[Interpretation],
                 res = per_interpretation(entry)
                 if res is not None:
                     to_sync.append(res)
+                else:
+                    found.append(name)
 
+    conv_tasks:list[AbstractTask] = []
+    vds_tasks:list[AbstractTask] = []
+    conv_items = []
     for item in to_sync:
-        print(f'Syncing', item)
         name, tree, branch, dtype = item
 
         conv = ROOT2HDF5Converter(root_files, ds_path, tree, branch,
                                   osp.expandvars(f'{bname}/{tree}.{branch}/item'), name, dtype)
-        conv.convertLocal(nrows=nrows, check_existing=True)
+        vds_task, item_conv_tasks = conv.convertLazy(nrows=nrows, check_existing=True)
+        
+        [conv_tasks.append(task) for task in item_conv_tasks]
+        vds_tasks.append(vds_task)
+        conv_items.append(f'{tree}.{branch} -> {name} ({dtype})')
+        #conv.convert(nrows=nrows, check_existing=True)
+
+    if len(conv_items):
+        print('Scheduling conversion of items:')
+        for item in conv_items:
+            print(item)
+
+        runner = ProcessRunner()
+        runner.queueTasks(conv_tasks)
+        runner.run()
+
+        print('Creating virtual datasets (VDSes)')
+
+        # after successful conversion, create the VDS'es
+        for task in vds_tasks:
+            deps = task.getDependencies()['conversion']
+            task.run(conversion=[dep.getResult() for dep in deps])
 
     # meta file exists = everything successful
     if not osp.isfile(ds_meta_file):

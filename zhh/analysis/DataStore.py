@@ -62,7 +62,7 @@ class DataStore(MixedLazyTablelike):
         #self['zhh_mh1'] = lambda intf: fetch('zhh_mh1', f'{prop_prefix}zhh_mh1')
         #self['zhh_mh2'] = lambda intf: fetch('zhh_mh2', f'{prop_prefix}zhh_mh2')
         
-        self['sumBTags'] = lambda intf: ( fetch('bmax1') + fetch('bmax2') + fetch('bmax3') + fetch('bmax4') )
+        self['sumBTags'] = lambda intf: ( self['bmax1'] + self['bmax2'] + self['bmax3'] + self['bmax4'] )
 
         self['yminus_mod100'] = lambda intf: np.mod(intf['yminus'], 100)
         self['cosjzmax'] = lambda intf: np.stack([
@@ -117,7 +117,7 @@ class DataStore(MixedLazyTablelike):
             for key in hf.keys():
                 keys.append(key)
     
-    def itemsSnapshot(self):
+    def itemsSnapshot(self, overwrite:bool=False):
         """Saves a snapshot of all registered items to the HDF5 file.
         """
         
@@ -127,7 +127,7 @@ class DataStore(MixedLazyTablelike):
                 pbar.set_description(f'Processing {item}...')
 
                 if item in hf.keys():
-                    cont = input(f'Item <{item}> already exists. Should it be overwritten? (y=yes, n=skip, a=abort)')
+                    cont = 'y' if overwrite else input(f'Item <{item}> already exists. Should it be overwritten? (y=yes, n=skip, a=abort)')
                     match cont.lower():
                         case 'y':
                             print(f'Overwriting <{item}>')
