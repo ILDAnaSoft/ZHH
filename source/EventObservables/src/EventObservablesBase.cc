@@ -409,6 +409,7 @@ void EventObservablesBase::prepareBaseTree()
 		ttree->Branch("fit4C_mz", &m_fit4C_mz, "fit4C_mz/F");
 		ttree->Branch("fit4C_mh1", &m_fit4C_mh1, "fit4C_mh1/F");
 		ttree->Branch("fit4C_mh2", &m_fit4C_mh2, "fit4C_mh2/F");
+		ttree->Branch("fit4C_mhh", &m_fit4C_mhh, "fit4C_mhh/F");
 
 		// nhbb:njet:chi2:mpt:prob11:prob12:prob21:prob22
 
@@ -738,6 +739,7 @@ void EventObservablesBase::clearBaseValues()
 	m_fit4C_mz = 0.;
 	m_fit4C_mh1 = 0.;
 	m_fit4C_mh2 = 0.;
+	m_fit4C_mhh = 0.;
 
 	//m_JMK_ZHH_perm_idx = -1;
 	//m_JMK_ZZH_perm_idx = -1;

@@ -341,6 +341,7 @@ class EventObservablesBase: public Processor
 		float m_fit4C_mz{};
 		float m_fit4C_mh1{};
 		float m_fit4C_mh2{};
+		float m_fit4C_mhh{};
 
 		//short m_JMK_ZHH_perm_idx{};
 		//short m_JMK_ZZH_perm_idx{};
