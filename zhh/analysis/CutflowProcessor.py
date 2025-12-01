@@ -9,8 +9,8 @@ from ..util.deepmerge import deepmerge
 import matplotlib.pyplot as plt
 from matplotlib.colors import Colormap
 import numpy as np
-import os.path as osp
-import lzma, pickle
+import os.path as osp, pickle
+#import blosc2
 
 def find_entry(entries:list[tuple[str, Any]], name:str):
     for entry in entries:
@@ -222,7 +222,8 @@ class CutflowProcessor:
             
             if cache is not None and step == 0:
                 print(f'Storing preselection in cache at {cache}')
-                with lzma.open(cache, 'wb') as f:
+                with open(cache, 'wb') as f:
+                    #f.write(blosc2.compress(pickle.dumps()))
                     pickle.dump({
                         'masks': masks,
                         'calc_dicts': calc_dicts,
@@ -230,7 +231,7 @@ class CutflowProcessor:
                     }, f)
         else:
             print('Using cached preselection')
-            with lzma.open(cache, 'r') as f:
+            with open(cache, 'rb') as f:
                 data = pickle.load(f)
                 
                 self._masks[step] = data['masks']

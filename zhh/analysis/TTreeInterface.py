@@ -171,7 +171,7 @@ class TTreeInterface(MixedLazyTablelike):
         self['yminus_mod100'] = lambda intf: np.mod(intf['yminus'], 100)
         self['cosjzmax'] = lambda intf: np.stack([
             intf['cosJ1Z_2Jets'],
-            intf['cosJ1Z_2Jets']
+            intf['cosJ2Z_2Jets']
         ]).max(axis=0)
         
         if use_snapshot:

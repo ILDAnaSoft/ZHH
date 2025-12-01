@@ -153,7 +153,7 @@ class ROOT2HDF5Converter:
         # check if potentially existing chunks are valid
         if check_existing:
             done, shape, sizes = self.checkExisting(chunks)
-            ncols = shape[1] if len(shape) == 2 else shape[0]
+            ncols = shape[1] if len(shape) == 2 else 1
         else:
             print(f'No existing (first) chunk found for Tree:Branch <{self._tree}:{self._branch}>. '+
                   f'Proceeding with conversion...')
@@ -255,7 +255,6 @@ def createVDS(h5_files:list[str], output_file:str, output_name:str, nrows:int, n
 
             # Add virtual dataset to output file
             hf.create_virtual_dataset(f'{output_name}.dim{col}' if ncols > 1 else output_name, layout, fillvalue=np.nan)
-
     return True
 
 class CreateVDSTask(AbstractTask):

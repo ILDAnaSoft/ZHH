@@ -12,7 +12,7 @@ class DataStore(MixedLazyTablelike):
     cache:dict[str, np.ndarray] = {}
     
     def __init__(self, h5_file:str, final_states:bool=True,
-                 prop_prefix:str='', in_memory:list[str]=[],
+                 in_memory:list[str]=[],
                  in_memory_writable:list[str]=[],
                  n_jets:int=4):
         
@@ -25,19 +25,16 @@ class DataStore(MixedLazyTablelike):
         assert(r_size)
         super().__init__(r_size)
         
-        def fetch(key:str, loc:str|None=None):
-            if loc is None:
-                loc = prop_prefix + key
-                
-            if key in in_memory or loc in self._in_memory:
+        def fetch(key:str):                
+            if key in self._in_memory:
                 if key in self.cache:
                     return self.cache[key]
                 else:
-                    self.cache[key] = self.fromFile(loc)
+                    self.cache[key] = self.fromFile(key)
                     return self.cache[key]
             else:
-                # take value and dtype from HDF5 
-                return self.fromFile(loc)
+                # take value and dtype from HDF5
+                return self.fromFile(key)
         
         # this attaches the properties of the TTree 
         self._defaultHandler = fetch
@@ -64,10 +61,10 @@ class DataStore(MixedLazyTablelike):
         
         self['sumBTags'] = lambda intf: ( self['bmax1'] + self['bmax2'] + self['bmax3'] + self['bmax4'] )
 
-        self['yminus_mod100'] = lambda intf: np.mod(intf['yminus'], 100)
+        self['yminus_mod100'] = lambda intf: np.mod(intf['yminus2'], 100)
         self['cosjzmax'] = lambda intf: np.stack([
             intf['cosJ1Z_2Jets'],
-            intf['cosJ1Z_2Jets']
+            intf['cosJ2Z_2Jets']
         ]).max(axis=0)
         
         if not init_done:
@@ -117,17 +114,35 @@ class DataStore(MixedLazyTablelike):
             for key in hf.keys():
                 keys.append(key)
     
-    def itemsSnapshot(self, overwrite:bool=False):
-        """Saves a snapshot of all registered items to the HDF5 file.
+    def itemsSnapshot(self, overwrite:bool=False, items:list[str]|None=None):
+        """Saves a snapshot of all or a list of registered items to the HDF5 file.
+
+        Args:
+            overwrite (bool, optional): if False, each time a value would be overwritten,
+                                        the used will be asked for confirmation via input().
+                                        if True, will overwrite without further confirmation.
+                                        Defaults to False.
+            items (list[str] | None, optional): if None, all items are selected for saving.
+                                                if a list of strings, only these are selected.
+                                                Defaults to None.
+
+        Raises:
+            Exception: _description_
         """
         
-        print(f'Writing cache file {self._h5_file}.h5')
+        if items is None:
+            items = list(self._items.keys())
+            
+        print(f'Writing items <{", ".join(items)}> to file {self._h5_file}.h5')
+        
         with h5py.File(self._h5_file, 'a') as hf:
-            for item, value in (pbar := tqdm(self._items.items())):
+            for item in (pbar := tqdm(items)):
+                value = self[item]
                 pbar.set_description(f'Processing {item}...')
 
                 if item in hf.keys():
-                    cont = 'y' if overwrite else input(f'Item <{item}> already exists. Should it be overwritten? (y=yes, n=skip, a=abort)')
+                    cont = 'y' if overwrite else input(f'Item <{item}> already exists. ' +
+                                                       'Should it be overwritten? (y=yes, n=skip, a=abort)')
                     match cont.lower():
                         case 'y':
                             print(f'Overwriting <{item}>')

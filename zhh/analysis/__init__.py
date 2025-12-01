@@ -28,3 +28,5 @@ from .FinalStateDefinitions import define_eebb, define_μμbb, define_ττbb, \
     categorize_llhh, categorize_4fsl, categorize_2l4q, categorize_6q, \
     categorize_tthz, categorize_vvhh
 from .DataExtractor import DataExtractor
+from .cutflow_processor_actions import *
+from .CutflowProcessorAction import CutflowProcessorAction

@@ -74,7 +74,7 @@ sources:
       default: null
       order: null
       items: [ llhh, eeHHbbbb, μμHHbbbb, ττHHbbbb, llhh_llbbbb, llhh_llnonbbbb, llqqh ]
-    disabled: true
+    disabled: false
     reset: false
 
   - name: 6q
@@ -127,6 +127,9 @@ features:
   - { name: pol_code, tree: FinalStates, branch: polarization_code, dtype: uint8 }
   - { name: process, tree: FinalStates, dtype: uint32 }
 
+  # physics quantities; must be given because some other quantities use this
+  - { names: [ cosJ1Z_2Jets, cosJ2Z_2Jets ], tree: EventObservablesLL, dtype: float32 }
+
   # physics quantities
   - { names: [ bmax1, bmax2, bmax3, bmax4 ], tree: EventObservablesLL, dtype: float32 }
   - { names: [ jet1_m, jet2_m, jet3_m, jet4_m ], tree: EventObservablesLL, dtype: float32 }
@@ -137,7 +140,7 @@ features:
   
   # for MVA analysis
   - { names: [ npfos ], tree: EventObservablesLL, dtype: uint16 }
-  - { names: [ costhrust, pjmax2, npfosmin4j, yplus, plmin, mbmax34, ptmiss, mvalepminus ], tree: EventObservablesLL, dtype: float32 }
+  - { names: [ costhrust, pjmax2, npfosmin4j, yplus, plmin, mbmax34, mvalepminus, yminus2 ], tree: EventObservablesLL, dtype: float32 }
   - { name: ZHH_FitChi2, tree: KinFitLL_ZHH, branch: FitChi2, dtype: float32 }
   - { name: ZZH_FitChi2, tree: KinFitLL_ZZH, branch: FitChi2, dtype: float32 }
   - { name: ZHH_p1stBeforeFit, tree: KinFitLL_ZHH, branch: p1stBeforeFit, dtype: float32 }
@@ -217,29 +220,61 @@ preselection:
   cutflow_table: 'cutflow_preselection_table.pdf'
   cutflow_plots: 'cutflow_preselection_plots.pdf'
 
-# Allowed operators are: <=, >= and ==. Spaces must be used between quantity, operator
-# and values to guarantee correct parsing
-# For a cut window, use the notation lower <= quantity <= upper
-# For an equal cut (==), order must be quantity == value
+mvas:
+  - type: MulticlassSL
+    name: multiclass_training
+    features: [
+      jet1_m, jet2_m, jet3_m, jet4_m,
+      mhh, fit4C_mz, fit4C_mh1, fit4C_mh2,
+      npfos, thrust, costhrust, pjmax2, cosjzmax,
+      npfosmin4j, yplus, yminus_mod100, plmin,
+      mbmax34, ptmiss, mvalepminus,
+      ZHH_FitChi2, ZZH_FitChi2, ZHH_p1stBeforeFit,
+      ZZH_p1stBeforeFit, ZHH_cosThBeforeFit, ZZH_cosThBeforeFit,
+      bmax1, bmax2, bmax3, bmax4 ]
+    classes:
+    - [0, 'μμHHbbbb']
+    - [1, 'llhh_llnonbbbb']
+    - [2, 'llqqh']
+    - [3, 'llqqqq']
+    - [4, 'μμbb']
+    - [5, 'lvbbqq']
 
-mva_modules:
-  - name: bdt1
-    type: CompositeBinaryModel
-    models:
-      - type: XGBClassifier
-        kwargs:
-          - n_estimators: 500
-          - max_depth: 3
-          - random_state: 42
-          - verbose: 2
-          - learning_rate': 0.12
-        features: [
-        # BASE_FEATURES
-          bmax1, bmax2, bmax3, bmax4, jet1_m, jet2_m, jet3_m, jet4_m,
-          m_invjet, fit4C_mz, fit4C_mh1, fit4C_mh2, npfos,
-        # MVA specific features
-          thrust, costhrust, pjmax2, cosjzmax, npfosmin4j, yplus, yminus_mod100,
-          plmin, mbmax34, ptmiss, mvalepminus, KinFit_ZHH_FitChi2, KinFit_ZZH_FitChi2,
-          KinFit_ZHH_p1stBeforeFit, KinFit_ZZH_p1stBeforeFit,
-          KinFit_ZHH_cosThBeforeFit, KinFit_ZZH_cosThBeforeFit]
-      
+actions:
+  # preselection is applied automagically first
+  - type: CreateCutflowPlots
+    file: 'cutflow_preselection_plots.pdf'
+    step_start: 0
+    step_end: 0
+  - type: CreateCutflowTable
+    file: 'cutflow_preselection_table.pdf'
+    step_start: 0
+    step_end: 0
+    ignore_categories: [ llbbbb ]
+
+other:
+  - type: SplitDataset
+    split_column: split
+    weight_split_column: weights_split
+    fractions: [ 0.5 ]
+#other2:
+  - type: WriteMVATrainingData
+    name: multiclass_training    
+  # carry out MVA training manually; use hyperparam.py
+  - type: AssertCondition
+    code: osp.isfile('trial.npz')
+  - type: InferenceSklearnMulticlass
+    use: multiclass_training
+    from_file: trial.npz
+    from_file_property: clf
+    
+  - type: CreateCutflowPlots
+    output: 'cutflow_preselection_plots.pdf'
+    step: 1
+    split: 1
+  - type: CreateCutflowTable
+    output: 'cutflow_preselection_table.pdf'
+    step: 1
+    step_end: 1
+    split: 1
+    

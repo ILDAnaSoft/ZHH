@@ -1,4 +1,7 @@
-import yaml, os, os.path as osp, h5py, numpy as np
+import yaml, os, os.path as osp
+import h5py
+import numpy as np
+from tqdm.auto import tqdm
 from collections.abc import Callable
 from copy import deepcopy
 from glob import glob
@@ -220,16 +223,20 @@ def provision_feature_interpretations(interpretations:list[Interpretation],
 
     to_sync = []
 
-    def per_interpretation(feature:Interpretation):
+    def per_interpretation(feature:Interpretation, feature_names:list[str])->tuple[tuple|None, list[str]]:
         name = feature.get('name', '')
         assert(name != '')
+        
+        if name in feature_names:
+            raise Exception(f'Invalid feature definition: Feature {name} appears at least twice')
+
+        feature_names.append(name)
 
         if 'auto_increment' in feature and feature['auto_increment']:
             if not name in ds_keys:
                 with h5py.File(ds_path, 'a') as hf:
                     hf[name] = np.arange(nrows, dtype=feature['dtype'] if 'dtype' in feature else 'uint32')
-            #else:
-            #    print(f'Found <{name}> (auto_increment=ON)')
+            
         elif 'tree' in feature:
             tree = feature['tree']
             branch = feature['branch'] if 'branch' in feature else name
@@ -238,23 +245,23 @@ def provision_feature_interpretations(interpretations:list[Interpretation],
             if columns is not None:
                 for col in range(columns):
                     if f'{name}.dim{col}' not in ds_keys:
-                        return (name, tree, branch, feature['dtype'] if 'dtype' in feature else None)
-                        break
+                        return ((name, tree, branch, feature['dtype'] if 'dtype' in feature else None), feature_names)
             elif name not in ds_keys and f'{name}.dim0' not in ds_keys:
-                return (name, tree, branch, feature['dtype'] if 'dtype' in feature else None)
-            #else:
-            #    print(f'Found <{name}>')
+                return ((name, tree, branch, feature['dtype'] if 'dtype' in feature else None), feature_names)
         else:
             print(feature)
             raise Exception('Cannot interpret entry')
+        
+        return (None, feature_names)
 
     found = []
+    feature_names:list[str] = []
 
     for feature in interpretations:
         if 'names' not in feature:
             assert('name' in feature)
             
-            res = per_interpretation(feature)
+            res, feature_names = per_interpretation(feature, feature_names)
             if res is not None:
                 to_sync.append(res)
             else:
@@ -265,17 +272,21 @@ def provision_feature_interpretations(interpretations:list[Interpretation],
                 del entry['names']
                 entry['name'] = name
 
-                res = per_interpretation(entry)
+                res, feature_names = per_interpretation(entry, feature_names)
                 if res is not None:
                     to_sync.append(res)
                 else:
                     found.append(name)
-
+    
     conv_tasks:list[AbstractTask] = []
     vds_tasks:list[AbstractTask] = []
     conv_items = []
+    conv_done = []
+    names = []
+
     for item in to_sync:
         name, tree, branch, dtype = item
+        names.append(name)
 
         conv = ROOT2HDF5Converter(root_files, ds_path, tree, branch,
                                   osp.expandvars(f'{bname}/{tree}.{branch}/item'), name, dtype)
@@ -284,6 +295,9 @@ def provision_feature_interpretations(interpretations:list[Interpretation],
         [conv_tasks.append(task) for task in item_conv_tasks]
         vds_tasks.append(vds_task)
         conv_items.append(f'{tree}.{branch} -> {name} ({dtype})')
+
+        if len(item_conv_tasks) == 0:
+            conv_done.append(name)
         #conv.convert(nrows=nrows, check_existing=True)
 
     if len(conv_items):
@@ -295,12 +309,14 @@ def provision_feature_interpretations(interpretations:list[Interpretation],
         runner.queueTasks(conv_tasks)
         runner.run()
 
+        # after successful conversion, create the VDS'es
         print('Creating virtual datasets (VDSes)')
 
-        # after successful conversion, create the VDS'es
-        for task in vds_tasks:
+        for i, task in enumerate(pbar := tqdm(vds_tasks)):
+            name = names[i]
+            pbar.set_description(conv_items[i])
             deps = task.getDependencies()['conversion']
-            task.run(conversion=[dep.getResult() for dep in deps])
+            task.run(conversion=[] if name in conv_done else [dep.getResult() for dep in deps])
 
     # meta file exists = everything successful
     if not osp.isfile(ds_meta_file):

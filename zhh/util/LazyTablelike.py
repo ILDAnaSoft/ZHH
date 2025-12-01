@@ -109,6 +109,9 @@ class MixedLazyTablelike(LazilyLoadedObject):
     
     def keys(self):
         return set(self._props.keys()) | set(self._items.keys())
+    
+    def __contains__(self, key):
+        return key in self.keys()
         
     def __setitem__(self, key, any_value):
         if isinstance(any_value, Callable):
