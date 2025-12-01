@@ -130,6 +130,8 @@ target_include_directories(ZHHProcessors PRIVATE
 target_compile_definitions(ZHHProcessors ${MarlinUtil_DEFINITIONS} PRIVATE "MARLIN_USE_ROOT")
 target_compile_definitions(ZHHProcessors ${MarlinUtil_DEFINITIONS} PRIVATE "MARLIN_USE_AIDA")
 
+add_subdirectory(lcio_get_physics_meta)
+
 install(TARGETS ZHHProcessors
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT shlib
 )

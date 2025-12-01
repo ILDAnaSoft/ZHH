@@ -12,7 +12,7 @@
 
 from analysis.framework import AnalysisConfiguration, zhh_configs
 from typing import TYPE_CHECKING
-from os import environ
+from os import environ, path as osp
 import numpy as np
 from zhh import glob_exp
 
@@ -459,14 +459,64 @@ class Config_550_4f_fast_perf(AnalysisConfiguration):
     tag = '550-4f-fast-perf'
     
     def sgv_inputs(self, fast_sim_task):
-        input_files = glob_exp('$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/*.slcio')
+        input_files = glob_exp('$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/*.slcio')
         input_files = list(filter(lambda path: 'pilot.slcio' not in path and '.0.slcio' not in path, input_files))
 
-        invalid_files = [
-            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/E550-TDR_ws.P4f_sznu_sl.Gwhizard-3_1_4.eL.pR.I501050.22.slcio',
-            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/E550-TDR_ws.P4f_zz_sl.Gwhizard-3_1_4.eL.pR.I501014.3.slcio',
-            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/E550-TDR_ws.P4f_zznu_sl.Gwhizard-3_1_4.eL.pR.I501018.11.slcio',
-            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/E550-TDR_ws.P4f_sze_sl.Gwhizard-3_1_4.eL.pR.I501042.97.slcio']
+        # files which are valid LCIO files, but cannot be processed by SGV
+        invalid_files = list(map(osp.expandvars, [
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eL.pR.I501054.192.singleZee.leptonic.eL_pR.a160.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eL.pR.I501054.195.singleZee.leptonic.eL_pR.a160.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eL.pR.I501054.121.singleZee.leptonic.eL_pR.a107.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eL.pR.I501054.227.singleZee.leptonic.eL_pR.a213.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eR.pR.I501055.6.singleZee.leptonic.eR_pR.a0.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eL.pR.I501054.125.singleZee.leptonic.eL_pR.a107.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eL.pR.I501054.46.singleZee.leptonic.eL_pR.a0.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eL.pR.I501054.148.singleZee.leptonic.eL_pR.a107.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eL.pR.I501054.351.singleZee.leptonic.eL_pR.a319.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eL.pR.I501054.214.singleZee.leptonic.eL_pR.a213.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eR.pL.I501056.184.singleZee.leptonic.eR_pL.a168.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eR.pR.I501055.16.singleZee.leptonic.eR_pR.a0.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eL.pR.I501054.216.singleZee.leptonic.eL_pR.a213.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eR.pL.I501056.273.singleZee.leptonic.eR_pL.a267.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eL.pR.I501054.182.singleZee.leptonic.eL_pR.a160.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eL.pR.I501054.328.singleZee.leptonic.eL_pR.a319.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eL.pR.I501054.171.singleZee.leptonic.eL_pR.a160.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eR.pL.I501056.351.singleZee.leptonic.eR_pL.a333.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eL.pR.I501054.358.singleZee.leptonic.eL_pR.a319.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eL.pR.I501054.306.singleZee.leptonic.eL_pR.a266.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eR.pR.I501055.46.singleZee.leptonic.eR_pR.a36.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eR.pL.I501056.217.singleZee.leptonic.eR_pL.a201.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eL.pR.I501054.53.singleZee.leptonic.eL_pR.a0.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eL.pR.I501054.226.singleZee.leptonic.eL_pR.a213.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eL.pL.I501053.59.singleZee.leptonic.eL_pL.a36.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eL.pR.I501054.264.singleZee.leptonic.eL_pR.a213.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eL.pR.I501054.154.singleZee.leptonic.eL_pR.a107.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eR.pL.I501056.228.singleZee.leptonic.eR_pL.a201.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eL.pR.I501054.163.singleZee.leptonic.eL_pR.a160.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eL.pR.I501054.110.singleZee.leptonic.eL_pR.a107.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eL.pR.I501054.338.singleZee.leptonic.eL_pR.a319.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eL.pL.I501053.50.singleZee.leptonic.eL_pL.a36.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eR.pL.I501056.278.singleZee.leptonic.eR_pL.a267.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eR.pL.I501056.254.singleZee.leptonic.eR_pL.a234.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eL.pR.I501054.217.singleZee.leptonic.eL_pR.a213.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eL.pR.I501054.326.singleZee.leptonic.eL_pR.a319.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eR.pL.I501056.28.singleZee.leptonic.eR_pL.a0.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eR.pL.I501056.223.singleZee.leptonic.eR_pL.a201.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eL.pR.I501054.133.singleZee.leptonic.eL_pR.a107.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eR.pL.I501056.310.singleZee.leptonic.eR_pL.a300.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eR.pL.I501056.294.singleZee.leptonic.eR_pL.a267.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eR.pL.I501056.96.singleZee.leptonic.eR_pL.a68.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eR.pL.I501056.211.singleZee.leptonic.eR_pL.a201.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eR.pL.I501056.17.singleZee.leptonic.eR_pL.a0.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_l.Gwhizard-3_1_4.eL.pR.I501054.280.singleZee.leptonic.eL_pR.a266.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_szeorsw_l.Gwhizard-3_1_4.eL.pR.I501066.0.singleZsingleWMix.leptonic.eL_pR.a0.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_szeorsw_l.Gwhizard-3_1_4.eL.pR.I501066.17.singleZsingleWMix.leptonic.eL_pR.a9.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_szeorsw_l.Gwhizard-3_1_4.eL.pR.I501066.51.singleZsingleWMix.leptonic.eL_pR.a45.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_szeorsw_l.Gwhizard-3_1_4.eL.pR.I501066.20.singleZsingleWMix.leptonic.eL_pR.a18.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_szeorsw_l.Gwhizard-3_1_4.eR.pL.I501068.1.singleZsingleWMix.leptonic.eR_pL.a0.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sw_l.Gwhizard-3_1_4.eL.pR.I501058.9.singleW.leptonic.eL_pR.a0.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sw_l.Gwhizard-3_1_4.eL.pR.I501058.72.singleW.leptonic.eL_pR.a65.slcio',
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_sl.Gwhizard-3_1_4.eL.pR.I501042.83.singleZee.semileptonic.eL_pR.a52.slcio']))
 
         input_files = list(set(input_files) - set(invalid_files))
         input_files.sort()

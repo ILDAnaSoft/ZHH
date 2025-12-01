@@ -171,7 +171,7 @@ class TTreeInterface(MixedLazyTablelike):
         self['yminus_mod100'] = lambda intf: np.mod(intf['yminus'], 100)
         self['cosjzmax'] = lambda intf: np.stack([
             intf['cosJ1Z_2Jets'],
-            intf['cosJ1Z_2Jets']
+            intf['cosJ2Z_2Jets']
         ]).max(axis=0)
         
         if use_snapshot:
@@ -186,24 +186,29 @@ class TTreeInterface(MixedLazyTablelike):
         self['id'] = np.arange(len(self), dtype=dtypes['id'])
         self['event_category'] = np.array(tree['event_category'].array(), dtype='B')
         
-        # writable; attached by AnalysisChannel.weight()
+        # writable; attached by DataSource.weight()
         self['pid'] = np.nan*np.ones(len(self), dtype='I')
         self['weight'] = np.nan*np.ones(len(self), dtype='f')
         
         jet_masses = np.zeros((len(self), n_jets), dtype='f')
 
-        for i in range(4):
+        for i in range(n_jets):
             print(f'Fetching jet{i}_m')
             jet_masses[:, i] = self[f'jet{i+1}_m']
             
         jet_masses.sort(axis=1)
         
-        for i in range(4):
+        for i in range(n_jets):
             print(f'Assigning jet{i}_m')
             self[f'jet{i+1}_m'] = jet_masses[:, i]
     
     def propsFromSnapshot(self, bname:str):
-        #from .PreselectionAnalysis import fs_columns
+        """Fetches data from cache files under f'{bname}.h5' attaches them as props to
+        the TTreeInterface. Used together with itemsSnapshot
+
+        Args:
+            bname (str): _description_
+        """
                
         keys = []
         with h5py.File(f'{bname}.h5', 'r') as hf:
@@ -215,25 +220,41 @@ class TTreeInterface(MixedLazyTablelike):
                 self[item] = mk_ref(bname, item)
             #else:
             #    self[item] = hf[item][:]
-                
-        npz = np.load(f'{bname}.npz')
-        
-        for prop in npz:
-            self[prop] = npz[prop]
+
+        # to be deprecated
+        if osp.isfile(f'{bname}.npz'):
+            npz = np.load(f'{bname}.npz')
+            for prop in npz:
+                self[prop] = npz[prop]
     
     def itemsSnapshot(self, bname:str, additional:dict={}):
-        np.savez_compressed(f'{bname}.npz', **additional)
+        """Saves a snapshot of all registered items in a HDF5 file under f'{bname}.h5'.
+
+        Deprecated: Objects which are no properties of the TTreeInterface but should still be saved
+        together can be given in key/value notation in the dict additional. Used together
+        with propsFromSnapshot
+
+        Args:
+            bname (str): _description_
+            additional (dict, optional): to be deprecated. Defaults to {}.
+        """
         
+        if len(additional.keys()):
+            print(f'Warning: Using additional is deprecated and will be removed soon.')
+            np.savez_compressed(f'{bname}.npz', **additional)
+        
+        print(f'Writing cache file {bname}.h5')
         with h5py.File(f'{bname}.h5', 'w') as hf:
-            for item, value in tqdm(self._items.items()):                
+            for item, value in (pbar := tqdm(self._items.items())):
+                pbar.set_description(f'Processing {item}...')                
                 dset = hf.create_dataset(item, value.shape, dtype=value.dtype, compression='gzip')
                 dset[:] = value
     
     def addItemToSnapshot(self, name:str, arr_or_None:np.ndarray|None=None, overwrite:bool=False):
         """Adds a named entry to the snapshot/cache HDF5 file. The value to be added
-        must either be passed, or will be attempted to read from the interface at
-        the specified name (in this case, the current view will be used. make sure
-        to call resetView() beforehand). Must be called within a context created by
+        must either be passed or will be read from the interface at the specified name
+        (in this case, the current view will be used. make sure to call resetView()
+        beforehand). Must be called within a context created by
         prepareSnapshotTransaction().
 
         Args:

@@ -104,7 +104,7 @@ class HTCondorWorkflow(law.contrib.htcondor.HTCondorWorkflow):
             session_submissions[name] = 0
         
         config.custom_content.append(('requirements', 'Machine =!= LastRemoteHost'))
-        config.custom_content.append(('max_idle', 2000))
+        config.custom_content.append(('max_idle', 4000))
         
         #raise Exception('asdf')
 
@@ -186,8 +186,9 @@ class AnalysisConfiguration:
     marlin_globals:dict[str,Union[int,float,str]] = {}
     marlin_constants:dict[str,Union[int,float,str]]|Callable[[int, Any], dict[str,Union[int,float,str]]] = {}
     
-    # 
-    analysis_combine_ttrrees:list[str] = []
+    analysis_combine_ttrrees:list[str] = ['FinalStates',
+                                          'EventObservablesLL', 'KinFitLL_solveNu', 'KinFitLL_ZHH', 'KinFitLL_ZZH',
+                                          'EventObservablesVV', 'KinFitVV_solveNu', 'KinFitVV_ZHH', 'KinFitVV_ZZH']
     
     def __init__(self, mode:str='LL'):
         """Defines parameters and functions to inject into law tasks
@@ -214,12 +215,7 @@ class AnalysisConfiguration:
 
                 return [f.path for f in input_targets]
             
-            self.slcio_files = slcio_files
-            
-        self.analysis_combine_ttrrees = ['FinalStates',
-                                         'EventObservablesLL', 'KinFitLL_solveNu', 'KinFitLL_ZHH', 'KinFitLL_ZZH',
-                                         'EventObservablesVV', 'KinFitVV_solveNu', 'KinFitVV_ZHH', 'KinFitVV_ZZH']
-        
+            self.slcio_files = slcio_files        
 
 class Registry():
     definitions:dict = {}

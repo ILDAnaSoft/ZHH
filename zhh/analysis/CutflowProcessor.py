@@ -1,4 +1,4 @@
-from .AnalysisChannel import AnalysisChannel
+from .DataSource import DataSource
 from .Cuts import Cut, ValueCut
 from ..util.PlotContext import PlotContext
 from typing import Sequence, Any
@@ -9,8 +9,8 @@ from ..util.deepmerge import deepmerge
 import matplotlib.pyplot as plt
 from matplotlib.colors import Colormap
 import numpy as np
-import os.path as osp
-import lzma, pickle
+import os.path as osp, pickle
+#import blosc2
 
 def find_entry(entries:list[tuple[str, Any]], name:str):
     for entry in entries:
@@ -21,7 +21,7 @@ def find_entry(entries:list[tuple[str, Any]], name:str):
 
 class CutflowProcessor:
     def __init__(self,
-                 sources:list[AnalysisChannel],
+                 sources:list[DataSource],
                  hypothesis:str,
                  signal_categories:list[int],
                  cuts:Sequence[ValueCut]|None=None,
@@ -30,13 +30,13 @@ class CutflowProcessor:
                  plot_context:PlotContext|None=None,
                  work_dir:str|None=None
     ):
-        """Class used to combine multiple AnalysisChannel items and process
+        """Class used to combine multiple DataSource items and process
         cuts over all data. Can be used for preselection analysis and final
         event selection after MVA outputs are attached. See the process method
         for more information.
 
         Args:
-            sources (list[AnalysisChannel]): _description_
+            sources (list[DataSource]): _description_
             hypothesis (str): _description_
             signal_categories (list[int]): list of process categories, see ProcessCategories. Used for plotting later. 
             cuts (Sequence[ValueCut] | None, optional): _description_. Defaults to None.
@@ -93,7 +93,7 @@ class CutflowProcessor:
         
         # cutflowTable()
 
-    def getSource(self, name:str)->AnalysisChannel:
+    def getSource(self, name:str)->DataSource:
         for source in self._sources:
             if source.getName() == name:
                 return source
@@ -114,9 +114,10 @@ class CutflowProcessor:
         """Processes the preselection cuts and stores masks for each event in
         each source passing each cut in _masks. Also stores for each passing
         event the quantity (of the associated cut) and weight in _calc_dicts.
-        Masks are AFTER each cut, calc_dicts BEFORE each cut respectively. The
-        steop property is 0 for the preselection. To analyze following cuts,
-        supply an incrementing integer.
+        For each cut, a mask for AFTER the cut is stored, and an item is for
+        calc_dicts is added BEFORE applying the cut. The step property is 0
+        for the preselection. To analyze following cuts, supply an incrementing
+        integer.
         
         Args: 
             step (int, optional): n-th cut group. Use 0 for preselection,
@@ -126,6 +127,11 @@ class CutflowProcessor:
             weight_prop (str): Defaults to weight.
             split (int, optional): Cut on the split column. Will be ignored
                 if None. Defaults to None.
+            cache (str, optional): If a string, will be used as filepath to
+                                    cache the result of the cut in LZMA com-
+                                    pressed pickle format. If None, no file
+                                    will be read (use this to study different
+                                    cut values) 
 
         Returns:
             _type_: _description_
@@ -216,7 +222,8 @@ class CutflowProcessor:
             
             if cache is not None and step == 0:
                 print(f'Storing preselection in cache at {cache}')
-                with lzma.open(cache, 'wb') as f:
+                with open(cache, 'wb') as f:
+                    #f.write(blosc2.compress(pickle.dumps()))
                     pickle.dump({
                         'masks': masks,
                         'calc_dicts': calc_dicts,
@@ -224,7 +231,7 @@ class CutflowProcessor:
                     }, f)
         else:
             print('Using cached preselection')
-            with lzma.open(cache, 'r') as f:
+            with open(cache, 'rb') as f:
                 data = pickle.load(f)
                 
                 self._masks[step] = data['masks']
@@ -692,7 +699,7 @@ def cutflowTable(cp:CutflowProcessor, final_state_labels_and_names_or_processes:
 
 def cutflowTableFn(masks,
                  luminosity:float,
-                 sources:list[AnalysisChannel],
+                 sources:list[DataSource],
                  final_state_labels_and_names_or_processes:list[tuple[str,str]|tuple[str,str,str]|tuple[str,list[str]]],
                  cuts:Sequence[Cut],
                  path:str,
@@ -710,7 +717,7 @@ def cutflowTableFn(masks,
     counts_abs:dict[str, np.ndarray] = {}
     first_signal_pos = -1
     is_signal:dict[str, bool] = {}
-    source_2_mask:dict[str, dict[str, np.ndarray]] = {}
+    source_2_mask:dict[str, dict[str, list]] = {}
     other_bkg_count_tot = np.zeros(len(masks))
 
     for calc_cut_efficiency in [False, True]: # [False]: # 
@@ -944,7 +951,7 @@ def format_counts(x:float):
 def transpose(columns)->list:
     return list(map(list, zip(*columns)))
 
-def calc_cross_section(analysis:AnalysisChannel, process:str):
+def calc_cross_section(analysis:DataSource, process:str):
     from zhh import combined_cross_section
     return combined_cross_section(analysis.getProcesses(), process)
 

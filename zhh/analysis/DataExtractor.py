@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from .CutflowProcessor import CutflowProcessor
-from .AnalysisChannel import AnalysisChannel
+from .DataSource import DataSource
 from copy import deepcopy
 from tqdm.auto import tqdm
 from ..util.PlotContext import PlotContext
@@ -9,7 +9,7 @@ from ..util.PlotContext import PlotContext
 class DataExtractor:
     def __init__(self,
                  cutflow_processor:CutflowProcessor,
-                 sources:list[AnalysisChannel]|None=None):
+                 sources:list[DataSource]|None=None):
         
         self._cp = cutflow_processor
         self._sources = sources if sources is not None else cutflow_processor._sources
@@ -19,12 +19,11 @@ class DataExtractor:
     def extract(self,
                 to_process:list[tuple[str, int]],
                 features:list[str],
-                MOD_WEIGHT:bool=True,
                 step:int|None=None,
                 split:int|None=None,
                 weight_prop:str='weight',
                 shuffle:bool=True,
-                seed:int=42)->tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+                dtype=np.float32)->tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """Extracts numpy arrays containing event weights, feature data and
         labels for the event categories contained in to_process.
 
@@ -32,7 +31,7 @@ class DataExtractor:
             to_process (list[tuple[str, int]]): list of tuples of structure
                 [<categoryName>, <classLabel>]
             features (list[str]): list of features present in the data-
-                stores of each AnalysisChannel (can be ROOT branches or
+                stores of each DataSource (can be ROOT branches or
                 features attached via store['feature'] = data)
             MOD_WEIGHT (bool, optional): _description_. Defaults to True.
             step (int | None, optional): _description_. Defaults to None.
@@ -47,8 +46,12 @@ class DataExtractor:
             Exception: _description_
 
         Returns:
-            tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-                src_idx, event_num, labels, weight, inputs
+            tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+                src_idx, event_num, labels, weight, weight_phys, inputs
+
+            src_idx, event_num, labels, weight, inputs
+            weight gives the weight for training and weight_phys the "physical" weight used
+            for the event counting
         """
         
         if split is not None and weight_prop == 'weight':
@@ -58,8 +61,8 @@ class DataExtractor:
         self._features = features
         
         events_passed:dict[str, np.ndarray] = {}
-        fs_2_source:dict[str, AnalysisChannel] = {}
-        src_2_src_idx:dict[AnalysisChannel, int] = {}
+        fs_2_source:dict[str, DataSource] = {}
+        src_2_src_idx:dict[DataSource, int] = {}
         
         for src_idx, source in enumerate(sources):
             source.getStore().resetView()
@@ -87,17 +90,19 @@ class DataExtractor:
             
             nrows_tot += int(mask.sum())
             
-            events_passed[fs_name] = mask            
+            events_passed[fs_name] = mask
 
         src_idx = np.zeros(nrows_tot, dtype='B')
         event_num = np.zeros(nrows_tot, dtype='I')
         
-        inputs = np.zeros((nrows_tot, len(features)))
-        weight = np.zeros(nrows_tot)
+        inputs = np.zeros((nrows_tot, len(features)), dtype=dtype)
+        weight = np.zeros(nrows_tot, dtype=dtype)
+        weight_phys = np.zeros(nrows_tot, dtype=dtype)
         labels = np.zeros(nrows_tot, dtype='B')
 
         pointer = 0
-        pbar = tqdm(range(nrows_tot))
+        pbar = tqdm(range(nrows_tot * len(features)))
+        #print('nrows_tot=', nrows_tot)
         
         labels_unique = []
         
@@ -107,21 +112,21 @@ class DataExtractor:
             
             mask = events_passed[fs_name]
             nrows = int(mask.sum())
+            #print('nrows=', nrows)
             
             src_idx[pointer:pointer + nrows] = src_2_src_idx[source]
             event_num[pointer:pointer + nrows] = store['event'][mask]
-            
-            pbar.set_description(f'Extracting features for <{source.getName()}.{fs_name}>')
 
             for i, feature in enumerate(features):
-                data = store[feature][mask]                
-                inputs[pointer:pointer + nrows, i] = data
-            
-            pbar.update(len(data))
+                pbar.set_description(f'Extracting data for <{source.getName()}.{fs_name}> feature={feature}')
+                pbar.update(nrows)
+
+                inputs[pointer:pointer + nrows, i] = store[feature][mask]
             
             # see https://scikit-learn.org/stable/modules/generated/sklearn.utils.class_weight.compute_sample_weight.html
-            weight[pointer:pointer + nrows] = (1/nrows)*len(labels)/len(to_process) if MOD_WEIGHT else store[weight_prop][mask]
-            labels[pointer:pointer + nrows] = class_label
+            weight     [pointer:pointer + nrows] = (1/nrows)*len(labels)/len(to_process)
+            weight_phys[pointer:pointer + nrows] = store[weight_prop][mask]
+            labels     [pointer:pointer + nrows] = class_label
             
             pointer += nrows
             labels_unique.append(class_label)
@@ -140,9 +145,10 @@ class DataExtractor:
             event_num = event_num[shuffled_indices]
             labels = labels[shuffled_indices]
             weight = weight[shuffled_indices]
+            weight_phys = weight_phys[shuffled_indices]
             inputs = inputs[shuffled_indices]
             
-        return src_idx, event_num, labels, weight, inputs
+        return src_idx, event_num, labels, weight, weight_phys, inputs
     
     def plot(self, inputs, weight, labels, filename:str|None='mva_inputs.pdf',
              label_2_category:dict[int, str]|None=None, context:PlotContext|None=None,

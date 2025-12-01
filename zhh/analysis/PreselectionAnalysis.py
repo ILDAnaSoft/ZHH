@@ -12,8 +12,30 @@ from .TTreeInterface import TTreeInterface
 
 DEFAULTS = {
     'PROD_NAME': '500-TDR_ws',
-    'ILD_VERSION': 'ILD_l5_o1_v02'
+    'ILD_VERSION': 'ILD_l5_o1_v02',
+    'BEAM_POLARIZATION': (-0.8, +0.3),
+    'w_em_ep': {
+        'LL': 0.315,
+        'LR': 0.585,
+        'RL': 0.035,
+        'RR': 0.065
+    }
 }
+
+def set_polarization(beamPolarization:tuple[float, float]):
+    Peminus, Peplus = beamPolarization
+    w_em_ep = w_prefacs(Peminus, Peplus)
+
+    DEFAULTS['BEAM_POLARIZATION'] = (Peminus, Peplus)
+    
+    for i, key in enumerate(['LL', 'LR', 'RL', 'RR']):
+        DEFAULTS['w_em_ep'][key] = w_em_ep[i]        
+
+def get_polarization()->tuple[float, float]:
+    return DEFAULTS['BEAM_POLARIZATION']
+
+def get_polarization_weights()->dict[str, float]:
+    return DEFAULTS['w_em_ep']
 
 def get_preselection_meta(DATA_ROOT:str)->dict:
     metafile = glob(f'{DATA_ROOT}/htcondor_jobs*.json')[0]
@@ -147,14 +169,6 @@ def w_prefacs(Pem, Pep):
         (1+Pem)*(1-Pep)/4, # RL
         (1+Pem)*(1+Pep)/4 # RR
     )
-    
-
-w_em_ep = {
-    'LL': 0.315,
-    'LR': 0.585,
-    'RL': 0.035,
-    'RR': 0.065
-}
 
 def combined_cross_section(processes:np.ndarray, process:Union[str, List[str]],
                            pol_em:float=-0.8, pol_ep:float=0.3)->float:
@@ -183,6 +197,7 @@ def get_pol_key(pol_em:float, pol_ep:float)->str:
 
 def get_w_pol(pol_em:int, pol_ep:int)->float:
     key = get_pol_key(pol_em, pol_ep)
+    w_em_ep = get_polarization_weights()
     
     if not (key in w_em_ep):
         raise Exception(f'Unhandled polarization {key}')

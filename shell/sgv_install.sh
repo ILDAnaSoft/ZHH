@@ -24,9 +24,18 @@
 # for batch jobs, it is sufficient to source sgvenv.sh, copy the tests directory
 # to the worker node, prepare input.slcio via symlink and then run usesgvlcio
 
+# if you want to compile SGV with debug options, after running below script, run
+# . ./makesgvlibs lib debug
+# cd tests && cresgvexe merge usesgvlcio "-DEXTREAD debug" "" "" "" "eflow_par_type.o zaccon.o"
+
 sgv_install_action () {
     if [ ! -z $1 ]; then
         export SGV_DIR=$1
+    fi
+
+    if [ -z "$LCIO" ]; then
+        echo "LCIO env variable must be set. Make sure to source a key4hep stack"
+        return 1
     fi
 
     local LCIO_INTERFACE_VERSION="2.0.2"

@@ -4,7 +4,11 @@
 a single point of truth, they are
 Values read by the PreSelection processor. 
 
+# Removed
+
 ## custom_statistics.json
+
+**custom_statistics can now instead be set per configuration in workflows/configurations.py**
 
 This file can be used to fine-tune the statistics which may be used for job submissions. This is usefull
 

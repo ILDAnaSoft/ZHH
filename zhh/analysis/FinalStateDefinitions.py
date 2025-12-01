@@ -1,10 +1,10 @@
 from .TTreeInterface import FinalStateCounts, TTreeInterface
-from .AnalysisChannel import AnalysisChannel
+from .DataSource import DataSource
 from collections.abc import Callable
 from ..processes.ProcessCategories import ProcessCategories
 import numpy as np
 
-FinalStateDefinition = Callable[[AnalysisChannel, FinalStateCounts], np.ndarray]
+FinalStateDefinition = Callable[[DataSource, FinalStateCounts], np.ndarray]
 
 # define llbb
 define_eebb:FinalStateDefinition = lambda ac, fsc: (fsc.n_e   == 2)         & (fsc.n_b == 2)
@@ -58,7 +58,7 @@ define_ttH:FinalStateDefinition     = lambda ac, fsc: ac.getStore()['process'] =
 define_ttZ:FinalStateDefinition     = lambda ac, fsc: ac.getStore()['process'] == ProcessCategories.f8_ttz
 define_ttHZ:FinalStateDefinition     = lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.f8_tth, ProcessCategories.f8_ttz])
 
-def categorize_4fsl(ac:AnalysisChannel):
+def categorize_4fsl(ac:DataSource):
     from zhh import EventCategories
     
     ac.registerEventCategory('eebb', define_eebb, EventCategories.eebb)
@@ -66,7 +66,7 @@ def categorize_4fsl(ac:AnalysisChannel):
     ac.registerEventCategory('ττbb', define_ττbb, EventCategories.ττbb)
     ac.registerEventCategory('lvqq', define_lvqq, EventCategories.lvqq)
 
-def categorize_2l4q(ac:AnalysisChannel):
+def categorize_2l4q(ac:DataSource):
     from zhh import EventCategories
     
     ac.registerEventCategory('lvqqqq', define_lvqqqq, EventCategories.lvqqqq)
@@ -81,14 +81,14 @@ def categorize_2l4q(ac:AnalysisChannel):
     ac.registerEventCategory('vvqqqq', define_vvqqqq, EventCategories.vvqqqq)
     ac.registerEventCategory('vvbbqq', define_vvbbqq, None) # EventCategories.vvbbqq
 
-def categorize_6q(ac:AnalysisChannel):
+def categorize_6q(ac:DataSource):
     from zhh import EventCategories
     
     ac.registerEventCategory('bbqqqq', define_bbqqqq, EventCategories.bbqqqq)
     ac.registerEventCategory('bbbbqq', define_bbbbqq, EventCategories.bbbbqq)
     ac.registerEventCategory('bbbbbb', define_bbbbbb, EventCategories.bbbbbb)
 
-def categorize_llhh(ac:AnalysisChannel):
+def categorize_llhh(ac:DataSource):
     from zhh import EventCategories
     
     ac.registerEventCategory('llhh', define_llhh, EventCategories.llHH)
@@ -99,7 +99,7 @@ def categorize_llhh(ac:AnalysisChannel):
     ac.registerEventCategory('llhh_llnonbbbb', define_llhh_llnonbbbb, None)
     ac.registerEventCategory('llqqh', define_llqqh, EventCategories.llqqH)
 
-def categorize_vvhh(ac:AnalysisChannel):
+def categorize_vvhh(ac:DataSource):
     from zhh import EventCategories
     
     ac.registerEventCategory('vvhh', define_vvhh, EventCategories.vvHH)
@@ -109,7 +109,7 @@ def categorize_vvhh(ac:AnalysisChannel):
     ac.registerEventCategory('vvhh_vvnonbbbb', define_vvhh_vvnonbbbb, None)
     ac.registerEventCategory('vvqqh', define_vvqqh, EventCategories.vvqqH)
 
-def categorize_tthz(ac:AnalysisChannel):
+def categorize_tthz(ac:DataSource):
     from zhh import EventCategories
     
     ac.registerEventCategory('ttH', define_ttH, EventCategories.ttH)

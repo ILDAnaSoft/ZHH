@@ -39,49 +39,106 @@ class SampleMeta():
         if mcp_col_name == '':
             print('Warning: No collection storing MCParticles found! Empty string will be stored.')
         
-        return cls(params.getStringVal('processName'), n_events, run_number, \
-                   params.getFloatVal('Pol0'), params.getFloatVal('Pol1'), \
-                   params.getFloatVal('beamPol1'), params.getFloatVal('beamPol2'), \
-                   params.getFloatVal('crossSection'), params.getFloatVal('crossSectionError'), \
-                   params.getIntVal('ProcessID'), mcp_col_name)
+        return cls(''+params.getStringVal('processName'), n_events, run_number, \
+                   float(params.getFloatVal('Pol0')), float(params.getFloatVal('Pol1')), \
+                   float(params.getFloatVal('beamPol1')), float(params.getFloatVal('beamPol2')), \
+                   float(params.getFloatVal('crossSection')), float(params.getFloatVal('crossSectionError')), \
+                   int(params.getIntVal('ProcessID')), ''+mcp_col_name)
 
-def per_chunk(input_entry:tuple[int, list[str]]) -> tuple[int, list[tuple[str, SampleMeta]]]:
+def lcio_event_count(files:list[str]|str)->int:
+    if isinstance(files, str):
+        files = [files]
+
+    res = 0
+
+    for item in per_chunk((0, files))[1]:
+        loc, suc, meta = item
+        res += meta.nEvtSum
+    
+    return res
+
+def per_line(line:str)->SampleMeta:
+    """Parses a line from the lcio_get_physics_meta binary
+    to a SampleMeta object
+
+    Args:
+        line (str): _description_
+
+    Returns:
+        SampleMeta: _description_
+    """
+    vals = line.split(',')
+
+    assert(len(vals) == 11)
+    processName, nEvt, nRun, Pol0, Pol1, beamPol1, beamPol2, crossSec, crossSecErr, processId, mcpCol = vals
+
+    return SampleMeta(processName, int(nEvt), int(nRun),
+                      float(Pol0), float(Pol1),
+                      float(beamPol1), float(beamPol2),
+                      float(crossSec), float(crossSecErr),
+                      int(processId), mcpCol)
+
+def per_chunk(input_entry:tuple[int, list[str]]) -> tuple[int, list[tuple[str, bool, SampleMeta|str]]]:
     chunk_idx, file_paths = input_entry
     
     # Suppress LCIO output
     from os import devnull, path as osp
-    import sys
-    stdout = sys.stdout
-    stderr = sys.stderr
-    sys.stdout = sys.stderr = open(devnull, 'w')
-    
-    from pyLCIO import IOIMPL
-    sys.stdout, sys.stderr = stdout, stderr
-    
-    #for location in (pbar := tqdm(file_paths)):
-    #    pbar.set_description(f'Processing file {location}')
-    
-    result = []
-    for location in (file_paths):
-        if not osp.isfile(location):
-            raise Exception(f'File {location} does not exist!')
+    from zhh.processes.ProcessIndex import SampleMeta
+
+    result:list[tuple[str, bool, SampleMeta|str]] = []
+    lcio_get_physics_meta = osp.expandvars("$REPO_ROOT/source/bin/lcio_get_physics_meta")
+
+    if osp.isfile(lcio_get_physics_meta):
+        from subprocess import run
+
+        proc = run([lcio_get_physics_meta, ','.join(file_paths)],
+                   capture_output=True, encoding='utf-8')
         
-        reader = IOIMPL.LCFactory.getInstance().createLCReader()
-        reader.open(location)
+        if proc.returncode == 0:
+            temp = list(map(per_line, proc.stdout.split('\n')))
+
+            for i, meta in enumerate(temp):
+                result.append((file_paths[i], True, meta))
+        else:
+            print(proc.returncode, proc.stdout, proc.stderr)
+            raise Exception('lcio_get_physics_meta failed')
+    else:
+        import sys, gc
+        stdout = sys.stdout
+        stderr = sys.stderr
+        sys.stdout = sys.stderr = open(devnull, 'w')
         
-        # treat case where number of events = 0; calls to readNextEvent() fails in this case
-        # relevant when WhizardEventGeneration produces samples with no contribution
-        try:
-            if reader.getNumberOfEvents() > 0:
-                event = reader.readNextEvent()
-                
-                file_meta = SampleMeta.fromevent(event, reader.getNumberOfEvents(), event.getRunNumber())
-                
-                result.append((location, True, file_meta))
-            else:
-                raise Exception(f'File does not appear to contain any events! Cannot index sample.')
-        except Exception as e:
-            result.append((location, False, e.__str__()))
+        from pyLCIO import IOIMPL
+        sys.stdout, sys.stderr = stdout, stderr
+        
+        #for location in (pbar := tqdm(file_paths)):
+        #    pbar.set_description(f'Processing file {location}')
+        
+        for location in (file_paths):
+            if not osp.isfile(location):
+                raise Exception(f'File {location} does not exist!')
+            
+            reader = IOIMPL.LCFactory.getInstance().createLCReader()
+            reader.open(location)
+            
+            # treat case where number of events = 0; calls to readNextEvent() fails in this case
+            # relevant when WhizardEventGeneration produces samples with no contribution
+            try:
+                if reader.getNumberOfEvents() > 0:
+                    event = reader.readNextEvent()
+                    
+                    file_meta = SampleMeta.fromevent(event, int(reader.getNumberOfEvents()), int(event.getRunNumber()))
+                    
+                    result.append((location, True, file_meta))
+                else:
+                    raise Exception(f'File does not appear to contain any events! Cannot index sample.')
+            except Exception as e:
+                result.append((location, False, e.__str__()))
+
+            reader.close()
+            del reader
+        
+        gc.collect()
     
     return (chunk_idx, result)
 
@@ -161,12 +218,19 @@ class ProcessIndex:
             progress = tqdm(range(len(remaining_files)), disable=not pbar)
             
             for chunk_output in pool.imap_unordered(per_chunk, chunks):
-                chunk_idx, chunk = chunk_output
+                chunk_idx, results = chunk_output
                 
-                progress.set_description(f'Receiving data for chunk {chunk_idx} with {len(chunk)} files')
-                progress.update(len(chunk))
+                progress.set_description(f'Receiving data for chunk {chunk_idx} with {len(results)} files')
+                progress.update(len(results))
+
+                for chunk in results:
+                    loc, successful, err = chunk
                 
-                chunk_outputs += chunk
+                    if not successful:
+                        print(loc, err)
+                        raise Exception('Critical error')
+                
+                chunk_outputs += results
                         
                 #self.save()
                 

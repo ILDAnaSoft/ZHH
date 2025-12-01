@@ -8,3 +8,4 @@ from zhh.util import *
 from zhh.figures import *
 from zhh.mem import *
 from zhh.mva import *
+from zhh.task import *

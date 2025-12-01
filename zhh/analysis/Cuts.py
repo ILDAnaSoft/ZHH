@@ -72,7 +72,7 @@ class EqualCut(ValueCut):
     
     def formula(self, unit:Optional[str]=None):
         return f"{self.label}{'' if unit is None else ('/' + unit)} = {self.value}"
-        
+
 class WindowCut(ValueCut):
     def __init__(self, quantity:str,
                  val1:int|float, val2:int|float,
@@ -98,6 +98,10 @@ class WindowCut(ValueCut):
     
     def formula(self, unit:Optional[str]=None):
         return f"{self.lower} <= {self.label}{'' if unit is None else ('/' + unit)} <= {self.upper}"
+
+class WithinBoundsCut(WindowCut):
+    def __init__(self, quantity: str, lower: int|float, upper: int|float, **cut_kwargs):
+        super().__init__(quantity, lower, upper, **cut_kwargs)
 
 class GreaterThanEqualCut(ValueCut):
     def __init__(self, quantity:str, lower:Union[int,float], **cut_kwargs):

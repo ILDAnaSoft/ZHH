@@ -1,12 +1,17 @@
 import numpy as np
 import uproot as ur
 import matplotlib.pyplot as plt
+from ..util.LazyTablelike import LazilyLoadedObject
 
-def plot_final_state_counts(tree):
+def plot_final_state_counts(store:LazilyLoadedObject):
     from zhh.analysis.PreselectionAnalysis import fs_columns
+
+    count = np.zeros(len(fs_columns))
+    for i, item in enumerate(fs_columns):
+        count[i] = store[item].sum()
     
-    pdg = np.array(tree[f'final_state_counts/final_state_counts.first'].array(entry_stop=1)[0])
-    count = np.array(tree[f'final_state_counts/final_state_counts.second'].array()).sum(axis=0)
+    #pdg = np.array(tree[f'final_state_counts/final_state_counts.first'].array(entry_stop=1)[0])
+    #count = np.array(tree[f'final_state_counts/final_state_counts.second'].array()).sum(axis=0)
     xpos = np.arange(len(fs_columns))
     
     fig, ax = plt.subplots()

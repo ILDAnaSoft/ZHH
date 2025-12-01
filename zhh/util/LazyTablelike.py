@@ -3,7 +3,8 @@ from typing import Any, Dict
 import numpy as np
 
 class LazilyLoadedObject(Sequence):
-    pass
+    def __getitem__(self, key:str)->np.ndarray:
+        raise Exception(f'__getitem__ not implemented')
 
 class LazyTablelike(LazilyLoadedObject):
     def __init__(self, length:int):
@@ -108,6 +109,9 @@ class MixedLazyTablelike(LazilyLoadedObject):
     
     def keys(self):
         return set(self._props.keys()) | set(self._items.keys())
+    
+    def __contains__(self, key):
+        return key in self.keys()
         
     def __setitem__(self, key, any_value):
         if isinstance(any_value, Callable):
