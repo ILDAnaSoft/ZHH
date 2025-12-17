@@ -12,6 +12,7 @@ from .replace_properties import replace_properties
 from .replace_references import replace_references
 from ..data.ROOT2HDF5Converter import ROOT2HDF5Converter
 from ..task.ConcurrentFuturesRunner import ProcessRunner
+from ..analysis import CutflowProcessor, CutflowProcessorAction
 from typing import TypedDict, NotRequired, TYPE_CHECKING
 from copy import deepcopy
 
@@ -224,8 +225,8 @@ def provision_feature_interpretations(interpretations:list[Interpretation],
     to_sync = []
 
     def per_interpretation(feature:Interpretation, feature_names:list[str])->tuple[tuple|None, list[str]]:
-        name = feature.get('name', '')
-        assert(name != '')
+        assert('name' in feature)
+        name = feature['name']
         
         if name in feature_names:
             raise Exception(f'Invalid feature definition: Feature {name} appears at least twice')
@@ -239,15 +240,24 @@ def provision_feature_interpretations(interpretations:list[Interpretation],
             
         elif 'tree' in feature:
             tree = feature['tree']
-            branch = feature['branch'] if 'branch' in feature else name
-            columns = feature['columns'] if 'columns' in feature else None
+            branch = feature.get('branch', name)
+            columns = feature.get('columns', None)
+            name = name.replace('/', '.')
 
             if columns is not None:
-                for col in range(columns):
-                    if f'{name}.dim{col}' not in ds_keys:
-                        return ((name, tree, branch, feature['dtype'] if 'dtype' in feature else None), feature_names)
+                if isinstance(columns, int):
+                    for col in range(columns):
+                        if f'{name}.dim{col}' not in ds_keys:
+                            return ((name, tree, branch, feature.get('dtype', None)), feature_names)
+                elif isinstance(columns, list) and isinstance(columns[0], str):
+                    for col in columns:
+                        if f'{name}.{col}' not in ds_keys:
+                            print(f'{name}.{col}', f'{name}.{col}' not in ds_keys)
+                            return ((name, tree, branch, feature.get('dtype', None)), feature_names)
+                else:
+                    raise Exception(f'Property {name} not defined')
             elif name not in ds_keys and f'{name}.dim0' not in ds_keys:
-                return ((name, tree, branch, feature['dtype'] if 'dtype' in feature else None), feature_names)
+                return ((name, tree, branch, feature.get('dtype', None)), feature_names)
         else:
             print(feature)
             raise Exception('Cannot interpret entry')
@@ -267,6 +277,9 @@ def provision_feature_interpretations(interpretations:list[Interpretation],
             else:
                 found.append(feature['name'])
         else:
+            if not len(feature['names']):
+                raise Exception('When using the names property, at least one item must be given')
+            
             for name in feature['names']:
                 entry = deepcopy(feature)
                 del entry['names']
@@ -289,7 +302,7 @@ def provision_feature_interpretations(interpretations:list[Interpretation],
         names.append(name)
 
         conv = ROOT2HDF5Converter(root_files, ds_path, tree, branch,
-                                  osp.expandvars(f'{bname}/{tree}.{branch}/item'), name, dtype)
+                                  osp.expandvars(f'{bname}/{tree}.{branch.replace("/", ".")}/item'), name, dtype)
         vds_task, item_conv_tasks = conv.convertLazy(nrows=nrows, check_existing=True)
         
         [conv_tasks.append(task) for task in item_conv_tasks]
@@ -392,3 +405,44 @@ def parse_steer_cutflow_table(steer:dict, **kwargs):
             cutflow_table_is_signal.append(item['category'])
     
     return (cutflow_table_items, { 'signal_categories': cutflow_table_is_signal, **kwargs })
+
+def parse_actions(steer:dict, cp:CutflowProcessor):
+    """Parses the actions section of a steering dict to a list of CutflowProcessorAction instances
+    to be executed one after another to transform the state of a given CutflowProcessor.
+
+    Args:
+        steer (dict): _description_
+        cp (CutflowProcessor): _description_
+
+    Raises:
+        Exception: _description_
+
+    Returns:
+        _type_: _description_
+    """
+    action_map = {}
+
+    def per_subclass(cls):
+        for subcls in cls.__subclasses__():
+            if hasattr(subcls, '__subclasses__') and len(subcls.__subclasses__()):
+                per_subclass(subcls)
+            else:
+                action_map[subcls.__name__] = subcls
+
+    per_subclass(CutflowProcessorAction)
+    
+    actions = []
+
+    for action in steer['actions']:
+        try:
+            kwargs = deepcopy(action)
+            del kwargs['type']
+            kwargs['cp'] = cp
+            kwargs['steer'] = steer
+            
+            actions.append(action_map[action['type'] + 'Action'](**kwargs))
+        except Exception as e:
+            print(e)
+            raise Exception(f'Could not instantiate action of type <{action["type"] in "type" in action}>')
+    
+    return actions

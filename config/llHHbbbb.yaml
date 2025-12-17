@@ -54,7 +54,7 @@ sources:
       default: EventCategories.F4_OTHER
       order: null
       items: [ eebb, μμbb, ττbb, lvqq ]
-    disabled: false
+    disabled: true
     reset: false
 
   - name: 2l4q
@@ -64,7 +64,7 @@ sources:
       default: EventCategories.F6_OTHER
       order: null
       items: [ lvqqqq, lvbbqq, evbbqq, μvbbqq, τvbbqq, lvbbbb, llqqqq, llbbqq, llbbbb, vvqqqq, vvbbqq ]
-    disabled: false
+    disabled: true
     reset: false
 
   - name: llhh
@@ -84,7 +84,7 @@ sources:
       default: EventCategories.qqqqqq
       order: []
       items: [ bbqqqq, bbbbqq, bbbbbb ]
-    disabled: false
+    disabled: true
     reset: false
 
   - name: tthz
@@ -110,8 +110,11 @@ features:
   #                 as hdf5file[name] or dataStore[name] in analysis code. see also names
   # interpret/tree: TTree and name
   # interpret/branch: (optional) branch name; name will be used, if not provided
-  # interpret/columns: (for 2D arrays only) how many columns are expected to exist
-  #                    they will be saved as <name>.dim<i> with i=0,..,<columns>
+  # interpret/columns: for 2D arrays: must be an integer, specifying how many columns are
+  #                    expected to exist they will be saved as <name>.dim<i> with i=0,..,
+  #                    <columns>
+  #                    for named arrays: must be a list of strings, specifying the names
+  #                    of each column (e.g. fCoordinates.fX, ... for a PxPyPzE vector)
   # interpret/auto_increment: if True, this will be filled with np.arange(nrows, [dtype=
   #                           interpret/dtype, defaults to uint32])
   # interpret/names: list of names; can be used to create multiple entries within the
@@ -128,7 +131,7 @@ features:
   - { name: process, tree: FinalStates, dtype: uint32 }
 
   # physics quantities; must be given because some other quantities use this
-  - { names: [ cosJ1Z_2Jets, cosJ2Z_2Jets ], tree: EventObservablesLL, dtype: float32 }
+  - { name: cosjzmax, tree: EventObservablesLL, branch: cosJZMax_2Jets, dtype: float32 }
 
   # physics quantities
   - { names: [ bmax1, bmax2, bmax3, bmax4 ], tree: EventObservablesLL, dtype: float32 }
@@ -140,13 +143,26 @@ features:
   
   # for MVA analysis
   - { names: [ npfos ], tree: EventObservablesLL, dtype: uint16 }
-  - { names: [ costhrust, pjmax2, npfosmin4j, yplus, plmin, mbmax34, mvalepminus, yminus2 ], tree: EventObservablesLL, dtype: float32 }
+  - { names: [ costhrust, pjmax2, npfosmin4j, yplus, plmin, mbmax12, mbmax34, mcmax12, mcmax34,
+               mvalepminus, yminus2 ], tree: EventObservablesLL, dtype: float32 }
   - { name: ZHH_FitChi2, tree: KinFitLL_ZHH, branch: FitChi2, dtype: float32 }
   - { name: ZZH_FitChi2, tree: KinFitLL_ZZH, branch: FitChi2, dtype: float32 }
   - { name: ZHH_p1stBeforeFit, tree: KinFitLL_ZHH, branch: p1stBeforeFit, dtype: float32 }
   - { name: ZZH_p1stBeforeFit, tree: KinFitLL_ZZH, branch: p1stBeforeFit, dtype: float32 }
   - { name: ZHH_cosThBeforeFit, tree: KinFitLL_ZHH, branch: cosThBeforeFit, dtype: float32 }
   - { name: ZZH_cosThBeforeFit, tree: KinFitLL_ZZH, branch: cosThBeforeFit, dtype: float32 }
+
+  # MEM
+  - { names: [
+        lep1_4v/fCoordinates,
+        lep2_4v/fCoordinates,
+        jet1_4v/fCoordinates,
+        jet2_4v/fCoordinates,
+        jet3_4v/fCoordinates,
+        jet4_4v/fCoordinates
+      ], tree: EventObservablesLL, dtype: float32, columns: [ fCoordinates.fX, fCoordinates.fY, fCoordinates.fZ, fCoordinates.fT ] }
+  - { name: jet_matching_kinfit_best, tree: EventObservablesLL, dtype: int8, columns: 4 }
+  - { names: [ jet1_tags, jet2_tags, jet3_tags, jet4_tags ], tree: EventObservablesLL, dtype: float32 }
   
   # TODO: ability to use custom handlers to attach these
   # serialize:
@@ -221,8 +237,7 @@ preselection:
   cutflow_plots: 'cutflow_preselection_plots.pdf'
 
 mvas:
-  - type: MulticlassSL
-    name: multiclass_training
+  - name: multiclass
     features: [
       jet1_m, jet2_m, jet3_m, jet4_m,
       mhh, fit4C_mz, fit4C_mh1, fit4C_mh2,
@@ -239,7 +254,10 @@ mvas:
     - [3, 'llqqqq']
     - [4, 'μμbb']
     - [5, 'lvbbqq']
+    data_file: train_test.npz
 
+# define which analysis modules should be run
+# 
 actions:
   # preselection is applied automagically first
   - type: CreateCutflowPlots
@@ -250,16 +268,20 @@ actions:
     file: 'cutflow_preselection_table.pdf'
     step_start: 0
     step_end: 0
-    ignore_categories: [ llbbbb ]
+  - type: SplitDatasets
+    fractions: [ 0.5 ]
+  - type: WriteMVAData
+    use: multiclass
+    step: 0
+  - type: PrintSplitWeights
+  - type: InferenceSklearnMulticlass
+    use: multiclass
+    from_file: trial.npz
+    from_file_property: clf
+
 
 other:
-  - type: SplitDataset
-    split_column: split
-    weight_split_column: weights_split
-    fractions: [ 0.5 ]
 #other2:
-  - type: WriteMVATrainingData
-    name: multiclass_training    
   # carry out MVA training manually; use hyperparam.py
   - type: AssertCondition
     code: osp.isfile('trial.npz')

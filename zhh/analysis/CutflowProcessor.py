@@ -100,6 +100,9 @@ class CutflowProcessor:
         
         raise Exception(f'Source <{name}> not found')
 
+    def getSources(self)->list[DataSource]:
+        return self._sources
+
     def sorting_key(self, x):
         id, name, values, weights = x
         
@@ -340,7 +343,8 @@ class CutflowProcessor:
         
         return context_and_figures
         
-    def cutflowTable(self, final_state_labels_and_names_or_processes:list[tuple[str,str]|tuple[str,str,str]|tuple[str,list[str]]],
+    def cutflowTable(self, final_state_labels_and_names_or_processes:Sequence[tuple[str,str]|
+                                                                              tuple[str,str,str]|tuple[str,list[str]]],
                      path:str|None=None, step_start:int=0, step_end:int|None=None, weight_prop:str='weight',
                      filename:str|None=None, signal_categories:list[str]=[], ignore_categories:list[str]=[]):
         
@@ -681,7 +685,7 @@ def cutflowPlotsFn(signal_category_names:list[str],
     
     return plot_context, figs_stacked, figs_sigvbkg, fig
 
-def cutflowTable(cp:CutflowProcessor, final_state_labels_and_names_or_processes:list[tuple[str,str]|tuple[str,str,str]|tuple[str,list[str]]], path:str,
+def cutflowTable(cp:CutflowProcessor, final_state_labels_and_names_or_processes:Sequence[tuple[str,str]|tuple[str,str,str]|tuple[str,list[str]]], path:str,
                  step_start:int, step_end:int, weight_prop:str='weight', signal_categories:list[str]=[], ignore_categories:list[str]=[]):
     
     masks, cuts, calc_dicts, max_before = cp._flattenSteps(step_end, step_start)
@@ -700,7 +704,7 @@ def cutflowTable(cp:CutflowProcessor, final_state_labels_and_names_or_processes:
 def cutflowTableFn(masks,
                  luminosity:float,
                  sources:list[DataSource],
-                 final_state_labels_and_names_or_processes:list[tuple[str,str]|tuple[str,str,str]|tuple[str,list[str]]],
+                 final_state_labels_and_names_or_processes:Sequence[tuple[str,str]|tuple[str,str,str]|tuple[str,list[str]]],
                  cuts:Sequence[Cut],
                  path:str,
                  weight_prop:str,

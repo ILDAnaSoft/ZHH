@@ -29,4 +29,4 @@ from .FinalStateDefinitions import define_eebb, define_μμbb, define_ττbb, \
     categorize_tthz, categorize_vvhh
 from .DataExtractor import DataExtractor
 from .cutflow_processor_actions import *
-from .CutflowProcessorAction import CutflowProcessorAction
+from .CutflowProcessorAction import CutflowProcessorAction, FileBasedProcessorAction

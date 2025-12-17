@@ -25,25 +25,14 @@ class DataStore(MixedLazyTablelike):
         assert(r_size)
         super().__init__(r_size)
         
-        def fetch(key:str):                
-            if key in self._in_memory:
-                if key in self.cache:
-                    return self.cache[key]
-                else:
-                    self.cache[key] = self.fromFile(key)
-                    return self.cache[key]
-            else:
-                # take value and dtype from HDF5
-                return self.fromFile(key)
-        
         # this attaches the properties of the TTree 
-        self._defaultHandler = fetch
+        self._defaultHandler = self.fetch
         self._h5_file = h5_file
         self._in_memory = in_memory
         
         # readonly
-        self['process'] = lambda intf: fetch('process')
-        self['event'] = lambda intf: fetch('event')
+        self['process'] = lambda intf: self.fetch('process')
+        self['event'] = lambda intf: self.fetch('event')
             
         if final_states:
             from .PreselectionAnalysis import fs_columns
@@ -62,10 +51,7 @@ class DataStore(MixedLazyTablelike):
         self['sumBTags'] = lambda intf: ( self['bmax1'] + self['bmax2'] + self['bmax3'] + self['bmax4'] )
 
         self['yminus_mod100'] = lambda intf: np.mod(intf['yminus2'], 100)
-        self['cosjzmax'] = lambda intf: np.stack([
-            intf['cosJ1Z_2Jets'],
-            intf['cosJ2Z_2Jets']
-        ]).max(axis=0)
+        self['cosjzmax'] = lambda intf: self['cosJZMax_2Jets']
         
         if not init_done:
             self.itemsInitialize(n_jets)
@@ -75,6 +61,17 @@ class DataStore(MixedLazyTablelike):
         if len(in_memory_writable):
             for item in in_memory_writable:
                 self[item] = self.fromFile(item)[:]
+
+    def fetch(self, key:str):                
+        if key in self._in_memory:
+            if key in self.cache:
+                return self.cache[key]
+            else:
+                self.cache[key] = self.fromFile(key)
+                return self.cache[key]
+        else:
+            # take value and dtype from HDF5
+            return self.fromFile(key)
 
     def fromFile(self, prop:str)->np.ndarray:        
         with h5py.File(self._h5_file) as hf:
@@ -108,12 +105,20 @@ class DataStore(MixedLazyTablelike):
         """Fetches data from the HDF5 file and attaches them as props to the DataStore
         for lazy-loading. Used together with itemsSnapshot
         """
-               
-        keys = []
+
+        existing_keys = list(self._props.keys())
+
         with h5py.File(self._h5_file, 'r') as hf:
             for key in hf.keys():
-                keys.append(key)
+                if key not in existing_keys:
+                    self._props[key] = mk_ref(self._h5_file, key)
     
+    def removeProperty(self, prop:str):
+        del self._props[prop]
+        
+        with h5py.File(self._h5_file, 'a') as hf:
+            del hf[prop]
+
     def itemsSnapshot(self, overwrite:bool=False, items:list[str]|None=None):
         """Saves a snapshot of all or a list of registered items to the HDF5 file.
 
