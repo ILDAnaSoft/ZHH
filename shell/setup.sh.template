@@ -44,6 +44,12 @@ function zhh_attach_marlin_dlls() {
 
     for ((i=0; i<${#libs_old[@]}; i+=1));
     do
+        # MarlinMLFlavorTagging optional: skip if the file does not exist
+        if [[ $libs_new == *"MarlinMLFlavorTagging"* && ! -d "$MarlinMLFlavorTagging" ]]; then
+            zhh_echo "Skipping MarlinMLFlavorTagging (optional, but no local copy found)"
+            continue
+        fi
+
         local lib_name=$(basename "${libs_old[$i]}")
         local lib="${libs_new[$i]}"
 
@@ -64,8 +70,8 @@ if [[ ! -d "$REPO_ROOT/$ZHH_VENV_NAME" || ! -f "$REPO_ROOT/$ZHH_VENV_NAME/bin/ac
     zhh_echo "    Job submissions via law may fail. Consider running source install.sh"
 fi
 
-if [[ ! -d "$MarlinMLFlavorTagging" || ! -d "$LCFIPlus" || ! -d "$LCFIPlusConfig" || ! -d "$LCIO" || ! -d "${ILD_CONFIG_DIR}" ]]; then
-    zhh_echo "Error: MarlinMLFlavorTagging, LCFIPlus, LCFIPlusConfig, LCIO and ILD_CONFIG_DIR must be set and point to valid directories."
+if [[ ! -d "$LCFIPlus" || ! -d "$LCFIPlusConfig" || ! -d "$LCIO" || ! -d "${ILD_CONFIG_DIR}" ]]; then
+    zhh_echo "Error: LCFIPlus, LCFIPlusConfig, LCIO and ILD_CONFIG_DIR must be set and point to valid directories."
     zhh_echo "    Use --install to download and/or compile them here. Aborting."
     return 1
 fi

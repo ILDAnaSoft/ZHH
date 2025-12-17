@@ -46,11 +46,16 @@ If you want to specify values yourself, please use the `.env` file with the `KEY
 | LCFIPlus | https://github.com/nVentis/LCFIPlus (onnx branch) |
 | LCFIPlusConfig | https://github.com/suehara/LCFIPlusConfig |
 | FlavorTagging_ML | https://gitlab.desy.de/bryan.bliewert/FlavorTagging_ML.git |
-| MarlinMLFlavorTagging | https://gitlab.desy.de/bryan.bliewert/MarlinMLFlavorTagging.git |
 | MarlinReco | Required as [this version](https://github.com/nVentis/MarlinReco.git) here contains fixes. |
 | Physsim | https://github.com/nVentis/Physsim.git |
 | SGV_DIR                      | https://gitlab.desy.de/mikael.berggren/sgv |
 | ONNXRUNTIMEPATH (**)         | Required for LCFIPlus inference with ONNX |
+
+Optional:
+
+| Environment variable           | Target / Description                                             |
+|--------------------------------|------------------------------------------------------------------|
+| MarlinMLFlavorTagging          | https://gitlab.desy.de/bryan.bliewert/MarlinMLFlavorTagging.git  |
 
 (*) autodiscovered from the key4hep-stack. Necessary for ParticleNet.
 (**) hardwired for each key4hep stack release at the moment (see `zhh_install.sh`)

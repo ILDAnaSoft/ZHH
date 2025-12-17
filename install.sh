@@ -13,11 +13,13 @@ function usage() {
     echo "       .env.sh: shell script for additional environment setup"
     echo ""
     echo "Dependencies: absolute path to cloned repositories with binaries inside lib, where possible"
-    echo "       MarlinMLFlavorTagging: https://gitlab.desy.de/bryan.bliewert/MarlinMLFlavorTagging"
     echo "       ILDConfig: https://github.com/iLCSoft/ILDConfig.git"
     echo "       MarlinReco: https://github.com/nVentis/MarlinReco.git"
     echo "       LCFIPlusConfig: https://github.com/suehara/LCFIPlusConfig"
     echo "       LCFIPlus: https://github.com/suehara/LCFIPlus (onnx branch)"
+    echo ""
+    echo "Optional:"
+    echo "       MarlinMLFlavorTagging: https://gitlab.desy.de/bryan.bliewert/MarlinMLFlavorTagging"
 }
 
 ZHH_K4H_RELEASE="2025-01-28"
@@ -149,5 +151,5 @@ source $REPO_ROOT/setup.sh
 
 if [ "$ZHH_COMMAND" = "install" ]; then
     zhh_echo "Compiling dependencies..."
-    zhh_recompile
+    zhh_recompile debug
 fi

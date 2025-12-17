@@ -214,7 +214,7 @@ function zhh_install_deps() {
 REPO_ROOT="$REPO_ROOT"
 ILC_PROD_PATH="$ILC_PROD_PATH"
 ZHH_K4H_RELEASE="$ZHH_K4H_RELEASE"
-MarlinMLFlavorTagging="$MarlinMLFlavorTagging"
+#MarlinMLFlavorTagging="$MarlinMLFlavorTagging"
 FlavorTagging_ML="$FlavorTagging_ML"
 LCFIPlusConfig="$LCFIPlusConfig"
 LCFIPlus="$LCFIPlus"

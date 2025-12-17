@@ -22,7 +22,7 @@ action(){
     if [[ $skipdeps == "True" ]]; then
         modules=("source")
     else
-        modules=("$MarlinMLFlavorTagging $MarlinReco $MarlinKinfit $LCFIPlus $Physsim source")
+        modules=("$MarlinReco $MarlinKinfit $LCFIPlus $Physsim source")
     fi
 
     compile_pkg ()
@@ -46,10 +46,10 @@ action(){
             fi
             
             if [[ $isdebug = "True" ]]; then
-                make install -j 4 || exit $?
+                make install -j $(nproc) || exit $?
             else
                 rm -f build.log
-                make install -j 4 &> build.log
+                make install -j $(nproc) &> build.log
             
                 local retval=$?
 
