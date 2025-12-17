@@ -635,7 +635,8 @@ void EventObservablesBase::clearBaseValues()
 	
 	// flavor tagging
 	m_bTagsSorted.clear();
-	m_bTagsSorted2.clear();
+	m_cTagsSorted.clear();
+
 	std::fill(m_bTagValues.begin(), m_bTagValues.end(), -1.);
 	std::fill(m_cTagValues.begin(), m_cTagValues.end(), -1.);
 
@@ -651,6 +652,8 @@ void EventObservablesBase::clearBaseValues()
 	m_cmax3 = 0.;
 	m_cmax4 = 0.;
 
+	m_bTagsSorted2.clear();
+	m_cTagsSorted2.clear();
 	std::fill(m_bTagValues2.begin(), m_bTagValues2.end(), -1.);
 	std::fill(m_cTagValues2.begin(), m_cTagValues2.end(), -1.);
 
@@ -711,7 +714,7 @@ void EventObservablesBase::clearBaseValues()
 	}
 
 	for (size_t i = 0; i < m_jetTags.size(); i++)
-		m_jetTags[i].clear();
+		std::fill(m_jetTags[i].begin(), m_jetTags[i].end(), 0.);
 
 	m_jet1_q  = 0.;
 	m_jet1_qdyn = 0.;
@@ -726,9 +729,9 @@ void EventObservablesBase::clearBaseValues()
 	m_jet4_qdyn = 0.;
 
 	// jet matching
-	m_JMK_ZHH.clear();
-	m_JMK_ZZH.clear();
-	m_JMK_best.clear();
+	std::fill(m_JMK_ZHH.begin(), m_JMK_ZHH.end(), -1);
+	std::fill(m_JMK_ZZH.begin(), m_JMK_ZZH.end(), -1);
+	std::fill(m_JMK_best.begin(), m_JMK_best.end(), -1);
 
 	m_fitprob_ZHH = 0.;
 	m_fitprob_ZZH = 0.;
@@ -790,19 +793,30 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 			LCCollection *inputJKF_ZHHCollection = pLCEvent->getCollection( m_inputJetKinFitZHHCollection );
 			LCCollection *inputJKF_ZZHCollection = pLCEvent->getCollection( m_inputJetKinFitZZHCollection );
 
-			inputJKF_ZHHCollection->parameters().getIntVals("permutation", m_JMK_ZHH);
-			inputJKF_ZZHCollection->parameters().getIntVals("permutation", m_JMK_ZZH);
-
 			m_fitprob_ZHH = inputJKF_ZHHCollection->parameters().getFloatVal("fitprob");
 			m_fitprob_ZZH = inputJKF_ZZHCollection->parameters().getFloatVal("fitprob");
 			m_fitchi2_ZHH = inputJKF_ZHHCollection->parameters().getFloatVal("fitchi2");
 			m_fitchi2_ZZH = inputJKF_ZZHCollection->parameters().getFloatVal("fitchi2");
 
-			//if (static_cast<int>(m_JMK_ZHH.size()) >= m_nAskedJets())
-			//	getPermutationIndex(m_JMK_ZHH, m_nAskedJets(), m_JMK_ZHH_perm_idx);
-			
-			//if (static_cast<int>(m_JMK_ZZH.size()) >= m_nAskedJets())
-			//	getPermutationIndex(m_JMK_ZZH, m_nAskedJets(), m_JMK_ZZH_perm_idx);
+			EVENT::IntVec JMK_ZHH;
+			EVENT::IntVec JMK_ZZH;
+
+			inputJKF_ZHHCollection->parameters().getIntVals("permutation", JMK_ZHH);
+			inputJKF_ZZHCollection->parameters().getIntVals("permutation", JMK_ZZH);
+
+			// JMK_ZHH/ZZH might hold more than m_nAskedJets() entries, only use first m_nAskedJets() values
+			if ((int)JMK_ZHH.size() >= m_nAskedJets())
+				for (int i = 0; i < m_nAskedJets(); i++)
+					m_JMK_ZHH[i] = JMK_ZHH[i];
+
+			if ((int)JMK_ZZH.size() >= m_nAskedJets())
+				for (int i = 0; i < m_nAskedJets(); i++)
+					m_JMK_ZZH[i] = JMK_ZZH[i];
+
+			if ((int)JMK_ZHH.size() >= m_nAskedJets() || (int)JMK_ZZH.size() >= m_nAskedJets()) {
+				m_JMK_best = (m_fitchi2_ZHH <= m_fitchi2_ZZH ? m_JMK_ZHH : m_JMK_ZZH);
+			}
+
 		} catch(DataNotAvailableException &e) {
 			streamlog_out(MESSAGE) << "processEvent : Input kinfit solveNu jet and lepton collections not found in event " << m_nEvt << std::endl;
 			m_statusCode += 100;
@@ -932,7 +946,7 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 						throw EVENT::Exception("No flavor tagging value for parameter");
 					}
 					
-					m_jetTags[i].push_back(FTPara[param_id]);
+					m_jetTags[i][j] = FTPara[param_id];
 				}
 
 				if (m_use_tags2) {
@@ -967,13 +981,15 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 			m_bmax3 = m_bTagsSorted[2].second;
 			m_bmax4 = m_bTagsSorted[3].second;
 
-			std::vector<double> cTagsSorted(m_cTagValues.begin(), m_cTagValues.end());
-			std::sort (cTagsSorted.begin(), cTagsSorted.end());
+			for (size_t i = 0; i < m_cTagValues.size(); i++)
+				m_cTagsSorted.push_back(std::make_pair(i, m_cTagValues[i]));
 
-			m_cmax1 = cTagsSorted[0];
-			m_cmax2 = cTagsSorted[1];
-			m_cmax3 = cTagsSorted[2];
-			m_cmax4 = cTagsSorted[3];
+			std::sort (m_cTagsSorted.begin(), m_cTagsSorted.end(), jetTaggingComparator);
+
+			m_cmax1 = m_cTagsSorted[0].second;
+			m_cmax2 = m_cTagsSorted[1].second;
+			m_cmax3 = m_cTagsSorted[2].second;
+			m_cmax4 = m_cTagsSorted[3].second;
 
 			if (m_use_tags2) {
 				for (size_t i = 0; i < m_bTagValues2.size(); i++)
@@ -986,13 +1002,15 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 				m_bmax32 = m_bTagsSorted2[2].second;
 				m_bmax42 = m_bTagsSorted2[3].second;
 
-				std::vector<double> cTagsSorted2(m_cTagValues2.begin(), m_cTagValues2.end());
-				std::sort (cTagsSorted2.begin(), cTagsSorted2.end());
+				for (size_t i = 0; i < m_cTagValues2.size(); i++)
+					m_cTagsSorted2.push_back(std::make_pair(i, m_cTagValues2[i]));
 
-				m_cmax12 = cTagsSorted2[0];
-				m_cmax22 = cTagsSorted2[1];
-				m_cmax32 = cTagsSorted2[2];
-				m_cmax42 = cTagsSorted2[3];
+				std::sort (m_cTagsSorted2.begin(), m_cTagsSorted2.end(), jetTaggingComparator);
+
+				m_cmax12 = m_cTagsSorted2[0].second;
+				m_cmax22 = m_cTagsSorted2[1].second;
+				m_cmax32 = m_cTagsSorted2[2].second;
+				m_cmax42 = m_cTagsSorted2[3].second;
 			}
 
 			// ---------- YMINUS, YPLUS ----------        
@@ -1059,8 +1077,15 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 
 	if (m_nJets == m_nAskedJets()) {
 		#ifdef USE_TRUEJET
-			//TrueJet_Parser* trueJet = this;
-			//trueJet->getall( pLCEvent );
+			try {
+				pLCEvent->getCollection(_trueJetCollectionName);
+			} catch(DataNotAvailableException &e) {
+				streamlog_out(ERROR) << "No TrueJet collection " << _trueJetCollectionName << " found. Please make sure TrueJet ran!" << std::endl;
+				throw e;
+			}
+
+			TrueJet_Parser* trueJet = this;
+			trueJet->getall( pLCEvent );
 			
 			vector<int> trueHadronicJetIndices;
 			vector<int> trueLeptonIndices;
@@ -1223,7 +1248,11 @@ void EventObservablesBase::init(){
 
 	m_jets4v = std::vector<ROOT::Math::PxPyPzEVector>(m_nAskedJets());
 	m_jetsMasses = std::vector<float>(m_nAskedJets());
-	m_jetTags = std::vector<std::vector<float>>(m_nAskedJets());
+	m_jetTags = std::vector<std::vector<float>>(m_nAskedJets(), std::vector<float>(m_JetTaggingPIDParameters.size(), 0));
+
+	m_JMK_ZHH = std::vector<int>(m_nAskedJets(), 0);
+	m_JMK_ZZH = std::vector<int>(m_nAskedJets(), 0);
+	m_JMK_best = std::vector<int>(m_nAskedJets(), 0);
 
 	prepareBaseTree();
 	prepareChannelTree();

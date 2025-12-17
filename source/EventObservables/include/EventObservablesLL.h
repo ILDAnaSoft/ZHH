@@ -96,6 +96,9 @@ class EventObservablesLL : public EventObservablesBase {
 		float m_mbmax12{};
 		float m_mbmax34{};
 
+		float m_mcmax12{};
+		float m_mcmax34{};
+
 };
 
 

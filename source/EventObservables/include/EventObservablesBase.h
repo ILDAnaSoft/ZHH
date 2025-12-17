@@ -29,6 +29,7 @@
 #include "v4.h"
 #include "EventObservablesFromZZ.h"
 
+#define USE_TRUEJET 1
 #ifdef USE_TRUEJET
 	#include <TrueJet_Parser.h>
 #endif
@@ -280,7 +281,9 @@ class EventObservablesBase: public Processor
 
 		static bool jetTaggingComparator ( const JetTaggingPair& l, const JetTaggingPair& r) { return l.second > r.second || std::isnan(r.second); };
 		std::vector<JetTaggingPair> m_bTagsSorted{}; // (jet index, btag1value) sorted DESC; first highest, last lowest
-		std::vector<JetTaggingPair> m_bTagsSorted2{}; // (jet index, btag1value) sorted DESC; first highest, last lowest
+		std::vector<JetTaggingPair> m_bTagsSorted2{}; // (jet index, btag2value) sorted DESC; first highest, last lowest
+		std::vector<JetTaggingPair> m_cTagsSorted{}; // (jet index, ctag1value) sorted DESC; first highest, last lowest
+		std::vector<JetTaggingPair> m_cTagsSorted2{}; // (jet index, ctag1value) sorted DESC; first highest, last lowest
 		std::vector<double> m_bTagValues{};
 		std::vector<double> m_cTagValues{};
 

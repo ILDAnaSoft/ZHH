@@ -5,6 +5,7 @@ import h5py
 import uproot as ur
 from os import makedirs
 from typing import TYPE_CHECKING, cast
+from collections.abc import Sequence
 from multiprocessing import Pool, cpu_count
 from tqdm.auto import tqdm
 from math import ceil
@@ -47,10 +48,10 @@ class ROOT2HDF5Converter:
         assert(output_file.lower().endswith('.h5') or output_file.lower().endswith('.hdf5'))
 
         if output_bname is None:
-            output_bname = f'{osp.dirname(output_file)}/items/{tree}.{branch}/item'
+            output_bname = f'{osp.dirname(output_file)}/items/{tree}.{branch.replace("/", ".")}/item'
 
         if output_name is None:
-            output_name = branch
+            output_name = branch.replace("/", ".")
         
         self._root_files = root_files
         self._vds_file = output_file
@@ -93,14 +94,14 @@ class ROOT2HDF5Converter:
                             already_done = False
                             break
 
-                        shape = np.array(hf['shape'], dtype=int)
+                        shape = cast(h5py.Dataset, hf['shape'])[:]
                         sizes.append(shape[0])
                         ncols_found = 1 if len(shape) == 1 else shape[1]
 
                         if i == 0:
                             ncols = ncols_found
                             if self._dtype is None:
-                                self._dtype = str(cast(h5py.Dataset, hf['dim0']).dtype)
+                                self._dtype = str(hf.attrs.get('dtype'))
                         else:
                             assert(ncols == ncols_found)
 
@@ -114,7 +115,7 @@ class ROOT2HDF5Converter:
                             print('chunk_idx=', hf.attrs['chunk_idx'], chunk_idx)
                             print('tree=', hf.attrs['tree'], self._tree)
                             print('branch=', hf.attrs['branch'], self._branch)
-                            print('input_files=', hf.attrs['input_files'], chunk_files)
+                            print('input_files=', np.all(hf.attrs['input_files'] == chunk_files))
 
                             raise Exception(f'File <{out_file}> for chunk <{chunk_idx}> does not fit to expected '+
                                             'data structure. See above print for property=<found> <expected>')
@@ -233,28 +234,37 @@ def createVDS(h5_files:list[str], output_file:str, output_name:str, nrows:int, n
     """
     if dtype is None:
         with h5py.File(h5_files[0], 'r') as hf:
-            dtype = cast(h5py.Dataset, hf['dim0']).dtype
+            dtype = hf.attrs.get('dtype')
 
     if sizes is None:
         sizes = []
         for p in h5_files:
             with h5py.File(p, 'r') as hf:
-                sizes.append(len(cast(h5py.Dataset, hf['dim0'])))
+                sizes.append(cast(h5py.Dataset, hf['shape'])[0])
+    
+    with h5py.File(h5_files[0], 'r') as hf:
+        column_names = list(cast(Sequence, hf.attrs.get('col_names')))
 
     with h5py.File(output_file, 'a') as hf:
-        for col in range(ncols):
+        for column in column_names:
             layout = h5py.VirtualLayout((nrows, ), dtype)
 
             counter = 0
 
             for i, path in enumerate(h5_files):
                 ncur = sizes[i]
-                vsource = h5py.VirtualSource(path, f'dim{col}', shape=(ncur, ), dtype=dtype)
+                vsource = h5py.VirtualSource(path, column, shape=(ncur, ), dtype=dtype)
                 layout[counter:(counter+ncur)] = vsource
                 counter += ncur
 
             # Add virtual dataset to output file
-            hf.create_virtual_dataset(f'{output_name}.dim{col}' if ncols > 1 else output_name, layout, fillvalue=np.nan)
+            output_column_name = f'{output_name}.{column}' if ncols > 1 else output_name
+            #print(output_column_name)
+            if output_column_name in hf.keys():
+                #print('warning: deleting key', output_column_name)
+                del hf[output_column_name]
+
+            hf.create_virtual_dataset(output_column_name, layout, fillvalue=np.nan)
     return True
 
 class CreateVDSTask(AbstractTask):
@@ -390,7 +400,7 @@ def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None, str|None
     if osp.isfile(output_file) and not overwrite_if_exists:
         with h5py.File(output_file, 'r') as hf:
             shape = tuple(cast(h5py.Dataset, hf['shape'])[:])
-            dtype_read = str(cast(h5py.Dataset, hf['dim0']).dtype)
+            dtype_read = str(hf.attrs.get('dtype'))
 
             if dtype is not None and dtype != dtype_read:
                 raise Exception(f'dtype mismatch: expected <{dtype}> but found <{dtype_read}>')
@@ -403,6 +413,7 @@ def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None, str|None
     ncols = 0
     is_1d = False
     is_2d = False
+    col_names:list[str] = []
 
     with h5py.File(output_file, 'w') as hf:
         hf.attrs['chunk_idx'] = chunk_idx
@@ -411,8 +422,13 @@ def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None, str|None
         hf.attrs['input_files'] = file_paths
 
         for i_result, result in enumerate(translated):
+            columns = result[0].fields
+
+            is_named = len(columns) > 0
             is_1d = result[0].ndim == 1
             is_2d = result[0].ndim == 2
+
+            assert(is_named or is_1d or is_2d)
 
             # regularize
             if is_2d:
@@ -423,36 +439,47 @@ def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None, str|None
 
             if i_result == 0:
                 # infer nrows, and ncols+dtype from first entry
-                ncols = 1 if is_1d else result[0].type.content.size
+                if is_named:
+                    col_names = columns
+                else:
+                    col_names = [f'dim{col}' for col in range(1 if is_1d else (result[0].type.content.size))]
+
                 if dtype is None:
-                    dtype = str(result[0].type.content) if is_1d else str(result[0].type.content.content)
+                    if is_named:
+                        dtype = str(result[0].type.content.content(result[0].fields[0]))
+                    else:
+                        dtype = str(result[0].type.content) if is_1d else str(result[0].type.content.content)
 
-                assert(is_1d or is_2d)
-
-                for col in range(ncols):
+                for col in col_names:
                     # chunk-size 16MB
-                    hf.create_dataset(f'dim{col}', shape=size, maxshape=(None, ), dtype=dtype, chunks=True, rdcc_nbytes=16*1024**2, fillvalue=np.nan)
+                    hf.create_dataset(col, shape=size, maxshape=(None, ), dtype=dtype, chunks=True, rdcc_nbytes=16*1024**2, fillvalue=np.nan)
 
-            for col in range(ncols):
+            for i_col, col in enumerate(col_names):
                 if i_result:
-                    cast(h5py.Dataset, hf[f'dim{col}']).resize((nrows+size, ))
+                    cast(h5py.Dataset, hf[col]).resize((nrows+size, ))
                 
                 counter = 0
                 for arr in result:
                     arr_size = len(arr)
-                    dataset:h5py.Dataset = cast(h5py.Dataset, hf[f'dim{col}'])
-                    dataset[(nrows+counter):(nrows+counter+arr_size)] = arr[:, col] if is_2d else arr
+                    dataset:h5py.Dataset = cast(h5py.Dataset, hf[col])
+                    if is_named:
+                        dataset[(nrows+counter):(nrows+counter+arr_size)] = arr[col][:]
+                    else:
+                        dataset[(nrows+counter):(nrows+counter+arr_size)] = arr[:, i_col] if is_2d else arr
                     counter += arr_size
 
                 assert(counter == size)
 
             nrows += size
 
-        hf['shape'] = np.array([nrows] if is_1d else [nrows, ncols], dtype=int)
+        ncols = len(col_names)
+        hf['shape'] = np.array([nrows] if ncols == 1 else [nrows, ncols], dtype=int)
+        hf.attrs['col_names'] = col_names
+        hf.attrs['dtype'] = dtype
     
     assert(isinstance(dtype, str))
 
-    return (chunk_idx, ((nrows, ncols) if is_2d else (nrows, ), dtype))
+    return (chunk_idx, ((nrows, ncols) if (is_2d or is_named) else (nrows, ), dtype))
 
 def process_chunks(chunks, n_files:int|None=None):
     chunk_outputs = []

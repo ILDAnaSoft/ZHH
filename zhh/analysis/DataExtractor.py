@@ -17,7 +17,7 @@ class DataExtractor:
         self._labels:np.ndarray|None = None
         
     def extract(self,
-                to_process:list[tuple[str, int]],
+                to_process:list[tuple[int, str]],
                 features:list[str],
                 step:int|None=None,
                 split:int|None=None,
@@ -68,7 +68,7 @@ class DataExtractor:
             source.getStore().resetView()
             src_2_src_idx[source] = src_idx
             
-        for fs_name, class_label in to_process:
+        for class_label, fs_name in to_process:
             for source in sources:
                 if source.containsFinalState(fs_name):
                     fs_2_source[fs_name] = source
@@ -78,12 +78,12 @@ class DataExtractor:
                 raise Exception(f'No source found for final state <{fs_name}>')
 
         nrows_tot = 0
-        for fs_name, class_label in to_process:
+        for class_label, fs_name in to_process:
             source = fs_2_source[fs_name]
             category_mask = source.getCategoryMask(fs_name)
-            post_presel_mask = self._cp.getFinalEventMaskByName(source.getName(), step=step)
+            post_cut_mask = self._cp.getFinalEventMaskByName(source.getName(), step=step)
             
-            mask = category_mask & post_presel_mask
+            mask = category_mask & post_cut_mask
             
             if split is not None:
                 mask = mask & (source.getStore()['split'] == split)
@@ -106,29 +106,31 @@ class DataExtractor:
         
         labels_unique = []
         
-        for i, (fs_name, class_label) in enumerate(to_process):
+        for i, (class_label, fs_name) in enumerate(to_process):
             source = fs_2_source[fs_name]
             store = source.getStore()
             
             mask = events_passed[fs_name]
             nrows = int(mask.sum())
             #print('nrows=', nrows)
-            
-            src_idx[pointer:pointer + nrows] = src_2_src_idx[source]
-            event_num[pointer:pointer + nrows] = store['event'][mask]
 
-            for i, feature in enumerate(features):
-                pbar.set_description(f'Extracting data for <{source.getName()}.{fs_name}> feature={feature}')
-                pbar.update(nrows)
+            if nrows:
+                src_idx[pointer:pointer + nrows] = src_2_src_idx[source]
+                event_num[pointer:pointer + nrows] = store['event'][mask]
 
-                inputs[pointer:pointer + nrows, i] = store[feature][mask]
+                for i, feature in enumerate(features):
+                    pbar.set_description(f'Extracting data for <{source.getName()}.{fs_name}> feature={feature}')
+                    pbar.update(nrows)
+
+                    inputs[pointer:pointer + nrows, i] = store[feature][mask]
+                
+                # see https://scikit-learn.org/stable/modules/generated/sklearn.utils.class_weight.compute_sample_weight.html
+                weight     [pointer:pointer + nrows] = (1/nrows)*len(labels)/len(to_process)
+                weight_phys[pointer:pointer + nrows] = store[weight_prop][mask]
+                labels     [pointer:pointer + nrows] = class_label
             
-            # see https://scikit-learn.org/stable/modules/generated/sklearn.utils.class_weight.compute_sample_weight.html
-            weight     [pointer:pointer + nrows] = (1/nrows)*len(labels)/len(to_process)
-            weight_phys[pointer:pointer + nrows] = store[weight_prop][mask]
-            labels     [pointer:pointer + nrows] = class_label
-            
-            pointer += nrows
+                pointer += nrows
+
             labels_unique.append(class_label)
         
         pbar.close()

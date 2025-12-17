@@ -33,11 +33,14 @@ class MixedLazyTablelike(LazilyLoadedObject):
     """Class to lazily load properties and items. Should behave like
     a named numpy array, but only load properties when they are ac-
     cessed.
-    Items are writable properties, props are read-only and must be
-    set via the assignment operator and given a callback. If a given
-    value is a callable, it is treated as a property, otherwise as
-    an item. Resolution order for a given key is props first, then
-    items, then the default handler (if specified).
+    Items are writable, in-memory properties assigned using a np array.
+    Props are read-only and assigned using a function returning the ac-
+    tual value. If the value given to the assignment operator is a call-
+    able, it is treated as a property, otherwise as an item. Resolution
+    order for a given key is props/items, then the default handler (if
+    specified). Overwriting an existing key (either prop/item) will re-
+    move the previous assignment and register the new value as either
+    prop or item.
 
     Args:
         LazilyLoadedObject (_type_): _description_
@@ -114,6 +117,11 @@ class MixedLazyTablelike(LazilyLoadedObject):
         return key in self.keys()
         
     def __setitem__(self, key, any_value):
+        if key in self._props:
+            del self._props[key]
+        elif key in self._items:
+            del self._items[key]
+
         if isinstance(any_value, Callable):
             self._props[key] = any_value
         else:
