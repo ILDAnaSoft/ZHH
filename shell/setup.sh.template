@@ -44,14 +44,14 @@ function zhh_attach_marlin_dlls() {
 
     for ((i=0; i<${#libs_old[@]}; i+=1));
     do
+        local lib_name=$(basename "${libs_old[$i]}")
+        local lib="${libs_new[$i]}"
+
         # MarlinMLFlavorTagging optional: skip if the file does not exist
-        if [[ $libs_new == *"MarlinMLFlavorTagging"* && ! -d "$MarlinMLFlavorTagging" ]]; then
+        if [[ $lib == *"MarlinMLFlavorTagging"* && ! -d "$MarlinMLFlavorTagging" ]]; then
             zhh_echo "Skipping MarlinMLFlavorTagging (optional, but no local copy found)"
             continue
         fi
-
-        local lib_name=$(basename "${libs_old[$i]}")
-        local lib="${libs_new[$i]}"
 
         if [[ -z "$lib" ]]; then
             zhh_echo "Removing library $lib_name"
