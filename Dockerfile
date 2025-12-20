@@ -5,7 +5,7 @@ ARG clone_branch="main"
 RUN dnf update; dnf clean all
 
 # Clone and equalize paths with GITHUB_WORKSPACE
-RUN git clone https://github.com/ILDAnaSoft/ZHH.git -b "$clone_branch" /ZHH
+RUN git clone https://github.com/ILDAnaSoft/ZHH.git -b $clone_branch /ZHH
 
 RUN --security=insecure \
     echo "Mounting CVMFS"; /mount.sh; \
