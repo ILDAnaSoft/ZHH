@@ -64,7 +64,7 @@ jobs:
           file: "./Dockerfile"
           allow: "security.insecure"
           build-args: |
-            clone_branch="${{ env.BRANCH_NAME }}"
+            clone_branch=${{ env.BRANCH_NAME }}
       
       # This step generates an artifact attestation for the image, which is an unforgeable statement about
       # where and how it was built. It increases supply chain security for people who consume the image. For
