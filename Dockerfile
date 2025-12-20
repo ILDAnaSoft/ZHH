@@ -7,7 +7,7 @@ RUN dnf update; dnf clean all
 # Clone and equalize paths with GITHUB_WORKSPACE
 RUN if [ ! -z "$clone_branch" ]; then \
     git clone https://github.com/ILDAnaSoft/ZHH.git -b "$clone_branch" /ZHH; \
-elif [ -d "$GITHUB_WORKSPACE" ]; then ln -s "$GITHUB_WORKSPACE" /ZHH && echo "Symlinked GITHUB_WORKSPACE to /ZHH"; fi
+else echo "Current dir: $(ls)" && ln -s "$(pwd)" /ZHH; fi
 
 RUN --security=insecure \
     echo "Mounting CVMFS"; /mount.sh; \
