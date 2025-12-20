@@ -22,26 +22,36 @@ function usage() {
     echo "       MarlinMLFlavorTagging: https://gitlab.desy.de/bryan.bliewert/MarlinMLFlavorTagging"
 }
 
-ZHH_K4H_RELEASE="2025-01-28"
-export ONNXRUNTIMEPATH="/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/py-onnxruntime/1.17.1-s4gp4m"
+if [ -z "$ZHH_K4H_PLATFORM" ]; then
+    export ZHH_K4H_PLATFORM="x86_64-almalinux9"
+fi
+
+if [ -z "$ZHH_K4H_TYPE" ]; then
+    # either dbg or opt
+    export ZHH_K4H_TYPE="dbg"
+fi
+
+if [ -z "$ZHH_K4H_RELEASE" ]; then
+    export ZHH_K4H_RELEASE="2025-01-28"
+fi
 
 function zhh_echo() {
     echo "ZHH> $1"
 }
 
 # Inferring REPO_ROOT
-if [[ ! -d "$REPO_ROOT" ]]; then
+if [ ! -d "$REPO_ROOT" ]; then
     zhh_echo "Info: Trying to infer REPO_ROOT..."
 
     REPO_ROOT="$(realpath "${BASH_SOURCE[${#BASH_SOURCE[@]} - 1]}" )"
     export REPO_ROOT="$(dirname $REPO_ROOT)"
 
-    if [[ ! -d "$REPO_ROOT/zhh" ]]; then
+    if [ ! -d "$REPO_ROOT/zhh" ]; then
         zhh_echo "Error: REPO_ROOT could not be inferred. Checking cwd.."
         export REPO_ROOT="$(pwd)"
     fi
 
-    if [[ -d "$REPO_ROOT/zhh" && -d "$REPO_ROOT/source" ]]; then
+    if [ -d "$REPO_ROOT/zhh" ] && [ -d "$REPO_ROOT/source" ]; then
         zhh_echo "Success: Found REPO_ROOT at <$REPO_ROOT>"
     else
         zhh_echo "Error: REPO_ROOT not found. Aborting."
@@ -105,17 +115,36 @@ for ((i=1; i<=$#; i++)); do
 done
 
 # Load some common code after $REPO_ROOT is ready
+# This also loads the key4hep stack
 source $REPO_ROOT/shell/common.sh
+
+# Automatically find pytorch (if not included in .env)
+if [ -z "${TORCH_PATH}" ]; then
+    zhh_echo "Trying to find pytorch..."
+    export TORCH_PATH=$(dirname $(python -c 'import torch; print(f"{torch.__file__}")'))
+
+    if [ -d "${TORCH_PATH}" ]; then
+        zhh_echo "Found pytorch at <$TORCH_PATH>"
+    else
+        zhh_echo "Pytorch not found, please set TORCH_PATH. Aborting." && return 1
+    fi
+fi
+
+if [ -z "$ONNXRUNTIMEPATH" ]; then
+    export ONNXRUNTIMEPATH="$(echo "$TORCH_PATH" | sed 's!/py-torch.*!!g')/py-onnxruntime"
+    export ONNXRUNTIMEPATH="$ONNXRUNTIMEPATH/$(ls -AU "$ONNXRUNTIMEPATH" | head -1 )"
+    [ -d $ONNXRUNTIMEPATH ] && echo "Found ONNXRuntime at $ONNXRUNTIMEPATH" || { echo "Could not find ONNXRuntime. Stopping"; exit 1; }
+fi
 
 #########################################
 
 if [ "$ZHH_COMMAND" = "install" ]; then
     unset zhh_install_dir
 
-    source $REPO_ROOT/shell/zhh_install.sh
+    source "$REPO_ROOT/shell/zhh_install.sh"
 
     # Python virtual environment (venv)
-    #zhh_install_venv
+    zhh_install_venv
 
     # Dependencies
     if [ -z "$ZHH_INSTALL_DIR" ]; then
@@ -127,7 +156,7 @@ if [ "$ZHH_COMMAND" = "install" ]; then
 fi
 
 # install the setup.sh script
-if [[ ! -f "$REPO_ROOT/setup.sh" || $ZHH_WRITE_SETUP = "1" ]]; then
+if [ ! -f "$REPO_ROOT/setup.sh" ] || [ $ZHH_WRITE_SETUP = "1" ]; then
     zhh_echo "Compiling setup.sh file"
 
     rm -f $REPO_ROOT/setup.sh
