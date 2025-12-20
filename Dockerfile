@@ -11,7 +11,7 @@ RUN --security=insecure \
     echo "Mounting CVMFS"; /mount.sh; \
     echo "Checking whether key4hep exists..."; \
     [ -d /cvmfs/sw.hsf.org/key4hep ] && echo "key4hep found" || exit 1;\
-    echo "Building image with $(nproc) cores..." && cd /ZHH && bash install.sh --auto \
+    echo "Building image with $(nproc) cores..." && cd /ZHH && bash install.sh --auto; \
     ls /ZHH/source/lib && echo "ZHH libraries created. Done" || exit 2
 
 ENTRYPOINT ["/mount.sh"]
