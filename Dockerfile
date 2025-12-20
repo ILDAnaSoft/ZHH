@@ -1,13 +1,11 @@
 #FROM ilcsoft/tutorial:aidacs7 as base
 FROM ghcr.io/key4hep/key4hep-images/alma9-cvmfs:latest AS base
-ARG clone_branch=""
+ARG clone_branch="main"
 
 RUN dnf update; dnf clean all
 
 # Clone and equalize paths with GITHUB_WORKSPACE
-RUN if [ ! -z "$clone_branch" ]; then \
-    git clone https://github.com/ILDAnaSoft/ZHH.git -b "$clone_branch" /ZHH; \
-else echo "Current dir: $(ls)" && ln -s "$(pwd)" /ZHH; fi
+RUN git clone https://github.com/ILDAnaSoft/ZHH.git -b "$clone_branch" /ZHH
 
 RUN --security=insecure \
     echo "Mounting CVMFS"; /mount.sh; \
