@@ -27,6 +27,7 @@
         <constant name="OutputRootFile" value="${OutputBaseName}.root" />
         <constant name="NumberOfHiggs" value="2" />
         <constant name="MCParticleCollectionName" value="MCParticlesSkimmed" />
+        <constant name="PFOCollectionName" value="PandoraPFOs_pfoselection" />
         <constant name="CMSEnergy" value="550." />
 	    <constant name="ISRPzMax" value="125.6" />
         <constant name="Verbosity" value="SILENT" />
@@ -40,13 +41,13 @@
         <!-- Runtime+Process information in FinalStatesMeta.json -->
         <processor name="MyFinalStateRecorder" />
 
-        <!-- Reconstruction -->
-        <group name="prodRecoCorrections" />
-
         <!-- when running on fast sim samples, apply the CovMatSwitch fix to correct extremely large errors from tracks (use cluster error then) -->
         <if condition="${IsFastSim}">
             <group name="prodRecoFastSim" />
         </if>
+
+        <!-- Reconstruction -->
+        <group name="prodRecoCorrections" />
 
         <group name="prodRecoMain" />
 
@@ -65,7 +66,7 @@
         <!-- limit the number of processed records (run+evt): -->
         <!--parameter name="MaxRecordNumber" value="0" /to process all events--> 
         <!--parameter name="MaxRecordNumber" value="1000" /to process 1000 events--> 
-        <parameter name="MaxRecordNumber" value="100"/>
+        <parameter name="MaxRecordNumber" value="50"/>
         <parameter name="SkipNEvents" value="0" />
         <parameter name="SupressCheck" value="false" />
         <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT">SILENT</parameter>

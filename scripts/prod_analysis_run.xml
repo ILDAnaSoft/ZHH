@@ -33,8 +33,9 @@
         <constant name="OutputRootFile" value="${OutputBaseName}.root" />
         <constant name="NumberOfHiggs" value="2" />
         <constant name="MCParticleCollectionName" value="MCParticlesSkimmed" />
+        <constant name="PFOCollectionName" value="PandoraPFOs_pfoselection" />
         <constant name="CMSEnergy" value="550." />
-	    <constant name="ISRPzMax" value="125.6" />
+	<constant name="ISRPzMax" value="125.6" />
         <constant name="Verbosity" value="SILENT" />
     </constants>
 
@@ -73,7 +74,7 @@
         <!-- limit the number of processed records (run+evt): -->
         <!--parameter name="MaxRecordNumber" value="0" /to process all events--> 
         <!--parameter name="MaxRecordNumber" value="1000" /to process 1000 events--> 
-        <parameter name="MaxRecordNumber" value="50"/>
+        <parameter name="MaxRecordNumber" value="0"/>
         <parameter name="SkipNEvents" value="0" />
         <parameter name="SupressCheck" value="false" />
         <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT">SILENT</parameter>
@@ -121,7 +122,7 @@
         <!-- write complete objects in subset collections to the file (i.e. ignore subset flag)-->
         <!--parameter name="FullSubsetCollections" type="StringVec">${MCParticleCollectionName}</parameter-->
         <!--force keep of the named collections - overrules DropCollectionTypes (and DropCollectionNames)-->
-        <parameter name="KeepCollectionNames" type="StringVec"> ISOMuons ISOElectrons ISOTaus recoNeutrinos4 recoNeutrinos6 SemiLeptonicDecay_RP SemiLeptonicDecayVertex PandoraClusters PFOsMinusISOMuons PandoraPFOsWithoutLepPair MarlinTrkTracks MarlinTrkTracksKaon MarlinTrkTracksProton JetSLDLink SLDJetLink mcNurecoNuLink recoNumcNuLink NuSLDLink SLDNuLink PandoraPFOs ${PFOsWithoutOverlayCollection} IsolatedLeptons ISOLeptons PandoraPFOsWithoutLepPair PandoraPFOsWithoutIsoLep RefinedJets2 RefinedJets4 RefinedJets5 RefinedJets6 TrueJets FinalColourNeutrals InitialColourNeutrals TrueJetPFOLink TrueJetMCParticleLink FinalElementonLink InitialElementonLink FinalColourNeutralLink InitialColourNeutralLink HdecayMode </parameter>
+        <parameter name="KeepCollectionNames" type="StringVec"> ISOMuons ISOElectrons ISOTaus recoNeutrinos4 recoNeutrinos6 SemiLeptonicDecay_RP SemiLeptonicDecayVertex PandoraClusters PFOsMinusISOMuons PandoraPFOsWithoutLepPair MarlinTrkTracks MarlinTrkTracksKaon MarlinTrkTracksProton JetSLDLink SLDJetLink mcNurecoNuLink recoNumcNuLink NuSLDLink SLDNuLink ${PFOCollectionName} ${PFOsWithoutOverlayCollection} IsolatedLeptons ISOLeptons PandoraPFOsWithoutLepPair PandoraPFOsWithoutIsoLep RefinedJets2 RefinedJets4 RefinedJets5 RefinedJets6 TrueJets FinalColourNeutrals InitialColourNeutrals TrueJetPFOLink TrueJetMCParticleLink FinalElementonLink InitialElementonLink FinalColourNeutralLink InitialColourNeutralLink HdecayMode </parameter>
         <!-- name of output file -->
         <parameter name="LCIOOutputFile" type="string">${OutputDirectory}/${OutputBaseName}.slcio</parameter>
         <!--write mode for output file:  WRITE_APPEND or WRITE_NEW-->

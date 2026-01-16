@@ -81,6 +81,7 @@ set(sources
   ZinvisibleErrorAnalysis/src/ZinvisibleErrorAnalysis.cc
   PreSelection/src/PreSelection.cc
   SwitchCovMat/src/SwitchCovMat.cc
+  PFOSelection/src/PFOSelection.cc
 )
 
 add_library(ZHHProcessors SHARED ${sources})
@@ -126,6 +127,7 @@ target_include_directories(ZHHProcessors PRIVATE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/ZinvisibleErrorAnalysis/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/PreSelection/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/SwitchCovMat/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/PFOSelection/include>
 )
 target_compile_definitions(ZHHProcessors ${MarlinUtil_DEFINITIONS} PRIVATE "MARLIN_USE_ROOT")
 target_compile_definitions(ZHHProcessors ${MarlinUtil_DEFINITIONS} PRIVATE "MARLIN_USE_AIDA")
