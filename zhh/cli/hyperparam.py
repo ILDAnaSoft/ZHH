@@ -2,9 +2,9 @@ from io import StringIO
 from xgboost import XGBClassifier
 from optuna.storages import JournalStorage
 from optuna.storages.journal import JournalFileBackend
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 from datetime import datetime
-from math import sqrt
+from math import sqrt, ceil
 import os, pickle, sys, argparse
 import optuna
 import numpy as np
@@ -15,13 +15,13 @@ conf = {
     'TRIALPATH': ''
 }
 
-def set_conf(BPATH:str, DATESTRING:str|None=None):
-    if DATESTRING is None:
-        DATESTRING = datetime.now().strftime('%Y%m%d.%H%M%S')
+def set_conf(base_path:str, datestring:str|None=None):
+    if datestring is None:
+        datestring = datetime.now().strftime('%Y%m%d.%H%M%S')
 
-    conf['DATESTRING'] = DATESTRING
-    conf['BPATH'] = BPATH
-    conf['TRIALPATH'] = f'{BPATH}/trial-{DATESTRING}'
+    conf['DATESTRING'] = datestring
+    conf['BPATH'] = base_path
+    conf['TRIALPATH'] = f'{base_path}/trial-{datestring}'
 
 set_conf(os.getcwd())
 
@@ -121,14 +121,18 @@ def objective(trial:optuna.Trial, hyper_params:dict|None=None,
     return float(best_significance)**(-1)
 
 if __name__ == "__main__":
-    NTRIALS = 400
-    NPROCESSES = 12
-
     parser = argparse.ArgumentParser()
+    parser.add_argument('-ntrials', type=str, default=500, help='number of trials')
+    parser.add_argument('-nprocesses', type=str, default=None, help='number of processes to use. set to 80% of available CPU cores if not given')
     parser.add_argument('-trial', type=str, default=None, help='name/timestamp of trial')
     parser.add_argument('-basepath', type=str, default=None, help='basepath')
 
     args = parser.parse_args()
+
+    NTRIALS = args.ntrials
+    NPROCESSES = ceil(.8 * cpu_count()) if args.nprocesses is None else args.nprocesses
+    
+    print(f'Using {NPROCESSES} cores')
 
     # process the steering file -> sources and final state info
     if args.trial is not None:

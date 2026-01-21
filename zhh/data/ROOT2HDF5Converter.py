@@ -18,20 +18,21 @@ ChunkedConversionResult = tuple[int, tuple[tuple[int, int]|tuple[int], str]]
 # ROOT.gInterpreter.GenerateDictionary("ROOT::VecOps::RVec<vector<double>>", "vector;ROOT/RVec.hxx")
 # ROOT.gInterpreter.GenerateDictionary("ROOT::VecOps::RVec<ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>>>", "vector;ROOT/RVec.hxx;Math/Vector4D.h")
 
-def create_chunks(tree:str, branch:str, root_files:list[str], out_bname:str, chunk_size:int=256,
+def create_chunks(tree:str, branch:str, root_files:list[str], out_bname:str, clamp:tuple[float|int|None, float|int|None], nan_to:float|int|None, chunk_size:int=256,
                   overwrite_if_exists:bool=True, read_size:int=16, dtype:int|None=None)->list[tuple[int, str, str, list[str], str, bool, int, str]]:
 
     chunks = []
     chunk_idx = 0
     for i in range(0, len(root_files), chunk_size):
-        chunks.append((chunk_idx, tree, branch, root_files[i:i+chunk_size], f'{out_bname}.{chunk_idx}.h5', overwrite_if_exists, read_size, dtype))
+        chunks.append((chunk_idx, tree, branch, root_files[i:i+chunk_size], f'{out_bname}.{chunk_idx}.h5', overwrite_if_exists, read_size, dtype, clamp, nan_to))
         chunk_idx += 1
     
     return chunks
 
 class ROOT2HDF5Converter:
     def __init__(self, root_files:list[str], output_file:str, tree:str, branch:str,
-                 output_bname:str|None=None, output_name:str|None=None, dtype:str|None=None):
+                 output_bname:str|None=None, output_name:str|None=None, dtype:str|None=None,
+                 clamp:tuple[int|float|None, int|float|None]|None=None, nan_to:float|int|None=None):
         """_summary_
 
         Args:
@@ -42,7 +43,9 @@ class ROOT2HDF5Converter:
             output_bname (str | None, optional): basename of HDF5 file. Defaults to None.
             output_name (str | None, optional): name of virtual dataset to create in output_file.
                 Will use branch if None. Defaults to None.
-            dtype (str | None, optional): _description_. Defaults to None.
+            dtype (str | None, optional): Data type. Will be inferred automatically if None. Defaults to None.
+            clamp (tuple|None): (min, max) value to clamp to, if not None. Defaults to None.
+            nan_to (float|int|None): a value to replace NaN values with, if not None. Defaults to None.
         """
     
         assert(output_file.lower().endswith('.h5') or output_file.lower().endswith('.hdf5'))
@@ -62,12 +65,14 @@ class ROOT2HDF5Converter:
         self._output_bname = output_bname
         self._output_name = output_name
         self._dtype = dtype
+        self._clamp = (None, None) if clamp is None else (None if clamp[0] is None else clamp[0], None if clamp[0] is None else clamp[1])
+        self._nan_to = nan_to
 
         if not osp.isdir(osp.dirname(output_bname)):
             makedirs(osp.dirname(output_bname), exist_ok=True)
     
     def getChunks(self, **kwargs):
-        return create_chunks(self._tree, self._branch, self._root_files, self._output_bname, **kwargs)
+        return create_chunks(self._tree, self._branch, self._root_files, self._output_bname, self._clamp, self._nan_to, **kwargs)
     
     def checkExisting(self, chunks:list)->tuple[bool, list[int], list[int]]:
         already_done = False
@@ -284,28 +289,47 @@ class CreateVDSTask(AbstractTask):
         #return True
         return createVDS(h5_files, vds_file, output_name, nrows=np.sum(sizes), ncols=ncols, dtype=dtype, sizes=sizes)
 
-def tree_n_rows(sources:list[str], tree:str, use_uproot:bool=True, use_mp:bool=True)->int:
-    nrows = 0
+def tree_n_rows(sources:list[str], tree:str, use_uproot:bool=True, use_mp:bool=True, aggregate:bool=True, return_path:bool=False)->int|tuple[list[str],int]|list[int]:
+    """Returns the number of entries in a TTree tree in the files sources
+    If aggregate=True, the sum is returned, otherwise a list of sizes in
+    equal order as sources will be returned.
+
+    Args:
+        sources (list[str]): _description_
+        tree (str): _description_
+        use_uproot (bool, optional): _description_. Defaults to True.
+        use_mp (bool, optional): _description_. Defaults to True.
+        aggregate (bool, optional): _description_. Defaults to True.
+        return_path (bool, optional): _description_. Defaults to False.
+
+    Returns:
+        int|tuple[list[str],int]|list[int]: _description_
+    """
+    
+    nrows = 0 if aggregate else {}
 
     if use_mp and len(sources) > 4 * cpu_count():
         with Pool() as pool:
             chunks = []
-            chunk_size = ceil(len(sources) / cpu_count())
+            chunk_size = ceil(len(sources) / cpu_count()) if aggregate else 1
             for i in range(0, len(sources), chunk_size):
                 chunks.append(sources[i:i + chunk_size])
 
-            #print(len(sources), cpu_count(), chunk_size)
-            #print([len(c) for c in chunks])
-
             progress = tqdm(range(len(chunks)))
-            progress.set_description(f'Fetching size of TTree <{tree}> in <{len(sources)}> files using <{cpu_count()}> cores...')
+            progress.set_description(f'Fetching size of TTree <{tree}> in <{len(sources)}> files using <{cpu_count()}> cores and <{len(chunks)}> chunks...')
         
-            for chunk_output in pool.imap_unordered(functools.partial(tree_n_rows, tree=tree, use_uproot=use_uproot, use_mp=False), chunks):
-                #print(nrows, chunk_output, nrows + chunk_output)
-                nrows += chunk_output
+            for chunk, output in pool.imap_unordered(functools.partial(tree_n_rows, tree=tree, use_uproot=use_uproot, use_mp=False, return_path=True), chunks):
+                if aggregate:
+                    nrows += output
+                else:
+                    nrows[chunk[0]] = output
+                    
                 progress.update(1)
-
-        return nrows
+                
+        if aggregate:
+            return nrows
+        else:
+            return [nrows[name] for name in sources]
     else:
         if not TYPE_CHECKING:
             if use_uproot:
@@ -322,7 +346,7 @@ def tree_n_rows(sources:list[str], tree:str, use_uproot:bool=True, use_mp:bool=T
 
                 nrows = chain.GetEntries()
         
-        return nrows
+        return (sources, nrows) if return_path else nrows
 
 def translate_item(sources:list[str], tree:str, names:str|list[str], use_uproot:bool=True)->list[ak.Array]:
     result:list[ak.Array] = []
@@ -357,7 +381,8 @@ def translate_item_lazy(sources:list[str], tree:str, names:str|list[str], n_per_
         yield translate_item(sources[counter:counter+size], tree, names, use_uproot)
         counter += size
 
-def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None, str|None])->ChunkedConversionResult:
+def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None,
+                         str|None, tuple[float|int|None, float|int|None]])->ChunkedConversionResult:
     """Attempts to read tree/branch from all ROOT files in file_paths.
     Depending on the value of outp_or_None:
     1. None -> (chunk_idx, result=list[ak.array]) will be returned
@@ -380,6 +405,8 @@ def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None, str|None
             loaded into memory at a time.
         args[7] = dtype (str|None): if None, dtype will be infer-
             red using uproot
+        args[8] = clamp (tuple[float|int|None, float|int|None])
+        args[9] = nan_to (float|int|None)
             
     Returns:
         _type_: _description_
@@ -393,6 +420,8 @@ def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None, str|None
     overwrite_if_exists:bool = args[5]
     read_size:int|None = args[6]
     dtype:str|None = args[7]
+    clamp:tuple[float|int|None, float|int|None] = args[8]
+    nan_to:float|int|None = args[9]
 
     import h5py
 
@@ -462,10 +491,25 @@ def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None, str|None
                 for arr in result:
                     arr_size = len(arr)
                     dataset:h5py.Dataset = cast(h5py.Dataset, hf[col])
+                    
                     if is_named:
-                        dataset[(nrows+counter):(nrows+counter+arr_size)] = arr[col][:]
+                        target_data = arr[col][:]
                     else:
-                        dataset[(nrows+counter):(nrows+counter+arr_size)] = arr[:, i_col] if is_2d else arr
+                        if is_2d:
+                            target_data = arr[:, i_col]
+                        else:
+                            target_data = arr
+                    
+                    if clamp[0] is not None or clamp[1] is not None:
+                        target_data = np.clip(target_data, a_min=clamp[0], a_max=clamp[1], dtype=dtype)
+                    
+                    if nan_to is not None:
+                        if not isinstance(target_data, np.ndarray):
+                            target_data = np.array(target_data)
+                        
+                        target_data[np.isnan(target_data)] = nan_to
+                            
+                    dataset[(nrows+counter):(nrows+counter+arr_size)] = target_data
                     counter += arr_size
 
                 assert(counter == size)
@@ -481,10 +525,10 @@ def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None, str|None
 
     return (chunk_idx, ((nrows, ncols) if (is_2d or is_named) else (nrows, ), dtype))
 
-def process_chunks(chunks, n_files:int|None=None):
+def process_chunks(chunks, n_files:int|None=None, ncores:int|None=None):
     chunk_outputs = []
 
-    with Pool() as pool:
+    with Pool(ncores if ncores is not None else round(cpu_count() * .8)) as pool:
         progress = tqdm(range(n_files if n_files is not None else len(chunks)))
         
         for chunk_output in pool.imap_unordered(per_chunk, chunks):

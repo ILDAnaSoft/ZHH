@@ -22,6 +22,9 @@ class Cut():
     def formula(self, unit:str|None=None):
         raise NotImplementedError('Method formula not implemented')
     
+    def latex(self, *args, **kwargs):
+        return self.formula(*args, **kwargs)
+    
     def __repr__(self):
         return f"<Cut on {self.formula()}>"
 
@@ -49,10 +52,11 @@ class SemiInvisibleCut(Cut):
             return ((self.visible(arg)) | (self.hidden(arg))) 
     
 class ValueCut(Cut):
-    def __init__(self, quantity:str, label:str|None=None, **cut_kwargs):
+    def __init__(self, quantity:str, label:str|None=None, unit:str|None=None, **cut_kwargs):
         super().__init__(quantity, label, **cut_kwargs)
         
         self.type:int|None = None
+        self.unit = unit
         
     def raw(self, arg):
         raise NotImplementedError('Method raw not implemented')
@@ -70,7 +74,9 @@ class EqualCut(ValueCut):
     def raw(self, arg):
         return arg == self.value
     
-    def formula(self, unit:Optional[str]=None):
+    def formula(self, unit:str|None=None):
+        unit = unit if unit is not None else self.unit
+        
         return f"{self.label}{'' if unit is None else ('/' + unit)} = {self.value}"
 
 class WindowCut(ValueCut):
@@ -96,8 +102,15 @@ class WindowCut(ValueCut):
     def raw(self, arg):
         return (self.lower <= arg) & (arg <= self.upper)
     
-    def formula(self, unit:Optional[str]=None):
+    def formula(self, unit:str|None=None):
+        unit = unit if unit is not None else self.unit
+        
         return f"{self.lower} <= {self.label}{'' if unit is None else ('/' + unit)} <= {self.upper}"
+    
+    def latex(self, unit:str|None=None):
+        unit = unit if unit is not None else self.unit
+        
+        return rf"{self.lower} \leq {self.label}{'' if unit is None else ('/' + unit)} \leq {self.upper}"
 
 class WithinBoundsCut(WindowCut):
     def __init__(self, quantity: str, lower: int|float, upper: int|float, **cut_kwargs):
@@ -116,8 +129,15 @@ class GreaterThanEqualCut(ValueCut):
     def raw(self, arg):
         return self.lower <= arg
     
-    def formula(self, unit:Optional[str]=None):
+    def formula(self, unit:str|None=None):
+        unit = unit if unit is not None else self.unit
+        
         return f"{self.label}{'' if unit is None else ('/' + unit)} >= {self.lower}"
+
+    def latex(self, unit:str|None=None):
+        unit = unit if unit is not None else self.unit
+        
+        return f"{self.label}{'' if unit is None else ('/' + unit)} \geq {self.lower}"
         
 class LessThanEqualCut(ValueCut):
     def __init__(self, quantity:str, upper:Union[int,float], **cut_kwargs):
@@ -132,8 +152,15 @@ class LessThanEqualCut(ValueCut):
     def raw(self, arg):
         return arg <= self.upper
     
-    def formula(self, unit:Optional[str]=None):
+    def formula(self, unit:str|None=None):
+        unit = unit if unit is not None else self.unit
+        
         return f"{self.label}{'' if unit is None else ('/' + unit)} <= {self.upper}"
+    
+    def latex(self, unit:str|None=None):
+        unit = unit if unit is not None else self.unit
+        
+        return f"{self.label}{'' if unit is None else ('/' + unit)} \leq {self.upper}"
 
 def apply_cuts(data:np.ndarray, cuts:List[Cut], consecutive:bool=True)->Generator:
     for i, cut in enumerate(cuts):

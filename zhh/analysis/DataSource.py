@@ -4,6 +4,7 @@ from .DataStore import DataStore
 from zhh.processes import parse_polarization_code, ProcessCategories
 from zhh.analysis.TTreeInterface import FinalStateCounts
 from typing import cast, TYPE_CHECKING
+import json
 import uproot as ur, h5py, os.path as osp, os, numpy as np
 
 class DataSource:
@@ -24,6 +25,7 @@ class DataSource:
         self._name = name
         self._h5_file = file
         self._npz_file = f'{osp.splitext(file)[0]}.npz'
+        self._meta_file = f'{osp.splitext(file)[0]}.meta.json' # created by cutflow_parse.py
         self._work_root = work_root if work_root is not None else osp.dirname(file)
         
         # fetchData()
@@ -103,12 +105,41 @@ class DataSource:
         """Returns the data store.
 
         Returns:
-            TTreeInterface: columnar interface to all event data
+            DataStore: columnar interface to all event data
         """
         
         assert(self._store is not None)
         
         return self._store
+    
+    def getMeta(self)->dict:
+        """Reads the meta information
+
+        Returns:
+            dict: _description_
+        """
+        
+        with open(self._meta_file, 'rt') as jf:
+            return json.load(jf)
+        
+    def whichFiles(self, mask:np.ndarray)->list[str]:
+        """Given a binary mask, returns a list of source ROOT files the rows with mask=True correspond to.
+        Useful for debugging. Consider using also store['event'] to get the event number and store['id'] for
+        the ID within a store.
+
+        Args:
+            mask (np.ndarray): _description_
+
+        Returns:
+            list[str]: _description_
+        """
+        
+        meta = self.getMeta()
+        
+        ids = np.where(mask)[0]
+        file_ids = np.digitize(ids, np.cumsum(meta['sizes']))
+        
+        return [meta['files'][id] for id in file_ids]
     
     def plotFinalStateCounts(self):
         from zhh import plot_final_state_counts 

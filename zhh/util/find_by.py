@@ -6,11 +6,17 @@ def find_by(items:Sequence[dict], property:str, value, is_dict:bool|None=None):
     
     if is_dict:
         for item in items:
-            if item[property] == value:
-                return item
+            if property in item:
+                if item[property] == value:
+                    return item
+                else:
+                    raise KeyError(f'Item {property} not found')
     else:
         for item in items:
-            if getattr(item, property) == value:
-                return item
-    
-    raise KeyError(f'Item {property} not found')
+            if hasattr(item, property):
+                if getattr(item, property) == value:
+                    return item
+            else:
+                raise KeyError(f'Item {property} not found')
+
+    raise KeyError(f'No item with {property}={value} not found')

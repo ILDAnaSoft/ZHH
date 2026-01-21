@@ -1,8 +1,8 @@
+from os import getcwd, path as osp
 from .CutflowProcessor import CutflowProcessor
 from law import LocalTarget, LocalFileSystem, LocalFileTarget, LocalDirectoryTarget
 from law.util import flatten
 from collections.abc import Iterable, Sequence
-from os import getcwd, path as osp
 
 config = {
     'relative_filesystem': LocalFileSystem(base=getcwd()),

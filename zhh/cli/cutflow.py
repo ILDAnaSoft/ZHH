@@ -1,4 +1,5 @@
-from zhh import parse_steering_file, process_steering, initialize_sources, parse_cuts, CutflowProcessor, parse_steer_cutflow_table
+from zhh import parse_steering_file, process_steering, initialize_sources, parse_cuts, CutflowProcessor, parse_steer_cutflow_table, \
+    parse_actions, execute_actions
 import argparse, yaml
 
 if __name__ == "__main__":
@@ -18,10 +19,16 @@ if __name__ == "__main__":
     # parse the cuts and combine all info to a CutflowProcessor
     preselection = parse_cuts(steer['preselection']['cuts'])
     cp = CutflowProcessor(sources, hypothesis=steer['hypothesis'], cuts=preselection, signal_categories=steer['signal_categories'])
+    cp.process()
 
     # prepare the cutflow table
     preselection_cf_table = steer['preselection'].get('cutflow_table')
     if preselection_cf_table is not None:
         cutflow_table_items, cutflow_table_kwargs = parse_steer_cutflow_table(steer, filename=preselection_cf_table)
 
-    
+    actions = parse_actions(steer, cp)
+
+    # dry run only
+    # execute_actions(actions, check_only=True)
+
+    execute_actions(actions)
