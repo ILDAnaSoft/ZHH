@@ -96,8 +96,8 @@ class HTCondorWorkflow(law.contrib.htcondor.HTCondorWorkflow):
             
             session_submissions[name] = 0 if name not in session_submissions else session_submissions[name] + 1
         else:
-            # Default config: 2GB RAM and 3h of runtime
-            config.custom_content.append(('request_memory', '3000 Mb'))
+            # Default at DESY NAF: 1.5GB RAM and 3h of runtime
+            #config.custom_content.append(('request_memory', '3000 Mb'))
             #if self.max_runtime:
             #    config.custom_content.append(('request_runtime', math.floor(cast(int|float, self.max_runtime) * 3600)))
                 

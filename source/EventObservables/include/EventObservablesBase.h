@@ -28,11 +28,7 @@
 #include "inv_mass.h"
 #include "v4.h"
 #include "EventObservablesFromZZ.h"
-
-#define USE_TRUEJET 1
-#ifdef USE_TRUEJET
-	#include <TrueJet_Parser.h>
-#endif
+#include <TrueJet_Parser.h>
 
 using namespace lcio ;
 using namespace marlin ;
@@ -52,19 +48,14 @@ struct DelMe {
   std::function<void()>  _func;
 };
 
-class EventObservablesBase: public Processor
-#ifdef USE_TRUEJET
-, public TrueJet_Parser
-#endif
-{
+class EventObservablesBase: public Processor, public TrueJet_Parser {
 	public:
 		EventObservablesBase(const std::string& name);
 		virtual ~EventObservablesBase() = default;
 		EventObservablesBase(const EventObservablesBase&) = delete;
 		EventObservablesBase& operator=(const EventObservablesBase&) = delete;
 
-		#ifdef USE_TRUEJET
-
+		// used for clearing up TrueJet parsed data
 		void delall2() {
 			if (  relfcn != NULL ) { delete relfcn; relfcn = NULL; }
 			if (  relicn != NULL ) { delete relicn; relicn = NULL; }
@@ -77,8 +68,6 @@ class EventObservablesBase: public Processor
 			if (  initialcns != NULL ) { delete initialcns; initialcns = NULL; }
 			if ( reltrue_tj  != NULL ) { delete reltrue_tj; reltrue_tj = NULL; }
 		};
-
-		#endif
 
 		virtual void init();
         virtual void processRunHeader( LCRunHeader* run );
@@ -164,9 +153,6 @@ class EventObservablesBase: public Processor
 		std::string m_inputJetKinFitZZHCollection{};
 		std::string m_inputLeptonKinFit_solveNuCollection{};
 		std::string m_inputJetKinFit_solveNuCollection{};
-		#ifndef USE_TRUEJET
-		std::string m_MCParticleCollectionName{};
-		#endif
 		std::string m_outputFile{};
 		std::string m_whichPreselection{};
 		std::string m_cutDefinitionsJSONFile{};
@@ -405,6 +391,7 @@ class EventObservablesBase: public Processor
 		#endif
 
 		// TrueJet information
+		short m_useTrueJet{};
 		short m_trueJetN{};
 		std::vector<ROOT::Math::PxPyPzEVector> m_trueJetMomenta{};
 		std::vector<ROOT::Math::PxPyPzEVector> m_trueISRMomenta{};
@@ -422,7 +409,6 @@ class EventObservablesBase: public Processor
 		std::vector<int> m_true2RecoJetIndex{};
 		std::vector<int> m_trueJetHiggsICNPairs{};
 
-		#ifdef USE_TRUEJET
 		float getMatchingByAngularSpace(
 			vector<EVENT::ReconstructedParticle*> recoJets,
 			vector<int> &reco2truejetindex,
@@ -430,7 +416,6 @@ class EventObservablesBase: public Processor
 			vector<int> &trueHadronicJetIndices,
 			vector<int> &trueLeptonIndices,
 			vector<int> &trueISRIndices );
-		#endif
 
 		float getMatchingByAngularSpace(
 			vector<EVENT::ReconstructedParticle*> recoJets,

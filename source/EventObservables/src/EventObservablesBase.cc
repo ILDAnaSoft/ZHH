@@ -265,7 +265,6 @@ registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
 			);
 
 	// TrueJet_Parser parameters
-#ifdef USE_TRUEJET
   registerInputCollection( LCIO::RECONSTRUCTEDPARTICLE,
                            "TrueJets" ,
                            "Name of the TrueJetCollection input collection"  ,
@@ -326,14 +325,6 @@ registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
                             _recoMCTruthLink,
                             string("RecoMCTruthLink")
                             );
-#else
-	registerInputCollection( LCIO::MCPARTICLE,
-				 "MCParticleCollection" ,
-				 "Name of the MCParticle collection"  ,
-				 m_MCParticleCollectionName ,
-				 std::string("MCParticlesSkimmed")
-				);
-#endif
 };
 
 void EventObservablesBase::prepareBaseTree()
@@ -593,6 +584,7 @@ void EventObservablesBase::clearBaseValues()
 	streamlog_out(DEBUG) << "   Clear called  " << std::endl;
 
 	// collections
+	m_useTrueJet = false;
 	inputLKF_solveNuCollection = NULL;
 	inputJKF_solveNuCollection = NULL;
 
@@ -1073,15 +1065,15 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 	// jet matching from kinfit; so far, only for 4 jet case
 	assert(m_nAskedJets() == 4);
 
-	if (m_nJets == m_nAskedJets()) {
-		#ifdef USE_TRUEJET
-			try {
-				pLCEvent->getCollection(_trueJetCollectionName);
-			} catch(DataNotAvailableException &e) {
-				streamlog_out(ERROR) << "No TrueJet collection " << _trueJetCollectionName << " found. Please make sure TrueJet ran!" << std::endl;
-				throw e;
-			}
+	try {
+		pLCEvent->getCollection(_trueJetCollectionName);
+		m_useTrueJet = true;
+	} catch(DataNotAvailableException &e) {
+		streamlog_out(ERROR) << "No TrueJet collection " << _trueJetCollectionName << " found. Skipping recording of truth four momenta" << std::endl;
+		m_useTrueJet = false;
+	}
 
+	if (m_nJets == m_nAskedJets() && m_useTrueJet) {
 			TrueJet_Parser* trueJet = this;
 			trueJet->getall( pLCEvent );
 			
@@ -1138,7 +1130,11 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 			}
 
 			delall2();
-		#else
+		
+		/*
+			REMOVED BECAUSE JUST TRAVERSING THE MC EVENT RECORD IS NOT RELIABLE
+			USE TRUEJET TO HANDLE PARTON SHOWERS CORRECTLY AND FIND THE CORRECT FOUR MOMENTA
+
 			LCCollection *mcParticles = pLCEvent->getCollection( m_MCParticleCollectionName );
 			
 			IntVec fsIndices;
@@ -1196,7 +1192,7 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 
 			// case in which number of hadronic jets == m_nJets
 			m_trueRecoJetsMapped = smallestSumCosAngle < 99;
-		#endif
+		*/
 	}
 };
 
@@ -1604,8 +1600,6 @@ std::vector<std::pair<int, float>> EventObservablesBase::sortedTagging(LCCollect
 	return sortedTagging(tags_by_jet_order);
 };
 
-#ifdef USE_TRUEJET
-
 float EventObservablesBase::getMatchingByAngularSpace(
 	vector<EVENT::ReconstructedParticle*> recoJets,
 	vector<int> &reco2truejetindex, // reco jet index -> truejet index
@@ -1671,8 +1665,6 @@ float EventObservablesBase::getMatchingByAngularSpace(
 	
 	return SmallestSumCosAngle;
 }
-
-#endif
 
 float EventObservablesBase::getMatchingByAngularSpace(
 	vector<EVENT::ReconstructedParticle*> recoJets,

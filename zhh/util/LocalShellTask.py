@@ -52,37 +52,39 @@ class LocalShellTask:
         print(msg)
         
         return msg
+    
+    @staticmethod
+    def execute_tasks(tasks:list['LocalShellTask'], logfile:str|None='logbook.txt', interval:float=0.05):
+        running:list[LocalShellTask] = []
+
+        for task in tasks:
+            target = task.getTarget()
+            if target is None or not os.path.exists(target):
+                print(f'Task {task.getName()} will be executed.')
+                running += [task.start()]
+            else:
+                print(f'Task {task.getName()} already completed, skipping.')
+        
+        if not len(running):
+            print('Nothing to do, all task targets exist.')
+            return
+        
+        while len(running):
+            for task in running:
+                if task.getProcess().poll() is not None:
+                    msg = task.finalize()
+                    
+                    if logfile is not None:
+                        with open(logfile, 'a') as f:
+                            f.write(msg + '\n')
+                    
+                    running.remove(task)
+                    break
+                
+            sleep(interval)
 
 def timestampms()->int:
     return round(time()*1000)
 
-def execute_tasks(tasks:list[LocalShellTask], logfile:str|None='logbook.txt'):
-    running:list[LocalShellTask] = []
 
-    for task in tasks:
-        target = task.getTarget()
-        if target is None or not os.path.exists(target):
-            print(f'Task {task.getName()} will be executed.')
-            running += [task.start()]
-        else:
-            print(f'Task {task.getName()} already completed, skipping.')
-    
-    if not len(running):
-        print('Nothing to do, all task targets exist.')
-        return
-    
-    while len(running):
-        for task in running:
-            if task.getProcess().poll() is not None:
-                msg = task.finalize()
-                
-                if logfile is not None:
-                    with open(logfile, 'a') as f:
-                        f.write(msg + '\n')
-                
-                running.remove(task)
-                break
-            
-        sleep(0.05)
-        
         

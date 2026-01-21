@@ -2,26 +2,26 @@ from ..CutflowProcessorAction import FileBasedProcessorAction, CutflowProcessor
 import numpy as np
 
 class WriteMVADataAction(FileBasedProcessorAction):
-    def __init__(self, cp: CutflowProcessor, steer: dict, use:str, step:int, split_column:str='split',
-                wt_split_column='weights_split', train_split:int=0, test_split:int=1, **kwargs):
+    def __init__(self, cp: CutflowProcessor, steer: dict, use:str, split_column:str='split',
+                wt_split_column='weights_split', step:int=0, train_split:int=0, test_split:int=1, **kwargs):
         """Writes out MVA data for training and testing. Assumes a splitting into different categories
         has been performed previously using SplitDatasetsAction.
 
         Args:
             cp (CutflowProcessor): _description_
             steer (dict): _description_
-            use (str): _description_
-            step (int): _description_
+            use (str): name of MVA to use
             split_column (str, optional): _description_. Defaults to 'split'.
             wt_split_column (str, optional): _description_. Defaults to 'weights_split'.
+            step (int): n-th cut group of the CutflowProcessor. Defaults to 0.
             train_split (int, optional): _description_. Defaults to 0.
             test_split (int, optional): _description_. Defaults to 1.
         """
         super().__init__(cp, steer)
-
+        
         from zhh import find_by
 
-        mva_spec = find_by(steer['mvas'], 'use', use, is_dict=True)
+        mva_spec = find_by(steer['mvas'], 'name', use, is_dict=True)
 
         self._use = use
         self._classes = mva_spec['classes']

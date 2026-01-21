@@ -293,7 +293,7 @@ class CutflowProcessor:
     def writeROOTFiles(self):
         import uproot as ur
         
-        with ur.recreate(f'{self._work_dir}/preselection.root', compression=ur.ZSTD(5)) as rf:
+        with ur.recreate(f'{self._work_dir}/cutflow_dump.root', compression=ur.ZSTD(5)) as rf:
             for source in self._sources:
                 name = source.getName()
                 
@@ -306,6 +306,11 @@ class CutflowProcessor:
                 }
                     
                 rf[name] = data
+    
+    def cutflowPrint(self, step:int=0):
+        _, cuts, calc_dicts, __ = self._flattenSteps(0, step)
+        
+        return cutflowPrint(cuts, calc_dicts)
     
     def cutflowPlots(self, step_start:int=0, step_end:int|None=None, display:bool=True,
                     file:str|None='cutflow_plots.pdf',
@@ -334,7 +339,7 @@ class CutflowProcessor:
             _type_: _description_
         """
         
-        context_and_figures = cutflowPlots(self, f'{self._work_dir}/{file}', display,
+        context_and_figures = cutflowPlots(self, f'{self._work_dir}/{file}' if file is not None else None, display,
                               step_start=step_start,
                               step_end=step_end if step_end is not None else len(self._cuts)-1,
                               hist_kwargs=hist_kwargs, plot_options_call=plot_options_call,
@@ -526,7 +531,7 @@ def plotCalcDictTop9(context:PlotContext, calc_dict:dict[str, tuple[np.ndarray, 
                      plot_options:dict={}, hist_kwargs:dict={}, hypothesis:str|None=None, bins:int=100):
     from zhh import plot_combined_hist, deepmerge
     
-    fig, axes = plt.subplots(nrows=3, ncols=3, figsize=(18, 18));
+    fig_tot, axes = plt.subplots(nrows=3, ncols=3, figsize=(18, 18));
     flattened_axes = axes.flatten()
 
     categories = list(calc_dict.keys())
@@ -534,11 +539,18 @@ def plotCalcDictTop9(context:PlotContext, calc_dict:dict[str, tuple[np.ndarray, 
         if sig_cat in categories:
             categories.remove(sig_cat)
             
-    wt_sum_max = np.max([ cd[1].sum() for cd in calc_dict.values() ])
-    xlim_min = np.min([ np.min(cd[0]) for cd in calc_dict.values() ])
-    xlim_max = np.max([ np.max(cd[0]) for cd in calc_dict.values() ])
+    wt_sum_max = np.nanmax([ cd[1].sum() for cd in calc_dict.values() ])
+    xlim_min = np.nanmin([ np.nanmin(cd[0]) for cd in calc_dict.values() ])
+    xlim_max = np.nanmax([ np.nanmax(cd[0]) for cd in calc_dict.values() ])
 
     for j, key in enumerate(list(reversed(categories))[:9]):
+        plot_dict = { key: calc_dict[key] }
+        for sig_key in signal_category_names:
+            plot_dict[sig_key] = calc_dict[sig_key]
+        
+        # stop plotting if the current entry does not contain any data to plot (-> less than 9 filled histograms)
+        # if plot_dict[sig_key] ==     
+        
         ax = flattened_axes[j]
 
         hist_kwargs_overwrite = deepcopy(hist_kwargs)
@@ -562,17 +574,13 @@ def plotCalcDictTop9(context:PlotContext, calc_dict:dict[str, tuple[np.ndarray, 
             'xlim': [xlim_min, xlim_max]
         }, deepcopy(plot_options))
         plot_kwargs['ild_style_kwargs']['ild_text_position'] = 'upper left'
-        
+
         if 'hist_kwargs_overwrite' in plot_options:
             deepmerge(hist_kwargs_overwrite, plot_options['hist_kwargs_overwrite'])
-        
-        plot_dict = { key: calc_dict[key] }
-        for sig_key in signal_category_names:
-            plot_dict[sig_key] = calc_dict[sig_key]
 
         fig = plot_combined_hist(plot_dict, plot_hist_kwargs_overwrite=hist_kwargs_overwrite, **plot_kwargs);
         
-    return fig
+    return fig_tot
 
 def cutflowPlotsFn(signal_category_names:list[str],
                  cuts:Sequence[ValueCut],
@@ -614,7 +622,7 @@ def cutflowPlotsFn(signal_category_names:list[str],
             'signal_keys': signal_category_names
         }
         plot_kwargs = deepmerge(plot_kwargs, plot_options_quantity)
-        plot_kwargs['ild_style_kwargs']['title_postfix'] = rf' before cut on ${cut.formula(unit=plot_kwargs["xunit"] if ("xunit" in plot_kwargs) else None)}$'
+        plot_kwargs['ild_style_kwargs']['title_postfix'] = rf' before cut on ${cut.latex(unit=plot_kwargs["xunit"] if ("xunit" in plot_kwargs) else None)}$'
         
         if cut.xlim_view is not None:
             plot_kwargs['xlim'] = cut.xlim_view
@@ -677,6 +685,8 @@ def cutflowPlotsFn(signal_category_names:list[str],
         all_figs.append(figs_sigvbkg[i])
     all_figs.append(fig)
     
+    all_figs.append(cutflowPlotSummaryFn(signal_category_names, cuts, calc_dicts, display=display, plot_context=plot_context))
+    
     if output_file is not None:
         export_figures(output_file, all_figs)
     
@@ -684,6 +694,82 @@ def cutflowPlotsFn(signal_category_names:list[str],
         plt.close(fig)
     
     return plot_context, figs_stacked, figs_sigvbkg, fig
+
+def order_categories(calc_dicts:list[dict], signal_categories:list[str], step:int=0)->list[str]:
+    order = []
+
+    keys_to_order = list(calc_dicts[step].keys())
+
+    for cat_string in signal_categories:
+        if cat_string in calc_dicts[step]:
+            order.append(cat_string)
+            keys_to_order.remove(cat_string)
+
+    while len(keys_to_order):
+        order.append(keys_to_order.pop(0))
+        
+    return order
+
+def cutflowPrint(cuts:list[ValueCut], calc_dicts:list[dict[str, tuple[np.ndarray, np.ndarray]]])->str:
+    res = ''
+    
+    for i_cut, cut in enumerate(cuts):
+        calc_dict = calc_dicts[i_cut]
+        
+        s = f'{cut.__repr__()[1:-1][:32]:<32}: '
+        for category in calc_dict:
+            s += f'{category:<8}: {calc_dicts[i_cut][category][1].sum():.3e} | '
+            # print(calc_dicts[i_cut]['μμHHbbbb'][1].sum())
+            
+        res += f'{s[:-2]}\n'
+    
+    return res
+
+def cutflowPlotSummaryFn(signal_category_names:list[str], cuts:list[ValueCut], calc_dicts:list[dict[str, tuple[np.ndarray, np.ndarray]]],
+                         plot_context:PlotContext, display:bool=True, output_file:str|None=None):
+    
+    from zhh.plot.ild_style import update_plot, legend_kwargs_fn
+    
+    order = order_categories(calc_dicts, signal_category_names)
+    
+    labels = [rf'${cut.latex()}$' for cut in cuts]
+    x = np.arange(len(labels)) # x positions
+
+    fig, ax = plt.subplots(figsize=(12, 6))
+
+    values_before = np.zeros(len(labels))
+
+    for category in order:
+        values = np.zeros(len(labels))
+        
+        for i_cut, cut in enumerate(cuts):
+            values[i_cut] = calc_dicts[i_cut][category][1].sum() if category in calc_dicts[i_cut] else 0.
+        
+        ax.bar(x, values, .9, bottom=values_before, label=category, color=plot_context.getColorByKey(category), linewidth=1.)
+        
+        values_before += values
+
+    ax.set_ylabel('wt. events')
+    ax.set_yscale('log')
+    ax.set_ylim(1e-2, 1.2*np.sum([calc_dicts[0][category][1].sum() for category in order]))
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, rotation=8)
+    ax.grid(axis='y', alpha=0.25, color='black')
+
+    legend = ax.legend(bbox_to_anchor=(1.01, 0.5), loc='center left', reverse=True, borderaxespad=0., **legend_kwargs_fn(plot_context))
+    legend.get_frame().set_edgecolor('none')
+
+    update_plot(ax, fontname=plot_context.getFont(), tick_label_size=10, labelsize=12)
+        
+    plt.tight_layout()
+    
+    if output_file is not None:
+        export_figures(output_file, all_figs)
+    
+    if not display:
+        plt.close(fig)
+    
+    return fig
 
 def cutflowTable(cp:CutflowProcessor, final_state_labels_and_names_or_processes:Sequence[tuple[str,str]|tuple[str,str,str]|tuple[str,list[str]]], path:str,
                  step_start:int, step_end:int, weight_prop:str='weight', signal_categories:list[str]=[], ignore_categories:list[str]=[]):

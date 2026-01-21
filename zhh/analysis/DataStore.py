@@ -37,11 +37,7 @@ class DataStore(MixedLazyTablelike):
         if final_states:
             from .PreselectionAnalysis import fs_columns
             
-            def attach_fs_counts(obj, attr, data):
-                obj[attr] = data
-            
             for i in range(len(fs_columns)):
-                #attach_fs_counts(self, fs_columns[i], self.fromFile(f'final_state_counts.dim{i}'))
                 self[fs_columns[i]] = mk_ref(self._h5_file, f'final_state_counts.dim{i}')
         
         # NEW: explicit definition of properties inside TTrees that are of type float are no more necessary
@@ -51,7 +47,7 @@ class DataStore(MixedLazyTablelike):
         self['sumBTags'] = lambda intf: ( self['bmax1'] + self['bmax2'] + self['bmax3'] + self['bmax4'] )
 
         self['yminus_mod100'] = lambda intf: np.mod(intf['yminus2'], 100)
-        self['cosjzmax'] = lambda intf: self['cosJZMax_2Jets']
+        #self['cosjzmax'] = lambda intf: self['cosJZMax_2Jets']
         
         if not init_done:
             self.itemsInitialize(n_jets)
@@ -161,31 +157,6 @@ class DataStore(MixedLazyTablelike):
 
                 dset = hf.create_dataset(item, value.shape, dtype=value.dtype, compression='gzip')
                 dset[:] = value
-                    
-    
-    def addItemToSnapshot(self, name:str, arr_or_None:np.ndarray|None=None, overwrite:bool=False):
-        """Adds a named entry to the HDF5 file. The value to be added must either be
-        passed or will be read from the interface at the specified name (in this case,
-        the current view will be used. make sure to call resetView() beforehand).
-
-        Args:
-            name (str): _description_
-            arr_or_None (np.ndarray | None, optional): _description_. Defaults to None.
-
-        Raises:
-            Exception: _description_
-        """
-        
-        value = arr_or_None if arr_or_None is not None else self[name]
-        
-        with h5py.File(self._h5_file, mode='a') as hf:
-            if name in hf.keys() and not overwrite:
-                print(f'Property {name} already exists in snapshot and will be skipped (i.e. NOT saved in the cache)')
-            else:
-                dset = hf.create_dataset(name, value.shape, dtype=value.dtype, compression='gzip')
-                dset[:] = value
-                
-        self[name] = mk_ref(self._h5_file, name)
         
 def mk_ref(fname, item):
     def ref(intf):

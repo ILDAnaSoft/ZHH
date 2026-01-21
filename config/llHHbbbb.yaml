@@ -54,7 +54,7 @@ sources:
       default: EventCategories.F4_OTHER
       order: null
       items: [ eebb, μμbb, ττbb, lvqq ]
-    disabled: true
+    disabled: false
     reset: false
 
   - name: 2l4q
@@ -64,7 +64,7 @@ sources:
       default: EventCategories.F6_OTHER
       order: null
       items: [ lvqqqq, lvbbqq, evbbqq, μvbbqq, τvbbqq, lvbbbb, llqqqq, llbbqq, llbbbb, vvqqqq, vvbbqq ]
-    disabled: true
+    disabled: false
     reset: false
 
   - name: llhh
@@ -84,7 +84,7 @@ sources:
       default: EventCategories.qqqqqq
       order: []
       items: [ bbqqqq, bbbbqq, bbbbbb ]
-    disabled: true
+    disabled: false
     reset: false
 
   - name: tthz
@@ -119,6 +119,10 @@ features:
   #                           interpret/dtype, defaults to uint32])
   # interpret/names: list of names; can be used to create multiple entries within the
   #                  interpret section with different name. this enforces branch = name
+  # interpret/clamp_min or clamp_max: if defined, values of this branch will be clamped
+  #                                   within this range
+  # interpret/nan_to: if defined, NaN values will be replaced with this. this is done 
+  #                   after clamping (if any)
   interpret:
   - { name: id, dtype: uint32, auto_increment: true }
   - { name: event, tree: FinalStates, dtype: uint32 }
@@ -138,7 +142,9 @@ features:
   - { names: [ jet1_m, jet2_m, jet3_m, jet4_m ], tree: EventObservablesLL, dtype: float32 }
   - { name: mz_pre_pairing, tree: EventObservablesLL, branch: mzll_pre_pairing, dtype: float32 }
   - { name: mhh, tree: EventObservablesLL, branch: m_invjet, dtype: float32 }
-  - { names: [ fit4C_mz, fit4C_mh1, fit4C_mh2, ptmiss, thrust, evis ], tree: EventObservablesLL, dtype: float32 }
+  - { names: [ fit4C_mz, ptmiss, thrust, evis ], tree: EventObservablesLL, dtype: float32 }
+  - { name: fit4C_mh1, tree: EventObservablesLL, dtype: float32, nan_to: -20., clamp_min: -10. }
+  - { name: fit4C_mh2, tree: EventObservablesLL, dtype: float32, nan_to: -20., clamp_min: -10. }
   - { names: [ nisomuons, pairedLepType ], tree: EventObservablesLL, dtype: uint8 }
   
   # for MVA analysis
@@ -226,18 +232,18 @@ preselection:
   cuts:
     - { quantity: nisomuons, operator: gte, value: 2, label: IsoMuons }
     - { quantity: pairedLepType, operator: eq, value: 13, label: Paired Lepton Type }
-    - { quantity: fit4C_mz, operator: within_bounds, lower: 20., upper: 150., label: 'm_{ll}^{4C}', xlim_view: [0, 270] }
-    - { quantity: fit4C_mh1, operator: within_bounds, lower: 50., upper: 200., label: 'm_{H1}^{4C}', xlim_view: [0, 500] }
-    - { quantity: fit4C_mh2, operator: within_bounds, lower: 50., upper: 200., label: 'm_{H2}^{4C}', xlim_view: [0, 550] }
-    - { quantity: ptmiss, operator: lte, value: 70., label: 'p_{t}^{miss}' }
-    - { quantity: thrust, operator: lte, value: 0.9, label: 'thrust' }
+    - { quantity: fit4C_mz, operator: within_bounds, lower: 20., upper: 150., label: 'm_{ll}^{4C}', unit: 'GeV', xlim_view: [0, 270] }
+    - { quantity: fit4C_mh1, operator: within_bounds, lower: 50., upper: 200., label: 'm_{H1}^{4C}', unit: 'GeV', xlim_view: [0, 500] }
+    - { quantity: fit4C_mh2, operator: within_bounds, lower: 50., upper: 200., label: 'm_{H2}^{4C}', unit: 'GeV', xlim_view: [0, 550] }
+    - { quantity: ptmiss, operator: lte, value: 70., label: 'p_{t}^{miss}', unit: 'GeV' }
+    - { quantity: thrust, operator: lte, value: 0.9, label: 'thrust', unit: 'GeV' }
     - { quantity: sumBTags, operator: gte, value: 1., label: 'sum b-tags', disabled: true }
 
   cutflow_table: 'cutflow_preselection_table.pdf'
   cutflow_plots: 'cutflow_preselection_plots.pdf'
 
 mvas:
-  - name: multiclass
+  - name: default_mva
     features: [
       jet1_m, jet2_m, jet3_m, jet4_m,
       mhh, fit4C_mz, fit4C_mh1, fit4C_mh2,
@@ -248,37 +254,69 @@ mvas:
       ZZH_p1stBeforeFit, ZHH_cosThBeforeFit, ZZH_cosThBeforeFit,
       bmax1, bmax2, bmax3, bmax4 ]
     classes:
+    # two-element arrays of structure (label, name of registered EventCategory)
+    # see sources/.../event_categorization/items
     - [0, 'μμHHbbbb']
     - [1, 'llhh_llnonbbbb']
     - [2, 'llqqh']
     - [3, 'llqqqq']
     - [4, 'μμbb']
     - [5, 'lvbbqq']
+    # note: the output is the sum for all signal categories given in steer['signal_categories'] 
+    label_name: SigMVAOutput
+
+    # file to store the training and testing data in for training this classifier
     data_file: train_test.npz
 
 # define which analysis modules should be run
-# 
 actions:
   # preselection is applied automagically first
+  
+  # optional:
+  # step_start: 0
+  # step_end: 0
   - type: CreateCutflowPlots
     file: 'cutflow_preselection_plots.pdf'
-    step_start: 0
-    step_end: 0
+    
+  # optional:
+  # step_start: 0
+  # step_end: 0
   - type: CreateCutflowTable
     file: 'cutflow_preselection_table.pdf'
-    step_start: 0
-    step_end: 0
+
+  # split in train/testing [accross all steps, i.e. regardless of cut group]
+  # creates a new integer column 'split'; for n entries in fractions:
+  # value 0 is assigned to a fraction of events specified as first entry in fractions
+  # value 1[..]n-1 to fractions given at position 1 to n-1
+  # value n is assigned to the remaining events [fraction (1 - sum(all previous values))]
   - type: SplitDatasets
     fractions: [ 0.5 ]
+    
+  # writes out training/testing data
+  # optional:
+  # step: 0
   - type: WriteMVAData
-    use: multiclass
-    step: 0
-  - type: PrintSplitWeights
-  - type: InferenceSklearnMulticlass
-    use: multiclass
-    from_file: trial.npz
-    from_file_property: clf
+    use: default_mva
 
+  - type: PrintSplitWeights
+
+  # optional:
+  # from_file_property: clf
+  # step: 0
+  - type: TrainingSklearnMulticlass
+    use: default_mva
+    from_file: trial.npz
+    split: 0
+    disabled: true
+
+  # optional:
+  # from_file_property: clf
+  # step: 0
+  - type: InferenceSklearnMulticlass
+    use: default_mva
+    from_file: trial.npz
+    split: 1
+    disabled: true
 
 other:
 #other2:
