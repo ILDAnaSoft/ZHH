@@ -9,6 +9,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  BRANCH_NAME: ${{ github.head_ref || github.ref_name }} 
 
 jobs:
   build-and-push-image:
@@ -62,6 +63,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           file: "./Dockerfile"
           allow: "security.insecure"
+          build-args: |
+            clone_branch=${{ env.BRANCH_NAME }}
       
       # This step generates an artifact attestation for the image, which is an unforgeable statement about
       # where and how it was built. It increases supply chain security for people who consume the image. For
