@@ -303,7 +303,7 @@ actions:
   # optional:
   # from_file_property: clf
   # step: 0
-  - type: TrainingSklearnMulticlass
+  - type: SklearnMulticlassTraining
     use: default_mva
     from_file: trial.npz
     split: 0
@@ -312,7 +312,7 @@ actions:
   # optional:
   # from_file_property: clf
   # step: 0
-  - type: InferenceSklearnMulticlass
+  - type: SklearnMulticlassInference
     use: default_mva
     from_file: trial.npz
     split: 1
@@ -323,7 +323,7 @@ other:
   # carry out MVA training manually; use hyperparam.py
   - type: AssertCondition
     code: osp.isfile('trial.npz')
-  - type: InferenceSklearnMulticlass
+  - type: SklearnMulticlassInference
     use: multiclass_training
     from_file: trial.npz
     from_file_property: clf

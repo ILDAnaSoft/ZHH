@@ -5,6 +5,7 @@ from optuna.storages.journal import JournalFileBackend
 from multiprocessing import Pool, cpu_count
 from datetime import datetime
 from math import sqrt, ceil
+from typing import TypedDict, Required, NotRequired
 import os, pickle, sys, argparse
 import optuna
 import numpy as np
@@ -24,6 +25,14 @@ def set_conf(base_path:str, datestring:str|None=None):
     conf['TRIALPATH'] = f'{base_path}/trial-{datestring}'
 
 set_conf(os.getcwd())
+
+class Suggestion(TypedDict):
+    name: Required[str]
+    tree: NotRequired[str]
+
+def parse_suggestions(trial:optuna.Trial, suggestions:list[dict]):
+    pass
+    #for 
 
 def objective(trial:optuna.Trial, hyper_params:dict|None=None,
               signal_classes:list[int]=[0, 1], background_classes:list[int]=[2, 3, 4, 5]):

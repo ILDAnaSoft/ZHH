@@ -1,7 +1,7 @@
 from ..CutflowProcessorAction import CutflowProcessorAction, CutflowProcessor
 from zhh import find_by
 
-class InferenceSklearnMulticlassAction(CutflowProcessorAction):
+class SklearnMulticlassTrainingAction(CutflowProcessorAction):
     def __init__(self, cp:CutflowProcessor, steer:dict, use:str, **kwargs):
         """_summary_
 
