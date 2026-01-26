@@ -125,6 +125,41 @@ After sourcing `setup.sh`, some aliases/shell functions are available:
 - `MarlinZHH`: executes Marlin with the `prod.xml` steering file with the ILDConfigDir variable set to the one from your environment
 - `zhhvenv`: activates the installed Python environment
 
+## Docker images
+
+### Building
+
+Building the images requires privileged access for automount/CVMFS to work. The builder (first line) needs to only be created once.
+
+```shell
+docker buildx create --name insecure-builder --buildkitd-flags "--allow-insecure-entitlement security.insecure"
+docker buildx build -t zhh --allow security.insecure . --builder=insecure-builder --output type=docker --metadata-file metadata.json
+```
+
+The option `--output type=docker` will automatically add the image to the local registry. For building locally, make sure to add ```--build-arg clone_branch=main``` and set the correct branch. Note: It is not possible to use your local working copy of this repo *during build time*. However, you can use a bind mount during runtime (see below).
+
+### Running
+
+To run the container indefinitely for developing, use
+
+```shell
+docker run --name=zhh --privileged zhh sleep infinity
+```
+
+and then to open a terminal in the container
+
+```shell
+docker exec -it zhh /bin/bash
+```
+
+or use your favorite IDE for in-container development (VS Code etc).
+
+If you want to use a bind mount, add the flags ```--mount type=bind,src=/ZHH,dst=/cvmfs```. You can do the same if you have a local installation of CVMFS.
+
+# Continuous Integration
+
+TBD
+
 # Acknowledgements
 
 Y. Radkhorrami for the correction of semi-leptonic decays. See [here](https://github.com/iLCSoft/MarlinReco/tree/master/Analysis/SLDCorrection) for the SLDCorrection processor. Also the processors [here](https://github.com/yradkhorrami/ChargedPFOCorrection) as well as [here](https://github.com/yradkhorrami/AddNeutralPFOCovMat) for necessary corrections of the covariance matrices of charged and neutral particles.

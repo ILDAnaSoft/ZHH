@@ -43,10 +43,9 @@ function zhh_recompile() {
 }
 
 function zhh_git_ignore_deps() {
-    cd $REPO_ROOT
-    for folder in $(ls dependencies);
+    for folder in $(ls $REPO_ROOT/dependencies);
     do
-        git rm --cached dependencies/$folder >/dev/null 2>/dev/null && echo "Removed $folder from VCS" || echo "Skipping $folder"
+        git rm --cached $REPO_ROOT/dependencies/$folder >/dev/null 2>/dev/null && echo "Removed $folder from VCS" || echo "Skipping $folder"
     done
 }
 
@@ -79,20 +78,8 @@ if [[ -f "${REPO_ROOT}/.env.sh" || $ZHH_FORCE_RELOAD -eq 1 ]]; then
 fi
 
 # Use default venv name if not set
-if [[ -z $ZHH_VENV_NAME ]]; then
+if [ -z "$ZHH_VENV_NAME" ]; then
     export ZHH_VENV_NAME="zhhvenv"
-fi
-
-# Automatically find pytorch (if not included in .env)
-if [[ -z "${TORCH_PATH}" ]]; then
-    zhh_echo "Trying to find pytorch..."
-    export TORCH_PATH=$(dirname $(python -c 'import torch; print(f"{torch.__file__}")'))
-
-    if [[ -d "${TORCH_PATH}" ]]; then
-        zhh_echo "Found pytorch at <$TORCH_PATH>"
-    else
-        zhh_echo "Pytorch not found, please set TORCH_PATH. Aborting." && return 1
-    fi
 fi
 
 if [[ $CMAKE_PREFIX_PATH != *"torch/share/cmake"* ]]; then
