@@ -2,7 +2,7 @@
 FROM ghcr.io/key4hep/key4hep-images/alma9-cvmfs:latest AS base
 ARG clone_branch=""
 
-RUN dnf update; dnf clean all
+RUN dnf update; dnf install blas-devel lapack-devel; dnf clean all
 
 # Clone and equalize paths with GITHUB_WORKSPACE
 RUN if [ ! -z "$clone_branch" ]; then \
