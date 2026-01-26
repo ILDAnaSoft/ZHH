@@ -350,6 +350,11 @@ class Config_550_vvhh_fast_perf(AnalysisConfiguration):
             '$ILC_PROD_PATH/mc-2020/generated/550-Test/hh/*Pn1n1*.slcio',
             '$ILC_PROD_PATH/mc-2020/generated/550-Test/hh/*Pn23n23*.slcio',
         ]), [])
+        
+        # filter out invalid files
+        #invalid_files = list(map(osp.expandvars, []))
+        #input_files = list(set(input_files) - set(invalid_files))
+        
         input_files.sort()
         
         input_options = [{
@@ -516,7 +521,8 @@ class Config_550_4f_fast_perf(AnalysisConfiguration):
             '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_szeorsw_l.Gwhizard-3_1_4.eR.pL.I501068.1.singleZsingleWMix.leptonic.eR_pL.a0.slcio',
             '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sw_l.Gwhizard-3_1_4.eL.pR.I501058.9.singleW.leptonic.eL_pR.a0.slcio',
             '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sw_l.Gwhizard-3_1_4.eL.pR.I501058.72.singleW.leptonic.eL_pR.a65.slcio',
-            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_sl.Gwhizard-3_1_4.eL.pR.I501042.83.singleZee.semileptonic.eL_pR.a52.slcio']))
+            '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/E550-TDR_ws.P4f_sze_sl.Gwhizard-3_1_4.eL.pR.I501042.83.singleZee.semileptonic.eL_pR.a52.slcio'
+        ]))
 
         input_files = list(set(input_files) - set(invalid_files))
         input_files.sort()
@@ -672,7 +678,10 @@ class Config_550_6q_fast_perf(AnalysisConfiguration):
             input_files += glob_exp(f'$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/6f/*{process_mask}*.slcio')
         
         # filter out invalid files
-        input_files = list(filter(lambda x: 'E550-TDR_ws.P6f_yyuyyu.Gwhizard-3_1_5.eL.pR.I410212.2.slcio' not in x, input_files))
+        #invalid_files = list(map(osp.expandvars, []))
+        #input_files = list(set(input_files) - set(invalid_files))
+        
+        input_files.sort()
         
         input_options = [{
             'global_steering.MAXEV': 999999,
@@ -705,7 +714,10 @@ class Config_550_6q_fast_pfl(AnalysisConfiguration):
             input_files += glob_exp(f'$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/6f/*{process_mask}*.slcio')
         
         # filter out invalid files
-        input_files = list(filter(lambda x: 'E550-TDR_ws.P6f_yyuyyu.Gwhizard-3_1_5.eL.pR.I410212.2.slcio' not in x, input_files))
+        #invalid_files = list(map(osp.expandvars, []))
+        #input_files = list(set(input_files) - set(invalid_files))
+
+        input_files.sort()
         
         input_options = [{
             'global_steering.MAXEV': 999999,

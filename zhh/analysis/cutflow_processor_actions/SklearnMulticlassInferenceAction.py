@@ -11,7 +11,7 @@ def get_signal_categories(signal_classes:list[int], mva:dict)->list[int]:
 
     return indices
 
-class InferenceSklearnMulticlassAction(CutflowProcessorAction):
+class SklearnMulticlassInferenceAction(CutflowProcessorAction):
     def __init__(self, cp:CutflowProcessor, steer:dict, use:str, from_file:str, split:int,
                  step:int|None=None, from_file_property:str='clf', **kwargs):
         """_summary_
