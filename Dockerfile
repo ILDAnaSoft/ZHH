@@ -6,8 +6,9 @@ ARG link_repo
 
 RUN dnf update; dnf install blas-devel lapack-devel; dnf clean all
 
+# use `git fetch --all` later for dev
 RUN if [ ! -z "$branch" ]; then \
-    cd / && git clone "https://github.com/ILDAnaSoft/ZHH.git@$branch" && cd ZHH; \
+    git clone "https://github.com/ILDAnaSoft/ZHH.git" --branch $branch --single-branch /ZHH && cd /ZHH; \
 elif [ -d "$link_repo" ]; then ln -s "$link_repo" /ZHH; cd /ZHH; else exit 1; fi
 
 RUN --security=insecure \
