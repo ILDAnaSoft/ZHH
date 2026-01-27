@@ -89,13 +89,13 @@ class ffffh: public p6 {
 
 
 class e1e1qqh : public ffffh {
-    public: e1e1qqh(): ffffh( "e1e1qqh", PROCESS_ID::e1e1qqh, EVENT_CATEGORY_TRUE::llqqH, vector{11,1,2,3,4,5,6} ) {}; };
+    public: e1e1qqh(): ffffh( "e1e1qqh", PROCESS_ID::e1e1qqh, EVENT_CATEGORY_TRUE::llqqh, vector{11,1,2,3,4,5,6} ) {}; };
 
 class e2e2qqh : public ffffh {
-    public: e2e2qqh(): ffffh( "e2e2qqh", PROCESS_ID::e2e2qqh, EVENT_CATEGORY_TRUE::llqqH, vector{13,1,2,3,4,5,6} ) {}; };
+    public: e2e2qqh(): ffffh( "e2e2qqh", PROCESS_ID::e2e2qqh, EVENT_CATEGORY_TRUE::llqqh, vector{13,1,2,3,4,5,6} ) {}; };
 
 class e3e3qqh : public ffffh {
-    public: e3e3qqh(): ffffh( "e3e3qqh", PROCESS_ID::e3e3qqh, EVENT_CATEGORY_TRUE::llqqH, vector{15,1,2,3,4,5,6} ) {}; };
+    public: e3e3qqh(): ffffh( "e3e3qqh", PROCESS_ID::e3e3qqh, EVENT_CATEGORY_TRUE::llqqh, vector{15,1,2,3,4,5,6} ) {}; };
 
 class qqqqh : public ffffh {
     public: qqqqh(): ffffh( "qqqqh", PROCESS_ID::qqqqh, EVENT_CATEGORY_TRUE::qqqqH, vector{1,2,3,4,5,6} ) {}; };

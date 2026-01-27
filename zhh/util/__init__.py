@@ -16,3 +16,4 @@ from .replace_properties import replace_properties
 from .replace_references import replace_references
 from .MemoryProfiler import MemoryProfiler, find_child_process
 from .find_by import find_by
+from .Tee import Tee

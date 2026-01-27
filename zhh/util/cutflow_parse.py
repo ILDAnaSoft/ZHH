@@ -500,7 +500,7 @@ def execute_actions(actions:list[CutflowProcessorAction], check_only:bool=False,
             todo_idx.append(i)                
     
     logger = logging.getLogger('CutflowProcessorAction')
-    logger.addHandler(logging.StreamHandler(stream=sys.stdout))
+    #logger.addHandler(logging.StreamHandler(stream=sys.stdout))
     logger.setLevel(logging.DEBUG)
 
     for i in todo_idx:

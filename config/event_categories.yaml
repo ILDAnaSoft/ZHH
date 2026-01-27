@@ -90,7 +90,7 @@
   id: null
 - name: llqqh
   handler: FinalStateDefinitions.define_llqqh
-  id: EventCategories.llqqH
+  id: EventCategories.llqqh
 
 # vvhh
 - name: vvhh
