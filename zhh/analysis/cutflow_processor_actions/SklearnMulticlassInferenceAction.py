@@ -1,15 +1,5 @@
 from ..CutflowProcessorAction import CutflowProcessorAction, CutflowProcessor
-from zhh import find_by
-
-def get_signal_categories(signal_classes:list[int], mva:dict)->list[int]:
-    from zhh import EventCategories
-    indices = []
-
-    for label, name in mva['classes']:
-        if getattr(EventCategories, name) in signal_classes:
-            indices.append(label)
-
-    return indices
+from .mva_tools import get_signal_categories
 
 class SklearnMulticlassInferenceAction(CutflowProcessorAction):
     def __init__(self, cp:CutflowProcessor, steer:dict, use:str, from_file:str, split:int,
@@ -27,6 +17,8 @@ class SklearnMulticlassInferenceAction(CutflowProcessorAction):
 
         super().__init__(cp, steer)
 
+        from zhh import find_by
+
         mva_spec = find_by(steer['mvas'], 'name', use, is_dict=True)
         
         self._file = from_file        
@@ -35,7 +27,7 @@ class SklearnMulticlassInferenceAction(CutflowProcessorAction):
         self._split = split
         self._output_label = mva_spec['label_name']
 
-        self._signal_classes = get_signal_categories(steer['signal_classes'], mva_spec)
+        self._signal_categories = get_signal_categories(steer['signal_categories'], mva_spec['classes'])
         self._classes = mva_spec['classes']
         self._features = mva_spec['features']
     
@@ -69,7 +61,7 @@ class SklearnMulticlassInferenceAction(CutflowProcessorAction):
                 
                 mva = xgbclf
                 probas = mva.predict_proba(inputs)
-                bdtg_sig[mask] = probas[:, self._signal_classes].sum(axis=1)
+                bdtg_sig[mask] = probas[:, self._signal_categories].sum(axis=1)
             
             store[self._output_label] = bdtg_sig
 

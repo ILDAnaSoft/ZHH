@@ -29,7 +29,7 @@ class EVENT_CATEGORY_TRUE:
     μμbb = 13
     ττbb = 14
     llbbbb = 15
-    llqqH = 16
+    llqqh = 16
     ll = 17
     llll = 18
     llqq = 19

@@ -8,6 +8,7 @@
 hypothesis: μμbbbb
 signal_categories:
 - EventCategories.μμHHbbbb
+- EventCategories.llhh_llnonbbbb
 
 # used to calculate event weights and absolute event counts
 # polarization of [ electronBeam, positronBeam ]
@@ -29,7 +30,9 @@ reset: false
 use_caching: true
 
 # definition of event categories
-# the registration of event categories to specific sources is done in the sources section 
+# the registration of event categories to specific sources is done in the sources section
+# info: while the naming can be arbitrary, a unique ID must be supplied which must exist 
+#       in the EVENT_CATEGORIES_TRUE class, too. See EventCategories.py
 event_categories: '$REPO_ROOT/config/event_categories.yaml'
 
 # definition of input data and information about the event categorization
@@ -178,7 +181,7 @@ features:
 # defines the event categories and the order with which they should be appear in the
 # cutflow table and also which of them are considered to belong to the signal (these
 # are appended to the rightmost part of the table).
-# items/category: name of the event category
+# items/category: name of the event category (must be part of EventCategories)
 # items/label: column label (supports LaTeX)
 # items/is_signal: optional, defaults to false; whether or not this category belongs to
 #                  the signal
@@ -268,6 +271,8 @@ mvas:
     # file to store the training and testing data in for training this classifier
     data_file: train_test.npz
 
+    mva_file: mva.pickle
+
 # define which analysis modules should be run
 actions:
   # preselection is applied automagically first
@@ -300,10 +305,26 @@ actions:
 
   - type: PrintSplitWeights
 
+  - type: SklearnMulticlassTraining
+    hyperparams: {
+      max_depth: 5,
+      n_estimators: 50,
+      learning_rate: 0.1
+    }
+    debug: true
+    use: default_mva
+    split: 0
+    disabled: false
+
   # optional:
   # from_file_property: clf
   # step: 0
-  - type: SklearnMulticlassTraining
+  - type: SklearnMulticlassHyperparamTraining
+    hyperparam_bounds: [
+      { name: max_depth, type: int, lower: 3, upper: 7 },
+      { name: n_estimators, type: int, lower: 250, upper: 750 },
+      { name: learning_rate, type: float, lower: 0.01, upper: 0.6 }
+    ]
     use: default_mva
     from_file: trial.npz
     split: 0
@@ -312,11 +333,11 @@ actions:
   # optional:
   # from_file_property: clf
   # step: 0
-  - type: SklearnMulticlassInference
-    use: default_mva
-    from_file: trial.npz
-    split: 1
-    disabled: true
+  #- type: SklearnMulticlassInference
+  #  use: default_mva
+  #  from_file: trial.npz
+  #  split: 1
+  #  disabled: true
 
 other:
 #other2:
