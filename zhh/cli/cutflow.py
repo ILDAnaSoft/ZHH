@@ -1,6 +1,6 @@
-from zhh import parse_steering_file, process_steering, initialize_sources, parse_cuts, CutflowProcessor, parse_steer_cutflow_table, \
-    parse_actions, execute_actions
-import argparse, yaml
+from zhh import cutflow_parse_steering_file, cutflow_process_steering, cutflow_initialize_sources, cutflow_parse_cuts, CutflowProcessor, \
+    cutflow_parse_actions, cutflow_execute_actions, cutflow_register_mvas
+import argparse, yaml, logging
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -9,26 +9,24 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # process the steering file -> sources and final state info
-    steer = parse_steering_file(args.steer)
-    sources_map, final_state_configs, reset_sources = process_steering(steer)
+    steer = cutflow_parse_steering_file(args.steer)
+    sources_map, final_state_configs, reset_sources = cutflow_process_steering(steer)
 
     # initialize all sources
     sources = list(sources_map.values())
-    initialize_sources(sources, final_state_configs, lumi_inv_ab=steer['luminosity'], reset_sources=reset_sources)
+    cutflow_initialize_sources(sources, final_state_configs, lumi_inv_ab=steer['luminosity'], reset_sources=reset_sources)
     
     # parse the cuts and combine all info to a CutflowProcessor
-    preselection = parse_cuts(steer['preselection']['cuts'])
+    preselection = cutflow_parse_cuts(steer['preselection']['cuts'])
     cp = CutflowProcessor(sources, hypothesis=steer['hypothesis'], cuts=preselection, signal_categories=steer['signal_categories'])
-    cp.process()
+    cutflow_register_mvas(steer, cp)
+
+    #cp.process()
 
     # prepare the cutflow table
-    preselection_cf_table = steer['preselection'].get('cutflow_table')
-    if preselection_cf_table is not None:
-        cutflow_table_items, cutflow_table_kwargs = parse_steer_cutflow_table(steer, filename=preselection_cf_table)
+    actions = cutflow_parse_actions(steer, cp)
 
-    actions = parse_actions(steer, cp)
+    # dry run required for full run
+    cutflow_execute_actions(actions, check_only=True)
 
-    # dry run only
-    # execute_actions(actions, check_only=True)
-
-    execute_actions(actions)
+    cutflow_execute_actions(actions, log_level=logging.DEBUG)

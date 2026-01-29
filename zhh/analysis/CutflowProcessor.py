@@ -8,9 +8,17 @@ from .TTreeInterface import TTreeInterface
 from ..util.deepmerge import deepmerge
 import matplotlib.pyplot as plt
 from matplotlib.colors import Colormap
+from typing import TypedDict, Required, NotRequired
 import numpy as np
 import os.path as osp, pickle
 #import blosc2
+
+class MVAState(TypedDict):
+    features: Required[list[str]]
+    classes: Required[list[tuple[int, str]]]
+    label_name: Required[str]
+    mva_file: Required[str]
+    threshold: Required[float|int|None]
 
 def find_entry(entries:list[tuple[str, Any]], name:str):
     for entry in entries:
@@ -39,7 +47,7 @@ class CutflowProcessor:
             sources (list[DataSource]): _description_
             hypothesis (str): _description_
             signal_categories (list[int]): list of process categories, see ProcessCategories. Used for plotting later. 
-            cuts (Sequence[ValueCut] | None, optional): _description_. Defaults to None.
+            cuts (Sequence[ValueCut] | None, optional): Cuts to apply. May also be supplied to process(). Defaults to None.
             colormap (_type_, optional): Cuts used for preselection. Defaults to None.
             plot_options (dict[str, dict[str, dict]] | None, optional): _description_. Defaults to None.
             work_dir (str | None, optional): _description_. Defaults to None.
@@ -83,6 +91,9 @@ class CutflowProcessor:
         self._calc_dicts:dict[int, list[dict[str, tuple[np.ndarray, np.ndarray]]]] = {}
         self._max_before:dict[int, np.ndarray] = {} # maximum weighted event count accross all categories before cut
         
+        # MVA states including thresholds
+        self._mvas:dict[str, MVAState] = {}
+        
         # cutflowPlots()
         plot_context = plot_context if plot_context is not None else PlotContext(colormap)
         for sig_cat in signal_categories:
@@ -111,7 +122,7 @@ class CutflowProcessor:
         else:
             return -np.sum(weights)
 
-    def process(self, step:int=0, cuts:Sequence[ValueCut]|None=None,
+    def process(self, step:int|None=None, cuts:Sequence[ValueCut]|None=None,
                 weight_prop:str='weight', split:int|None=None,
                 cache:str|None='cutflow_presel.pickle'):
         """Processes the preselection cuts and stores masks for each event in
@@ -123,9 +134,9 @@ class CutflowProcessor:
         integer.
         
         Args: 
-            step (int, optional): n-th cut group. Use 0 for preselection,
+            step (int|None, optional): n-th cut group. Use 0 for preselection,
                 1 for the first post-preselection cut group, etc.
-                Defaults to 0.
+                Defaults to None.
             cuts (Sequence[Cut], optional): Defaults to None.
             weight_prop (str): Defaults to weight.
             split (int, optional): Cut on the split column. Will be ignored
@@ -146,11 +157,13 @@ class CutflowProcessor:
         masks = []
         calc_dicts = []
         
-        if step > 0:
-            if not isinstance(cuts, list):
-                raise Exception('Using step > 0 requires additional cuts to be supplied')
+        if cuts is not None:
+            if step is None:
+                raise Exception('When supplying cuts, step must be supplied')
             
             self._cuts[step] = cuts
+        elif step is None:
+            step = len(self._calc_dicts)
 
         subsets = {}
         for source in self._sources:
@@ -502,6 +515,15 @@ class CutflowProcessor:
         else:
             return plotCalcDictTop9(self.getPlotContext(), calc_dict, quantity, signal_category_names, hypothesis=self._hypothesis, plot_options=plot_kwargs)
 
+    def registerMVA(self, name:str, features:list[str], classes:list[tuple[int, str]],
+                    label_name:str, mva_file:str, threshold:float|int|None=None, **kwargs):
+        
+        if name in self._mvas:
+            raise Exception(f'MVA with name <{name}> already registered')
+        
+        self._mvas[name] = MVAState(features=features, classes=classes, label_name=label_name,
+                                    mva_file=mva_file, threshold=threshold)
+
 def cutflowPlots(cp:CutflowProcessor, output_file:str|None, display:bool=True, step_start:int=0, step_end:int=0,
                  hist_kwargs:dict={}, plot_options_call:dict[str, dict]={}, signal_categories:list[str]|None=None, bins:int|np.ndarray=100,
                  annotate_cut:bool=True):
@@ -725,7 +747,7 @@ def cutflowPrint(cuts:list[ValueCut], calc_dicts:list[dict[str, tuple[np.ndarray
     
     return res
 
-def cutflowPlotSummaryFn(signal_category_names:list[str], cuts:list[ValueCut], calc_dicts:list[dict[str, tuple[np.ndarray, np.ndarray]]],
+def cutflowPlotSummaryFn(signal_category_names:list[str], cuts:Sequence[ValueCut], calc_dicts:list[dict[str, tuple[np.ndarray, np.ndarray]]],
                          plot_context:PlotContext, display:bool=True, output_file:str|None=None):
     
     from zhh.plot.ild_style import update_plot, legend_kwargs_fn
@@ -764,7 +786,7 @@ def cutflowPlotSummaryFn(signal_category_names:list[str], cuts:list[ValueCut], c
     plt.tight_layout()
     
     if output_file is not None:
-        export_figures(output_file, all_figs)
+        export_figures(output_file, [fig])
     
     if not display:
         plt.close(fig)

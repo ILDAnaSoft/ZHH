@@ -28,7 +28,7 @@ class CutflowProcessorAction:
         raise Exception('NotImplemented')
 
 class FileBasedProcessorAction(CutflowProcessorAction):
-    def __init__(self, cp: CutflowProcessor, steer:dict):
+    def __init__(self, cp: CutflowProcessor, steer:dict, **kwargs):
         super().__init__(cp, steer)
 
     def output(self)->LocalTarget|Sequence[LocalTarget]:

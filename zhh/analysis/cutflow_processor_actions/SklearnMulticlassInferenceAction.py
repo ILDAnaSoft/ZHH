@@ -1,17 +1,17 @@
 from ..CutflowProcessorAction import CutflowProcessorAction, CutflowProcessor
 from .mva_tools import get_signal_categories
+from tqdm.auto import tqdm
 
 class SklearnMulticlassInferenceAction(CutflowProcessorAction):
-    def __init__(self, cp:CutflowProcessor, steer:dict, use:str, from_file:str, split:int,
-                 step:int|None=None, from_file_property:str='clf', **kwargs):
+    def __init__(self, cp:CutflowProcessor, steer:dict, mva:str, split:int,
+                 step:int|None=None, clf_prop:str='clf', progress:bool=True, **kwargs):
         """_summary_
 
         Args:
             cp (CutflowProcessor): _description_
             steer (dict): _description_
-            use (str): _description_
-            from_file (str): pickle file in which the classifier is stored
-            from_file_property (str, optional): key at which to find the classifier. Defaults to 'clf'.
+            mva (str): _description_
+            clf_prop (str, optional): key at which to find the classifier. Defaults to 'clf'.
         """
         assert('mvas' in steer)
 
@@ -19,34 +19,35 @@ class SklearnMulticlassInferenceAction(CutflowProcessorAction):
 
         from zhh import find_by
 
-        mva_spec = find_by(steer['mvas'], 'name', use, is_dict=True)
+        mva_spec = find_by(steer['mvas'], 'name', mva, is_dict=True)
         
-        self._file = from_file        
-        self._clf_property = from_file_property
+        self._mva_file = mva_spec['mva_file']
+        
+        self._clf_prop = clf_prop
         self._step = step
         self._split = split
         self._output_label = mva_spec['label_name']
 
-        self._signal_categories = get_signal_categories(steer['signal_categories'], mva_spec['classes'])
-        self._classes = mva_spec['classes']
+        self._signal_categories = get_signal_categories(steer['signal_categories'], mva_spec['classes'])        
         self._features = mva_spec['features']
+        self._progress = progress
     
     def run(self):
         import pickle
         import numpy as np
 
         try:
-            with open(self._file, 'rb') as bf:
+            with open(self._mva_file, 'rb') as bf:
                 trial = pickle.load(bf)
-                xgbclf = trial[self._clf_property]
+                mva = trial[self._clf_prop]
         except Exception as e:
-            raise Exception(f'Could not find a classifier in pickle file <{self._file}> at location <{self._clf_property}>')
+            raise Exception(f'Could not find a classifier in pickle file <{self._mva_file}> at location <{self._clf_prop}>')
 
         sources = self._cp.getSources()
         features = self._features
 
-        for source in sources:
-            print(f'Evaluating MVA for source <{source}>')
+        for source in (pbar := tqdm(sources, disable=not self._progress)):
+            pbar.set_description(f'Loading MVA feature data for source <{source}>...')
             
             store = source.getStore()
             store.resetView()
@@ -57,13 +58,17 @@ class SklearnMulticlassInferenceAction(CutflowProcessorAction):
             
             if mask.sum():
                 for j, feature in enumerate(features):
+                    pbar.set_description(f'Loading feature {j+1}/{len(features)} for MVA of source <{source}>')
                     inputs[:, j] = store[feature][mask]
+                    
+                pbar.set_description(f'Evaluating MVA for source <{source}>...')
                 
-                mva = xgbclf
                 probas = mva.predict_proba(inputs)
                 bdtg_sig[mask] = probas[:, self._signal_categories].sum(axis=1)
             
+            # assign and save to HDF5
             store[self._output_label] = bdtg_sig
+            store.itemsSnapshot(items=[self._output_label])
 
     def complete(self) -> bool:
         for source in self._cp.getSources():
@@ -73,3 +78,10 @@ class SklearnMulticlassInferenceAction(CutflowProcessorAction):
                 return False
             
         return True
+    
+    def reset(self):
+        for source in self._cp.getSources():
+            store = source.getStore()
+            
+            if store.hasProperty(self._output_label):
+                store.removeProperty(self._output_label)       

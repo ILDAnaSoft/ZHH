@@ -1,15 +1,13 @@
 from ..CutflowProcessorAction import CutflowProcessorAction, CutflowProcessor
 
 class SklearnMulticlassHyperparamTrainingAction(CutflowProcessorAction):
-    def __init__(self, cp:CutflowProcessor, steer:dict, use:str, **kwargs):
+    def __init__(self, cp:CutflowProcessor, steer:dict, mva:str, clf_prop:str, **kwargs):
         """_summary_
 
         Args:
             cp (CutflowProcessor): _description_
             steer (dict): _description_
-            use (str): _description_
-            from_file (str): _description_
-            from_file_property (str, optional): _description_. Defaults to 'clf'.
+            mva (str): _description_
         """
         assert('mvas' in steer)
 
@@ -17,8 +15,8 @@ class SklearnMulticlassHyperparamTrainingAction(CutflowProcessorAction):
 
         from zhh import find_by
 
-        mva_spec = find_by(steer['mvas'], 'name', use, is_dict=True)
+        mva_spec = find_by(steer['mvas'], 'name', mva, is_dict=True)
         
-        self._file = from_file        
-        self._file_property = from_file_property
+        self._mva_file = mva_spec['mva_file']        
+        self._file_property = clf_prop
     
