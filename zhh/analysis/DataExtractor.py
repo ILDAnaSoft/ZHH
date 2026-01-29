@@ -88,6 +88,9 @@ class DataExtractor:
             if split is not None:
                 mask = mask & (source.getStore()['split'] == split)
             
+            if mask.sum() == 0:
+                print(f'Warning: No events considered for class <{fs_name}> with label <{class_label}> in split <{split}>')
+
             nrows_tot += int(mask.sum())
             
             events_passed[fs_name] = mask
@@ -192,10 +195,10 @@ def plotFn(de:DataExtractor, inputs:np.ndarray, weight:np.ndarray, labels:np.nda
         
         hist_kwargs_overwrite = {}
         for label, category in label_2_category.items():
-            if category in signal_categories:
-                hist_kwargs_overwrite[category] = {}
-            else:
+            if signal_categories is None or not category in signal_categories:
                 hist_kwargs_overwrite[category] = deepcopy(bkg_hist_kwargs)
+            else:
+                hist_kwargs_overwrite[category] = {}
             
             hist_kwargs_overwrite[category]['color'] = context.getColorByKey(category)
 

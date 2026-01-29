@@ -17,7 +17,7 @@ from typing import TypedDict, NotRequired, TYPE_CHECKING
 
 from copy import deepcopy
 
-def parse_steering_file(loc:str):
+def cutflow_parse_steering_file(loc:str):
     """Loads a YAML steering file, replaces references within them
     and replaces references with the EventCategories and
     FinalStateDefinitions objects. 
@@ -40,7 +40,7 @@ def parse_steering_file(loc:str):
         'FinalStateDefinitions': FinalStateDefinitions
     })
 
-def process_steering(steer:dict):
+def cutflow_process_steering(steer:dict):
     """Processes a parsed steering dictionary and handles feature interpretations.
     Returns two dictionaries: First a dict<name, DataSource> and second, a dict
     holding <name, [cat_register_fn, cat_default, cat_order]>.
@@ -76,7 +76,7 @@ def process_steering(steer:dict):
         
         if 'interpret' in steer['features']:
             print(f'  Reading file from <{fpath}>')
-            provision_feature_interpretations(steer['features']['interpret'],
+            cutflow_provision_features(steer['features']['interpret'],
                                               source_spec['root_files'], path, fname)
             
         source = DataSource(fpath, name, work_root=path)
@@ -154,7 +154,7 @@ class Interpretation(TypedDict):
     clamp_max: NotRequired[float|int]
     nan_to: NotRequired[float|int]
 
-def provision_feature_interpretations(interpretations:list[Interpretation],
+def cutflow_provision_features(interpretations:list[Interpretation],
                                       root_files_glob:str, path:str, file:str,
                                       integrity_check:bool=True,
                                       base_tree:str='FinalStates'):
@@ -198,7 +198,7 @@ def provision_feature_interpretations(interpretations:list[Interpretation],
             nrows = int(hf.attrs.get('nrows', 0))
             if nrows == 0:
                 raise Exception(f'File <{ds_path}> is corrupted as it does not contain any size information.'+
-                                ' Please delete the file and run provision_feature_interpretations again')
+                                ' Please delete the file and run cutflow_provision_features again')
         
         ds_keys = list(hf.keys())
     
@@ -274,7 +274,7 @@ def provision_feature_interpretations(interpretations:list[Interpretation],
         elif 'tree' in feature:
             tree = feature['tree']
             branch = feature.get('branch', name)
-            columns = feature.get('columns', None)
+            columns:int|list[str]|None = feature.get('columns', None)
             name = name.replace('/', '.')
 
             if columns is not None:
@@ -379,7 +379,7 @@ def provision_feature_interpretations(interpretations:list[Interpretation],
                 'sizes': nrows_found
             }, jf, ensure_ascii=False, indent=4)
 
-def initialize_sources(sources:list[DataSource], final_state_configs,
+def cutflow_initialize_sources(sources:list[DataSource], final_state_configs,
                        lumi_inv_ab:float, reset_sources:list[str]=[]):
     
     n_sources = len(sources)
@@ -393,7 +393,7 @@ def initialize_sources(sources:list[DataSource], final_state_configs,
         cat_fn(source)
         source.initialize(lumi_inv_ab, cat_default, cat_order, reset=src_name in reset_sources)
 
-def parse_cut(x:dict)->ValueCut:
+def cutflow_parse_cut(x:dict)->ValueCut:
     operator:str = x['operator'].lower()
 
     y = deepcopy(x)
@@ -423,21 +423,53 @@ def parse_cut(x:dict)->ValueCut:
         case _:
             raise Exception(f'Unknown operator {operator}')
 
-def parse_cuts(x:list[dict])->list[ValueCut]:
+def cutflow_parse_cuts(x:list[dict], mvas:dict={}, to_resolve:list[str]=['lower', 'upper', 'value'])->list[ValueCut]:
+    
+    """Parses a list of steering file cut entries. Will resolve the keys to_resolve
+    using the dict mvas. e.g. in a dict { 'value': 'default_mva.threshold' , ...}
+    it will look for an entry default_mva in mvas and then get the property threshold.
+    If the key should be resolved, different part should be separated by dots.
+
+    Args:
+        x (list[dict]): _description_
+        mvas (dict, optional): _description_. Defaults to {}.
+
+    Returns:
+        list[ValueCut]: _description_
+    """
     result = []
 
+    from zhh import find_property
+
     for item in x:
+        item = deepcopy(item)
+
         if 'disabled' in item:
             if not item['disabled']:
                 del item['disabled']
             else:
                 continue
+        
+        for prop in to_resolve:
+            print(prop, item)
+            if prop in item:
+                if isinstance(item[prop], str):
+                    props = item[prop].split('.')
+                                        
+                    if not props[0] in mvas:
+                        raise KeyError(f'Could not find MVA with name <{props[0]}> in registered MVAs ({mvas.keys()}) provided to cutflow_parse_cuts')
+                
+                    value = mvas[props[0]]
+                    props.pop(0)
 
-        result.append(parse_cut(item))
+                    item[prop] = find_property(value, props)
+                    print(item[prop], prop)
+
+        result.append(cutflow_parse_cut(item))
     
     return result
 
-def parse_steer_cutflow_table(steer:dict, **kwargs):
+def cutflow_parse_steer_cutflow_table(steer:dict, **kwargs):
     cutflow_table_items:list[tuple[str, str]] = []
     cutflow_table_is_signal:list[str] = []
 
@@ -449,7 +481,13 @@ def parse_steer_cutflow_table(steer:dict, **kwargs):
     
     return (cutflow_table_items, { 'signal_categories': cutflow_table_is_signal, **kwargs })
 
-def parse_actions(steer:dict, cp:CutflowProcessor):
+def cutflow_register_mvas(steer:dict, cp:CutflowProcessor):
+    if 'mvas' in steer:
+        for mva_spec in steer['mvas']:            
+            if not mva_spec['name'] in cp._mvas:
+                cp.registerMVA(**mva_spec)
+
+def cutflow_parse_actions(steer:dict, cp:CutflowProcessor):
     action_map = {}
 
     def per_subclass(cls):
@@ -481,7 +519,8 @@ def parse_actions(steer:dict, cp:CutflowProcessor):
     
     return actions
 
-def execute_actions(actions:list[CutflowProcessorAction], check_only:bool=False, force_rerun:bool=False, log_level=logging.INFO):
+def cutflow_execute_actions(actions:list[CutflowProcessorAction], check_only:bool=False,
+                            force_rerun:bool=False, log_level=logging.INFO):
     todo:list[CutflowProcessorAction] = []
     todo_idx:list[int] = []
 
@@ -501,7 +540,7 @@ def execute_actions(actions:list[CutflowProcessorAction], check_only:bool=False,
     
     logger = logging.getLogger('CutflowProcessorAction')
     #logger.addHandler(logging.StreamHandler(stream=sys.stdout))
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(log_level)
 
     for i in todo_idx:
         logger.info(f'+ Scheduling action <{actions[i].__class__.__name__}>')

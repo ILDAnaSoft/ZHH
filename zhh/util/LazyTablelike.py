@@ -30,9 +30,11 @@ class LazyTablelike(LazilyLoadedObject):
         raise Exception(f'Property <{key}> not found')
     
 class MixedLazyTablelike(LazilyLoadedObject):
-    """Class to lazily load properties and items. Should behave like
-    a named numpy array, but only load properties when they are ac-
-    cessed.
+    """Interface to data from mixed sources: Properties and items.
+    Properties may be loaded lazily from arbitrary underlying data sour-
+    ces, while items should be loaded immediately from memory. Should
+    behave like a named numpy array, but only load properties when they
+    are accessed.
     Items are writable, in-memory properties assigned using a np array.
     Props are read-only and assigned using a function returning the ac-
     tual value. If the value given to the assignment operator is a call-
@@ -112,6 +114,12 @@ class MixedLazyTablelike(LazilyLoadedObject):
     
     def keys(self):
         return set(self._props.keys()) | set(self._items.keys())
+    
+    def hasProperty(self, name):
+        return name in self._props
+    
+    def hasItem(self, name):
+        return name in self._items
     
     def __contains__(self, key):
         return key in self.keys()

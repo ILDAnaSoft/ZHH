@@ -215,36 +215,46 @@ cutflow_table:
 # parameter 'step'
 # the first group is preselection (group/step=0). <counter> starts at 0 too
 # every stage of MVA will add another group (1,2,3 etc.)
-# future TODO: assig an ID to cuts as in cut<group>.<counter>
+# future TODO: assig an ID to cuts as in cut.<group>.<counter>
 
-# preselection:
-# this sections controls the preselection cuts and output of cutflow tables/plots
-#
 # parameters:
-# preselection.cuts.quantity: (name in data store/ROOT TTree), operator (see below),
+# cuts.<group>.quantity: (name in data store/ROOT TTree), operator (see below),
 #                             value or lower+upper, label (description to use in plots) 
-# preselection.cuts.operator: any of gte (greater than or equal), lte (lower than or
+# cuts.<group>.operator: any of gte (greater than or equal), lte (lower than or
 #                             eqal), eq (equal) or within_bounds
-# preselection.cuts.{value/lower/upper}: cut parameters
+# cuts.<group>.{value/lower/upper}: cut parameters
 #
 # all parameters (except of operator) are passed directly to the respective constructors
 # of Less/GreaterThan/Equal/WithinBoundsCut cuts can be disabled by commenting out the
 # line or adding disabled: true
 
-preselection:
-  cuts:
-    - { quantity: nisomuons, operator: gte, value: 2, label: IsoMuons }
-    - { quantity: pairedLepType, operator: eq, value: 13, label: Paired Lepton Type }
-    - { quantity: fit4C_mz, operator: within_bounds, lower: 20., upper: 150., label: 'm_{ll}^{4C}', unit: 'GeV', xlim_view: [0, 270] }
-    - { quantity: fit4C_mh1, operator: within_bounds, lower: 50., upper: 200., label: 'm_{H1}^{4C}', unit: 'GeV', xlim_view: [0, 500] }
-    - { quantity: fit4C_mh2, operator: within_bounds, lower: 50., upper: 200., label: 'm_{H2}^{4C}', unit: 'GeV', xlim_view: [0, 550] }
-    - { quantity: ptmiss, operator: lte, value: 70., label: 'p_{t}^{miss}', unit: 'GeV' }
-    - { quantity: thrust, operator: lte, value: 0.9, label: 'thrust', unit: 'GeV' }
-    - { quantity: sumBTags, operator: gte, value: 1., label: 'sum b-tags', disabled: true }
+cuts:
+  preselection:
+  - { quantity: nisomuons, operator: gte, value: 2, label: IsoMuons }
+  - { quantity: pairedLepType, operator: eq, value: 13, label: Paired Lepton Type }
+  - { quantity: fit4C_mz, operator: within_bounds, lower: 20., upper: 150., label: 'm_{ll}^{4C}', unit: 'GeV', xlim_view: [0, 270] }
+  - { quantity: fit4C_mh1, operator: within_bounds, lower: 50., upper: 200., label: 'm_{H1}^{4C}', unit: 'GeV', xlim_view: [0, 500] }
+  - { quantity: fit4C_mh2, operator: within_bounds, lower: 50., upper: 200., label: 'm_{H2}^{4C}', unit: 'GeV', xlim_view: [0, 550] }
+  - { quantity: ptmiss, operator: lte, value: 70., label: 'p_{t}^{miss}', unit: 'GeV' }
+  - { quantity: thrust, operator: lte, value: 0.9, label: 'thrust', unit: 'GeV' }
+  - { quantity: sumBTags, operator: gte, value: 1., label: 'sum b-tags', disabled: true }
+  
+  mva_cut:
+  - { quantity: SigMVAOutput, operator: gte, value: default_mva.threshold }
 
-  cutflow_table: 'cutflow_preselection_table.pdf'
-  cutflow_plots: 'cutflow_preselection_plots.pdf'
-
+# MVAs are defined here
+# training, inference and optimization (i.e. assignment which threshold value to use) are
+# done by actions, which reference the MVA (see the actions section).
+# 
+#
+# parameters:
+# mvas.#.name: label/name to reference this MVA in action
+# mvas.#.features: list of features (i.e. columns in a DataStore to use)
+# mvas.#.classes: list of tuples()
+# mvas.#.label_name: column to save the MVA output in
+# mvas.#.data_file: file to store input data in
+# mvas.#.mva_file: file to save the model to
+#
 mvas:
   - name: default_mva
     features: [
@@ -273,9 +283,11 @@ mvas:
 
     mva_file: mva.pickle
 
-# define which analysis modules should be run
+# define what should be done after the data is loaded
 actions:
-  # preselection is applied automagically first
+  - type: ApplyCuts
+    cuts: preselection
+    step: 0 # step=0 is always preselection
   
   # optional:
   # step_start: 0
@@ -301,9 +313,10 @@ actions:
   # optional:
   # step: 0
   - type: WriteMVAData
-    use: default_mva
+    mva: default_mva
 
   - type: PrintSplitWeights
+    disabled: true
 
   - type: SklearnMulticlassTraining
     hyperparams: {
@@ -312,12 +325,12 @@ actions:
       learning_rate: 0.1
     }
     debug: true
-    use: default_mva
+    mva: default_mva
     split: 0
     disabled: false
 
   # optional:
-  # from_file_property: clf
+  # clf_prop: clf
   # step: 0
   - type: SklearnMulticlassHyperparamTraining
     hyperparam_bounds: [
@@ -325,37 +338,18 @@ actions:
       { name: n_estimators, type: int, lower: 250, upper: 750 },
       { name: learning_rate, type: float, lower: 0.01, upper: 0.6 }
     ]
-    use: default_mva
-    from_file: trial.npz
+    mva: default_mva
     split: 0
     disabled: true
 
   # optional:
-  # from_file_property: clf
+  # clf_prop: clf
   # step: 0
-  #- type: SklearnMulticlassInference
-  #  use: default_mva
-  #  from_file: trial.npz
-  #  split: 1
-  #  disabled: true
-
-other:
-#other2:
-  # carry out MVA training manually; use hyperparam.py
-  - type: AssertCondition
-    code: osp.isfile('trial.npz')
   - type: SklearnMulticlassInference
-    use: multiclass_training
-    from_file: trial.npz
-    from_file_property: clf
-    
-  - type: CreateCutflowPlots
-    output: 'cutflow_preselection_plots.pdf'
+    mva: default_mva
+    split: 1 # split 0 = train dataset; split 1 = test dataset
+    disabled: false
+  
+  - type: ApplyCuts
+    cuts: mva_cut
     step: 1
-    split: 1
-  - type: CreateCutflowTable
-    output: 'cutflow_preselection_table.pdf'
-    step: 1
-    step_end: 1
-    split: 1
-    

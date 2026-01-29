@@ -1,4 +1,5 @@
 from ..CutflowProcessorAction import FileBasedProcessorAction, CutflowProcessor
+from .MVAThresholdFinderInterface import MVAThresholdFinderInterface
 from io import StringIO
 from xgboost import XGBClassifier
 from datetime import datetime
@@ -10,25 +11,27 @@ import numpy as np
 from .mva_tools import get_signal_categories, get_background_categories
 from contextlib import redirect_stdout
 
-class SklearnMulticlassTrainingAction(FileBasedProcessorAction):
-    def __init__(self, cp:CutflowProcessor, steer:dict, use:str, hyperparams:dict,
-                 trial_name:str='default', clf_prop:str='clf', debug:bool=False, **kwargs):
+class SklearnMulticlassTrainingAction(MVAThresholdFinderInterface, FileBasedProcessorAction):
+    def __init__(self, cp:CutflowProcessor, steer:dict, mva:str, hyperparams:dict,
+                 clf_prop:str='clf', trial_name:str='default', debug:bool=False, **kwargs):
         """_summary_
 
         Args:
             cp (CutflowProcessor): _description_
             steer (dict): _description_
-            use (str): _description_
-            from_file (str): _description_
-            from_file_property (str, optional): _description_. Defaults to 'clf'.
+            hyperparams (dict): MVA hyperparameters
+            mva (str): _description_
+            clf_prop (str, optional): _description_. Defaults to 'clf'.
+            trial_name (str, optional): Name of the hyperparameter search trial for Optuna. Defaults to 'default'.
+            
         """
         assert('mvas' in steer)
 
-        super().__init__(cp, steer)
+        super().__init__(cp, steer, mva=mva)
 
         from zhh import find_by
 
-        mva_spec = find_by(steer['mvas'], 'name', use, is_dict=True)
+        mva_spec = find_by(steer['mvas'], 'name', mva, is_dict=True)
         
         self._data_file = mva_spec['data_file']
         self._mva_file = mva_spec['mva_file']
@@ -57,6 +60,18 @@ class SklearnMulticlassTrainingAction(FileBasedProcessorAction):
                         clf_file=self._mva_file, clf_property=self._clf_prop, train_test_npz=self._data_file,
                         debug=self._debug)
         
+    def complete(self)->bool:
+        complete = super().complete()
+        if complete:
+            self.assignThreshold(self.findThreshold())
+        
+        return complete
+    
+    def findThreshold(self) -> float:
+        with open(self._mva_file, 'rb') as pf:
+            dump = pickle.load(pf)
+        
+        return dump['thresh']
 
 conf = {
     'DATESTRING': '',
@@ -183,7 +198,8 @@ def objective(hyper_params:dict, signal_classes:list[int], background_classes:li
     }
     dump[clf_property] = xgbclf
 
-    pickle.dump(dump, open(clf_file, 'wb'))
+    with open(clf_file, 'wb') as pf:
+        pickle.dump(dump, pf)
 
     #return xgbclf
     #return loss_history[-1]
