@@ -7,7 +7,9 @@ from zhh import glob_exp
 if TYPE_CHECKING:
     from analysis.tasks import RawIndex, AbstractIndex
 
-def define_configs_550_fast(suffix:str, sgv_options:dict):
+def define_configs_550_fast(suffix:str, sgv_options:dict,
+                            sgv_executable_cfg:str='$SGV_DIR/tests/usesgvlcio.exe',
+                            sgv_steering_file_src_cfg:str='$SGV_DIR/tests/sgv.steer'):
     
     class Config_550_llhh(AnalysisConfiguration):
         tag = f'550-llhh-{suffix}'
@@ -33,6 +35,9 @@ def define_configs_550_fast(suffix:str, sgv_options:dict):
         marlin_globals = {  }
         marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
 
+        sgv_executable = sgv_executable_cfg
+        sgv_steering_file_src = sgv_steering_file_src_cfg
+
     class Config_550_vvhh(AnalysisConfiguration):
         tag = f'550-vvhh-{suffix}'
         
@@ -55,6 +60,9 @@ def define_configs_550_fast(suffix:str, sgv_options:dict):
         
         marlin_globals = {  }
         marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
+
+        sgv_executable = sgv_executable_cfg
+        sgv_steering_file_src = sgv_steering_file_src_cfg
 
     class Config_550_6q(AnalysisConfiguration):
         tag = f'550-6q-{suffix}'
@@ -89,6 +97,9 @@ def define_configs_550_fast(suffix:str, sgv_options:dict):
         marlin_globals = {  }
         marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
 
+        sgv_executable = sgv_executable_cfg
+        sgv_steering_file_src = sgv_steering_file_src_cfg
+
     class Config_550_4fsl(AnalysisConfiguration):
         tag = f'550-4fsl-{suffix}'
         
@@ -99,7 +110,7 @@ def define_configs_550_fast(suffix:str, sgv_options:dict):
         def raw_index_requires(self, raw_index_task: 'AbstractIndex'):
             # use the output of 550-4f-{suffix} as input
             
-            from analysis.tasks_reco import FastSimSGV
+            from workflows.analysis.tasks_sim import FastSimSGV
             from analysis.tasks import RawIndex
             
             fast_sim_dep = FastSimSGV.req(raw_index_task, tag=f'550-4f-{suffix}')
@@ -123,6 +134,9 @@ def define_configs_550_fast(suffix:str, sgv_options:dict):
         
         marlin_globals = {  }
         marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
+
+        sgv_executable = sgv_executable_cfg
+        sgv_steering_file_src = sgv_steering_file_src_cfg
 
     class Config_550_4f(AnalysisConfiguration):
         tag = f'550-4f-{suffix}'
@@ -203,6 +217,9 @@ def define_configs_550_fast(suffix:str, sgv_options:dict):
         marlin_globals = {  }
         marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
 
+        sgv_executable = sgv_executable_cfg
+        sgv_steering_file_src = sgv_steering_file_src_cfg
+
     class Config_550_tthz(AnalysisConfiguration):
         tag = f'550-tthz-{suffix}'
         
@@ -222,6 +239,9 @@ def define_configs_550_fast(suffix:str, sgv_options:dict):
         
         marlin_globals = {  }
         marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
+
+        sgv_executable = sgv_executable_cfg
+        sgv_steering_file_src = sgv_steering_file_src_cfg
 
     class Config_550_2l(AnalysisConfiguration):
         tag = f'550-2l-{suffix}'
@@ -243,13 +263,16 @@ def define_configs_550_fast(suffix:str, sgv_options:dict):
         marlin_globals = {  }
         marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
 
+        sgv_executable = sgv_executable_cfg
+        sgv_steering_file_src = sgv_steering_file_src_cfg
+
     class Config_550_4fh(AnalysisConfiguration):
         tag = f'550-4fh-{suffix}'
         
         def raw_index_requires(self, raw_index_task: 'AbstractIndex'):
             # use the output of 550-4f-{suffix} as input
             
-            from analysis.tasks_reco import FastSimSGV
+            from workflows.analysis.tasks_sim import FastSimSGV
             from analysis.tasks import RawIndex
             
             fast_sim_dep = FastSimSGV.req(raw_index_task, tag=f'550-4f-{suffix}')
@@ -313,6 +336,9 @@ def define_configs_550_fast(suffix:str, sgv_options:dict):
         
         marlin_globals = {  }
         marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
+
+        sgv_executable = sgv_executable_cfg
+        sgv_steering_file_src = sgv_steering_file_src_cfg
     
     zhh_configs.add(Config_550_llhh())
     zhh_configs.add(Config_550_vvhh())

@@ -31,7 +31,7 @@ if False:
         ]
         
         def sgv_inputs(self, fast_sim_task):
-            from analysis.tasks_reco import FastSimSGV
+            from analysis.tasks_sim import FastSimSGV
             assert(isinstance(fast_sim_task, FastSimSGV))
             
             sgv_inputs = fast_sim_task.input()
@@ -65,7 +65,7 @@ if False:
         ]
         
         def sgv_inputs(self, fast_sim_task):
-            from analysis.tasks_reco import FastSimSGV
+            from analysis.tasks_sim import FastSimSGV
             assert(isinstance(fast_sim_task, FastSimSGV))
             
             sgv_inputs = fast_sim_task.input()
@@ -128,7 +128,7 @@ class Config_500_zh_tau_fast_perf(AnalysisConfiguration):
     ]
     
     def sgv_inputs(self, fast_sim_task):
-        from analysis.tasks_reco import FastSimSGV
+        from workflows.analysis.tasks_sim import FastSimSGV
         assert(isinstance(fast_sim_task, FastSimSGV))
         
         sgv_inputs = fast_sim_task.input()
@@ -190,7 +190,7 @@ class Config_500_zh10_tau_fast_perf(AnalysisConfiguration):
     ]
     
     def sgv_inputs(self, fast_sim_task):
-        from analysis.tasks_reco import FastSimSGV
+        from workflows.analysis.tasks_sim import FastSimSGV
         assert(isinstance(fast_sim_task, FastSimSGV))
         
         sgv_inputs = fast_sim_task.input()
@@ -263,7 +263,7 @@ class Config_550_bbbb_fast_perf(AnalysisConfiguration):
     ]
     
     def sgv_inputs(self, fast_sim_task):
-        from analysis.tasks_reco import FastSimSGV
+        from workflows.analysis.tasks_sim import FastSimSGV
         assert(isinstance(fast_sim_task, FastSimSGV))
         
         sgv_inputs = fast_sim_task.input()
@@ -291,7 +291,8 @@ class Config_550_bbbb_fast_perf(AnalysisConfiguration):
 from .configs.conf_550_fast_perf import *
 from .configs.conf_550_fast_pfl import *
 from .configs.conf_550_full import *
+from .configs.conf_550_fast_perfsmbc import *
 
-#print('Configs:')
+#print('List of registered configs/tags:')
 #for key, val in zhh_configs.definitions.items():
 #    print(key)
