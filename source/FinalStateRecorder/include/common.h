@@ -78,11 +78,25 @@ struct PROCESS_ID {
 		f4_eebb_sl0 = 3196,
 
 		// NEW 4f
-		f4_sw_sl0 = 31940,
-		f4_sze_sl0 = 31920,
-		f4_sznu_sl0 = 33600,
-		f4_ww_sl0 = 31930,
+		f4_zz_l0 = 31810,
+		f4_zz_h0 = 35810,
 		f4_zz_sl0 = 31910,
+		f4_sze_l0 = 31820,
+		f4_sze_sl0 = 31920,
+		f4_sznu_l0 = 32010,
+		f4_sznu_sl0 = 33600,
+
+		f4_ww_l0 = 31830,
+		f4_ww_h0 = 35820,
+		f4_ww_sl0 = 31930,
+		f4_sw_l0 = 31840,
+		f4_sw_sl0 = 31940,
+
+		f4_zzorww_l0 = 31850,
+		f4_zzorww_h0 = 35830,
+		f4_szeorsw_l0 = 32020,
+		
+		f4_zznu_l0 = 31811,
 		f4_zznu_sl0 = 31970,
 
 		// fffff

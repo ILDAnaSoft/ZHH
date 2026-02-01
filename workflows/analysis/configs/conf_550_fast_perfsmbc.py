@@ -1,4 +1,4 @@
-from .conf_550_fast_perf import define_configs_550_fast
+from .conf_550_fast_base import define_configs_550_fast
 
 define_configs_550_fast('fast-perfsmbc', {
     'analysis_steering.CALO_TREATMENT': 'PERF',
