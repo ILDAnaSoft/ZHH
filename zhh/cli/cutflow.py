@@ -1,6 +1,7 @@
 from zhh import cutflow_parse_steering_file, cutflow_process_steering, cutflow_initialize_sources, cutflow_parse_cuts, CutflowProcessor, \
     cutflow_parse_actions, cutflow_execute_actions, cutflow_register_mvas
 import argparse, yaml, logging
+from os import environ
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

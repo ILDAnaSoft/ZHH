@@ -51,8 +51,8 @@ event_categories: '$REPO_ROOT/config/event_categories.yaml'
 #                       KinFit*, FinalStates TTrees etc.
 sources:
   - name: 4fsl
-    path: $DATA_PATH/AnalysisCombine/550-4fsl-fast-perf
-    root_files: $DATA_PATH/AnalysisFinal/550-4fsl-fast-perf/*.root
+    path: $DATA_PATH/AnalysisCombine/550-4fsl-$CONF_SUFFIX
+    root_files: $DATA_PATH/AnalysisFinal/550-4fsl-$CONF_SUFFIX/*.root
     event_categorization:
       default: EventCategories.F4_OTHER
       order: null
@@ -61,8 +61,8 @@ sources:
     reset: false
 
   - name: 2l4q
-    path: $DATA_PATH/AnalysisCombine/550-2l4q-fast-perf
-    root_files: $DATA_PATH/AnalysisFinal/550-2l4q-fast-perf/*.root
+    path: $DATA_PATH/AnalysisCombine/550-2l4q-$CONF_SUFFIX
+    root_files: $DATA_PATH/AnalysisFinal/550-2l4q-$CONF_SUFFIX/*.root
     event_categorization:
       default: EventCategories.F6_OTHER
       order: null
@@ -71,8 +71,8 @@ sources:
     reset: false
 
   - name: llhh
-    path: $DATA_PATH/AnalysisCombine/550-llhh-fast-perf
-    root_files: $DATA_PATH/AnalysisFinal/550-llhh-fast-perf/*.root
+    path: $DATA_PATH/AnalysisCombine/550-llhh-$CONF_SUFFIX
+    root_files: $DATA_PATH/AnalysisFinal/550-llhh-$CONF_SUFFIX/*.root
     event_categorization:
       default: null
       order: null
@@ -81,8 +81,8 @@ sources:
     reset: false
 
   - name: 6q
-    path: $DATA_PATH/AnalysisCombine/550-6q-fast-perf
-    root_files: $DATA_PATH/AnalysisFinal/550-6q-fast-perf/*.root
+    path: $DATA_PATH/AnalysisCombine/550-6q-$CONF_SUFFIX
+    root_files: $DATA_PATH/AnalysisFinal/550-6q-$CONF_SUFFIX/*.root
     event_categorization:
       default: EventCategories.qqqqqq
       order: []
@@ -91,8 +91,8 @@ sources:
     reset: false
 
   - name: tthz
-    path: $DATA_PATH/AnalysisCombine/550-tthz-fast-perf
-    root_files: $DATA_PATH/AnalysisFinal/550-tthz-fast-perf/*.root
+    path: $DATA_PATH/AnalysisCombine/550-tthz-$CONF_SUFFIX
+    root_files: $DATA_PATH/AnalysisFinal/550-tthz-$CONF_SUFFIX/*.root
     event_categorization:
       default: EventCategories.ttHZ
       order: null
@@ -152,8 +152,8 @@ features:
   
   # for MVA analysis
   - { names: [ npfos ], tree: EventObservablesLL, dtype: uint16 }
-  - { names: [ costhrust, pjmax2, npfosmin4j, yplus, plmin, mbmax12, mbmax34, mcmax12, mcmax34,
-               mvalepminus, yminus2 ], tree: EventObservablesLL, dtype: float32 }
+  - { names: [ costhrust, pjmax2, npfosmin4j, yplus, plmin, mbmax12, mbmax34,
+               mvalepminus, yminus2 ], tree: EventObservablesLL, dtype: float32 } # mcmax12, mcmax34,
   - { name: ZHH_FitChi2, tree: KinFitLL_ZHH, branch: FitChi2, dtype: float32 }
   - { name: ZZH_FitChi2, tree: KinFitLL_ZZH, branch: FitChi2, dtype: float32 }
   - { name: ZHH_p1stBeforeFit, tree: KinFitLL_ZHH, branch: p1stBeforeFit, dtype: float32 }
@@ -170,8 +170,8 @@ features:
         jet3_4v/fCoordinates,
         jet4_4v/fCoordinates
       ], tree: EventObservablesLL, dtype: float32, columns: [ fCoordinates.fX, fCoordinates.fY, fCoordinates.fZ, fCoordinates.fT ] }
-  - { name: jet_matching_kinfit_best, tree: EventObservablesLL, dtype: int8, columns: 4 }
-  - { names: [ jet1_tags, jet2_tags, jet3_tags, jet4_tags ], tree: EventObservablesLL, dtype: float32 }
+  # - { name: jet_matching_kinfit_best, tree: EventObservablesLL, dtype: int8, columns: 4 }
+  # - { names: [ jet1_tags, jet2_tags, jet3_tags, jet4_tags ], tree: EventObservablesLL, dtype: float32 }
   
   # TODO: ability to use custom handlers to attach these
   # serialize:

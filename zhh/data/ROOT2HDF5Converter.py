@@ -462,7 +462,11 @@ def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None,
             # regularize
             if is_2d:
                 for i in range(len(result)):
-                    result[i] = ak.to_regular(result[i])
+                    try:
+                        result[i] = ak.to_regular(result[i])
+                    except Exception as e:
+                        print(f'Error converting file {file_paths[i_result]}: with tree={tree} branch={branch} columns={", ".join(columns)}')
+                        raise e
 
             size = sum([len(result[i]) for i in range(len(result))])
 
