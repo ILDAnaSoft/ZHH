@@ -37,9 +37,15 @@ class p4: public FinalStateResolver {
             // only required for test production (f4_llbb_sl0 and f4_eebb_sl0) AND new mc-2025 4f prod
             // see workflows/resources/whizard_template/whizard.base.sin
             if (m_process_id == PROCESS_ID::f4_llbb_sl0 || m_process_id == PROCESS_ID::f4_eebb_sl0 ||
-                m_process_id == PROCESS_ID::f4_sw_sl0 || m_process_id == PROCESS_ID::f4_sze_sl0 ||
-                m_process_id == PROCESS_ID::f4_sznu_sl0 || m_process_id == PROCESS_ID::f4_ww_sl0 ||
-                 m_process_id == PROCESS_ID::f4_zz_sl0 || m_process_id == PROCESS_ID::f4_zznu_sl0) {
+                m_process_id == PROCESS_ID::f4_zz_l0 || m_process_id == PROCESS_ID::f4_zz_h0 ||
+                m_process_id == PROCESS_ID::f4_zz_sl0 || m_process_id == PROCESS_ID::f4_sze_l0 ||
+		        m_process_id == PROCESS_ID::f4_sze_sl0 || m_process_id == PROCESS_ID::f4_sznu_l0 ||
+                m_process_id == PROCESS_ID::f4_sznu_sl0 || m_process_id == PROCESS_ID::f4_ww_l0 ||
+                m_process_id == PROCESS_ID::f4_ww_h0 || m_process_id == PROCESS_ID::f4_ww_sl0 ||
+                m_process_id == PROCESS_ID::f4_sw_l0 || m_process_id == PROCESS_ID::f4_sw_sl0 ||
+                m_process_id == PROCESS_ID::f4_zzorww_l0 || m_process_id == PROCESS_ID::f4_zzorww_h0 ||
+                m_process_id == PROCESS_ID::f4_szeorsw_l0 || m_process_id == PROCESS_ID::f4_zznu_l0 ||
+                m_process_id == PROCESS_ID::f4_zznu_sl0) {
 
                 int mcp_cand1_pdg = abs(((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 6 ))->getPDG());
                 int mcp_cand2_pdg = abs(((MCParticle*)mcp_collection->getElementAt( m_shift_pos + 7 ))->getPDG());
@@ -197,6 +203,43 @@ class llbb_sl0 : public p4 {
 class eebb_sl0 : public p4 {
     public: eebb_sl0(): p4( "eebb_sl0", PROCESS_ID::f4_eebb_sl0, EVENT_CATEGORY_TRUE::llqq, vector{11,5} ) {}; };
 
+    
+// pure leptonic
+class zz_l0 : public p4 {
+    public: zz_l0(): p4( "zz_l0", PROCESS_ID::f4_zz_l0, EVENT_CATEGORY_TRUE::llll, vector{11,12,13,14,15,16} ) {}; };
+
+class sw_l0 : public p4 {
+    public: sw_l0(): p4( "sw_l0", PROCESS_ID::f4_sw_l0, EVENT_CATEGORY_TRUE::llll, vector{11,12,13,14,15,16} ) {}; };
+
+class sze_l0 : public p4 {
+    public: sze_l0(): p4( "sze_l0", PROCESS_ID::f4_sze_l0, EVENT_CATEGORY_TRUE::llll, vector{11,12,13,14,15,16} ) {}; };
+
+class szeorsw_l0 : public p4 {
+    public: szeorsw_l0(): p4( "szeorsw_l0", PROCESS_ID::f4_szeorsw_l0, EVENT_CATEGORY_TRUE::llll, vector{11,12,13,14,15,16} ) {}; };
+
+class sznu_l0 : public p4 {
+    public: sznu_l0(): p4( "sznu_l0", PROCESS_ID::f4_sznu_l0, EVENT_CATEGORY_TRUE::llll, vector{11,12,13,14,15,16} ) {}; };
+
+class ww_l0 : public p4 {
+    public: ww_l0(): p4( "ww_l0", PROCESS_ID::f4_ww_l0, EVENT_CATEGORY_TRUE::llll, vector{11,12,13,14,15,16} ) {}; };
+
+class zznu_l0 : public p4 {
+    public: zznu_l0(): p4( "zznu_l0", PROCESS_ID::f4_zznu_l0, EVENT_CATEGORY_TRUE::llll, vector{11,12,13,14,15,16} ) {}; };
+
+class zzorww_l0 : public p4 {
+    public: zzorww_l0(): p4( "zzorww_l0", PROCESS_ID::f4_zzorww_l0, EVENT_CATEGORY_TRUE::llll, vector{11,12,13,14,15,16} ) {}; };
+
+// pure hadronic
+class ww_h0 : public p4 {
+    public: ww_h0(): p4( "ww_h0", PROCESS_ID::f4_ww_h0, EVENT_CATEGORY_TRUE::qqqq, vector{1,2,3,4,5,6} ) {}; };
+
+class zz_h0 : public p4 {
+    public: zz_h0(): p4( "zz_h0", PROCESS_ID::f4_zz_h0, EVENT_CATEGORY_TRUE::qqqq, vector{1,2,3,4,5,6} ) {}; };
+
+class zzorww_h0 : public p4 {
+    public: zzorww_h0(): p4( "zzorww_h0", PROCESS_ID::f4_zzorww_h0, EVENT_CATEGORY_TRUE::qqqq, vector{1,2,3,4,5,6} ) {}; };
+
+// semi leptonic
 class sw_sl0 : public p4 {
     public: sw_sl0(): p4( "sw_sl0", PROCESS_ID::f4_sw_sl0, EVENT_CATEGORY_TRUE::lvqq, vector{1,2,3,4,5,6,11,12,13,14,15,16} ) {}; };
 
@@ -214,15 +257,5 @@ class zz_sl0 : public p4 {
 
 class zznu_sl0 : public p4 {
     public: zznu_sl0(): p4( "zznu_sl0", PROCESS_ID::f4_zznu_sl0, EVENT_CATEGORY_TRUE::vvqq, vector{1,2,3,4,5,6,12,14,16} ) {}; };
-
-// NEW MC-2025 PROD
-class ww_h0 : public p4 {
-    public: ww_h0(): p4( "ww_h0", PROCESS_ID::f4_ww_h, EVENT_CATEGORY_TRUE::qqqq, vector{1,2,3,4,5,6} ) {}; };
-
-class zz_h0 : public p4 {
-    public: zz_h0(): p4( "zz_h0", PROCESS_ID::f4_zz_h, EVENT_CATEGORY_TRUE::qqqq, vector{1,2,3,4,5,6} ) {}; };
-
-class zzorww_h0 : public p4 {
-    public: zzorww_h0(): p4( "zzorww_h0", PROCESS_ID::f4_zzorww_h, EVENT_CATEGORY_TRUE::qqqq, vector{1,2,3,4,5,6} ) {}; };
 
 #endif

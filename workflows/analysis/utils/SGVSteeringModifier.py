@@ -1,8 +1,10 @@
 from .types import SGVOptions
 
-def parse_item(value:str|int|float):
+def parse_item(value:str|bool|int|float):
     if isinstance(value, str):
         return f"'{value}'"
+    elif isinstance(value, bool):
+        return '.TRUE.' if value else '.FALSE.' 
     elif isinstance(value, int):
         return f'{value}'
     else:

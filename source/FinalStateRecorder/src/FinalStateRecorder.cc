@@ -481,16 +481,28 @@ void FinalStateRecorder::init()
 	this->register_process(new p6_ftag_bbbbbb());
 
 	// new mc-2025 4f production
+	// pure leptonic
+	this->register_process(new zz_l0());
+	this->register_process(new sw_l0());
+	this->register_process(new sze_l0());
+	this->register_process(new szeorsw_l0());
+	this->register_process(new sznu_l0());
+	this->register_process(new ww_l0());
+	this->register_process(new zznu_l0());
+	this->register_process(new zzorww_l0());
+
+	// pure hadronic
+	this->register_process(new ww_h0());
+	this->register_process(new zz_h0());
+	this->register_process(new zzorww_h0());
+
+	// semi leptonic
 	this->register_process(new sw_sl0());
 	this->register_process(new sze_sl0());
 	this->register_process(new sznu_sl0());
 	this->register_process(new ww_sl0());
 	this->register_process(new zz_sl0());
 	this->register_process(new zznu_sl0());
-
-	this->register_process(new ww_h0());
-	this->register_process(new zz_h0());
-	this->register_process(new zzorww_h0());
 
 	// new mc-2025 tth+ttz production
 	this->register_process(new ptth());

@@ -69,7 +69,10 @@ def per_line(line:str)->SampleMeta:
     """
     vals = line.split(',')
 
-    assert(len(vals) == 11)
+    if len(vals) != 11:
+        print(vals)
+        raise Exception(f'Critical Error: Expected exactly 11 values in a line, got {len(vals)}')
+
     processName, nEvt, nRun, Pol0, Pol1, beamPol1, beamPol2, crossSec, crossSecErr, processId, mcpCol = vals
 
     return SampleMeta(processName, int(nEvt), int(nRun),
@@ -101,6 +104,7 @@ def per_chunk(input_entry:tuple[int, list[str]]) -> tuple[int, list[tuple[str, b
                 result.append((file_paths[i], True, meta))
         else:
             print(proc.returncode, proc.stdout, proc.stderr)
+            print('Exception occured while handling the following file: ', file_paths[max(0, len(proc.stdout.split('\n')) - 1)])
             raise Exception('lcio_get_physics_meta failed')
     else:
         import sys, gc

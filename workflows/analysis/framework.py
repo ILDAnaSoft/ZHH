@@ -9,7 +9,7 @@ from law import Task
 
 if TYPE_CHECKING:
     from analysis.tasks import RawIndex, AnalysisIndex
-    from analysis.tasks_reco import FastSimSGV
+    from workflows.analysis.tasks_sim import FastSimSGV
 
 # the htcondor workflow implementation is part of a law contrib package
 # so we need to explicitly load it
@@ -141,7 +141,11 @@ class AnalysisConfiguration:
             from analysis.tasks_generator import WhizardEventGeneration            
             requirements['whizard_event_generation'] = WhizardEventGeneration.req(sgv_task)
     
+    # these optional properties can overwrite steering options, the executable
+    # and base steering file to use for FastSimSGVExternalReadJob tasks 
     sgv_inputs:Optional[Callable[['FastSimSGV'], tuple[list[str], list[SGVOptions|None]]]] = None
+    sgv_executable:str|None = None
+    sgv_steering_file_src:str|None = None
 
     def raw_index_requires(self, raw_index_task: 'RawIndex'):
         """If sgv_inputs is not None, we will run SGV before
@@ -150,7 +154,7 @@ class AnalysisConfiguration:
         result = []
              
         if isinstance(self.sgv_inputs, Callable):
-             from analysis.tasks_reco import FastSimSGV
+             from workflows.analysis.tasks_sim import FastSimSGV
              fast_sim_task = FastSimSGV.req(raw_index_task)
              result.append(fast_sim_task)
              
