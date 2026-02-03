@@ -13,7 +13,9 @@ from .replace_references import replace_references
 from ..data.ROOT2HDF5Converter import ROOT2HDF5Converter
 from ..task.ConcurrentFuturesRunner import ProcessRunner
 from typing import TypedDict, NotRequired, TYPE_CHECKING
+from multiprocessing import cpu_count
 from copy import deepcopy
+from math import ceil
 
 def parse_steering_file(loc:str):
     """Loads a YAML steering file, replaces references within them
@@ -305,7 +307,7 @@ def provision_feature_interpretations(interpretations:list[Interpretation],
         for item in conv_items:
             print(item)
 
-        runner = ProcessRunner()
+        runner = ProcessRunner(cores=ceil(cpu_count() * .8))
         runner.queueTasks(conv_tasks)
         runner.run()
 

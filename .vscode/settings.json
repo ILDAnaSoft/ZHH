@@ -109,5 +109,6 @@
     },
     "python.terminal.activateEnvironment": false,
     "python.terminal.activateEnvInCurrentTerminal": false,
-    "git.detectSubmodules": true
+    "git.detectSubmodules": false,
+    "fortran.fortls.disabled": true
 }
