@@ -356,21 +356,47 @@ class FastSimSGVExternalReadJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     including the executable to the working node, symlink the input
     file to a location given by input_file and expect the output at
     output_file (again within the current working directory).
+    The executable defaults to '$SGV_DIR/tests/usesgvlcio.exe', but
+    can be overwritten with AnalysisConfiguration.sgv_executable, if
+    this is a string.
     
     Assign the location to SGV_DIR in the workflows/analysis/.env file
     
     The parameters for running SGV can be set here or overwritten in a
-    child class by a custom implementation of get_steering_file.
+    child class by a custom implementation of get_steering_file. Per
+    default, custom SGV steering options can be supplied using
+    AnalysisConfiguration.sgv_inputs.
+
+    A base steering file must be supplied via steering_file_src. Any
+    custom steering options are merged into the job's steering file on
+    the fly (see SGVSteeringModifier). The location of the base file
+    is defined in steering_file_src and can be customized using
+    AnalysisConfiguration.sgv_steering_file_src.
     """
     
-    executable = '$SGV_DIR/tests/usesgvlcio.exe'
+    @property
+    def executable(self)->str:
+        from analysis.configurations import zhh_configs
+        config = zhh_configs.get(str(self.tag))
+
+        if isinstance(config.sgv_executable, str):
+            return config.sgv_executable
+        else:
+            return '$SGV_DIR/tests/usesgvlcio.exe'
     
     # this can be changed, if desired
-    steering_file_src = '$SGV_DIR/tests/sgv.steer'
+    @property
+    def steering_file_src(self):
+        from analysis.configurations import zhh_configs
+        config = zhh_configs.get(str(self.tag))
+
+        if isinstance(config.sgv_steering_file_src, str):
+            return config.sgv_steering_file_src
+        else:
+            return '$SGV_DIR/tests/sgv.steer'
     
-    # this must fit the compilation of usesgvlcio (here: default)
-    # copied from steering_file_src to the working directory
-    steering_file_name = 'fort.17'
+    # this must fit the compilation of usesgvlcio and should not needed to be changed
+    steering_file_fortran_unit = 'fort.17'
     
     sgv_env = '$SGV_DIR/sgvenv.sh'
     sgv_input = 'input.slcio' # this must fit the steering file, also the GENERATOR_INPUT_TYPE
@@ -421,15 +447,18 @@ class FastSimSGVExternalReadJob(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
             sf.write(steering_file_content)
         
         # create steering file: parse source file and merge input_options into it
+
+        SGV_EXECUTABLE_DIR = osp.dirname(self.executable)
+        SGV_EXECUTABLE_BNAME = osp.basename(self.executable)
         
         cmd  = f'source $REPO_ROOT/setup.sh && source "{self.sgv_env}"'
         cmd += f' && echo "SRC={input_file} DST={target_path}"'
-        cmd += f' && cp -R $(dirname {self.executable})/* .'
-        cmd += f' && ( [[ -f {self.steering_file_name} ]] && rm {self.steering_file_name} && echo "Existing steering file removed" || echo "No existing steering file removed" )'
-        cmd += f' && mv "{self.tmp_steering_name}" "{self.steering_file_name}"'
+        cmd += f' && cp -R "{SGV_EXECUTABLE_DIR}/." .'
+        cmd += f' && ( [[ -f {self.steering_file_fortran_unit} ]] && rm {self.steering_file_fortran_unit} && echo "Existing steering fortran unit removed" || echo "No existing steering fortran unit removed" )'
+        cmd += f' && mv "{self.tmp_steering_name}" "{self.steering_file_fortran_unit}"'
         cmd += f' && ln -s "{input_file}" {self.sgv_input}'
         cmd += f' && echo "Starting SGV at $(date)"'
-        cmd += f' && ( ./{osp.basename(self.executable)}'
+        cmd += f' && ( ./{SGV_EXECUTABLE_BNAME}'
         cmd += f' && echo "Finished SGV at $(date)"'
         cmd += f' && echo "Moving from worker node to destination"'
         cmd += f' && mv "{self.sgv_output}" "{target_path}"'

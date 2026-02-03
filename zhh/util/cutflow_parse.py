@@ -14,8 +14,9 @@ from ..data.ROOT2HDF5Converter import ROOT2HDF5Converter
 from ..task.ConcurrentFuturesRunner import ProcessRunner
 from ..analysis import CutflowProcessor, CutflowProcessorAction, CreateCutflowPlotsAction
 from typing import TypedDict, NotRequired, TYPE_CHECKING
-
+from multiprocessing import cpu_count
 from copy import deepcopy
+from math import ceil
 
 def cutflow_parse_steering_file(loc:str):
     """Loads a YAML steering file, replaces references within them
@@ -358,7 +359,7 @@ def cutflow_provision_features(interpretations:list[Interpretation],
         for item in conv_items:
             print(item)
 
-        runner = ProcessRunner()
+        runner = ProcessRunner(cores=ceil(cpu_count() * .8))
         runner.queueTasks(conv_tasks)
         runner.run()
 

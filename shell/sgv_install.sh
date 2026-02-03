@@ -14,12 +14,17 @@
 #   this seems to be related with some dependency in the key4hep stack, as it
 #   at least compiles with 2024-03-10 (maybe the gfortran version?)
 
-# the resulting setup is in $SGV_DIR/tests and does the following:
+# there are two resulting setup:
+# 1st: in $SGV_DIR/tests and does the following:
 # - read 999999 (i.e. all) events
 # - use LCIO input
 # - events are read from input.slcio in the same directory as the executable
 # - use PFL calorimetry option with ILD defaults
 # - write output to sgvout.slcio
+#
+# 2nd: in $SGV_DIR/tests_beamcal_500GeV does the same as 1st, but additionally:
+# - compiles with ZTUGEO from samples/usercalo, implementing beamcal efficiencies fitted from ILD simulation at 500 GeV
+# - set PRIMARY_VERTEX_SIM = .TRUE. in default steering file, sgv.steer
 
 # for batch jobs, it is sufficient to source sgvenv.sh, copy the tests directory
 # to the worker node, prepare input.slcio via symlink and then run usesgvlcio
@@ -146,6 +151,8 @@ ANSWERS
     cresgvexe merge usesgvlcio
     cresgvexe merge sgvuser
 
+    # 1st setup
+
     # enable extread support
     cp "$SGV_DIR/samples/sgv_extread.steer" "$SGV_DIR/tests"
     cp "$SGV_DIR/samples/sgvopt.F95" "$SGV_DIR/tests"
@@ -186,6 +193,28 @@ ANSWERS
     sed -i -e "s|INPUT_FILENAMES = '\*.stdhep'|INPUT_FILENAMES = 'input.slcio'|g" sgv.steer
     sed -i -e "s|!   CALO_TREATMENT = 'PERF'|   CALO_TREATMENT = 'PFL '|g" sgv.steer
     sed -i -e "s|!  FILENAME = 'sgvout.slcio'|  FILENAME = 'sgvout.slcio'|g" sgv.steer
+
+    # 2nd setup: copy from 1st and compile with samples/usercalo for ILD at 500 GeV
+    # see $SGV_DIR/usercalo/samples/README for setup instructions
+    cp -R "$SGV_DIR/tests" "$SGV_DIR/tests_beamcal_500GeV"
+    cd "$SGV_DIR/tests_beamcal_500GeV"
+    
+    rm "$SGV_DIR/tests_beamcal_500GeV/sgv_geo3_ex.inp" "$SGV_DIR/tests_beamcal_500GeV/sgv_geo.inp"
+
+    cp "$SGV_DIR/samples/usercalo/ztugeo-beamcal.F95" "$SGV_DIR/tests_beamcal_500GeV"
+    ln -s "$SGV_DIR/samples/usercalo/bg_aver.sv01-14-01-p00.mILD_o1_v05.E500-TDR_ws.PBeamstr-pairs.I230000.SGVmap.txt" "$SGV_DIR/tests_beamcal_500GeV/fort.93"
+
+    # set paths to this sub-directory
+    rm "$SGV_DIR/tests_beamcal_500GeV/fort.17" "$SGV_DIR/tests_beamcal_500GeV/fort.51"
+    ln -s "$SGV_DIR/tests_beamcal_500GeV/sgv.steer" "$SGV_DIR/tests_beamcal_500GeV/fort.17"
+    ln -s "$SGV_DIR/tests_beamcal_500GeV/sgv_geo.inp" "$SGV_DIR/tests_beamcal_500GeV/fort.51"
+
+    sed -i -e "s|!   PRIMARY_VERTEX_SIM = .FALSE.|    PRIMARY_VERTEX_SIM = .TRUE.|g" sgv.steer
+
+    ln -s "$SGV_DIR/samples/usercalo/sgv_geo3_ex_bcal.inp" "$SGV_DIR/tests_beamcal_500GeV/sgv_geo.inp"
+    
+    gfortran -c -O3 -I$SGV_LIB/mod "$SGV_DIR/tests_beamcal_500GeV/ztugeo-beamcal.F95" -o "$SGV_DIR/tests_beamcal_500GeV/ztugeo-beamcal.o"
+    cresgvexe merge usesgvlcio "-DEXTREAD" "" "" "" "eflow_par_type.o zaccon.o ztugeo-beamcal.o"
 
     # add LD_PRELOAD to sgvenv.sh to avoid missing libraries
     echo ". $SGV_DIR/samples/ld_preload_for_el9" >> "$SGV_DIR/sgvenv.sh"
