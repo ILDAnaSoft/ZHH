@@ -191,7 +191,7 @@ ANSWERS
     sed -i -e "s|MAXEV = 100|MAXEV = 999999|g" sgv.steer
     sed -i -e "s|GENERATOR_INPUT_TYPE = 'STDH'|GENERATOR_INPUT_TYPE = 'LCIO'|g" sgv.steer
     sed -i -e "s|INPUT_FILENAMES = '\*.stdhep'|INPUT_FILENAMES = 'input.slcio'|g" sgv.steer
-    sed -i -e "s|!   CALO_TREATMENT = 'PERF'|   CALO_TREATMENT = 'PFL '|g" sgv.steer
+    sed -i -e "s|!   CALO_TREATMENT = 'PERF'|   CALO_TREATMENT = 'PERF'|g" sgv.steer
     sed -i -e "s|!  FILENAME = 'sgvout.slcio'|  FILENAME = 'sgvout.slcio'|g" sgv.steer
 
     # 2nd setup: copy from 1st and compile with samples/usercalo for ILD at 500 GeV
@@ -199,13 +199,13 @@ ANSWERS
     cp -R "$SGV_DIR/tests" "$SGV_DIR/tests_beamcal_500GeV"
     cd "$SGV_DIR/tests_beamcal_500GeV"
     
-    rm "$SGV_DIR/tests_beamcal_500GeV/sgv_geo3_ex.inp" "$SGV_DIR/tests_beamcal_500GeV/sgv_geo.inp"
+    rm -f "$SGV_DIR/tests_beamcal_500GeV/sgv_geo3_ex.inp" "$SGV_DIR/tests_beamcal_500GeV/sgv_geo.inp"
 
     cp "$SGV_DIR/samples/usercalo/ztugeo-beamcal.F95" "$SGV_DIR/tests_beamcal_500GeV"
     ln -s "$SGV_DIR/samples/usercalo/bg_aver.sv01-14-01-p00.mILD_o1_v05.E500-TDR_ws.PBeamstr-pairs.I230000.SGVmap.txt" "$SGV_DIR/tests_beamcal_500GeV/fort.93"
 
     # set paths to this sub-directory
-    rm "$SGV_DIR/tests_beamcal_500GeV/fort.17" "$SGV_DIR/tests_beamcal_500GeV/fort.51"
+    rm -f "$SGV_DIR/tests_beamcal_500GeV/fort.17" "$SGV_DIR/tests_beamcal_500GeV/fort.51"
     ln -s "$SGV_DIR/tests_beamcal_500GeV/sgv.steer" "$SGV_DIR/tests_beamcal_500GeV/fort.17"
     ln -s "$SGV_DIR/tests_beamcal_500GeV/sgv_geo.inp" "$SGV_DIR/tests_beamcal_500GeV/fort.51"
 

@@ -3,8 +3,10 @@
 INPUT_FILE=$1
 TARGET_FILE=$2
 
-if [[ ! -z $REPO_ROOT || ! -d $REPO_ROOT ]]; then
+if [ -z $REPO_ROOT ] || [ ! -d $REPO_ROOT ]; then
     srczhh
+else
+    source "$REPO_ROOT/setup.sh"
 fi
 
 # variables depending on SGV setup
@@ -26,16 +28,16 @@ else
     SGV_INPUT_FILE=input.slcio
 fi
 
+echo "REPO_ROOT=$REPO_ROOT"
+echo "INPUT_FILE=$INPUT_FILE"
+echo "TARGET_FILE=$TARGET_FILE"
+echo "SGV_PRODUCED_FILE=$SGV_PRODUCED_FILE"
+echo "SGV_EXECUTABLE=$SGV_EXECUTABLE"
+echo "SGV_INPUT_FILE=$SGV_INPUT_FILE"
+echo "SGV_DIR=$SGV_DIR"
+
 if [[ -z $INPUT_FILE || -z $TARGET_FILE || -z $SGV_PRODUCED_FILE || -z $SGV_EXECUTABLE || -z $SGV_INPUT_FILE || -z $SGV_DIR ]]; then
     echo "At least one necessary parameter is missing"
-    echo $REPO_ROOT
-    echo $INPUT_FILE
-    echo $TARGET_FILE
-    echo $SGV_PRODUCED_FILE
-    echo $SGV_EXECUTABLE
-    echo $SGV_INPUT_FILE
-    echo $SGV_DIR
-
     exit 1
 fi
 
