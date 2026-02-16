@@ -1,6 +1,12 @@
 # ZHH
 Code for ZHH analysis with ILD
 
+## Structure of the analysis
+
+![](documentation/FlowChartAnalysis.svg "Example")
+
+We split the execution of Marlin into a High-Level Reconstruction (HLR) and Channel-Specific Analysis (CSA). After that, the multivariate analysis is executed, for which we use the cutflow tool.
+
 ## Setup
 
 Running the analysis requires dependencies provided by the key4hep stack *and* more. For a list of them, see [this list](#List-of-required-dependencies).
@@ -93,8 +99,12 @@ If you compile a freshly cloned copy of all ZHH processors from scratch, you mig
 
 If you only want to integrate changes, call `source compile_from_scratch.sh keep`. This will not remove any existing build files.
 
-## Running the analysis
+## Running the analysis (HLR and CSA)
 For development, it is desirable to just use `Marlin` with the given 
+
+## Running the cutflow/MVA tool
+
+Source the zhhvenv Python environment and run ```python zhh/cli/cutflow.py <CONFIG_FILE>```, where an example for a CONFIG_FILE can be found in ```config/llHHbbbb.yaml```.
 
 ### For testing
 
