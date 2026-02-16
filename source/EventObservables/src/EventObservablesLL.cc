@@ -179,7 +179,8 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
     LCCollection *input2JetCollection = pLCEvent->getCollection( m_input2JetCollection );
     LCCollection *inputLepPairCollection = pLCEvent->getCollection( m_inputLepPairCollection );
     
-    if ( inputLepPairCollection->getNumberOfElements() == m_nAskedIsoLeps() && inputJetCollection->getNumberOfElements() == m_nAskedJets() ) {
+    if ( inputLepPairCollection->getNumberOfElements() == (int)m_nAskedIsoLeps() &&
+         inputJetCollection->getNumberOfElements() == (int)m_nAskedJets() ) {
         // NPFOS MIN/MAX
         std::tie(m_npfosmin4j, m_npfosmax4j, std::ignore) = nPFOsMinMax(inputJetCollection);
 

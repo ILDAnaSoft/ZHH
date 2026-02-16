@@ -137,8 +137,8 @@ class EventObservablesBase: public Processor, public TrueJet_Parser {
 		virtual void clearChannelValues() = 0;
 		virtual void updateChannelValues(EVENT::LCEvent *pLCEvent) = 0;
 		virtual TTree* getTTree() = 0;
-		virtual int m_nAskedJets() = 0;
-		virtual int m_nAskedIsoLeps() = 0;
+		virtual unsigned int m_nAskedJets() = 0;
+		virtual unsigned int m_nAskedIsoLeps() = 0;
 		virtual std::string m_yMinusParameter() = 0;
 		virtual std::string m_yPlusParameter() = 0;
 		virtual bool m_use_matrix_elements() = 0;
@@ -229,7 +229,7 @@ class EventObservablesBase: public Processor, public TrueJet_Parser {
 		float m_pjmax{};
 		float m_cosjmax{};
 		
-		int m_nJets{};
+		unsigned int m_nJets{};
 		int m_nIsoLeps{};
 		int m_nIsoElectrons{};
 		int m_nIsoMuons{};
@@ -393,13 +393,14 @@ class EventObservablesBase: public Processor, public TrueJet_Parser {
 
 		// TrueJet information
 		short m_useTrueJet{};
-		short m_trueJetN{};
+		unsigned short m_trueJetN{};
 		std::vector<ROOT::Math::PxPyPzEVector> m_trueJetMomenta{};
 		std::vector<ROOT::Math::PxPyPzEVector> m_trueISRMomenta{};
 		std::vector<int> m_trueJetTypes{};
 		std::vector<int> m_trueJetPDGs{};
+		std::vector<int> m_trueDijetICNPDGs{};
 
-		short m_trueLeptonN{};
+		unsigned short m_trueLeptonN{};
 		std::vector<ROOT::Math::PxPyPzEVector> m_trueLeptonMomenta{};
 		std::vector<int> m_trueLeptonPDGs{};
 
@@ -408,7 +409,7 @@ class EventObservablesBase: public Processor, public TrueJet_Parser {
 		std::vector<int> m_trueJetICNTrueJetsIndices{};
 		std::vector<int> m_reco2TrueJetIndex{};
 		std::vector<int> m_true2RecoJetIndex{};
-		std::vector<int> m_trueJetHiggsICNPairs{};
+		//std::vector<int> m_trueJetHiggsICNPairs{};
 
 		float getMatchingByAngularSpace(
 			vector<EVENT::ReconstructedParticle*> recoJets,

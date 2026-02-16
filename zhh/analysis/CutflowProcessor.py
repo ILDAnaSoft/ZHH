@@ -568,7 +568,8 @@ def plotCalcDictTop9(context:PlotContext, calc_dict:dict[str, tuple[np.ndarray, 
     for j, key in enumerate(list(reversed(categories))[:9]):
         plot_dict = { key: calc_dict[key] }
         for sig_key in signal_category_names:
-            plot_dict[sig_key] = calc_dict[sig_key]
+            if sig_key in plot_dict:
+                plot_dict[sig_key] = calc_dict[sig_key]
         
         # stop plotting if the current entry does not contain any data to plot (-> less than 9 filled histograms)
         # if plot_dict[sig_key] ==     

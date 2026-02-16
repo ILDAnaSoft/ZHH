@@ -187,13 +187,23 @@ def cutflow_provision_features(interpretations:list[Interpretation],
         raise Exception(f'No ROOT files found for search mask <{root_files_glob}>')
 
     nrows = 0
+    nrows_found = []
     ds_keys = []
 
     # make sure files exist and nrows is set
     # read from existing files (if exist)
     if not osp.isfile(ds_path) or not osp.isfile(ds_meta_file):
         os.makedirs(osp.dirname(ds_path), exist_ok=True)
+
+    with h5py.File(ds_path, 'a') as hf:
+        nrows = hf.attrs.get('nrows', 0)
+    
+    if not osp.isfile(ds_meta_file) or nrows == 0:
+        nrows_found = tree_n_rows(root_files, base_tree, use_uproot=True, aggregate=False)
         
+        with h5py.File(ds_path, 'a') as hf:
+            nrows = hf.attrs['nrows'] = np.sum(nrows_found)
+
     with h5py.File(ds_path, 'a') as hf:
         if 'nrows' in hf.attrs:
             nrows = int(hf.attrs.get('nrows', 0))
@@ -222,17 +232,7 @@ def cutflow_provision_features(interpretations:list[Interpretation],
                     ds_keys.remove(key)
                     del hf[key]
                     break
-    
-    # get size
-    if nrows == 0 or not osp.isfile(ds_meta_file):
-        nrows_found = tree_n_rows(root_files, base_tree, use_uproot=True, aggregate=False)
-        
-        with h5py.File(ds_path, 'r') as hf:
-            nrows_in_file = hf.attrs.get('nrows', None)
-            if nrows_in_file is not None:
-                assert(nrows_in_file == np.sum(nrows_found))
-                nrows = nrows_in_file
-        
+            
         # create mapping for quick navigation between ID entries and 
         
     
@@ -452,7 +452,7 @@ def cutflow_parse_cuts(x:list[dict], mvas:dict={}, to_resolve:list[str]=['lower'
                 continue
         
         for prop in to_resolve:
-            print(prop, item)
+            #print(prop, item)
             if prop in item:
                 if isinstance(item[prop], str):
                     props = item[prop].split('.')
@@ -464,7 +464,7 @@ def cutflow_parse_cuts(x:list[dict], mvas:dict={}, to_resolve:list[str]=['lower'
                     props.pop(0)
 
                     item[prop] = find_property(value, props)
-                    print(item[prop], prop)
+                    #print(item[prop], prop)
 
         result.append(cutflow_parse_cut(item))
     

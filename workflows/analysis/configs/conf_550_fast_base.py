@@ -269,6 +269,35 @@ def define_configs_550_fast(suffix:str, sgv_options:dict,
         sgv_executable = sgv_executable_cfg
         sgv_steering_file_src = sgv_steering_file_src_cfg
 
+    class Config_550_2f(AnalysisConfiguration):
+        tag = f'550-2f-{suffix}'
+        
+        def sgv_inputs(self, fast_sim_task):
+            input_files = glob_exp('$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/2f/*.slcio')
+
+            # filter out invalid files
+            invalid_files = list(map(osp.expandvars, [
+                '$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/2f/E550-TDR_ws.P2f_z_eeth_a.Gwhizard-3_1_4.eL.pR.I501006.1827.slcio']))
+
+            input_files = list(set(input_files) - set(invalid_files))
+            input_files.sort()
+            
+            input_options = [{
+                'global_steering.MAXEV': 999999,
+                'global_generation_steering.CMS_ENE': 550,
+                'external_read_generation_steering.GENERATOR_INPUT_TYPE': 'LCIO',
+                'external_read_generation_steering.INPUT_FILENAMES': 'input.slcio',
+                **sgv_options
+            }] * len(input_files)
+            
+            return input_files, input_options
+        
+        marlin_globals = {  }
+        marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
+
+        sgv_executable = sgv_executable_cfg
+        sgv_steering_file_src = sgv_steering_file_src_cfg
+
     class Config_550_2l(AnalysisConfiguration):
         tag = f'550-2l-{suffix}'
         
@@ -382,6 +411,7 @@ def define_configs_550_fast(suffix:str, sgv_options:dict,
     zhh_configs.add(Config_550_4fsl())
     zhh_configs.add(Config_550_4f())
     zhh_configs.add(Config_550_tthz())
+    zhh_configs.add(Config_550_2f())
     zhh_configs.add(Config_550_2l())
     zhh_configs.add(Config_550_4flh())
     zhh_configs.add(Config_550_2l4q())

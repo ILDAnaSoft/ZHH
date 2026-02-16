@@ -98,7 +98,11 @@ def per_chunk(input_entry:tuple[int, list[str]]) -> tuple[int, list[tuple[str, b
                    capture_output=True, encoding='utf-8')
         
         if proc.returncode == 0:
-            temp = list(map(per_line, proc.stdout.split('\n')))
+            try:
+                temp = list(map(per_line, proc.stdout.strip().split('\n')))
+            except Exception as e:
+                print('Failed to parse result of lcio_get_physics_meta ', proc.stdout.strip())
+                raise e
 
             for i, meta in enumerate(temp):
                 result.append((file_paths[i], True, meta))

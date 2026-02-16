@@ -1,4 +1,5 @@
 from .ApplyCutsAction import ApplyCutsAction
+from .AttachMatrixElementsAction import AttachMatrixElementsAction
 from .CreateCutflowPlotsAction import CreateCutflowPlotsAction
 from .CreateCutflowTableAction import CreateCutflowTableAction
 from .PrintSplitWeightsAction import PrintSplitWeightsAction

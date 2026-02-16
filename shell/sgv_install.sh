@@ -187,12 +187,13 @@ ANSWERS
     ln -s -f "$SGV_DIR/tests/sgv.steer" "$SGV_DIR/tests/fort.17"
     ln -s -f "$SGV_DIR/tests/sgv_geo.inp" "$SGV_DIR/tests/fort.51"
 
-    # set defaults
+    # set defaults: process all events, read in LCIO, use PFL calorimetry, output to sgvout.slcio, output full MC reco-truth link
     sed -i -e "s|MAXEV = 100|MAXEV = 999999|g" sgv.steer
     sed -i -e "s|GENERATOR_INPUT_TYPE = 'STDH'|GENERATOR_INPUT_TYPE = 'LCIO'|g" sgv.steer
     sed -i -e "s|INPUT_FILENAMES = '\*.stdhep'|INPUT_FILENAMES = 'input.slcio'|g" sgv.steer
     sed -i -e "s|!   CALO_TREATMENT = 'PERF'|   CALO_TREATMENT = 'PFL '|g" sgv.steer
     sed -i -e "s|!  FILENAME = 'sgvout.slcio'|  FILENAME = 'sgvout.slcio'|g" sgv.steer
+    sed -i -e "s|!  FULL_TRUTHLINK = .FALSE.|  FULL_TRUTHLINK = .TRUE.|g" sgv.steer
 
     # 2nd setup: copy from 1st and compile with samples/usercalo for ILD at 500 GeV
     # see $SGV_DIR/usercalo/samples/README for setup instructions

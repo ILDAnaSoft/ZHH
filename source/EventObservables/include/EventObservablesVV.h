@@ -24,8 +24,8 @@ class EventObservablesVV : public EventObservablesBase, public EventObservablesF
 	 	TTree *getTTree() { return m_pTTree; };
         TTree *m_pTTree = new TTree("EventObservablesVV", "EventObservablesVV");
 
-		int m_nAskedJets() { return 4; };
-		int m_nAskedIsoLeps() { return 0; };
+		unsigned int m_nAskedJets() { return 4; };
+		unsigned int m_nAskedIsoLeps() { return 0; };
 
 		bool m_use_matrix_elements() { return false; };
 

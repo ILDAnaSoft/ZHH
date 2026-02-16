@@ -170,8 +170,8 @@ features:
         jet3_4v/fCoordinates,
         jet4_4v/fCoordinates
       ], tree: EventObservablesLL, dtype: float32, columns: [ fCoordinates.fX, fCoordinates.fY, fCoordinates.fZ, fCoordinates.fT ] }
-  # - { name: jet_matching_kinfit_best, tree: EventObservablesLL, dtype: int8, columns: 4 }
-  # - { names: [ jet1_tags, jet2_tags, jet3_tags, jet4_tags ], tree: EventObservablesLL, dtype: float32 }
+  - { name: jet_matching_kinfit_best, tree: EventObservablesLL, dtype: int8, columns: 4 }
+  - { names: [ jet1_tags, jet2_tags, jet3_tags, jet4_tags ], tree: EventObservablesLL, dtype: float32 }
   
   # TODO: ability to use custom handlers to attach these
   # serialize:
@@ -317,11 +317,16 @@ actions:
 
   - type: PrintSplitWeights
     disabled: true
+  
+  # data_source: 'kinfit' or (TODO) 'flavortag' or 'hybrid'
+  - type: AttachMatrixElements
+    output_name: DsigZHH_ZZH
+    data_source: kinfit
 
   - type: SklearnMulticlassTraining
     hyperparams: {
       max_depth: 5,
-      n_estimators: 50,
+      n_estimators: 500,
       learning_rate: 0.1
     }
     debug: true
@@ -353,3 +358,13 @@ actions:
   - type: ApplyCuts
     cuts: mva_cut
     step: 1
+  
+  - type: CreateCutflowPlots
+    file: 'cutflow_mva_plots.pdf'
+    step_start: 1
+    step_end: 1
+    
+  - type: CreateCutflowTable
+    file: 'cutflow_mva_table.pdf'
+    step_start: 1
+    step_end: 1
