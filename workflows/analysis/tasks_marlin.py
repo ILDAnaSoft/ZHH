@@ -110,14 +110,22 @@ class MarlinBaseJob(AbstractMarlin):
                     )
                     
             else:
+                mcp_col_name = samples['mcp_col_name'][0]
+                mcp_col_identical = np.all(samples['mcp_col_name'] == mcp_col_name)
+
                 for branch in chunks['branch'].tolist():
+                    if not mcp_col_identical:
+                        # find mcp collection name per file
+                        assert(np.sum(samples['location'] == chunks['location'][branch]))
+                        mcp_col_name = samples['mcp_col_name'][samples['location'] == chunks['location'][branch]][0]
+
                     branch_map[branch] = (
                         chunks['location'][branch],
                         chunks['n_chunk_in_sample'][branch],
                         chunks['n_chunks_in_sample'][branch],
                         chunks['chunk_start'][branch],
                         chunks['chunk_size'][branch],
-                        samples['mcp_col_name'][samples['location'] == chunks['location'][branch]][0],
+                        mcp_col_name,
                         None
                     )
                 

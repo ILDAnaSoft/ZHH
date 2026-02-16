@@ -8,6 +8,7 @@
 hypothesis: μμbbbb
 signal_categories:
 - EventCategories.μμHHbbbb
+- EventCategories.llhh_llnonbbbb
 
 # used to calculate event weights and absolute event counts
 # polarization of [ electronBeam, positronBeam ]
@@ -29,7 +30,9 @@ reset: false
 use_caching: true
 
 # definition of event categories
-# the registration of event categories to specific sources is done in the sources section 
+# the registration of event categories to specific sources is done in the sources section
+# info: while the naming can be arbitrary, a unique ID must be supplied which must exist 
+#       in the EVENT_CATEGORIES_TRUE class, too. See EventCategories.py
 event_categories: '$REPO_ROOT/config/event_categories.yaml'
 
 # definition of input data and information about the event categorization
@@ -48,8 +51,8 @@ event_categories: '$REPO_ROOT/config/event_categories.yaml'
 #                       KinFit*, FinalStates TTrees etc.
 sources:
   - name: 4fsl
-    path: $DATA_PATH/AnalysisCombine/550-4fsl-fast-perf
-    root_files: $DATA_PATH/AnalysisFinal/550-4fsl-fast-perf/*.root
+    path: $DATA_PATH/AnalysisCombine/550-4fsl-$CONF_SUFFIX
+    root_files: $DATA_PATH/AnalysisFinal/550-4fsl-$CONF_SUFFIX/*.root
     event_categorization:
       default: EventCategories.F4_OTHER
       order: null
@@ -58,8 +61,8 @@ sources:
     reset: false
 
   - name: 2l4q
-    path: $DATA_PATH/AnalysisCombine/550-2l4q-fast-perf
-    root_files: $DATA_PATH/AnalysisFinal/550-2l4q-fast-perf/*.root
+    path: $DATA_PATH/AnalysisCombine/550-2l4q-$CONF_SUFFIX
+    root_files: $DATA_PATH/AnalysisFinal/550-2l4q-$CONF_SUFFIX/*.root
     event_categorization:
       default: EventCategories.F6_OTHER
       order: null
@@ -68,8 +71,8 @@ sources:
     reset: false
 
   - name: llhh
-    path: $DATA_PATH/AnalysisCombine/550-llhh-fast-perf
-    root_files: $DATA_PATH/AnalysisFinal/550-llhh-fast-perf/*.root
+    path: $DATA_PATH/AnalysisCombine/550-llhh-$CONF_SUFFIX
+    root_files: $DATA_PATH/AnalysisFinal/550-llhh-$CONF_SUFFIX/*.root
     event_categorization:
       default: null
       order: null
@@ -78,8 +81,8 @@ sources:
     reset: false
 
   - name: 6q
-    path: $DATA_PATH/AnalysisCombine/550-6q-fast-perf
-    root_files: $DATA_PATH/AnalysisFinal/550-6q-fast-perf/*.root
+    path: $DATA_PATH/AnalysisCombine/550-6q-$CONF_SUFFIX
+    root_files: $DATA_PATH/AnalysisFinal/550-6q-$CONF_SUFFIX/*.root
     event_categorization:
       default: EventCategories.qqqqqq
       order: []
@@ -88,8 +91,8 @@ sources:
     reset: false
 
   - name: tthz
-    path: $DATA_PATH/AnalysisCombine/550-tthz-fast-perf
-    root_files: $DATA_PATH/AnalysisFinal/550-tthz-fast-perf/*.root
+    path: $DATA_PATH/AnalysisCombine/550-tthz-$CONF_SUFFIX
+    root_files: $DATA_PATH/AnalysisFinal/550-tthz-$CONF_SUFFIX/*.root
     event_categorization:
       default: EventCategories.ttHZ
       order: null
@@ -110,12 +113,19 @@ features:
   #                 as hdf5file[name] or dataStore[name] in analysis code. see also names
   # interpret/tree: TTree and name
   # interpret/branch: (optional) branch name; name will be used, if not provided
-  # interpret/columns: (for 2D arrays only) how many columns are expected to exist
-  #                    they will be saved as <name>.dim<i> with i=0,..,<columns>
+  # interpret/columns: for 2D arrays: must be an integer, specifying how many columns are
+  #                    expected to exist they will be saved as <name>.dim<i> with i=0,..,
+  #                    <columns>
+  #                    for named arrays: must be a list of strings, specifying the names
+  #                    of each column (e.g. fCoordinates.fX, ... for a PxPyPzE vector)
   # interpret/auto_increment: if True, this will be filled with np.arange(nrows, [dtype=
   #                           interpret/dtype, defaults to uint32])
   # interpret/names: list of names; can be used to create multiple entries within the
   #                  interpret section with different name. this enforces branch = name
+  # interpret/clamp_min or clamp_max: if defined, values of this branch will be clamped
+  #                                   within this range
+  # interpret/nan_to: if defined, NaN values will be replaced with this. this is done 
+  #                   after clamping (if any)
   interpret:
   - { name: id, dtype: uint32, auto_increment: true }
   - { name: event, tree: FinalStates, dtype: uint32 }
@@ -128,25 +138,40 @@ features:
   - { name: process, tree: FinalStates, dtype: uint32 }
 
   # physics quantities; must be given because some other quantities use this
-  - { names: [ cosJ1Z_2Jets, cosJ2Z_2Jets ], tree: EventObservablesLL, dtype: float32 }
+  - { name: cosjzmax, tree: EventObservablesLL, branch: cosJZMax_2Jets, dtype: float32 }
 
   # physics quantities
   - { names: [ bmax1, bmax2, bmax3, bmax4 ], tree: EventObservablesLL, dtype: float32 }
   - { names: [ jet1_m, jet2_m, jet3_m, jet4_m ], tree: EventObservablesLL, dtype: float32 }
   - { name: mz_pre_pairing, tree: EventObservablesLL, branch: mzll_pre_pairing, dtype: float32 }
   - { name: mhh, tree: EventObservablesLL, branch: m_invjet, dtype: float32 }
-  - { names: [ fit4C_mz, fit4C_mh1, fit4C_mh2, ptmiss, thrust, evis ], tree: EventObservablesLL, dtype: float32 }
+  - { names: [ fit4C_mz, ptmiss, thrust, evis ], tree: EventObservablesLL, dtype: float32 }
+  - { name: fit4C_mh1, tree: EventObservablesLL, dtype: float32, nan_to: -20., clamp_min: -10. }
+  - { name: fit4C_mh2, tree: EventObservablesLL, dtype: float32, nan_to: -20., clamp_min: -10. }
   - { names: [ nisomuons, pairedLepType ], tree: EventObservablesLL, dtype: uint8 }
   
   # for MVA analysis
   - { names: [ npfos ], tree: EventObservablesLL, dtype: uint16 }
-  - { names: [ costhrust, pjmax2, npfosmin4j, yplus, plmin, mbmax34, mvalepminus, yminus2 ], tree: EventObservablesLL, dtype: float32 }
+  - { names: [ costhrust, pjmax2, npfosmin4j, yplus, plmin, mbmax12, mbmax34,
+               mvalepminus, yminus2 ], tree: EventObservablesLL, dtype: float32 } # mcmax12, mcmax34,
   - { name: ZHH_FitChi2, tree: KinFitLL_ZHH, branch: FitChi2, dtype: float32 }
   - { name: ZZH_FitChi2, tree: KinFitLL_ZZH, branch: FitChi2, dtype: float32 }
   - { name: ZHH_p1stBeforeFit, tree: KinFitLL_ZHH, branch: p1stBeforeFit, dtype: float32 }
   - { name: ZZH_p1stBeforeFit, tree: KinFitLL_ZZH, branch: p1stBeforeFit, dtype: float32 }
   - { name: ZHH_cosThBeforeFit, tree: KinFitLL_ZHH, branch: cosThBeforeFit, dtype: float32 }
   - { name: ZZH_cosThBeforeFit, tree: KinFitLL_ZZH, branch: cosThBeforeFit, dtype: float32 }
+
+  # MEM
+  - { names: [
+        lep1_4v/fCoordinates,
+        lep2_4v/fCoordinates,
+        jet1_4v/fCoordinates,
+        jet2_4v/fCoordinates,
+        jet3_4v/fCoordinates,
+        jet4_4v/fCoordinates
+      ], tree: EventObservablesLL, dtype: float32, columns: [ fCoordinates.fX, fCoordinates.fY, fCoordinates.fZ, fCoordinates.fT ] }
+  - { name: jet_matching_kinfit_best, tree: EventObservablesLL, dtype: int8, columns: 4 }
+  - { names: [ jet1_tags, jet2_tags, jet3_tags, jet4_tags ], tree: EventObservablesLL, dtype: float32 }
   
   # TODO: ability to use custom handlers to attach these
   # serialize:
@@ -156,7 +181,7 @@ features:
 # defines the event categories and the order with which they should be appear in the
 # cutflow table and also which of them are considered to belong to the signal (these
 # are appended to the rightmost part of the table).
-# items/category: name of the event category
+# items/category: name of the event category (must be part of EventCategories)
 # items/label: column label (supports LaTeX)
 # items/is_signal: optional, defaults to false; whether or not this category belongs to
 #                  the signal
@@ -190,39 +215,48 @@ cutflow_table:
 # parameter 'step'
 # the first group is preselection (group/step=0). <counter> starts at 0 too
 # every stage of MVA will add another group (1,2,3 etc.)
-# future TODO: assig an ID to cuts as in cut<group>.<counter>
+# future TODO: assig an ID to cuts as in cut.<group>.<counter>
 
-# preselection:
-# this sections controls the preselection cuts and output of cutflow tables/plots
-#
 # parameters:
-# preselection.cuts.quantity: (name in data store/ROOT TTree), operator (see below),
+# cuts.<group>.quantity: (name in data store/ROOT TTree), operator (see below),
 #                             value or lower+upper, label (description to use in plots) 
-# preselection.cuts.operator: any of gte (greater than or equal), lte (lower than or
+# cuts.<group>.operator: any of gte (greater than or equal), lte (lower than or
 #                             eqal), eq (equal) or within_bounds
-# preselection.cuts.{value/lower/upper}: cut parameters
+# cuts.<group>.{value/lower/upper}: cut parameters
 #
 # all parameters (except of operator) are passed directly to the respective constructors
 # of Less/GreaterThan/Equal/WithinBoundsCut cuts can be disabled by commenting out the
 # line or adding disabled: true
 
-preselection:
-  cuts:
-    - { quantity: nisomuons, operator: gte, value: 2, label: IsoMuons }
-    - { quantity: pairedLepType, operator: eq, value: 13, label: Paired Lepton Type }
-    - { quantity: fit4C_mz, operator: within_bounds, lower: 20., upper: 150., label: 'm_{ll}^{4C}', xlim_view: [0, 270] }
-    - { quantity: fit4C_mh1, operator: within_bounds, lower: 50., upper: 200., label: 'm_{H1}^{4C}', xlim_view: [0, 500] }
-    - { quantity: fit4C_mh2, operator: within_bounds, lower: 50., upper: 200., label: 'm_{H2}^{4C}', xlim_view: [0, 550] }
-    - { quantity: ptmiss, operator: lte, value: 70., label: 'p_{t}^{miss}' }
-    - { quantity: thrust, operator: lte, value: 0.9, label: 'thrust' }
-    - { quantity: sumBTags, operator: gte, value: 1., label: 'sum b-tags', disabled: true }
+cuts:
+  preselection:
+  - { quantity: nisomuons, operator: gte, value: 2, label: IsoMuons }
+  - { quantity: pairedLepType, operator: eq, value: 13, label: Paired Lepton Type }
+  - { quantity: fit4C_mz, operator: within_bounds, lower: 20., upper: 150., label: 'm_{ll}^{4C}', unit: 'GeV', xlim_view: [0, 270] }
+  - { quantity: fit4C_mh1, operator: within_bounds, lower: 50., upper: 200., label: 'm_{H1}^{4C}', unit: 'GeV', xlim_view: [0, 500] }
+  - { quantity: fit4C_mh2, operator: within_bounds, lower: 50., upper: 200., label: 'm_{H2}^{4C}', unit: 'GeV', xlim_view: [0, 550] }
+  - { quantity: ptmiss, operator: lte, value: 70., label: 'p_{t}^{miss}', unit: 'GeV' }
+  - { quantity: thrust, operator: lte, value: 0.9, label: 'thrust', unit: 'GeV' }
+  - { quantity: sumBTags, operator: gte, value: 1., label: 'sum b-tags', disabled: true }
+  
+  mva_cut:
+  - { quantity: SigMVAOutput, operator: gte, value: default_mva.threshold }
 
-  cutflow_table: 'cutflow_preselection_table.pdf'
-  cutflow_plots: 'cutflow_preselection_plots.pdf'
-
+# MVAs are defined here
+# training, inference and optimization (i.e. assignment which threshold value to use) are
+# done by actions, which reference the MVA (see the actions section).
+# 
+#
+# parameters:
+# mvas.#.name: label/name to reference this MVA in action
+# mvas.#.features: list of features (i.e. columns in a DataStore to use)
+# mvas.#.classes: list of tuples()
+# mvas.#.label_name: column to save the MVA output in
+# mvas.#.data_file: file to store input data in
+# mvas.#.mva_file: file to save the model to
+#
 mvas:
-  - type: MulticlassSL
-    name: multiclass_training
+  - name: default_mva
     features: [
       jet1_m, jet2_m, jet3_m, jet4_m,
       mhh, fit4C_mz, fit4C_mh1, fit4C_mh2,
@@ -233,48 +267,104 @@ mvas:
       ZZH_p1stBeforeFit, ZHH_cosThBeforeFit, ZZH_cosThBeforeFit,
       bmax1, bmax2, bmax3, bmax4 ]
     classes:
+    # two-element arrays of structure (label, name of registered EventCategory)
+    # see sources/.../event_categorization/items
     - [0, 'μμHHbbbb']
     - [1, 'llhh_llnonbbbb']
     - [2, 'llqqh']
     - [3, 'llqqqq']
     - [4, 'μμbb']
     - [5, 'lvbbqq']
+    # note: the output is the sum for all signal categories given in steer['signal_categories'] 
+    label_name: SigMVAOutput
 
+    # file to store the training and testing data in for training this classifier
+    data_file: train_test.npz
+
+    mva_file: mva.pickle
+
+# define what should be done after the data is loaded
 actions:
-  # preselection is applied automagically first
+  - type: ApplyCuts
+    cuts: preselection
+    step: 0 # step=0 is always preselection
+  
+  # optional:
+  # step_start: 0
+  # step_end: 0
   - type: CreateCutflowPlots
     file: 'cutflow_preselection_plots.pdf'
-    step_start: 0
-    step_end: 0
+    
+  # optional:
+  # step_start: 0
+  # step_end: 0
   - type: CreateCutflowTable
     file: 'cutflow_preselection_table.pdf'
-    step_start: 0
-    step_end: 0
-    ignore_categories: [ llbbbb ]
 
-other:
-  - type: SplitDataset
-    split_column: split
-    weight_split_column: weights_split
+  # split in train/testing [accross all steps, i.e. regardless of cut group]
+  # creates a new integer column 'split'; for n entries in fractions:
+  # value 0 is assigned to a fraction of events specified as first entry in fractions
+  # value 1[..]n-1 to fractions given at position 1 to n-1
+  # value n is assigned to the remaining events [fraction (1 - sum(all previous values))]
+  - type: SplitDatasets
     fractions: [ 0.5 ]
-#other2:
-  - type: WriteMVATrainingData
-    name: multiclass_training    
-  # carry out MVA training manually; use hyperparam.py
-  - type: AssertCondition
-    code: osp.isfile('trial.npz')
-  - type: InferenceSklearnMulticlass
-    use: multiclass_training
-    from_file: trial.npz
-    from_file_property: clf
     
+  # writes out training/testing data
+  # optional:
+  # step: 0
+  - type: WriteMVAData
+    mva: default_mva
+
+  - type: PrintSplitWeights
+    disabled: true
+  
+  # data_source: 'kinfit' or (TODO) 'flavortag' or 'hybrid'
+  - type: AttachMatrixElements
+    output_name: DsigZHH_ZZH
+    data_source: kinfit
+
+  - type: SklearnMulticlassTraining
+    hyperparams: {
+      max_depth: 5,
+      n_estimators: 500,
+      learning_rate: 0.1
+    }
+    debug: true
+    mva: default_mva
+    split: 0
+    disabled: false
+
+  # optional:
+  # clf_prop: clf
+  # step: 0
+  - type: SklearnMulticlassHyperparamTraining
+    hyperparam_bounds: [
+      { name: max_depth, type: int, lower: 3, upper: 7 },
+      { name: n_estimators, type: int, lower: 250, upper: 750 },
+      { name: learning_rate, type: float, lower: 0.01, upper: 0.6 }
+    ]
+    mva: default_mva
+    split: 0
+    disabled: true
+
+  # optional:
+  # clf_prop: clf
+  # step: 0
+  - type: SklearnMulticlassInference
+    mva: default_mva
+    split: 1 # split 0 = train dataset; split 1 = test dataset
+    disabled: false
+  
+  - type: ApplyCuts
+    cuts: mva_cut
+    step: 1
+  
   - type: CreateCutflowPlots
-    output: 'cutflow_preselection_plots.pdf'
-    step: 1
-    split: 1
-  - type: CreateCutflowTable
-    output: 'cutflow_preselection_table.pdf'
-    step: 1
+    file: 'cutflow_mva_plots.pdf'
+    step_start: 1
     step_end: 1
-    split: 1
     
+  - type: CreateCutflowTable
+    file: 'cutflow_mva_table.pdf'
+    step_start: 1
+    step_end: 1

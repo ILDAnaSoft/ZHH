@@ -164,7 +164,13 @@ def fig_ild_style(fig_or_ax:Figure|Axes, xlim:list[float]|tuple[float,float]|Non
         return fig
 
 def update_plot(ax:Axes, x_label:str|None=None, y_label:str|None=None, title:str|None=None, fontname:str|None=None, context:PlotContext|None=None,
-                labelsize:int=12, titlesize:int|None=None):
+                labelsize:int=12, titlesize:int|None=None, x_tick_label_size:int|None=None, y_tick_label_size:int|None=None, tick_label_size:int|None=None):
+    
+    if x_tick_label_size is None and tick_label_size is not None:
+        x_tick_label_size = tick_label_size
+    
+    if y_tick_label_size is None and tick_label_size is not None:
+        y_tick_label_size = tick_label_size
     
     if titlesize is None:
         titlesize = labelsize
@@ -177,8 +183,14 @@ def update_plot(ax:Axes, x_label:str|None=None, y_label:str|None=None, title:str
     for label in ax.get_xticklabels():
         label.set_fontname(fontname)
         
+        if x_tick_label_size is not None:
+            label.set_fontsize(x_tick_label_size)
+        
     for label in ax.get_yticklabels():
         label.set_fontname(fontname)
+        
+        if y_tick_label_size is not None:
+            label.set_fontsize(y_tick_label_size)
         
     x_label = x_label if x_label is not None else ax.get_xlabel()
     x_label = x_label if x_label != '' else None

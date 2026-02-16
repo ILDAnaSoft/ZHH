@@ -16,7 +16,6 @@ class SklearnModule(MVAModule):
         self.reset = lambda: SklearnModule(*args, features=features, path=path, name=name, **kwargs)
         
     def createModel(self, factory:Callable, model_kwargs:dict):
-        print(model_kwargs)
         return factory(**model_kwargs)
     
     def _train(self, inputs:np.ndarray, labels:np.ndarray, weights:np.ndarray|None, **kwargs):

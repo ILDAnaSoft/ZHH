@@ -97,7 +97,7 @@ def categorize_llhh(ac:DataSource):
     ac.registerEventCategory('ττHHbbbb', define_ττHHbbbb, EventCategories.ττHHbbbb)
     ac.registerEventCategory('llhh_llbbbb', define_llhh_llbbbb, None)
     ac.registerEventCategory('llhh_llnonbbbb', define_llhh_llnonbbbb, None)
-    ac.registerEventCategory('llqqh', define_llqqh, EventCategories.llqqH)
+    ac.registerEventCategory('llqqh', define_llqqh, EventCategories.llqqh)
 
 def categorize_vvhh(ac:DataSource):
     from zhh import EventCategories

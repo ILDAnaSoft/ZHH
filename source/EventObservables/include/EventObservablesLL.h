@@ -24,8 +24,8 @@ class EventObservablesLL : public EventObservablesBase {
 	 	TTree *getTTree() { return m_pTTree; };
         TTree *m_pTTree = new TTree("EventObservablesLL", "EventObservablesLL");
 
-		int m_nAskedJets() { return 4; };
-		int m_nAskedIsoLeps() { return 2; };
+		unsigned int m_nAskedJets() { return 4; };
+		unsigned int m_nAskedIsoLeps() { return 2; };
 
 		bool m_use_matrix_elements() { return true; };
 
@@ -95,6 +95,9 @@ class EventObservablesLL : public EventObservablesBase {
 		// 4 jet
 		float m_mbmax12{};
 		float m_mbmax34{};
+
+		float m_mcmax12{};
+		float m_mcmax34{};
 
 };
 

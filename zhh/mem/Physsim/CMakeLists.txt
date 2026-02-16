@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.15...3.29)
 project(PhyssimWrapper LANGUAGES CXX)
 
+set(CMAKE_CXX_FLAGS_DEBUG "-ggdb3 -O0" CACHE STRING "")
 set(PYBIND11_FINDPYTHON ON)
 find_package(pybind11 CONFIG REQUIRED)
 

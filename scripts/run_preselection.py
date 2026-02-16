@@ -108,7 +108,7 @@ if __name__ == "__main__":
         ('\\boldsymbol{\\tau \\nu b b q q} ', 'τvbbqq'),
         ('bbqqqq', 'bbqqqq'),
         ('llbbbb', 'llbbbb'),
-        ('llqqH', 'llqqh'),
+        ('llqqh', 'llqqh'),
         ('llHH', 'llhh'),
         ('(llbbbb)', 'llhh_llbbbb'),
         ('(eebbbb)', 'eeHHbbbb'),

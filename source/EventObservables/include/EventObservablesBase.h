@@ -28,10 +28,7 @@
 #include "inv_mass.h"
 #include "v4.h"
 #include "EventObservablesFromZZ.h"
-
-#ifdef USE_TRUEJET
-	#include <TrueJet_Parser.h>
-#endif
+#include <TrueJet_Parser.h>
 
 using namespace lcio ;
 using namespace marlin ;
@@ -51,19 +48,14 @@ struct DelMe {
   std::function<void()>  _func;
 };
 
-class EventObservablesBase: public Processor
-#ifdef USE_TRUEJET
-, public TrueJet_Parser
-#endif
-{
+class EventObservablesBase: public Processor, public TrueJet_Parser {
 	public:
 		EventObservablesBase(const std::string& name);
 		virtual ~EventObservablesBase() = default;
 		EventObservablesBase(const EventObservablesBase&) = delete;
 		EventObservablesBase& operator=(const EventObservablesBase&) = delete;
 
-		#ifdef USE_TRUEJET
-
+		// used for clearing up TrueJet parsed data
 		void delall2() {
 			if (  relfcn != NULL ) { delete relfcn; relfcn = NULL; }
 			if (  relicn != NULL ) { delete relicn; relicn = NULL; }
@@ -76,8 +68,6 @@ class EventObservablesBase: public Processor
 			if (  initialcns != NULL ) { delete initialcns; initialcns = NULL; }
 			if ( reltrue_tj  != NULL ) { delete reltrue_tj; reltrue_tj = NULL; }
 		};
-
-		#endif
 
 		virtual void init();
         virtual void processRunHeader( LCRunHeader* run );
@@ -147,8 +137,8 @@ class EventObservablesBase: public Processor
 		virtual void clearChannelValues() = 0;
 		virtual void updateChannelValues(EVENT::LCEvent *pLCEvent) = 0;
 		virtual TTree* getTTree() = 0;
-		virtual int m_nAskedJets() = 0;
-		virtual int m_nAskedIsoLeps() = 0;
+		virtual unsigned int m_nAskedJets() = 0;
+		virtual unsigned int m_nAskedIsoLeps() = 0;
 		virtual std::string m_yMinusParameter() = 0;
 		virtual std::string m_yPlusParameter() = 0;
 		virtual bool m_use_matrix_elements() = 0;
@@ -163,9 +153,6 @@ class EventObservablesBase: public Processor
 		std::string m_inputJetKinFitZZHCollection{};
 		std::string m_inputLeptonKinFit_solveNuCollection{};
 		std::string m_inputJetKinFit_solveNuCollection{};
-		#ifndef USE_TRUEJET
-		std::string m_MCParticleCollectionName{};
-		#endif
 		std::string m_outputFile{};
 		std::string m_whichPreselection{};
 		std::string m_cutDefinitionsJSONFile{};
@@ -242,7 +229,7 @@ class EventObservablesBase: public Processor
 		float m_pjmax{};
 		float m_cosjmax{};
 		
-		int m_nJets{};
+		unsigned int m_nJets{};
 		int m_nIsoLeps{};
 		int m_nIsoElectrons{};
 		int m_nIsoMuons{};
@@ -280,7 +267,9 @@ class EventObservablesBase: public Processor
 
 		static bool jetTaggingComparator ( const JetTaggingPair& l, const JetTaggingPair& r) { return l.second > r.second || std::isnan(r.second); };
 		std::vector<JetTaggingPair> m_bTagsSorted{}; // (jet index, btag1value) sorted DESC; first highest, last lowest
-		std::vector<JetTaggingPair> m_bTagsSorted2{}; // (jet index, btag1value) sorted DESC; first highest, last lowest
+		std::vector<JetTaggingPair> m_bTagsSorted2{}; // (jet index, btag2value) sorted DESC; first highest, last lowest
+		std::vector<JetTaggingPair> m_cTagsSorted{}; // (jet index, ctag1value) sorted DESC; first highest, last lowest
+		std::vector<JetTaggingPair> m_cTagsSorted2{}; // (jet index, ctag1value) sorted DESC; first highest, last lowest
 		std::vector<double> m_bTagValues{};
 		std::vector<double> m_cTagValues{};
 
@@ -403,13 +392,15 @@ class EventObservablesBase: public Processor
 		#endif
 
 		// TrueJet information
-		short m_trueJetN{};
+		short m_useTrueJet{};
+		unsigned short m_trueJetN{};
 		std::vector<ROOT::Math::PxPyPzEVector> m_trueJetMomenta{};
 		std::vector<ROOT::Math::PxPyPzEVector> m_trueISRMomenta{};
 		std::vector<int> m_trueJetTypes{};
 		std::vector<int> m_trueJetPDGs{};
+		std::vector<int> m_trueDijetICNPDGs{};
 
-		short m_trueLeptonN{};
+		unsigned short m_trueLeptonN{};
 		std::vector<ROOT::Math::PxPyPzEVector> m_trueLeptonMomenta{};
 		std::vector<int> m_trueLeptonPDGs{};
 
@@ -418,9 +409,8 @@ class EventObservablesBase: public Processor
 		std::vector<int> m_trueJetICNTrueJetsIndices{};
 		std::vector<int> m_reco2TrueJetIndex{};
 		std::vector<int> m_true2RecoJetIndex{};
-		std::vector<int> m_trueJetHiggsICNPairs{};
+		//std::vector<int> m_trueJetHiggsICNPairs{};
 
-		#ifdef USE_TRUEJET
 		float getMatchingByAngularSpace(
 			vector<EVENT::ReconstructedParticle*> recoJets,
 			vector<int> &reco2truejetindex,
@@ -428,7 +418,6 @@ class EventObservablesBase: public Processor
 			vector<int> &trueHadronicJetIndices,
 			vector<int> &trueLeptonIndices,
 			vector<int> &trueISRIndices );
-		#endif
 
 		float getMatchingByAngularSpace(
 			vector<EVENT::ReconstructedParticle*> recoJets,

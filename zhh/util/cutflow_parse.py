@@ -1,4 +1,4 @@
-import yaml, os, os.path as osp
+import yaml, json, os, os.path as osp, logging, sys
 import h5py
 import numpy as np
 from tqdm.auto import tqdm
@@ -12,12 +12,13 @@ from .replace_properties import replace_properties
 from .replace_references import replace_references
 from ..data.ROOT2HDF5Converter import ROOT2HDF5Converter
 from ..task.ConcurrentFuturesRunner import ProcessRunner
+from ..analysis import CutflowProcessor, CutflowProcessorAction, CreateCutflowPlotsAction
 from typing import TypedDict, NotRequired, TYPE_CHECKING
 from multiprocessing import cpu_count
 from copy import deepcopy
 from math import ceil
 
-def parse_steering_file(loc:str):
+def cutflow_parse_steering_file(loc:str):
     """Loads a YAML steering file, replaces references within them
     and replaces references with the EventCategories and
     FinalStateDefinitions objects. 
@@ -40,10 +41,10 @@ def parse_steering_file(loc:str):
         'FinalStateDefinitions': FinalStateDefinitions
     })
 
-def process_steering(steer:dict):
-    """Processes a parsed steering dictionary. Returns two dictionaries:
-    First a dict<name, DataSource> and second, a dict holding 
-    <name, [cat_register_fn, cat_default, cat_order]>.
+def cutflow_process_steering(steer:dict):
+    """Processes a parsed steering dictionary and handles feature interpretations.
+    Returns two dictionaries: First a dict<name, DataSource> and second, a dict
+    holding <name, [cat_register_fn, cat_default, cat_order]>.
     
     Args:
         steer (_type_): _description_
@@ -76,7 +77,7 @@ def process_steering(steer:dict):
         
         if 'interpret' in steer['features']:
             print(f'  Reading file from <{fpath}>')
-            provision_feature_interpretations(steer['features']['interpret'],
+            cutflow_provision_features(steer['features']['interpret'],
                                               source_spec['root_files'], path, fname)
             
         source = DataSource(fpath, name, work_root=path)
@@ -150,8 +151,11 @@ class Interpretation(TypedDict):
     auto_increment: NotRequired[bool]
     columns: NotRequired[int]
     names: NotRequired[str]
+    clamp_min: NotRequired[float|int]
+    clamp_max: NotRequired[float|int]
+    nan_to: NotRequired[float|int]
 
-def provision_feature_interpretations(interpretations:list[Interpretation],
+def cutflow_provision_features(interpretations:list[Interpretation],
                                       root_files_glob:str, path:str, file:str,
                                       integrity_check:bool=True,
                                       base_tree:str='FinalStates'):
@@ -163,7 +167,7 @@ def provision_feature_interpretations(interpretations:list[Interpretation],
         path (str): _description_
         file (str): _description_
         integrity_check (bool, optional): _description_. Defaults to True.
-        base_tree (str, optional): _description_. Defaults to 'FinalStates'.
+        base_tree (str, optional): TTree to use for estimating length. Defaults to 'FinalStates'.
 
     Raises:
         Exception: _description_
@@ -176,47 +180,76 @@ def provision_feature_interpretations(interpretations:list[Interpretation],
     from zhh import tree_n_rows, AbstractTask
 
     ds_path = osp.expandvars(f'{path}/{file}')
-    ds_meta_file = f'{osp.splitext(ds_path)[0]}.files.txt'
+    ds_meta_file = f'{osp.splitext(ds_path)[0]}.meta.json'
 
     root_files = sorted(glob(osp.expandvars(root_files_glob)))
     if not len(root_files):
         raise Exception(f'No ROOT files found for search mask <{root_files_glob}>')
 
     nrows = 0
+    nrows_found = []
     ds_keys = []
 
     # make sure files exist and nrows is set
     # read from existing files (if exist)
     if not osp.isfile(ds_path) or not osp.isfile(ds_meta_file):
         os.makedirs(osp.dirname(ds_path), exist_ok=True)
+
+    with h5py.File(ds_path, 'a') as hf:
+        nrows = hf.attrs.get('nrows', 0)
+    
+    if not osp.isfile(ds_meta_file) or nrows == 0:
+        nrows_found = tree_n_rows(root_files, base_tree, use_uproot=True, aggregate=False)
         
+        with h5py.File(ds_path, 'a') as hf:
+            nrows = hf.attrs['nrows'] = np.sum(nrows_found)
+
     with h5py.File(ds_path, 'a') as hf:
         if 'nrows' in hf.attrs:
             nrows = int(hf.attrs.get('nrows', 0))
             if nrows == 0:
                 raise Exception(f'File <{ds_path}> is corrupted as it does not contain any size information.'+
-                                ' Please delete the file and run provision_feature_interpretations again')
+                                ' Please delete the file and run cutflow_provision_features again')
         
         ds_keys = list(hf.keys())
-
-    if nrows == 0:
-        nrows = tree_n_rows(root_files, base_tree, use_uproot=True)
-        with h5py.File(ds_path, 'a') as hf:
-            hf.attrs['nrows'] = nrows
+    
+    # for all VDS, remove any dangling references in HDF5 file at ds_path
+    # they are automatically regerenated below
+    with h5py.File(ds_path, 'a') as hf:
+        vds_keys = []
+        
+        for key in ds_keys:            
+            try:
+                hf[key].virtual_sources()
+                vds_keys.append(key)
+            except RuntimeError as e:
+                pass
+            
+        for key in vds_keys:
+            for source in hf[key].virtual_sources():            
+                if not os.path.exists(source.file_name):
+                    print(f'Property <{key}> will be removed (dangling reference)')
+                    ds_keys.remove(key)
+                    del hf[key]
+                    break
+            
+        # create mapping for quick navigation between ID entries and 
+        
     
     if integrity_check and osp.isfile(ds_meta_file):
-        with open(ds_meta_file, 'rt') as tf:
-            expected = tf.read()
-            
-        found = '\n'.join(root_files)
+        with open(ds_meta_file, 'rt') as jf:
+            meta_content = json.load(jf)
+            expected = meta_content['files']
+            sizes = meta_content['sizes']
 
-        if expected != found:
-            expected_list = expected.split('\n')
-
-            print('Samples expected, but not found: ', set(expected_list) - set(found))
-            print('Samples found, but not expected: ', set(found) - set(expected_list))
+        if len(expected) != len(root_files) or not all([expected[i] == root_files[i] for i in range(len(expected))]):
+            print('Samples expected, but not found: ', set(expected) - set(root_files))
+            print('Samples found, but not expected: ', set(root_files) - set(expected))
 
             raise Exception('List of input files is different! Please regenerate the cache')
+        
+        if nrows != np.sum(sizes):
+            print(f'Encountered {nrows} rows in ROOT files, but {np.sum(sizes)} in HDF5 files. Please regenerate the cache.')
     
     # create HDF5 entries inside here
     bname = f'{path}/items'
@@ -226,8 +259,8 @@ def provision_feature_interpretations(interpretations:list[Interpretation],
     to_sync = []
 
     def per_interpretation(feature:Interpretation, feature_names:list[str])->tuple[tuple|None, list[str]]:
-        name = feature.get('name', '')
-        assert(name != '')
+        assert('name' in feature)
+        name = feature['name']
         
         if name in feature_names:
             raise Exception(f'Invalid feature definition: Feature {name} appears at least twice')
@@ -241,15 +274,28 @@ def provision_feature_interpretations(interpretations:list[Interpretation],
             
         elif 'tree' in feature:
             tree = feature['tree']
-            branch = feature['branch'] if 'branch' in feature else name
-            columns = feature['columns'] if 'columns' in feature else None
+            branch = feature.get('branch', name)
+            columns:int|list[str]|None = feature.get('columns', None)
+            name = name.replace('/', '.')
 
             if columns is not None:
-                for col in range(columns):
-                    if f'{name}.dim{col}' not in ds_keys:
-                        return ((name, tree, branch, feature['dtype'] if 'dtype' in feature else None), feature_names)
+                if isinstance(columns, int):
+                    for col in range(columns):
+                        if f'{name}.dim{col}' not in ds_keys:
+                            return ((name, tree, branch, feature.get('dtype', None), feature.get('nan_to', None),
+                                     feature.get('clamp_min', None), feature.get('clamp_max', None)), feature_names)
+                elif isinstance(columns, list) and isinstance(columns[0], str):
+                    for col in columns:
+                        if f'{name}.{col}' not in ds_keys:
+                            #print(f'{name}.{col}', f'{name}.{col}' not in ds_keys)
+                            return ((name, tree, branch, feature.get('dtype', None), feature.get('nan_to', None),
+                                     feature.get('clamp_min', None), feature.get('clamp_max', None)), feature_names)
+                else:
+                    raise Exception(f'Property {name} not defined')
+                
             elif name not in ds_keys and f'{name}.dim0' not in ds_keys:
-                return ((name, tree, branch, feature['dtype'] if 'dtype' in feature else None), feature_names)
+                return ((name, tree, branch, feature.get('dtype', None), feature.get('nan_to', None),
+                         feature.get('clamp_min', None), feature.get('clamp_max', None)), feature_names)
         else:
             print(feature)
             raise Exception('Cannot interpret entry')
@@ -258,6 +304,8 @@ def provision_feature_interpretations(interpretations:list[Interpretation],
 
     found = []
     feature_names:list[str] = []
+    
+    #print(interpretations)
 
     for feature in interpretations:
         if 'names' not in feature:
@@ -269,6 +317,9 @@ def provision_feature_interpretations(interpretations:list[Interpretation],
             else:
                 found.append(feature['name'])
         else:
+            if not len(feature['names']):
+                raise Exception('When using the names property, at least one item must be given')
+            
             for name in feature['names']:
                 entry = deepcopy(feature)
                 del entry['names']
@@ -287,11 +338,12 @@ def provision_feature_interpretations(interpretations:list[Interpretation],
     names = []
 
     for item in to_sync:
-        name, tree, branch, dtype = item
+        name, tree, branch, dtype, nan_to, clamp_min, clamp_max = item
         names.append(name)
 
         conv = ROOT2HDF5Converter(root_files, ds_path, tree, branch,
-                                  osp.expandvars(f'{bname}/{tree}.{branch}/item'), name, dtype)
+                                  osp.expandvars(f'{bname}/{tree}.{branch.replace("/", ".")}/item'), name, dtype, clamp=(clamp_min, clamp_max),
+                                  nan_to=nan_to)
         vds_task, item_conv_tasks = conv.convertLazy(nrows=nrows, check_existing=True)
         
         [conv_tasks.append(task) for task in item_conv_tasks]
@@ -321,11 +373,14 @@ def provision_feature_interpretations(interpretations:list[Interpretation],
             task.run(conversion=[] if name in conv_done else [dep.getResult() for dep in deps])
 
     # meta file exists = everything successful
-    if not osp.isfile(ds_meta_file):
-        with open(ds_meta_file, 'wt') as tf:
-            tf.write('\n'.join(root_files))
+    if not osp.isfile(ds_meta_file):            
+        with open(ds_meta_file, 'wt', encoding='utf-8') as jf:
+            json.dump({
+                'files': root_files,
+                'sizes': nrows_found
+            }, jf, ensure_ascii=False, indent=4)
 
-def initialize_sources(sources:list[DataSource], final_state_configs,
+def cutflow_initialize_sources(sources:list[DataSource], final_state_configs,
                        lumi_inv_ab:float, reset_sources:list[str]=[]):
     
     n_sources = len(sources)
@@ -339,7 +394,7 @@ def initialize_sources(sources:list[DataSource], final_state_configs,
         cat_fn(source)
         source.initialize(lumi_inv_ab, cat_default, cat_order, reset=src_name in reset_sources)
 
-def parse_cut(x:dict)->ValueCut:
+def cutflow_parse_cut(x:dict)->ValueCut:
     operator:str = x['operator'].lower()
 
     y = deepcopy(x)
@@ -369,28 +424,138 @@ def parse_cut(x:dict)->ValueCut:
         case _:
             raise Exception(f'Unknown operator {operator}')
 
-def parse_cuts(x:list[dict])->list[ValueCut]:
+def cutflow_parse_cuts(x:list[dict], mvas:dict={}, to_resolve:list[str]=['lower', 'upper', 'value'])->list[ValueCut]:
+    
+    """Parses a list of steering file cut entries. Will resolve the keys to_resolve
+    using the dict mvas. e.g. in a dict { 'value': 'default_mva.threshold' , ...}
+    it will look for an entry default_mva in mvas and then get the property threshold.
+    If the key should be resolved, different part should be separated by dots.
+
+    Args:
+        x (list[dict]): _description_
+        mvas (dict, optional): _description_. Defaults to {}.
+
+    Returns:
+        list[ValueCut]: _description_
+    """
     result = []
 
+    from zhh import find_property
+
     for item in x:
+        item = deepcopy(item)
+
         if 'disabled' in item:
             if not item['disabled']:
                 del item['disabled']
             else:
                 continue
+        
+        for prop in to_resolve:
+            #print(prop, item)
+            if prop in item:
+                if isinstance(item[prop], str):
+                    props = item[prop].split('.')
+                                        
+                    if not props[0] in mvas:
+                        raise KeyError(f'Could not find MVA with name <{props[0]}> in registered MVAs ({mvas.keys()}) provided to cutflow_parse_cuts')
+                
+                    value = mvas[props[0]]
+                    props.pop(0)
 
-        result.append(parse_cut(item))
+                    item[prop] = find_property(value, props)
+                    #print(item[prop], prop)
+
+        result.append(cutflow_parse_cut(item))
     
     return result
 
-def parse_steer_cutflow_table(steer:dict, **kwargs):
+def cutflow_parse_steer_cutflow_table(steer:dict, **kwargs):
     cutflow_table_items:list[tuple[str, str]] = []
     cutflow_table_is_signal:list[str] = []
 
-    for item in steer['cutflow-table']['items']:
+    for item in steer['cutflow_table']['items']:
         cutflow_table_items.append((item['label'], item['category']))
 
         if item.get('is_signal', False):
             cutflow_table_is_signal.append(item['category'])
     
     return (cutflow_table_items, { 'signal_categories': cutflow_table_is_signal, **kwargs })
+
+def cutflow_register_mvas(steer:dict, cp:CutflowProcessor):
+    if 'mvas' in steer:
+        for mva_spec in steer['mvas']:            
+            if not mva_spec['name'] in cp._mvas:
+                cp.registerMVA(**mva_spec)
+
+def cutflow_parse_actions(steer:dict, cp:CutflowProcessor):
+    action_map = {}
+
+    def per_subclass(cls):
+        for subcls in cls.__subclasses__():
+            if hasattr(subcls, '__subclasses__') and len(subcls.__subclasses__()):
+                per_subclass(subcls)
+            else:
+                action_map[subcls.__name__] = subcls
+
+    per_subclass(CutflowProcessorAction)
+    
+    actions = []
+
+    for action in steer['actions']:
+        if 'disabled' in action and action['disabled']:
+            print(f'Skipping action <{action["type"]}>')
+            continue
+        
+        try:
+            kwargs = deepcopy(action)
+            del kwargs['type']
+            kwargs['cp'] = cp
+            kwargs['steer'] = steer
+            
+            actions.append(action_map[action['type'] + 'Action'](**kwargs))
+        except Exception as e:
+            print(e)
+            raise Exception(f'Could not instantiate action of type <{action["type"]}>')
+    
+    return actions
+
+def cutflow_execute_actions(actions:list[CutflowProcessorAction], check_only:bool=False,
+                            force_rerun:bool=False, log_level=logging.INFO):
+    todo:list[CutflowProcessorAction] = []
+    todo_idx:list[int] = []
+
+    # first data transforming action to run
+    first_to_run = -1
+
+    for i, action in enumerate(actions):
+        # clean outputs (if force_rerun)
+        if action.complete() and action.transforms_data and force_rerun:
+            actions[i].reset()
+            
+        elif not action.complete() or (action.transforms_data and -1 < first_to_run < i):
+            if action.transforms_data and first_to_run == -1:
+                first_to_run = i
+
+            todo_idx.append(i)                
+    
+    logger = logging.getLogger('CutflowProcessorAction')
+    #logger.addHandler(logging.StreamHandler(stream=sys.stdout))
+    logger.setLevel(log_level)
+
+    for i in todo_idx:
+        logger.info(f'+ Scheduling action <{actions[i].__class__.__name__}>')
+
+        todo.append(actions[i])
+
+    if force_rerun or not check_only:
+        for i, action in enumerate(todo):
+            logger.info(f'. Running action {i+1}/{len(todo)} <{actions[i].__class__.__name__}>')
+            action.run()
+
+            if action.complete():
+                logger.info(f'+ Finished action {i+1}/{len(todo)} <{actions[i].__class__.__name__}>')
+            else:
+                logger.error(f'! Could not finalize action {i+1}/{len(todo)} <{actions[i].__class__.__name__}>')
+
+    return todo

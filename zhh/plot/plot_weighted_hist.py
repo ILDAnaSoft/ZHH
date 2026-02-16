@@ -145,7 +145,7 @@ def plot_combined_hist(calc_dict:dict[str, tuple[np.ndarray, np.ndarray]],
     
     return fig
 
-def plot_weighted_hist(calc_dict, title:str='<title undefined>', xlabel:str='<xlabel undefined>', plot_context:PlotContext|None=None,
+def plot_weighted_hist(calc_dict, title:str|None=None, xlabel:str='<xlabel undefined>', plot_context:PlotContext|None=None,
                                 xunit:str|None=None,
                                 bins:int=100, xlim:tuple[float, float]|None=None,
                                 yscale:str|None=None,
@@ -172,7 +172,7 @@ def plot_weighted_hist(calc_dict, title:str='<title undefined>', xlabel:str='<xl
     fig_plot_hist_kwargs = deepmerge(fig_plot_hist_kwargs, deepcopy(plot_hist_kwargs))
     
     if ax is not None:
-        plot_hist_kwargs['ax'] = ax
+        fig_plot_hist_kwargs['ax'] = ax
         
     fig_ild_kwargs = {
         'xunit': xunit,
