@@ -41,13 +41,15 @@ def cutflow_parse_steering_file(loc:str):
         'FinalStateDefinitions': FinalStateDefinitions
     })
 
-def cutflow_process_steering(steer:dict):
+def cutflow_process_steering(steer:dict, integrity_check:bool=True):
     """Processes a parsed steering dictionary and handles feature interpretations.
     Returns two dictionaries: First a dict<name, DataSource> and second, a dict
     holding <name, [cat_register_fn, cat_default, cat_order]>.
     
     Args:
         steer (_type_): _description_
+        integrity_check (bool): if True and an existing HDF5 file exists, will
+                                check that the list of used ROOT files matches 
 
     Raises:
         Exception: _description_
@@ -78,7 +80,8 @@ def cutflow_process_steering(steer:dict):
         if 'interpret' in steer['features']:
             print(f'  Reading file from <{fpath}>')
             cutflow_provision_features(steer['features']['interpret'],
-                                              source_spec['root_files'], path, fname)
+                                              source_spec['root_files'], path, fname,
+                                              integrity_check=integrity_check)
             
         source = DataSource(fpath, name, work_root=path)
 
@@ -429,7 +432,7 @@ def cutflow_parse_cuts(x:list[dict], mvas:dict={}, to_resolve:list[str]=['lower'
     """Parses a list of steering file cut entries. Will resolve the keys to_resolve
     using the dict mvas. e.g. in a dict { 'value': 'default_mva.threshold' , ...}
     it will look for an entry default_mva in mvas and then get the property threshold.
-    If the key should be resolved, different part should be separated by dots.
+    If a key should be resolved, different parts should be separated by dots.
 
     Args:
         x (list[dict]): _description_

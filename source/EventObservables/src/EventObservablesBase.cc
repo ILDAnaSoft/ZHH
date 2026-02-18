@@ -1294,13 +1294,17 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 				m_trueJetPDGs[i] = hadronicMCPs[i]->getPDG();
 
 				if (i % 2 != 0) {
-					std::cerr << "Energy = " << (m_trueJetMomenta[i].E()) << " | Mass = " << (m_trueJetMomenta[i] + m_trueJetMomenta[i - 1]).M() << std::endl;
+					std::cerr << "M(hadronic system " << ((i-1)/2 + 1) << ") = " << (m_trueJetMomenta[i] + m_trueJetMomenta[i - 1]).M() << std::endl;
 				}
 			}
 			
 			for (unsigned short i = 0; i < m_trueLeptonN; i++) {
 				m_trueLeptonMomenta[i] = v4(leptonicMCPs[i]);
 				m_trueLeptonPDGs[i] = leptonicMCPs[i]->getPDG();
+
+				if (i % 2 != 0) {
+					std::cerr << "M(leptonic system " << ((i-1)/2 + 1) << ") = " << (m_trueLeptonMomenta[i] + m_trueLeptonMomenta[i - 1]).M() << std::endl;
+				}
 			}
 
 			/*
