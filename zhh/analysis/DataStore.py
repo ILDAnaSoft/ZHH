@@ -134,7 +134,7 @@ class DataStore(MixedLazyTablelike):
         if items is None:
             items = list(self._items.keys())
             
-        print(f'Writing items <{", ".join(items)}> to file {self._h5_file}.h5')
+        print(f'Writing items <{", ".join(items)}> to file {self._h5_file}')
         
         with h5py.File(self._h5_file, 'a') as hf:
             for item in (pbar := tqdm(items)):
