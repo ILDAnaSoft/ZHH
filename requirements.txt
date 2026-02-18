@@ -14,3 +14,4 @@ python-dotenv==1.0.1
 jsbeautifier==1.15.1
 zstandard==0.23.0
 pybind11==2.13.4
+optuna==4.5.0

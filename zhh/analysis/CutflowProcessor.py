@@ -755,7 +755,7 @@ def cutflowPlotSummaryFn(signal_category_names:list[str], cuts:Sequence[ValueCut
     
     order = order_categories(calc_dicts, signal_category_names)
     
-    labels = [rf'${cut.latex()}$' for cut in cuts]
+    labels = ['before cuts'] + [rf'${cut.latex()}$' for cut in cuts]
     x = np.arange(len(labels)) # x positions
 
     fig, ax = plt.subplots(figsize=(12, 6))
@@ -765,8 +765,16 @@ def cutflowPlotSummaryFn(signal_category_names:list[str], cuts:Sequence[ValueCut
     for category in order:
         values = np.zeros(len(labels))
         
-        for i_cut, cut in enumerate(cuts):
-            values[i_cut] = calc_dicts[i_cut][category][1].sum() if category in calc_dicts[i_cut] else 0.
+        for i_cut in range(len(cuts) + 1):
+            is_last = i_cut == len(cuts)
+
+            if is_last:
+                values_and_weights = calc_dicts[i_cut - 1][category] if category in calc_dicts[i_cut - 1] else None
+                passed_cut = cuts[-1].raw(values_and_weights[0]) if values_and_weights is not None else None
+                values[i_cut] = values_and_weights[1][passed_cut].sum() if values_and_weights is not None else 0.
+            else:
+                values_and_weights = calc_dicts[i_cut][category] if category in calc_dicts[i_cut] else None
+                values[i_cut] = values_and_weights[1].sum() if values_and_weights is not None else 0.
         
         ax.bar(x, values, .9, bottom=values_before, label=category, color=plot_context.getColorByKey(category), linewidth=1.)
         
