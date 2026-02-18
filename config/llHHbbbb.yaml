@@ -236,7 +236,7 @@ cuts:
   - { quantity: fit4C_mh1, operator: within_bounds, lower: 50., upper: 200., label: 'm_{H1}^{4C}', unit: 'GeV', xlim_view: [0, 500] }
   - { quantity: fit4C_mh2, operator: within_bounds, lower: 50., upper: 200., label: 'm_{H2}^{4C}', unit: 'GeV', xlim_view: [0, 550] }
   - { quantity: ptmiss, operator: lte, value: 70., label: 'p_{t}^{miss}', unit: 'GeV' }
-  - { quantity: thrust, operator: lte, value: 0.9, label: 'thrust', unit: 'GeV' }
+  - { quantity: thrust, operator: lte, value: 0.9, label: 'thrust' }
   - { quantity: sumBTags, operator: gte, value: 1., label: 'sum b-tags', disabled: true }
   
   mva_cut:
@@ -322,11 +322,12 @@ actions:
   - type: AttachMatrixElements
     output_name: DsigZHH_ZZH
     data_source: kinfit
+    disabled: True
 
   - type: SklearnMulticlassTraining
     hyperparams: {
       max_depth: 5,
-      n_estimators: 500,
+      n_estimators: 250,
       learning_rate: 0.1
     }
     debug: true
