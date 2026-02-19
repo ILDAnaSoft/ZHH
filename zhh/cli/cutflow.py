@@ -18,7 +18,7 @@ if __name__ == "__main__":
     cutflow_initialize_sources(sources, final_state_configs, lumi_inv_ab=steer['luminosity'], reset_sources=reset_sources)
     
     # parse the cuts and combine all info to a CutflowProcessor
-    preselection = cutflow_parse_cuts(steer['preselection']['cuts'])
+    preselection = cutflow_parse_cuts(steer['cuts']['preselection'])
     cp = CutflowProcessor(sources, hypothesis=steer['hypothesis'], cuts=preselection, signal_categories=steer['signal_categories'])
     cutflow_register_mvas(steer, cp)
 
