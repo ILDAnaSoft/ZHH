@@ -5,10 +5,10 @@
 # 2025/11: following globals are allowed: EventCategories, FinalStateDefinitions
 #          following environment variables are assumed: REPO_ROOT, DATA_PATH
 
-hypothesis: μμbbbb
+hypothesis: qqbbbb
 signal_categories:
-- EventCategories.μμHHbbbb
-- EventCategories.llhh_llnonbbbb
+- EventCategories.qqHHbbbb
+- EventCategories.qqHH_nonbbbb
 
 # used to calculate event weights and absolute event counts
 # polarization of [ electronBeam, positronBeam ]
@@ -56,7 +56,17 @@ sources:
     event_categorization:
       default: EventCategories.F4_OTHER
       order: null
-      items: [ eebb, μμbb, ττbb, lvqq ]
+      items: [ vvqq, llqq, lvqq ]
+    disabled: false
+    reset: false
+
+  - name: 4flh
+    path: $DATA_PATH/AnalysisCombine/550-4flh-$CONF_SUFFIX
+    root_files: $DATA_PATH/AnalysisFinal/550-4flh-$CONF_SUFFIX/*.root
+    event_categorization:
+      default: EventCategories.F4_OTHER
+      order: null
+      items: [ llll, qqqq, vvvv ]
     disabled: false
     reset: false
 
@@ -76,7 +86,7 @@ sources:
     event_categorization:
       default: null
       order: null
-      items: [ llHH, eeHHbbbb, μμHHbbbb, ττHHbbbb, llHH_llbbbb, llHH_llnonbbbb, llqqH ]
+      items: [ llhh, eeHHbbbb, μμHHbbbb, ττHHbbbb, llhh_llbbbb, llhh_llnonbbbb, llqqh ]
     disabled: false
     reset: false
 

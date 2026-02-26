@@ -1,5 +1,9 @@
 # ZHH Config Files
 
+## Steering files for cutflow
+
+The files `llHHbbbb.yaml`, `vvHHbbbb.yaml` and `qqHHbbbb.yaml` are steering files for the cutflow tool. After sourcing the `zhhvenv` environment, they can be used via `python $REPO_ROOT/zhh/cli/cutflow.py <PATH_TO_STEERING_FILE>`
+
 ## preselection_cuts_cd.json
 a single point of truth, they are
 Values read by the PreSelection processor. 

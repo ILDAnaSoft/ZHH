@@ -72,7 +72,11 @@ class FinalStateRecorder : public Processor
 			return new FinalStateRecorder;
 		}
 		FinalStateRecorder();
-		virtual ~FinalStateRecorder() = default;
+		virtual ~FinalStateRecorder() {
+			for (auto& resolver: resolvers) {
+				delete resolver.second;
+			}
+		};
 		FinalStateRecorder(const FinalStateRecorder&) = delete;
 		FinalStateRecorder& operator=(const FinalStateRecorder&) = delete;
 

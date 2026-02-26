@@ -7,4 +7,5 @@ from .SplitDatasetsAction import SplitDatasetsAction
 from .WriteMVADataAction import WriteMVADataAction
 from .SklearnMulticlassInferenceAction import SklearnMulticlassInferenceAction
 from .SklearnMulticlassTrainingAction import SklearnMulticlassTrainingAction
+from .SklearnMulticlassHyperparamTrainingAction import SklearnMulticlassHyperparamTrainingAction
 from .MVAThresholdFinderInterface import MVAThresholdFinderInterface

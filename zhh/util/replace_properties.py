@@ -34,6 +34,14 @@ def replace_properties(tree:dict, globals:dict, keys=None)->dict:
                 if hasattr(globals[prefix], suffix):
                     tree[key] = getattr(globals[prefix], suffix)
                 else:
-                    tree[key] = globals[prefix][suffix]
+                    try:
+                        if suffix in globals[prefix]:
+                            tree[key] = globals[prefix][suffix]
+                        else:
+                            print(f'Key <{suffix}> not found in {globals[prefix]}')
+                            raise KeyError(f'Key {suffix} not found')
+                    except Exception as e:
+                        print(globals, prefix)
+                        raise KeyError(f'Could not access key <{suffix}> in {globals[prefix]}')
 
     return tree

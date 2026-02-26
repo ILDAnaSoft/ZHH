@@ -6,28 +6,32 @@ from os import environ
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('steer', type=str, default=None, help='Path to a YAML steering file, e.g. $REPO_ROOT/config/llHHbbbb.yaml')
+    parser.add_argument('--skip_integrity_check', action='store_true', help='Controls whether the check of matching ROOT and HDF5 files should be skipped. Defaults to False.')
+    parser.add_argument('--log_level', type=str, default='DEBUG', help='Must be any of CRITICAL, FATAL/CRITICAL, ERROR, WARNING, WARN/WARNING, INFO, DEBUG or NOTSET. Defaults to DEBUG.')
 
     args = parser.parse_args()
+    log_level = getattr(logging, args.log_level)
 
     # process the steering file -> sources and final state info
     steer = cutflow_parse_steering_file(args.steer)
-    sources_map, final_state_configs, reset_sources = cutflow_process_steering(steer)
+    sources_map, final_state_configs, reset_sources = cutflow_process_steering(steer, integrity_check=not args.skip_integrity_check)
 
     # initialize all sources
     sources = list(sources_map.values())
     cutflow_initialize_sources(sources, final_state_configs, lumi_inv_ab=steer['luminosity'], reset_sources=reset_sources)
     
     # parse the cuts and combine all info to a CutflowProcessor
-    preselection = cutflow_parse_cuts(steer['preselection']['cuts'])
+    preselection = cutflow_parse_cuts(steer['cuts']['preselection'])
     cp = CutflowProcessor(sources, hypothesis=steer['hypothesis'], cuts=preselection, signal_categories=steer['signal_categories'])
     cutflow_register_mvas(steer, cp)
 
-    #cp.process()
-
-    # prepare the cutflow table
+    # prepare the cutflow processor
     actions = cutflow_parse_actions(steer, cp)
 
     # dry run required for full run
-    cutflow_execute_actions(actions, check_only=True)
+    print('Going to execute following actions:')
+    to_execute = cutflow_execute_actions(actions, check_only=True)
+    for i, action in enumerate(to_execute):
+        print(f'Action {i+1}/{len(to_execute)}:', action)
 
-    cutflow_execute_actions(actions, log_level=logging.DEBUG)
+    cutflow_execute_actions(actions, log_level=log_level)

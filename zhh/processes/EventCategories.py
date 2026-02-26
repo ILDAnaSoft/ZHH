@@ -22,14 +22,14 @@ class EVENT_CATEGORY_TRUE:
     eeHHbbbb = 114
     μμHHbbbb = 115
     ττHHbbbb = 116
-    llhh_llnonbbbb = 117
+    llHH_llnonbbbb = 117
     # END
     
     eebb = 12
     μμbb = 13
     ττbb = 14
     llbbbb = 15
-    llqqh = 16
+    llqqH = 16
     ll = 17
     llll = 18
     llqq = 19
@@ -55,6 +55,9 @@ class EVENT_CATEGORY_TRUE:
     
     v1v1HHbbbb = 133
     v23v23HHbbbb = 134
+    vvHHbbbb = 135
+    vvHH_nonbbbb = 136
+
     # END
     
     vvbb = 32
@@ -66,6 +69,7 @@ class EVENT_CATEGORY_TRUE:
     
     vvqqqq = 38
     vvbbqq = 39
+    vvvv = 40
 
     # HADRONIC
     OTHER_QQ = 50
@@ -74,6 +78,8 @@ class EVENT_CATEGORY_TRUE:
     # START Only used in analysis (not in Marlin processor)
     qqHHbbbb = 151
     bbHHbbbb = 152 
+    qqHH_nonbbbb = 153
+
     # END
 
     qqqqH = 52
