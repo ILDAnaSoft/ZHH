@@ -67,7 +67,7 @@ sources:
     event_categorization:
       default: EventCategories.F4_OTHER
       order: null
-      items: [ llll, qqqq ] # vvvv
+      items: [ llll, qqqq, bbbb ] # vvvv
     disabled: false
     reset: false
 
@@ -77,7 +77,7 @@ sources:
     event_categorization:
       default: EventCategories.F6_OTHER
       order: null
-      items: [ lvqqqq, lvbbqq, evbbqq, vvqqqq ]
+      items: [ lvqqqq, lvbbqq, evbbqq, μvbbqq, τvbbqq, vvqqqq ]
     disabled: false
     reset: false
 
@@ -159,7 +159,8 @@ features:
   # physics quantities
   - { names: [ npfos ], tree: EventObservablesVV, dtype: uint16 }
   - { names: [ nisoleptons, pairedLepType ], tree: EventObservablesVV, dtype: uint8 }
-  - { names: [ bmax1, bmax2, bmax3, bmax4,
+  - { names: [ zhh_mhh,
+               bmax1, bmax2, bmax3, bmax4,
                jet1_m, jet2_m, jet3_m, jet4_m,
                ptmiss, thrust, evis, m_invjet,
                costhrust, npfosmin5j,
@@ -167,7 +168,9 @@ features:
                zz_mz1, zz_mz2,
                massWtt4j, massT1tt4j, massT2tt4j,
                massWtt5j, massT1tt5j, massT2tt5j], tree: EventObservablesVV, dtype: float32 }
-
+  
+  # renamed/clamped quantities
+  - { name: ffit4C_mhh1, tree: EventObservablesVV, dtype: float32, nan_to: -20., clamp_min: -10. }
   - { name: fit4C_mh1, tree: EventObservablesVV, dtype: float32, nan_to: -20., clamp_min: -10. }
   - { name: fit4C_mh2, tree: EventObservablesVV, dtype: float32, nan_to: -20., clamp_min: -10. }
   - { name: ZHH_FitChi2, tree: KinFitVV_ZHH, branch: FitChi2, dtype: float32 }
@@ -212,21 +215,23 @@ cutflow_table:
       label: '\boldsymbol{\mu \nu b b q q}'
     - category: μvbbqq
       label: '\boldsymbol{\mu \nu b b q q}'
+    - category: τvbbqq
+      label: '\boldsymbol{\tau \nu b b q q}'
     - category: bbqqqq
       label: bbqqqq
-    - category: llqqqq
-      label: llqqqq
-    - category: llbbbb
-      label: (llbbbb)
-    - category: llqqh
-      label: llqqh
-    - category: llhh
-      label: llhh
+    - category: bbbb
+      label: bbbb
+    - category: vvqqqq
+      label: vvqqqq
+    - category: vvqqH
+      label: vvqqH
+    - category: vvHH
+      label: vvHH
       is_signal: true
-    - category: μμHHbbbb
-      label: (\mu\mu bbbb)
+    - category: vvHHbbbb
+      label: (\nu\nu bbbb)
       is_signal: true
-  ignore_categories: llbbbb
+  #ignore_categories: llbbbb
 
 # general note about cuts:
 # they appear in groups composed of at least one cut and are denoted in code by the
@@ -248,11 +253,13 @@ cutflow_table:
 
 cuts:
   preselection:
-  - { quantity: nisoleptons, operator: eq, value: 0, label: IsoLeptons}
+  - { quantity: nisoleptons, operator: eq, value: 0, label: 'Isolated leptons'}
   - { quantity: sumBTags, operator: gte, value: 1.8, label: 'sum b-tags'}
   - { quantity: fit4C_mh1, operator: within_bounds, lower: 60., upper: 180., label: 'm_{H1}^{4C}', unit: 'GeV', xlim_view: [0, 500] }
   - { quantity: fit4C_mh2, operator: within_bounds, lower: 40., upper: 250., label: 'm_{H2}^{4C}', unit: 'GeV', xlim_view: [0, 500] }
   - { quantity: thrust, operator: lte, value: 0.93, label: 'thrust', unit: 'GeV' }
+  - { quantity: evis, operator: lte, value: 510, label: 'E_{vis}', unit: 'GeV' }
+  - { quantity: zhh_mhh, operator: gte, value: 200, label: 'M_{vis}', unit: 'GeV' }
   
   # the mva_cut is applied after training and inference of a MVA
   # the value to cut on can be either
@@ -292,7 +299,7 @@ mvas:
     # see sources/.../event_categorization/items
     - [0, 'vvHHbbbb']
     - [1, 'vvHH_nonbbbb']
-    - [2, 'vvqqh']
+    - [2, 'vvqqH']
     - [3, 'vvqqqq']
     - [4, 'vvbb']
     - [5, 'lvbbqq']

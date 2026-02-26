@@ -18,6 +18,7 @@ define_vvbb:FinalStateDefinition = lambda ac, fsc: (fsc.n_neutral_lep == 2) & (f
 define_llll:FinalStateDefinition = lambda ac, fsc: (fsc.n_charged_lep == 4) & (fsc.n_q == 0) & (fsc.n_neutral_lep == 0)
 define_qqqq:FinalStateDefinition = lambda ac, fsc: (fsc.n_charged_lep == 0) & (fsc.n_q == 4) & (fsc.n_neutral_lep == 0)
 define_vvvv:FinalStateDefinition = lambda ac, fsc: (fsc.n_charged_lep == 0) & (fsc.n_q == 0) & (fsc.n_neutral_lep == 4)
+define_bbbb:FinalStateDefinition = lambda ac, fsc: (fsc.n_b == 4)
 
 # categorize l2q4
 define_lvqqqq:FinalStateDefinition = lambda ac, fsc: (fsc.n_charged_lep == 1) & (fsc.n_neutral_lep == 1) & (fsc.n_q == 4)

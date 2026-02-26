@@ -40,6 +40,9 @@
 - name: vvvv
   handler: FinalStateDefinitions.define_vvvv
   id: EventCategories.vvvv
+- name: bbbb
+  handler: FinalStateDefinitions.define_bbbb
+  id: EventCategories.bbbb
 
 # 2l4q
 - name: lvqqqq
