@@ -37,5 +37,5 @@ class MVAThresholdFinderInterface(CutflowProcessorAction):
         """
         raise NotImplementedError('assignThreshold must be implemented')
     
-    def assignThreshold(self, value:float):
-        self._cp._mvas[self._mva_name]['threshold'] = self.findThreshold()
+    def assignThreshold(self, value:float|None=None):
+        self._cp._mvas[self._mva_name]['threshold'] = self.findThreshold() if value is None else value

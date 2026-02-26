@@ -1,19 +1,20 @@
-from ..CutflowProcessorAction import FileBasedProcessorAction, CutflowProcessor
-from .MVAThresholdFinderInterface import MVAThresholdFinderInterface
 from io import StringIO
-from xgboost import XGBClassifier
+from contextlib import redirect_stdout
+from typing import TypedDict, Required, Literal, TYPE_CHECKING
 from datetime import datetime
 from math import sqrt
-from typing import TypedDict, Required, Literal
 import os, pickle, sys, subprocess
-import optuna
-import numpy as np
+
+from ..CutflowProcessorAction import FileBasedProcessorAction, CutflowProcessor
+from .MVAThresholdFinderInterface import MVAThresholdFinderInterface
+from xgboost import XGBClassifier
 from .mva_tools import get_signal_categories, get_background_categories
-from contextlib import redirect_stdout
+import numpy as np
+import optuna
 
 class SklearnMulticlassTrainingAction(MVAThresholdFinderInterface, FileBasedProcessorAction):
     def __init__(self, cp:CutflowProcessor, steer:dict, mva:str, hyperparams:dict,
-                 clf_prop:str='clf', trial_name:str='default', debug:bool=False, **kwargs):
+                 clf_prop:str='clf', trial_name:str|None=None, debug:bool=False, **kwargs):
         """_summary_
 
         Args:
@@ -22,7 +23,8 @@ class SklearnMulticlassTrainingAction(MVAThresholdFinderInterface, FileBasedProc
             hyperparams (dict): MVA hyperparameters
             mva (str): _description_
             clf_prop (str, optional): _description_. Defaults to 'clf'.
-            trial_name (str, optional): Name of the hyperparameter search trial for Optuna. Defaults to 'default'.
+            trial_name (str|None, optional): Name of the hyperparameter search trial for Optuna.
+                                             will be replaced with mva if None. Defaults to None.
             
         """
         assert('mvas' in steer)
@@ -36,7 +38,7 @@ class SklearnMulticlassTrainingAction(MVAThresholdFinderInterface, FileBasedProc
         self._data_file = mva_spec['data_file']
         self._mva_file = mva_spec['mva_file']
         self._clf_prop = clf_prop
-        self._trial_name = trial_name
+        self._trial_name = trial_name if trial_name is not None else mva
 
         self._signal_categories = get_signal_categories(steer['signal_categories'], mva_spec['classes'])
         self._background_categories = get_background_categories(self._signal_categories, mva_spec['classes'])
@@ -49,14 +51,12 @@ class SklearnMulticlassTrainingAction(MVAThresholdFinderInterface, FileBasedProc
         return self.localTarget(self._mva_file)
 
     def run(self):
-        from zhh import DataExtractor
-
         print(f'Sig categories', self._signal_categories)
         print(f'Bkg categories', self._background_categories)
 
-        set_conf(os.getcwd(), self._trial_name)
+        cfg = MVATrainingConfig(os.getcwd(), 1, self._trial_name)
 
-        qty = objective(self._hyperparams, self._signal_categories, self._background_categories,
+        qty = objective(cfg, self._hyperparams, self._signal_categories, self._background_categories,
                         clf_file=self._mva_file, clf_property=self._clf_prop, train_test_npz=self._data_file,
                         debug=self._debug)
         
@@ -73,27 +73,66 @@ class SklearnMulticlassTrainingAction(MVAThresholdFinderInterface, FileBasedProc
         
         return dump['thresh']
 
-conf = {
-    'DATESTRING': '',
-    'BPATH': '',
-    'TRIALPATH': ''
-}
-
-def set_conf(base_path:str, datestring:str|None=None):
-    if datestring is None:
-        datestring = datetime.now().strftime('%Y%m%d.%H%M%S')
-
-    conf['DATESTRING'] = datestring
-    conf['BPATH'] = base_path
-    conf['TRIALPATH'] = f'{base_path}/trial-{datestring}'
-
 class OptunaSuggestion(TypedDict):
     name: Required[str]
     type: Required[Literal['int']|Literal['float']]
     lower: Required[int|float]
     upper: Required[int|float]
 
+# global registry of MVATrainingConfig
+# used only when using multiprocessing, e.g. in SklearnMulticlassHyperparamTrainingAction
+configs = {}
+
+class MVATrainingConfig:
+    def __init__(self, base_path:str, n_trials:int, trial_name:str|None, trial_data:str|None=None, trial_data_file:str='train_test.npz',
+                 training_mode:Literal['loss']|Literal['significance']='significance',
+                 signal_categories:list[int]=[], background_categories:list[int]=[], hyperparam_bounds:list[OptunaSuggestion]=[]):
+        
+        """_summary_
+
+        Args:
+            base_path (str): _description_
+            n_trials (int): number of trials to train (1 for single run, n>1 for multi-trial)
+            trial_name (str | None): _description_
+            trial_data (str | None, optional): _description_. Defaults to None.
+            trial_data_file (str, optional): _description_. Defaults to 'train_test.npz'.
+            training_mode (Literal["loss"] | Literal["significance"], optional): _description_. Defaults to 'significance'.
+        """
+        if trial_name is None:
+            trial_name = datetime.now().strftime('%Y%m%d.%H%M%S')
+
+        assert(training_mode.lower() in ['loss', 'significance'])
+
+        self._trial_data = f'{base_path}/{trial_data_file}' if trial_data is None else trial_data
+        self._n_trials = n_trials
+        self._trial_name = trial_name
+        self._base_path  = base_path
+        self._trial_path = f'{base_path}/trial-{trial_name}'
+        self._training_mode = training_mode.lower()
+        self._signal_categories = signal_categories
+        self._background_categories = background_categories
+        self._hyperparam_bounds = hyperparam_bounds
+
+    def register(self):
+        if self._trial_name in configs:
+            raise Exception(f'MVA trial <{self._trial_name}> already registered!')
+
+        configs[self._trial_name] = self
+    
+    def release(self):
+        del configs[self._trial_name]
+
 def parse_suggestions(trial:optuna.Trial, suggestions:list[OptunaSuggestion])->dict:
+    """Given an optuna trial and a list of hyperparameter bounds,
+    samples a set of hyperparameters and returns it as dictionary.
+
+    Args:
+        trial (optuna.Trial): _description_
+        suggestions (list[OptunaSuggestion]): _description_
+
+    Returns:
+        dict: _description_
+    """
     kwargs = {}
     
     for suggestion in suggestions:
@@ -103,20 +142,23 @@ def parse_suggestions(trial:optuna.Trial, suggestions:list[OptunaSuggestion])->d
         
     return kwargs
 
-def objective(hyper_params:dict, signal_classes:list[int], background_classes:list[int], trial:optuna.Trial|None=None,
+def objective(config:MVATrainingConfig, hyper_params:dict, signal_classes:list[int], background_classes:list[int], trial:optuna.Trial|None=None,
               clf_file:str|None=None, clf_property:str='clf', train_test_npz:str|None=None, n_trial:int=0, debug:bool=False):
     
+    import os.path as osp, os
     from zhh import Tee
 
     if trial is not None:
         n_trial = trial.number
-        print(f"Running trial {n_trial} in process {os.getpid()}")
+        print(f'Running trial {n_trial} in process {os.getpid()}')
 
     if clf_file is None:
-        clf_file = f'{conf["TRIALPATH"]}/{n_trial}.pickle'
+        clf_file = f'{config._trial_path}/{n_trial}.pickle'
+
+    os.makedirs(osp.dirname(clf_file), exist_ok=True)
     
     if train_test_npz is None:
-        train_test_npz = f'{conf["BPATH"]}/train_test.npz'
+        train_test_npz = config._trial_data
     
     data = np.load(train_test_npz)
 
@@ -194,14 +236,16 @@ def objective(hyper_params:dict, signal_classes:list[int], background_classes:li
         'x': x,
         'best_significance': best_significance,
         'significance_train': significance_train,
-        'thresh': thresh
+        'thresh': thresh,
+        clf_property: xgbclf
     }
-    dump[clf_property] = xgbclf
 
     with open(clf_file, 'wb') as pf:
         pickle.dump(dump, pf)
-
-    #return xgbclf
-    #return loss_history[-1]
-    return float(best_significance)**(-1)
     
+    if config._training_mode == 'loss':
+        return loss_history[-1]
+    elif config._training_mode == 'significance':
+        return 1./float(best_significance)
+    else:
+        raise Exception(f'Unknown training mode <{config._training_mode}>')

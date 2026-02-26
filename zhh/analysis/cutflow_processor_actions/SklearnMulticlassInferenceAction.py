@@ -22,7 +22,8 @@ class SklearnMulticlassInferenceAction(CutflowProcessorAction):
         mva_spec = find_by(steer['mvas'], 'name', mva, is_dict=True)
         
         self._mva_file = mva_spec['mva_file']
-        
+        self._mva_name = mva
+
         self._clf_prop = clf_prop
         self._step = step
         self._split = split
@@ -58,7 +59,7 @@ class SklearnMulticlassInferenceAction(CutflowProcessorAction):
             
             if mask.sum():
                 for j, feature in enumerate(features):
-                    pbar.set_description(f'Loading feature {j+1}/{len(features)} for MVA of source <{source}>')
+                    pbar.set_description(f'Loading feature {j+1}/{len(features)} ({feature}) for MVA <{self._mva_name}> of source <{source}>')
                     inputs[:, j] = store[feature][mask]
                     
                 pbar.set_description(f'Evaluating MVA for source <{source}>...')

@@ -244,6 +244,7 @@ class EventObservablesBase: public Processor, public TrueJet_Parser {
 		// four momenta of leptons + jets and all flavor tags
 		std::vector<ReconstructedParticle*> m_jets{};
 		std::vector<ROOT::Math::PxPyPzEVector> m_jets4v{};
+		std::vector<ROOT::Math::PxPyPzEVector> m_jets4v_post_4C_kinfit{};
 		std::vector<float> m_jetsMasses{}; 
 		std::vector<std::vector<float>> m_jetTags{};
 
@@ -317,6 +318,7 @@ class EventObservablesBase: public Processor, public TrueJet_Parser {
 		std::vector<int> m_JMK_ZHH{};
 		std::vector<int> m_JMK_ZZH{};
 		std::vector<int> m_JMK_best{};
+		int m_JMK_best_which{};
 
 		float m_fitprob_ZHH{};
         float m_fitprob_ZZH{};

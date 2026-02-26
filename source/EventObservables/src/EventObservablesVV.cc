@@ -52,6 +52,9 @@ void EventObservablesVV::prepareChannelTree() {
 
         // ZZ
         zz_init(ttree);
+
+        // MC truth information
+        ttree->Branch("massDiNeutrino", &m_diNeutrinoMass, "massDiNeutrino/F");
     }
 };
 
@@ -82,6 +85,8 @@ void EventObservablesVV::clearChannelValues() {
 
     // ZZ
     zz_clear();
+
+    m_diNeutrinoMass = 0.;
 
     m_jets4cKinFit_4v.clear();
     m_fit4C_masses.clear();
@@ -216,6 +221,24 @@ void EventObservablesVV::updateChannelValues(EVENT::LCEvent *pLCEvent) {
 
     // ZZ: CHECK BY CHI2
     zz_update(m_jets);
+
+    // process MC truth data
+    const std::string process_name = pLCEvent->getParameters().getStringVal("processName");
+    
+    if (std::find(di_neutrino_processes.begin(), di_neutrino_processes.end(), process_name) != di_neutrino_processes.end()) {
+        LCCollection *mcParticles = pLCEvent->getCollection( "MCParticlesSkimmed" );
+			
+		IntVec fsIndices;
+        mcParticles->parameters().getIntVals("FINAL_STATE_PARTICLE_INDICES", fsIndices);
+        
+        MCParticle* neutrino1 = (MCParticle*)mcParticles->getElementAt(fsIndices[0]);
+        MCParticle* neutrino2 = (MCParticle*)mcParticles->getElementAt(fsIndices[1]);
+
+        assert(neutrino1->getPDG() >= 11 && neutrino1->getPDG() <= 16);
+        assert(neutrino2->getPDG() >= 11 && neutrino2->getPDG() <= 16);
+
+        m_diNeutrinoMass = (v4(neutrino1) + v4(neutrino2)).M();
+    }
 };
 
 void EventObservablesVV::calculateSimpleZHHChi2() {

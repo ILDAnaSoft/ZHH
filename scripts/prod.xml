@@ -18,6 +18,7 @@
         <constant name="Runvvbbbb" value="true" />
         <constant name="Runqqbbbb" value="false" />
         <constant name="RunTruthRecoComparison" value="false" />
+        <constant name="WriteLCIO" value="false" />
 
         <!-- These must be chosen depending on fast/full simulation options -->
         <constant name="IsFastSim" value="true" />
@@ -69,7 +70,9 @@
             <group name="prodAnalysisQQ" />
         </if>
 
-        <processor name="MyLCIOOutputProcessor" />
+        <if condition="${WriteLCIO}">
+            <processor name="MyLCIOOutputProcessor" />
+        </if>
     </execute>
 
     <global>
