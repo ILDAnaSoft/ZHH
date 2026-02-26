@@ -22,7 +22,6 @@ if __name__ == "__main__":
     
     # parse the cuts and combine all info to a CutflowProcessor
     preselection = cutflow_parse_cuts(steer['cuts']['preselection'])
-    preselection = cutflow_parse_cuts(steer['cuts']['preselection'])
     cp = CutflowProcessor(sources, hypothesis=steer['hypothesis'], cuts=preselection, signal_categories=steer['signal_categories'])
     cutflow_register_mvas(steer, cp)
 

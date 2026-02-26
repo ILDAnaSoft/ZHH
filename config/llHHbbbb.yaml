@@ -329,7 +329,7 @@ actions:
   - type: AttachMatrixElements
     output_name: DsigZHH_ZZH
     data_source: kinfit
-    disabled: true
+    disabled: True
 
   - type: SklearnMulticlassTraining
     hyperparams: {
