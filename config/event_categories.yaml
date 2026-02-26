@@ -7,7 +7,13 @@
 # plots use the id to uniquely identify categories, whereas cutflow tables can make use of the named categorization and thus
 # use different categories/be more granular (the logic to make sure no double counting occurs happens in the background :))
 
-# 4f
+# 4f sl
+- name: llqq
+  handler: FinalStateDefinitions.define_llqq
+  id: EventCategories.llqq
+- name: vvqq
+  handler: FinalStateDefinitions.define_vvqq
+  id: EventCategories.vvqq
 - name: eebb
   handler: FinalStateDefinitions.define_eebb
   id: EventCategories.eebb
@@ -20,6 +26,20 @@
 - name: lvqq
   handler: FinalStateDefinitions.define_lvqq
   id: EventCategories.lvqq
+- name: vvbb
+  handler: FinalStateDefinitions.define_vvbb
+  id: EventCategories.vvbb
+
+# 4f fully leptonic/hadronic
+- name: llll
+  handler: FinalStateDefinitions.define_llll
+  id: EventCategories.llll
+- name: qqqq
+  handler: FinalStateDefinitions.define_qqqq
+  id: EventCategories.qqqq
+- name: vvvv
+  handler: FinalStateDefinitions.define_vvvv
+  id: EventCategories.vvvv
 
 # 2l4q
 - name: lvqqqq
@@ -70,7 +90,7 @@
   id: EventCategories.bbbbbb
 
 # llhh
-- name: llhh
+- name: llHH
   handler: FinalStateDefinitions.define_llhh
   id: EventCategories.llHH
 - name: eeHHbbbb
@@ -82,18 +102,18 @@
 - name: ττHHbbbb
   handler: FinalStateDefinitions.define_ττHHbbbb
   id: EventCategories.ττHHbbbb
-- name: llhh_llbbbb
+- name: llHH_llbbbb
   handler: FinalStateDefinitions.define_llbbbb
   id: null
-- name: llhh_llnonbbbb
+- name: llHH_llnonbbbb
   handler: FinalStateDefinitions.define_llhh_llnonbbbb
   id: null
-- name: llqqh
+- name: llqqH
   handler: FinalStateDefinitions.define_llqqh
-  id: EventCategories.llqqh
+  id: EventCategories.llqqH
 
 # vvhh
-- name: vvhh
+- name: vvHH
   handler: FinalStateDefinitions.define_vvhh
   id: EventCategories.vvHH
 - name: v1v1HHbbbb
@@ -102,15 +122,29 @@
 - name: v23v23HHbbbb
   handler: FinalStateDefinitions.define_v23v23HHbbbb
   id: EventCategories.v23v23HHbbbb
-- name: vvhh_vvbbbb
+- name: vvHHbbbb
   handler: FinalStateDefinitions.define_vvhh_vvbbbb
-  id: null
-- name: vvhh_vvnonbbbb
+  id: EventCategories.vvHHbbbb
+- name: vvHH_nonbbbb
   handler: FinalStateDefinitions.define_vvhh_vvnonbbbb
   id: null
-- name: vvqqh
+- name: vvqqH
   handler: FinalStateDefinitions.define_vvqqh
   id: EventCategories.vvqqH
+
+# qqhh TODO
+- name: qqHH
+  handler: FinalStateDefinitions.define_qqhh
+  id: EventCategories.vvHH
+- name: qqqqH
+  handler: FinalStateDefinitions.define_qqqqh
+  id: EventCategories.qqqqH
+- name: qqHHbbbb
+  handler: FinalStateDefinitions.define_qqHHbbbb
+  id: EventCategories.qqHHbbbb
+- name: qqHH_nonbbbb
+  handler: FinalStateDefinitions.define_qqHHnonbbbb
+  id: EventCategories.qqHH_nonbbbb
 
 # ttH/ttZ
 - name: ttH
@@ -119,6 +153,6 @@
 - name: vvhh_vvnonbbbb
   handler: FinalStateDefinitions.define_ttZ
   id: EventCategories.ttZ
-- name: vvqqh
+- name: vvqqH
   handler: FinalStateDefinitions.define_ttHZ
-  id: EventCategories.ttHZ
+  id: null

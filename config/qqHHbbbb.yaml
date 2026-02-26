@@ -5,10 +5,10 @@
 # 2025/11: following globals are allowed: EventCategories, FinalStateDefinitions
 #          following environment variables are assumed: REPO_ROOT, DATA_PATH
 
-hypothesis: μμbbbb
+hypothesis: qqbbbb
 signal_categories:
-- EventCategories.μμHHbbbb
-- EventCategories.llhh_llnonbbbb
+- EventCategories.qqHHbbbb
+- EventCategories.qqHH_nonbbbb
 
 # used to calculate event weights and absolute event counts
 # polarization of [ electronBeam, positronBeam ]
@@ -56,7 +56,17 @@ sources:
     event_categorization:
       default: EventCategories.F4_OTHER
       order: null
-      items: [ eebb, μμbb, ττbb, lvqq ]
+      items: [ vvqq, llqq, lvqq ]
+    disabled: false
+    reset: false
+
+  - name: 4flh
+    path: $DATA_PATH/AnalysisCombine/550-4flh-$CONF_SUFFIX
+    root_files: $DATA_PATH/AnalysisFinal/550-4flh-$CONF_SUFFIX/*.root
+    event_categorization:
+      default: EventCategories.F4_OTHER
+      order: null
+      items: [ llll, qqqq, vvvv ]
     disabled: false
     reset: false
 
@@ -72,11 +82,11 @@ sources:
 
   - name: llhh
     path: $DATA_PATH/AnalysisCombine/550-llhh-$CONF_SUFFIX
-    root_files: /data/dust/user/bliewert/zhh/AnalysisFinal/550-llhh-$CONF_SUFFIX/*.root
+    root_files: $DATA_PATH/AnalysisFinal/550-llhh-$CONF_SUFFIX/*.root
     event_categorization:
       default: null
       order: null
-      items: [ llHH, eeHHbbbb, μμHHbbbb, ττHHbbbb, llHH_llbbbb, llHH_llnonbbbb, llqqH ]
+      items: [ llhh, eeHHbbbb, μμHHbbbb, ττHHbbbb, llhh_llbbbb, llhh_llnonbbbb, llqqh ]
     disabled: false
     reset: false
 
@@ -162,16 +172,16 @@ features:
   - { name: ZZH_cosThBeforeFit, tree: KinFitLL_ZZH, branch: cosThBeforeFit, dtype: float32 }
 
   # MEM
-#  - { names: [
-#        lep1_4v/fCoordinates,
-#        lep2_4v/fCoordinates,
-#        jet1_4v/fCoordinates,
-#        jet2_4v/fCoordinates,
-#        jet3_4v/fCoordinates,
-#        jet4_4v/fCoordinates
-#      ], tree: EventObservablesLL, dtype: float32, columns: [ fCoordinates.fX, fCoordinates.fY, fCoordinates.fZ, fCoordinates.fT ] }
-#  - { name: jet_matching_kinfit_best, tree: EventObservablesLL, dtype: int8, columns: 4 }
-#  - { names: [ jet1_tags, jet2_tags, jet3_tags, jet4_tags ], tree: EventObservablesLL, dtype: float32 }
+  - { names: [
+        lep1_4v/fCoordinates,
+        lep2_4v/fCoordinates,
+        jet1_4v/fCoordinates,
+        jet2_4v/fCoordinates,
+        jet3_4v/fCoordinates,
+        jet4_4v/fCoordinates
+      ], tree: EventObservablesLL, dtype: float32, columns: [ fCoordinates.fX, fCoordinates.fY, fCoordinates.fZ, fCoordinates.fT ] }
+  - { name: jet_matching_kinfit_best, tree: EventObservablesLL, dtype: int8, columns: 4 }
+  - { names: [ jet1_tags, jet2_tags, jet3_tags, jet4_tags ], tree: EventObservablesLL, dtype: float32 }
   
   # TODO: ability to use custom handlers to attach these
   # serialize:
@@ -329,7 +339,7 @@ actions:
   - type: AttachMatrixElements
     output_name: DsigZHH_ZZH
     data_source: kinfit
-    disabled: true
+    disabled: True
 
   - type: SklearnMulticlassTraining
     hyperparams: {

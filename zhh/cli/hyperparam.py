@@ -9,11 +9,11 @@ from typing import TypedDict, Required, NotRequired, Literal
 import os, pickle, sys, argparse
 import optuna
 import numpy as np
-from zhh.analysis.cutflow_processor_actions.SklearnMulticlassTrainingAction import objective, set_conf, conf
+from zhh.analysis.cutflow_processor_actions.SklearnMulticlassTrainingAction import objective, MVATrainingConfig
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-ntrials', type=str, default=500, help='number of trials')
+    parser.add_argument('-ntrials', type=int, default=500, help='number of trials')
     parser.add_argument('-nprocesses', type=str, default=None, help='number of processes to use. set to 80% of available CPU cores if not given')
     parser.add_argument('-trial', type=str, default='default', help='name/timestamp of trial')
     parser.add_argument('-basepath', type=str, default=None, help='basepath')
@@ -28,6 +28,11 @@ if __name__ == "__main__":
     signal_classes:list[int] = [int(i) for i in ','.split(args.signal_classes)]
     background_classes:list[int] = [int(i) for i in ','.split(args.background_classes)]
 
+    config = MVATrainingConfig(
+        base_path=os.getcwd() if args.basepath is None else args.basepath,
+        n_trials=NTRIALS,
+        trial_name=args.trial if args.trial is not None else None)
+
     def objective_mod(trial):
         hyper_params = {
             'max_depth': trial.suggest_int('max_depth', 3, 7),
@@ -36,19 +41,16 @@ if __name__ == "__main__":
             #'sig_wt_mod': trial.suggest_float('sig_wt_mod', 1, 10)
         }
 
-        return objective(hyper_params, signal_classes, background_classes, trial=trial)
+        return objective(config, hyper_params, signal_classes, background_classes, trial=trial)
     
     print(f'Using {NPROCESSES} cores')
 
-    # process the steering file -> sources and final state info
-    set_conf(os.getcwd() if args.basepath is None else args.basepath, args.trial if args.trial is not None else None)
-
-    os.makedirs(conf['TRIALPATH'], exist_ok=True)
+    os.makedirs(config._trial_path, exist_ok=True)
     
     def run_optimization(_):
         study = optuna.create_study(
             study_name="journal_storage_multiprocess",
-            storage=JournalStorage(JournalFileBackend(file_path=f'{conf["TRIALPATH"]}/journal.log')),
+            storage=JournalStorage(JournalFileBackend(file_path=f'{config._trial_path}/journal.log')),
             load_if_exists=True, # Useful for multi-process or multi-node optimization.
         )
         study.optimize(objective_mod, n_trials=NTRIALS)

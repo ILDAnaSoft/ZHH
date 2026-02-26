@@ -75,13 +75,13 @@ class DataStore(MixedLazyTablelike):
     
     def itemsInitialize(self, n_jets:int):
         # writable
-        self['event_category'] = np.nan*np.ones(len(self), dtype='B')
+        self['event_category'] = np.nan*np.ones(len(self), dtype=np.uint8)
         
         # writable; attached by DataSource.weight()
-        self['pid'] = np.nan*np.ones(len(self), dtype='I')
-        self['weight'] = np.nan*np.ones(len(self), dtype='f')
+        self['pid'] = np.nan*np.ones(len(self), dtype=np.uint32)
+        self['weight'] = np.nan*np.ones(len(self), dtype=np.float32)
         
-        jet_masses = np.zeros((len(self), n_jets), dtype='f')
+        jet_masses = np.zeros((len(self), n_jets), dtype=np.float32)
 
         for i in range(n_jets):
             print(f'Fetching jet{i}_m')
