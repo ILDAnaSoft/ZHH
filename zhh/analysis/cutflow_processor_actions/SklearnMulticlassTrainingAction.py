@@ -155,7 +155,7 @@ def objective(config:MVATrainingConfig, hyper_params:dict, signal_classes:list[i
     if clf_file is None:
         clf_file = f'{config._trial_path}/{n_trial}.pickle'
 
-    os.makedirs(osp.dirname(clf_file), exist_ok=True)
+    os.makedirs(osp.dirname(osp.abspath(clf_file)), exist_ok=True)
     
     if train_test_npz is None:
         train_test_npz = config._trial_data

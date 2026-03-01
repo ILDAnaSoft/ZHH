@@ -20,7 +20,11 @@ class DataStore(MixedLazyTablelike):
 
         with h5py.File(h5_file) as hf:
             r_size = int(hf.attrs.get('nrows', 0))
-            init_done = bool(hf.attrs.get('init_done', False))
+            hf_keys = hf.keys()
+
+            init_done = bool(hf.attrs.get('init_done', False)) and all([
+                item in hf_keys for item in ['event_category', 'pid', 'weight']
+            ])
         
         assert(r_size)
         super().__init__(r_size)
@@ -47,16 +51,15 @@ class DataStore(MixedLazyTablelike):
         self['sumBTags'] = lambda intf: ( self['bmax1'] + self['bmax2'] + self['bmax3'] + self['bmax4'] )
 
         self['yminus_mod100'] = lambda intf: np.mod(intf['yminus2'], 100)
-        #self['cosjzmax'] = lambda intf: self['cosJZMax_2Jets']
         
         if not init_done:
             self.itemsInitialize(n_jets)
         else:
             self.propsFromFile()
 
-        if len(in_memory_writable):
-            for item in in_memory_writable:
-                self[item] = self.fromFile(item)[:]
+            if len(in_memory_writable):
+                for item in in_memory_writable:
+                    self[item] = self.fromFile(item)[:]
 
     def fetch(self, key:str):                
         if key in self._in_memory:

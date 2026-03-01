@@ -1,14 +1,16 @@
 from ast import literal_eval as make_tuple
 from glob import glob
 from dateutil import parser
-from typing import Optional, Union, Iterable, List, Callable
+from typing import Optional
 from tqdm.auto import tqdm
 import os.path as osp
 import json
 import numpy as np
 import uproot as ur
+from collections.abc import Callable, Sequence
 import awkward as ak
 from .TTreeInterface import TTreeInterface
+from .DataStore import DataStore
 
 DEFAULTS = {
     'PROD_NAME': '500-TDR_ws',
@@ -70,7 +72,7 @@ def parse_json(json_path:str):
 
 def get_preselection_summary_for_branch(
             DATA_ROOT:str,
-            branch:Union[int,str],
+            branch:int|str,
             PROD_NAME:str=DEFAULTS['PROD_NAME'],
             ILD_VERSION:str=DEFAULTS['ILD_VERSION']):
     
@@ -170,7 +172,7 @@ def w_prefacs(Pem, Pep):
         (1+Pem)*(1+Pep)/4 # RR
     )
 
-def combined_cross_section(processes:np.ndarray, process:Union[str, List[str]],
+def combined_cross_section(processes:np.ndarray, process:str|list[str],
                            pol_em:float=-0.8, pol_ep:float=0.3)->float:
     
     if isinstance(process, list):
@@ -546,116 +548,6 @@ def fetch_preselection_data(rf, presel:str, final_states:bool=True, tree:str|Non
             
     return results
 
-
-def fetch_preselection_data_old(rf, presel:str, final_states:bool=True, tree:str|None=None, fsTree:str='FinalStates', evtObsTree:str='EventObservables')->np.ndarray:
-    if tree is not None:
-        fsTree = tree
-        evtObsTree = tree
-    else:
-        evtObsTree = f'EventObservables{presel.upper()}'
-    
-    dtype = [
-        ('id', 'I'),
-        ('process', 'I'), # H=np.uint16
-        ('pid', 'I'),
-        ('pol_code', 'B'), # np.uint8
-        ('event', 'I'), # max. encountered: 15 797 803 << 4 294 967 295 (max of uint32)
-        ('event_category', 'B'), # np.uint8
-        
-        ('is_sig', '?'),
-        ('is_bkg', '?'),
-        
-        ('ll_pass', 'B'),
-        ('vv_pass', 'B'),
-        ('qq_pass', 'B'),
-        
-        ('thrust', 'f'),
-        ('e_vis', 'f'),
-        ('pt_miss', 'f'),
-        ('invmass_miss', 'f'),
-        ('nisoleps', 'B'),
-        ('xx_paired_isoleptype', 'B'),
-        
-        ('passed', 'B'),
-        ('weight', 'f'),
-        
-        # ll
-        ('ll_mh1', 'f'),
-        ('ll_mh2', 'f'),
-        ('ll_dilepton_type', 'B'),
-        ('ll_mz', 'f'),
-        ('ll_mz_pre_pairing', 'f'),
-        
-        # vv
-        ('vv_mh1', 'f'),
-        ('vv_mh2', 'f'),
-        ('vv_mhh', 'f'),
-        
-        # qq
-        ('qq_mh1', 'f'),
-        ('qq_mh2', 'f'),
-    ]
-    
-    dtype.extend([
-        (f'{presel}_bmax1', 'f'),
-        (f'{presel}_bmax2', 'f'),
-        (f'{presel}_bmax3', 'f'),
-        (f'{presel}_bmax4', 'f')
-    ])
-            
-    if final_states:
-        for dt in fs_columns:
-            dtype.append((dt, 'B'))
-        
-        dtype.append(('Nb_from_H', 'B'))
-    
-    r_size = rf[fsTree].num_entries
-    results = np.zeros(r_size, dtype=dtype)
-    
-    results['id'] = np.arange(r_size)
-    results['process'] = rf[f'{fsTree}/process'].array()
-    results['pol_code'] = rf[f'{fsTree}/polarization_code'].array()
-    
-    results['event'] = rf[f'{fsTree}/event'].array()
-    results['event_category'] = rf[f'{fsTree}/event_category'].array()
-        
-    if final_states:
-        fs_counts = rf[f'{fsTree}/final_state_counts'][1].array()
-        results['Nb_from_H'] = rf[f'{fsTree}/n_b_from_higgs'].array()
-        
-        for i in range(len(fs_columns)):
-            results[fs_columns[i]] = fs_counts[:, i]
-    
-    results['thrust'] = rf[f'{evtObsTree}/thrust'].array()
-    results['e_vis'] = rf[f'{evtObsTree}/evis'].array()
-    results['pt_miss'] = rf[f'{evtObsTree}/ptmiss'].array()
-    results['invmass_miss'] = rf[f'{evtObsTree}/m_miss'].array()
-    results['nisoleps'] = rf[f'{evtObsTree}/nisoleptons'].array()
-    
-    #KinFitTree = f'KinFit{presel.upper()}_ZHH'
-    
-    results[f'{presel}_mh1'] = rf[f'{evtObsTree}/zhh_mh1'].array()
-    results[f'{presel}_mh2'] = rf[f'{evtObsTree}/zhh_mh2'].array()
-    
-    if presel == 'll':                        
-        #lepTypes = rf['lepTypes'].array()
-        #pass_ltype11 = np.sum(np.abs(lepTypes) == 11, axis=1) == 2
-        #pass_ltype13 = np.sum(np.abs(lepTypes) == 13, axis=1) == 2
-        #results['ll_dilepton_type'] = pass_ltype11*11 + pass_ltype13*13
-        results['ll_dilepton_type'] = rf[f'{evtObsTree}/paired_lep_type'].array()
-        results['ll_mz'] = rf[f'{evtObsTree}/mzll'].array()
-        results['ll_mz_pre_pairing'] = rf[f'{evtObsTree}/mzll_pre_pairing'].array()
-        
-    elif presel == 'vv':
-        results['vv_mhh'] = rf[f'{evtObsTree}/m_invjet'].array()
-    
-    results[f'{presel}_bmax1'] = rf[f'{evtObsTree}/bmax1']
-    results[f'{presel}_bmax2'] = rf[f'{evtObsTree}/bmax2']
-    results[f'{presel}_bmax3'] = rf[f'{evtObsTree}/bmax3']
-    results[f'{presel}_bmax4'] = rf[f'{evtObsTree}/bmax4']
-            
-    return results
-
 fs_columns = ['Nd', 'Nu', 'Ns', 'Nc', 'Nb', 'Nt', 'Ne1', 'Nv1', 'Ne2', 'Nv2', 'Ne3', 'Nv3', 'Ng', 'Ny', 'NZ', 'NW', 'NH']
 
 class PDG2FSCMap:
@@ -679,18 +571,21 @@ class PDG2FSCMap:
 
 PDG2FSC = PDG2FSCMap()
 
-def apply_order(categories:List[str], order:Union[List[str], Callable]):
+def apply_order(categories:list[str], order:Sequence[str]|Callable)->list:
     if isinstance(order, Callable):
         return order(categories)
-    elif isinstance(order, List):
+    elif isinstance(order, list):
         categories_new = order
         for cat in categories:
             if not cat in categories_new:
                 categories_new.append(cat)
     
         return categories_new
+    else:
+        print(order)
+        raise Exception('No implementation to process given order')
 
-def weighted_counts_by_categories(presel_results:TTreeInterface, categories_selected:Optional[np.ndarray]=None):
+def weighted_counts_by_categories(presel_results:TTreeInterface|DataStore, categories_selected:Optional[np.ndarray]=None):
     
     categories = np.array(categories_selected) if categories_selected is not None else np.unique(presel_results['event_category'])
     counts = np.zeros(len(categories), dtype=float)
@@ -700,10 +595,10 @@ def weighted_counts_by_categories(presel_results:TTreeInterface, categories_sele
         
     return categories, counts
 
-def calc_preselection_by_event_categories(presel_results:TTreeInterface, processes:np.ndarray,
+def calc_preselection_by_event_categories(presel_results:TTreeInterface|DataStore, processes:np.ndarray,
                                           quantity:Optional[str]=None,
-                                          order:Optional[Union[List[str],Callable]]=None,
-                                          categories_selected:Optional[List[int]]=None,
+                                          order:list[str]|Callable|None=None,
+                                          categories_selected:Optional[list[int]]=None,
                                           categories_additional:Optional[int]=3,
                                           weighted:bool=True,
                                           weight_prop:str='weight',
@@ -724,7 +619,7 @@ def calc_preselection_by_event_categories(presel_results:TTreeInterface, process
         quantity (str, optional): _description_. Defaults to 'll_mz'.
         categories_selected (list, optional): Event categories to include in any case. Defaults to [17].
         categories_additional (Optional[int], optional): n-th most contributing categories to include as well. Defaults to 3.
-        order (Optional[List, Callable]): Either Callable that sorts the given categories or List which may be used for sorting. Defaults to None.
+        order (Optional[list, Callable]): Either Callable that sorts the given categories or list which may be used for sorting. Defaults to None.
         unit (str, optional): _description_. Defaults to 'GeV'.
         nbins (int, optional): _description_. Defaults to 100.
         xlim (Optional[tuple], optional): _description_. Defaults to None.
@@ -777,16 +672,17 @@ def calc_preselection_by_event_categories(presel_results:TTreeInterface, process
     # Sort and include categories_additional (ascending for correct plotting)
     count_sort_ind = np.argsort(counts)
     counts, categories = counts[count_sort_ind], categories[count_sort_ind]
+    categories_list = categories.tolist()
     
-    if order is not None:
+    if isinstance(order, Sequence):
         if isinstance(order, list):
             order = order.copy()
             
-        categories = apply_order(categories, order)
+        categories_list = apply_order(categories_list, order)
     
     calc_dict  = {}
     
-    for category in (pbar := tqdm(categories)):
+    for category in (pbar := tqdm(categories_list)):
         label = EventCategories.inverted[category]
         pbar.set_description(f'Processing event category {label}')
         
@@ -829,11 +725,11 @@ def calc_preselection_by_event_categories(presel_results:TTreeInterface, process
 def calc_preselection_by_processes(presel_results:np.ndarray, processes:np.ndarray, weights:np.ndarray,
                                     weighted:bool=True,
                                     quantity:Optional[str]=None,
-                                    processes_selected:Optional[List]=None,
+                                    processes_selected:Optional[list]=None,
                                     processes_additional:Optional[int]=None,
-                                    order:Optional[List]=None,
+                                    order:Optional[list]=None,
                                     xlim:Optional[tuple]=None,
-                                    check_hypothesis:Optional[str]=None)->Iterable[dict]:
+                                    check_hypothesis:Optional[str]=None)->list[dict]:
     
     """Calculate the preselection results for a given hypothesis by event categories
 
@@ -844,9 +740,9 @@ def calc_preselection_by_processes(presel_results:np.ndarray, processes:np.ndarr
         quantity (str, optional): _description_. Defaults to 'll_mz'.
         mode (int): 0 for sorting by processes, 1 for sorting by event_categories
         weighted (bool, optional): Whether the correct proc_pol weighting should be used. Defaults to True.
-        processes_selected (Optional[List[str]]): Processes to include in any case. Defaults to None.
+        processes_selected (Optional[list[str]]): Processes to include in any case. Defaults to None.
         processes_additional (Optional[int], optional): n-th most-contributing processes are included. Defaults to None.
-        order (Optional[List]): List of process names to sort by. Defaults to None.
+        order (Optional[list]): list of process names to sort by. Defaults to None.
         unit (str, optional): _description_. Defaults to 'GeV'.
         nbins (int, optional): _description_. Defaults to 100.
         xlim (Optional[tuple], optional): _description_. Defaults to None.

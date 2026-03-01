@@ -21,7 +21,8 @@ from math import ceil
 def cutflow_parse_steering_file(loc:str):
     """Loads a YAML steering file, replaces references within them
     and replaces references with the EventCategories and
-    FinalStateDefinitions objects. 
+    FinalStateDefinitions objects. Also adds the value of
+    steer['hypothesis'] to the environment.
 
     Args:
         loc (str): _description_
@@ -34,14 +35,23 @@ def cutflow_parse_steering_file(loc:str):
     import zhh.analysis.FinalStateDefinitions as FinalStateDefinitions
 
     with open(osp.expandvars(loc)) as f:
-        parsed = yaml.safe_load(f)
+        f_str = f.read()
+        parsed = yaml.safe_load(f_str)
 
+    # replace $hypothesis    
+    os.environ['hypothesis'] = parsed['hypothesis']
+
+    f_str = f_str.replace('$hypothesis', os.environ['hypothesis'])
+    parsed = yaml.safe_load(f_str)
+
+    # replace references to final state definitions (functions) and EventCategories (ints)
     return replace_properties(replace_references(parsed), {
         'EventCategories': EventCategories,
         'FinalStateDefinitions': FinalStateDefinitions
     })
 
-def cutflow_process_steering(steer:dict, integrity_check:bool=True):
+def cutflow_process_steering(steer:dict, integrity_check:bool=True,
+                             check_requires_exact_path_match:bool=False):
     """Processes a parsed steering dictionary and handles feature interpretations.
     Returns two dictionaries: First a dict<name, DataSource> and second, a dict
     holding <name, [cat_register_fn, cat_default, cat_order]>.
@@ -50,6 +60,12 @@ def cutflow_process_steering(steer:dict, integrity_check:bool=True):
         steer (_type_): _description_
         integrity_check (bool): if True and an existing HDF5 file exists, will
                                 check that the list of used ROOT files matches 
+        check_requires_exact_path_match (bool): if True and existing HDF5 files
+                                                are found, require that the ROOT
+                                                files used to produce them are
+                                                the same ones as used for the
+                                                current run. set this to False
+                                                you have moved the files
 
     Raises:
         Exception: _description_
@@ -81,7 +97,8 @@ def cutflow_process_steering(steer:dict, integrity_check:bool=True):
             print(f'  Reading file from <{fpath}>')
             cutflow_provision_features(steer['features']['interpret'],
                                               source_spec['root_files'], path, fname,
-                                              integrity_check=integrity_check)
+                                              integrity_check=integrity_check,
+                                              check_requires_exact_path_match=check_requires_exact_path_match)
             
         source = DataSource(fpath, name, work_root=path)
 
@@ -161,7 +178,8 @@ class Interpretation(TypedDict):
 def cutflow_provision_features(interpretations:list[Interpretation],
                                       root_files_glob:str, path:str, file:str,
                                       integrity_check:bool=True,
-                                      base_tree:str='FinalStates'):
+                                      base_tree:str='FinalStates',
+                                      check_requires_exact_path_match:bool=True):
     """_summary_
 
     Args:
@@ -242,12 +260,14 @@ def cutflow_provision_features(interpretations:list[Interpretation],
     if integrity_check and osp.isfile(ds_meta_file):
         with open(ds_meta_file, 'rt') as jf:
             meta_content = json.load(jf)
-            expected = meta_content['files']
+            expected = [osp.basename(f) for f in meta_content['files']]
             sizes = meta_content['sizes']
+        
+        bnames = [osp.basename(f) for f in root_files]
 
-        if len(expected) != len(root_files) or not all([expected[i] == root_files[i] for i in range(len(expected))]):
-            print('Samples expected, but not found: ', set(expected) - set(root_files))
-            print('Samples found, but not expected: ', set(root_files) - set(expected))
+        if len(expected) != len(root_files) or not all([expected[i] == bnames[i] for i in range(len(expected))]):
+            print('Samples expected, but not found: ', set(expected) - set(bnames))
+            print('Samples found, but not expected: ', set(bnames) - set(expected))
 
             raise Exception('List of input files is different! Please regenerate the cache')
         
@@ -347,7 +367,7 @@ def cutflow_provision_features(interpretations:list[Interpretation],
         conv = ROOT2HDF5Converter(root_files, ds_path, tree, branch,
                                   osp.expandvars(f'{bname}/{tree}.{branch.replace("/", ".")}/item'), name, dtype, clamp=(clamp_min, clamp_max),
                                   nan_to=nan_to)
-        vds_task, item_conv_tasks = conv.convertLazy(nrows=nrows, check_existing=True)
+        vds_task, item_conv_tasks = conv.convertLazy(nrows=nrows, check_existing=True, check_requires_exact_path_match=check_requires_exact_path_match)
         
         [conv_tasks.append(task) for task in item_conv_tasks]
         vds_tasks.append(vds_task)
@@ -515,6 +535,9 @@ def cutflow_parse_actions(steer:dict, cp:CutflowProcessor):
             del kwargs['type']
             kwargs['cp'] = cp
             kwargs['steer'] = steer
+
+            if 'disabled' in kwargs:
+                del kwargs['disabled']
             
             actions.append(action_map[action['type'] + 'Action'](**kwargs))
         except Exception as e:

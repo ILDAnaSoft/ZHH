@@ -68,6 +68,10 @@ class EventObservablesVV : public EventObservablesBase, public EventObservablesF
 		// MC truth information: only filled for nXnXhh, nXnXqqh with X in [1, 23]
 		std::vector<std::string> di_neutrino_processes = { "n1n1hh", "n23n23hh", "n1n1qqh", "n23n23qqh", };
 		float m_diNeutrinoMass{};
+
+		// 4 jets
+		float m_mbmax12{};
+		float m_mbmax34{};
 };
 
 

@@ -41,14 +41,14 @@ class WriteMVADataAction(FileBasedProcessorAction):
 
     def run(self):
         from zhh import DataExtractor
-        extractor = DataExtractor(self._cp)
+        extractor = DataExtractor(self._cp, features=self._features)
 
         dump = {
             'features': self._features,
             'classes': self._classes }
 
         src_idx_train, event_num_train, \
-        y_train, w_train, w_train_phys, X_train = extractor.extract(self._classes, self._features, step=self._step,
+        y_train, w_train, w_train_phys, X_train = extractor.extract(self._classes, step=self._step,
                                                                     split=self._train_split, weight_prop=self._wt_split_column)
         
         dump['src_idx_train'] = src_idx_train
@@ -59,7 +59,7 @@ class WriteMVADataAction(FileBasedProcessorAction):
         dump['X_train'] = X_train
 
         src_idx_test, event_num_test, \
-        y_test, w_test, w_test_phys, X_test = extractor.extract(self._classes, self._features, step=self._step,
+        y_test, w_test, w_test_phys, X_test = extractor.extract(self._classes, step=self._step,
                                                                 split=self._test_split, weight_prop=self._wt_split_column)
         
         dump['src_idx_test'] = src_idx_test
@@ -70,16 +70,18 @@ class WriteMVADataAction(FileBasedProcessorAction):
         dump['X_test'] = X_test
         
         if self._val_split is not None:
-            src_idx_test, event_num_test, \
-            y_test, w_test, w_test_phys, X_test = extractor.extract(self._classes, self._features, step=self._step,
-                                                                   split=self._test_split, weight_prop=self._wt_split_column)
-            
+            src_idx_val, event_num_val, \
+            y_val, w_val, w_val_phys, X_val = extractor.extract(self._classes, step=self._step,
+                                                                split=self._val_split, weight_prop=self._wt_split_column)
 
-        np.savez_compressed(self._data_file, features=self._features, classes=self._classes,
-                            src_idx_train=src_idx_train, event_num_train=event_num_train, y_train=y_train,
-                            w_train=w_train, w_train_phys=w_train_phys, X_train=X_train,
-                            src_idx_test=src_idx_test, event_num_test=event_num_test, y_test=y_test,
-                            w_test=w_test, w_test_phys=w_test_phys, X_test=X_test)
+            dump['src_idx_val'] = src_idx_val
+            dump['event_num_val'] = event_num_val
+            dump['y_val'] = y_val
+            dump['w_val'] = w_val
+            dump['w_val_phys'] = w_val_phys
+            dump['X_val'] = X_val
+
+        np.savez_compressed(self._data_file, **dump)
 
     def output(self):
         return self.localTarget(self._data_file)

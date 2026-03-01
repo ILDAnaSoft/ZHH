@@ -5,7 +5,10 @@
 # 2025/11: following globals are allowed: EventCategories, FinalStateDefinitions
 #          following environment variables are assumed: REPO_ROOT, DATA_PATH
 
+# hypothesis: used as label in plots and for naming output files
+# made available within the run of cutflow as environment variable '$hypothesis'
 hypothesis: vvbbbb
+
 signal_categories:
 - EventCategories.v1v1HHbbbb
 - EventCategories.v23v23HHbbbb
@@ -254,10 +257,10 @@ cutflow_table:
 cuts:
   preselection:
   - { quantity: nisoleptons, operator: eq, value: 0, label: 'Isolated leptons'}
-  - { quantity: sumBTags, operator: gte, value: 1.8, label: 'sum b-tags'}
+  - { quantity: sumBTags, operator: gte, value: 1.8, label: '\Sigma_{bTags}'}
   - { quantity: fit4C_mh1, operator: within_bounds, lower: 60., upper: 180., label: 'm_{H1}^{4C}', unit: 'GeV', xlim_view: [0, 500] }
   - { quantity: fit4C_mh2, operator: within_bounds, lower: 40., upper: 250., label: 'm_{H2}^{4C}', unit: 'GeV', xlim_view: [0, 500] }
-  - { quantity: thrust, operator: lte, value: 0.93, label: 'thrust', unit: 'GeV' }
+  - { quantity: thrust, operator: lte, value: 0.93, label: 'thrust' }
   - { quantity: evis, operator: lte, value: 510, label: 'E_{vis}', unit: 'GeV' }
   - { quantity: zhh_mhh, operator: gte, value: 200, label: 'M_{vis}', unit: 'GeV' }
   
@@ -287,10 +290,12 @@ mvas:
   - name: default_mva
     features: [
       jet1_m, jet2_m, jet3_m, jet4_m,
-      mhh, fit4C_mz, fit4C_mh1, fit4C_mh2,
-      npfos, thrust, costhrust, pjmax2, cosjzmax,
-      npfosmin4j, yplus, yminus_mod100, plmin,
-      mbmax34, ptmiss, mvalepminus,
+      zz_mz1, zz_mz2,
+      massWtt4j, massT1tt4j, massT2tt4j,
+      massWtt5j, massT1tt5j, massT2tt5j,
+      zhh_mhh, fit4C_mh1, fit4C_mh2,
+      npfos, thrust, costhrust,
+      yplus, ptmiss,
       ZHH_FitChi2, ZZH_FitChi2, ZHH_p1stBeforeFit,
       ZZH_p1stBeforeFit, ZHH_cosThBeforeFit, ZZH_cosThBeforeFit,
       bmax1, bmax2, bmax3, bmax4 ]
@@ -307,28 +312,30 @@ mvas:
     label_name: SigMVAOutput
 
     # file to store the training and testing data in for training this classifier
-    data_file: train_test.npz
+    data_file: $hypothesis_train_test.npz
 
-    mva_file: mva.pickle
+    mva_file: $hypothesis_mva.pickle
 
 # define what should be done after the data is loaded
 # for a documentation of supplied actions, see zhh/analysis/cutflow_processor_actions/README.md
 actions:
+  # optional:
   - type: ApplyCuts
     cuts: preselection
     step: 0 # step=0 is always preselection
+    cache: '$hypothesis_cutflow_presel.pickle'
   
   # optional:
   # step_start: 0
   # step_end: 0
   - type: CreateCutflowPlots
-    file: 'cutflow_preselection_plots.pdf'
+    file: '$hypothesis_cutflow_preselection_plots.pdf'
     
   # optional:
   # step_start: 0
   # step_end: 0
   - type: CreateCutflowTable
-    file: 'cutflow_preselection_table.pdf'
+    file: '$hypothesis_cutflow_preselection_table.pdf'
 
   # split in train/testing [accross all steps, i.e. regardless of cut group]
   # creates a new integer column 'split'; for n entries in fractions:
@@ -337,23 +344,23 @@ actions:
   # value n is assigned to the remaining events [fraction (1 - sum(all previous values))]
   - type: SplitDatasets
     fractions: [ 0.5 ]
-    disabled: true
+    disabled: false
     
   # writes out training/testing data
   # optional:
   # step: 0
   - type: WriteMVAData
     mva: default_mva
-    disabled: true
+    disabled: false
 
   - type: PrintSplitWeights
-    disabled: true
+    disabled: false
   
   # data_source: 'kinfit' or (TODO) 'flavortag' or 'hybrid'
   - type: AttachMatrixElements
     output_name: DsigZHH_ZZH
     data_source: kinfit
-    disabled: False
+    disabled: True
 
   - type: SklearnMulticlassTraining
     hyperparams: {
@@ -378,7 +385,7 @@ actions:
     mva: default_mva
     split: 0
     ntrials: 250
-    disabled: true
+    disabled: false
 
   # optional:
   # clf_prop: clf
@@ -398,13 +405,13 @@ actions:
     disabled: true
   
   - type: CreateCutflowPlots
-    file: 'cutflow_mva_plots.pdf'
+    file: '$hypothesis_cutflow_mva_plots.pdf'
     step_start: 1
     step_end: 1
     disabled: true
     
   - type: CreateCutflowTable
-    file: 'cutflow_mva_table.pdf'
+    file: '$hypothesis_cutflow_mva_table.pdf'
     step_start: 1
     step_end: 1
     disabled: true

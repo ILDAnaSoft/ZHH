@@ -3,7 +3,7 @@ from typing import Any, Dict
 import numpy as np
 
 class LazilyLoadedObject(Sequence):
-    def __getitem__(self, key:str)->np.ndarray:
+    def __getitem__(self, key:str|tuple)->np.ndarray:
         raise Exception(f'__getitem__ not implemented')
 
 class LazyTablelike(LazilyLoadedObject):
@@ -107,7 +107,14 @@ class MixedLazyTablelike(LazilyLoadedObject):
         
         self._length = self._l0
         self._masks.clear()
-        self._mask = None      
+        self._mask = None
+    
+    def R(self)->'MixedLazyTablelike':
+        """Resets the container using resetView() and returns it
+        """
+
+        self.resetView()
+        return self
         
     def __len__(self)->int:
         return self._length
@@ -151,8 +158,17 @@ class MixedLazyTablelike(LazilyLoadedObject):
             else:
                 raise Exception(f'Property <{key}> not found')
             
-            if res is not None:
-                if self._mask is not None:
+            if res is not None and self._mask is not None:
+                if len(res) == len(self._mask):
                     res = res[self._mask]
+                
+                # the following check can be ambigious
+                # if len(res) == self._mask.sum() just by chance
+                # consider more explicit approach (e.g. .RAW()
+                # method that returns a context in which values
+                # are returned without any masking)
+                elif len(res) < len(self._mask):
+                    if len(res) != self._mask.sum():
+                        raise Exception(f'The property {key} with shape {res.shape} does not match the required shape {self._mask.shape}') 
             
             return res

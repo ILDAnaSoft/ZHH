@@ -74,7 +74,7 @@ class ROOT2HDF5Converter:
     def getChunks(self, **kwargs):
         return create_chunks(self._tree, self._branch, self._root_files, self._output_bname, self._clamp, self._nan_to, **kwargs)
     
-    def checkExisting(self, chunks:list)->tuple[bool, list[int], list[int]]:
+    def checkExisting(self, chunks:list, check_requires_exact_path_match:bool)->tuple[bool, list[int], list[int]]:
         already_done = False
         sizes = []
         ncols_found = 0
@@ -110,17 +110,31 @@ class ROOT2HDF5Converter:
                         else:
                             assert(ncols == ncols_found)
 
+                        if check_requires_exact_path_match:
+                            path_check = np.all(hf.attrs['input_files'] == chunk_files)
+                        else:
+                            bnames_found = [osp.basename(f) for f in hf.attrs['input_files']]
+                            bnames_expected = [osp.basename(f) for f in chunk_files]
+
+                            path_checks = [bnames_found[i] == bnames_expected[i] for i in range(len(bnames_found))]
+                            path_check = all(path_checks)
+
                         already_done = already_done and cast(bool, 
                             hf.attrs['chunk_idx'] == chunk_idx and
                             hf.attrs['tree'] == self._tree and
                             hf.attrs['branch'] == self._branch and
-                            np.all(hf.attrs['input_files'] == chunk_files))
+                            path_check)
                         
                         if not already_done:
-                            print('chunk_idx=', hf.attrs['chunk_idx'], chunk_idx)
-                            print('tree=', hf.attrs['tree'], self._tree)
-                            print('branch=', hf.attrs['branch'], self._branch)
-                            print('input_files=', np.all(hf.attrs['input_files'] == chunk_files))
+                            print('chunk_idx [found, expected]:', hf.attrs['chunk_idx'], chunk_idx)
+                            print('tree [found, expected]:', hf.attrs['tree'], self._tree)
+                            print('branch [found, expected]:', hf.attrs['branch'], self._branch)
+                            print('input_files match:', path_check)
+                            print('non-matching files: <found>:<expected>')
+                            
+                            for idx, matches in enumerate(path_checks):
+                                if not matches:
+                                    print(f'<{bnames_found[i]}>:<{bnames_expected[i]}>')
 
                             raise Exception(f'File <{out_file}> for chunk <{chunk_idx}> does not fit to expected '+
                                             'data structure. See above print for property=<found> <expected>')
@@ -138,7 +152,8 @@ class ROOT2HDF5Converter:
 
         return (already_done, shape, sizes)
 
-    def convertLazy(self, nrows:int|None=None, check_existing:bool=False, **kwargs)->tuple[AbstractTask, list[AbstractTask]]:
+    def convertLazy(self, nrows:int|None=None, check_existing:bool=False,
+                    check_requires_exact_path_match:bool=True, **kwargs)->tuple[AbstractTask, list[AbstractTask]]:
         """Returns one or multiple tasks which represent the ROOT->HDF5 conversion
         See ProcessRunner for a tool to execute them.
 
@@ -158,7 +173,7 @@ class ROOT2HDF5Converter:
 
         # check if potentially existing chunks are valid
         if check_existing:
-            done, shape, sizes = self.checkExisting(chunks)
+            done, shape, sizes = self.checkExisting(chunks, check_requires_exact_path_match=check_requires_exact_path_match)
             ncols = shape[1] if len(shape) == 2 else 1
         else:
             print(f'No existing (first) chunk found for Tree:Branch <{self._tree}:{self._branch}>. '+

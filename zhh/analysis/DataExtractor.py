@@ -9,16 +9,36 @@ from ..util.PlotContext import PlotContext
 class DataExtractor:
     def __init__(self,
                  cutflow_processor:CutflowProcessor,
+                 features:list[str]|None=None,
                  sources:list[DataSource]|None=None):
         
         self._cp = cutflow_processor
         self._sources = sources if sources is not None else cutflow_processor._sources
-        self._features:list[str]|None = None
+        self._features:list[str]|None = features
         self._labels:np.ndarray|None = None
+
+        # check that all features exist in all sources
+        if features is not None:
+            missing = []
+            
+            for source in self._sources:
+                store = source.getStore()
+                items = store.keys()
+                
+                for feature in features:
+                    if feature not in items:
+                        missing.append(f'{source.getName()}.{feature}')
+            
+            if len(missing):
+                print('Error: Features requested, but not existing:')
+                for feat in missing:
+                    print(feat)
+                
+                raise Exception('Missing features requested')
         
     def extract(self,
                 to_process:list[tuple[int, str]],
-                features:list[str],
+                features:list[str]|None=None,
                 step:int|None=None,
                 split:int|None=None,
                 weight_prop:str='weight',
@@ -57,8 +77,14 @@ class DataExtractor:
         if split is not None and weight_prop == 'weight':
             print('Warning: You seem to use the default weights and a split dataset at the same time. This may lead to wrong results. Consider creating a separate weight column for a set of splits. See the description of extract().')
         
+        # TODO: remove supplying features to extract method
+        if features is not None:
+            print('Supplying features to extract() is deprecated and will be removed in a future release.')
+            self._features = features
+        else:
+            features = self._features
+
         sources = self._sources
-        self._features = features
         
         events_passed:dict[str, np.ndarray] = {}
         fs_2_source:dict[str, DataSource] = {}

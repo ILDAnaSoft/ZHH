@@ -151,7 +151,7 @@ class CutflowProcessor:
             _type_: _description_
         """
         
-        from zhh import EventCategories, calc_preselection_by_event_categories
+        from zhh import EventCategories, calc_preselection_by_event_categories, DataStore
                 
         # apply cuts
         masks = []
@@ -165,7 +165,7 @@ class CutflowProcessor:
         elif step is None:
             step = len(self._calc_dicts)
 
-        subsets = {}
+        subsets:dict[str, DataStore] = {}
         for source in self._sources:
             source.getStore().resetView()
             subsets[source.getName()] = source.getStore()
@@ -550,7 +550,7 @@ def cutflowPlots(cp:CutflowProcessor, output_file:str|None, display:bool=True, s
         annotate_cut)
 
 def plotCalcDictTop9(context:PlotContext, calc_dict:dict[str, tuple[np.ndarray, np.ndarray]], quantity:str, signal_category_names:list[str],
-                     plot_options:dict={}, hist_kwargs:dict={}, hypothesis:str|None=None, bins:int=100):
+                     plot_options:dict={}, hist_kwargs:dict={}, hypothesis:str|None=None, bins:int=100, xlim:tuple[float, float]|None=None):
     from zhh import plot_combined_hist, deepmerge
     
     fig_tot, axes = plt.subplots(nrows=3, ncols=3, figsize=(18, 18));
@@ -562,8 +562,8 @@ def plotCalcDictTop9(context:PlotContext, calc_dict:dict[str, tuple[np.ndarray, 
             categories.remove(sig_cat)
             
     wt_sum_max = np.nanmax([ cd[1].sum() for cd in calc_dict.values() ])
-    xlim_min = np.nanmin([ np.nanmin(cd[0]) for cd in calc_dict.values() ])
-    xlim_max = np.nanmax([ np.nanmax(cd[0]) for cd in calc_dict.values() ])
+    xlim_min = np.nanmin([ np.nanmin(cd[0]) for cd in calc_dict.values() ]) if xlim is None else xlim[0]
+    xlim_max = np.nanmax([ np.nanmax(cd[0]) for cd in calc_dict.values() ]) if xlim is None else xlim[1]
 
     for j, key in enumerate(list(reversed(categories))[:9]):
         plot_dict = { key: calc_dict[key] }
@@ -660,7 +660,10 @@ def cutflowPlotsFn(signal_category_names:list[str],
         figs_stacked.append(fig1)
         
         # non-stacked plot
-        fig2 = plotCalcDictTop9(plot_context, calc_dict, cut.label, signal_category_names, plot_options_quantity, hist_kwargs=hist_kwargs, hypothesis=hypothesis, bins=bins);
+        fig2 = plotCalcDictTop9(plot_context, calc_dict, cut.label, signal_category_names, plot_options_quantity,
+                                hist_kwargs=hist_kwargs, hypothesis=hypothesis, bins=bins,
+                                xlim=plot_kwargs['xlim'] if 'xlim' in plot_kwargs else None);
+        
         figs_sigvbkg.append(fig2)
         
         if not display:

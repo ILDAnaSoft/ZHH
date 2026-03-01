@@ -5,10 +5,13 @@
 # 2025/11: following globals are allowed: EventCategories, FinalStateDefinitions
 #          following environment variables are assumed: REPO_ROOT, DATA_PATH
 
+# hypothesis: used as label in plots and for naming output files
+# made available within the run of cutflow as environment variable '$hypothesis'
 hypothesis: μμbbbb
+
 signal_categories:
 - EventCategories.μμHHbbbb
-- EventCategories.llhh_llnonbbbb
+- EventCategories.llHH_llnonbbbb
 
 # used to calculate event weights and absolute event counts
 # polarization of [ electronBeam, positronBeam ]
@@ -52,17 +55,27 @@ event_categories: '$REPO_ROOT/config/event_categories.yaml'
 sources:
   - name: 4fsl
     path: $DATA_PATH/AnalysisCombine/550-4fsl-$CONF_SUFFIX
-    root_files: $DATA_PATH/AnalysisFinal/550-4fsl-$CONF_SUFFIX/*.root
+    root_files: /data/dust/user/jtorndal/zhh/AnalysisFinal/550-4fsl-$CONF_SUFFIX/*.root
     event_categorization:
       default: EventCategories.F4_OTHER
       order: null
-      items: [ eebb, μμbb, ττbb, lvqq ]
+      items: [ llqq, μμbb, lvqq ] # eebb, ττbb, μμbb
+    disabled: false
+    reset: false
+  
+  - name: 4flh
+    path: $DATA_PATH/AnalysisCombine/550-4flh-$CONF_SUFFIX
+    root_files: /data/dust/user/jtorndal/zhh/AnalysisFinal/550-4flh-$CONF_SUFFIX/*.root
+    event_categorization:
+      default: EventCategories.F4_OTHER
+      order: null
+      items: [ bbbb ]
     disabled: false
     reset: false
 
   - name: 2l4q
     path: $DATA_PATH/AnalysisCombine/550-2l4q-$CONF_SUFFIX
-    root_files: $DATA_PATH/AnalysisFinal/550-2l4q-$CONF_SUFFIX/*.root
+    root_files: /data/dust/user/jtorndal/zhh/AnalysisFinal/550-2l4q-$CONF_SUFFIX/*.root
     event_categorization:
       default: EventCategories.F6_OTHER
       order: null
@@ -82,7 +95,7 @@ sources:
 
   - name: 6q
     path: $DATA_PATH/AnalysisCombine/550-6q-$CONF_SUFFIX
-    root_files: $DATA_PATH/AnalysisFinal/550-6q-$CONF_SUFFIX/*.root
+    root_files: /data/dust/user/jtorndal/zhh/AnalysisFinal/550-6q-$CONF_SUFFIX/*.root
     event_categorization:
       default: EventCategories.qqqqqq
       order: []
@@ -92,7 +105,7 @@ sources:
 
   - name: tthz
     path: $DATA_PATH/AnalysisCombine/550-tthz-$CONF_SUFFIX
-    root_files: $DATA_PATH/AnalysisFinal/550-tthz-$CONF_SUFFIX/*.root
+    root_files: /data/dust/user/jtorndal/zhh/AnalysisFinal/550-tthz-$CONF_SUFFIX/*.root
     event_categorization:
       default: EventCategories.ttHZ
       order: null
@@ -129,9 +142,7 @@ features:
   interpret:
   - { name: id, dtype: uint32, auto_increment: true }
   - { name: event, tree: FinalStates, dtype: uint32 }
-  #- { name: event_category, tree: FinalStates, dtype: uint8 }
   - { name: cross_section, tree: FinalStates, dtype: float }
-  #- { name: pid, tree: FinalStates, branch: process_id, dtype: uint16 }
   - { name: final_state_counts, tree: FinalStates, branch: final_state_counts.second, columns: 17, dtype: uint8 }
   - { name: n_b_from_higgs, tree: FinalStates, dtype: uint8 }
   - { name: pol_code, tree: FinalStates, branch: polarization_code, dtype: uint8 }
@@ -200,10 +211,12 @@ cutflow_table:
       label: llqqqq
     - category: llbbbb
       label: (llbbbb)
-    - category: llqqh
-      label: llqqh
-    - category: llhh
-      label: llhh
+    - category: bbbb
+      label: bbbb
+    - category: llqqH
+      label: llqqH
+    - category: llHH
+      label: llHH
       is_signal: true
     - category: μμHHbbbb
       label: (\mu\mu bbbb)
@@ -276,8 +289,8 @@ mvas:
     # two-element arrays of structure (label, name of registered EventCategory)
     # see sources/.../event_categorization/items
     - [0, 'μμHHbbbb']
-    - [1, 'llhh_llnonbbbb']
-    - [2, 'llqqh']
+    - [1, 'llHH_llnonbbbb']
+    - [2, 'llqqH']
     - [3, 'llqqqq']
     - [4, 'μμbb']
     - [5, 'lvbbqq']
@@ -285,28 +298,30 @@ mvas:
     label_name: SigMVAOutput
 
     # file to store the training and testing data in for training this classifier
-    data_file: train_test.npz
+    data_file: $hypothesis_train_test.npz
 
-    mva_file: mva.pickle
+    mva_file: $hypothesis_mva.pickle
 
 # define what should be done after the data is loaded
 # for a documentation of supplied actions, see zhh/analysis/cutflow_processor_actions/README.md
 actions:
+  # optional:
   - type: ApplyCuts
     cuts: preselection
     step: 0 # step=0 is always preselection
+    cache: '$hypothesis_cutflow_presel.pickle'
   
   # optional:
   # step_start: 0
   # step_end: 0
   - type: CreateCutflowPlots
-    file: 'cutflow_preselection_plots.pdf'
+    file: '$hypothesis_cutflow_preselection_plots.pdf'
     
   # optional:
   # step_start: 0
   # step_end: 0
   - type: CreateCutflowTable
-    file: 'cutflow_preselection_table.pdf'
+    file: '$hypothesis_cutflow_preselection_table.pdf'
 
   # split in train/testing [accross all steps, i.e. regardless of cut group]
   # creates a new integer column 'split'; for n entries in fractions:
@@ -340,7 +355,7 @@ actions:
     debug: true
     mva: default_mva
     split: 0
-    disabled: true
+    disabled: false
 
   # optional:
   # clf_prop: clf
@@ -354,7 +369,7 @@ actions:
     mva: default_mva
     split: 0
     ntrials: 250
-    disabled: false
+    disabled: true
 
   # optional:
   # clf_prop: clf
@@ -373,11 +388,11 @@ actions:
     step: 1
   
   - type: CreateCutflowPlots
-    file: 'cutflow_mva_plots.pdf'
+    file: '$hypothesis_cutflow_mva_plots.pdf'
     step_start: 1
     step_end: 1
     
   - type: CreateCutflowTable
-    file: 'cutflow_mva_table.pdf'
+    file: '$hypothesis_cutflow_mva_table.pdf'
     step_start: 1
     step_end: 1

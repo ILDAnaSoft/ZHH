@@ -55,6 +55,10 @@ void EventObservablesVV::prepareChannelTree() {
 
         // MC truth information
         ttree->Branch("massDiNeutrino", &m_diNeutrinoMass, "massDiNeutrino/F");
+
+        // 4 jets
+        ttree->Branch("mbmax12", &m_mbmax12, "mbmax12/F");
+        ttree->Branch("mbmax34", &m_mbmax34, "mbmax34/F");
     }
 };
 
@@ -90,6 +94,10 @@ void EventObservablesVV::clearChannelValues() {
 
     m_jets4cKinFit_4v.clear();
     m_fit4C_masses.clear();
+
+    // 4 jets
+    m_mbmax12 = 0.;
+    m_mbmax34 = 0.;
 };
 
 void EventObservablesVV::updateChannelValues(EVENT::LCEvent *pLCEvent) {
@@ -239,6 +247,10 @@ void EventObservablesVV::updateChannelValues(EVENT::LCEvent *pLCEvent) {
 
         m_diNeutrinoMass = (v4(neutrino1) + v4(neutrino2)).M();
     }
+
+    // mb12 and mb34
+    m_mbmax12 = (v4(jetbmax1) + v4(jetbmax2)).M();
+    m_mbmax34 = (v4(jetbmax3) + v4(jetbmax4)).M();
 };
 
 void EventObservablesVV::calculateSimpleZHHChi2() {
