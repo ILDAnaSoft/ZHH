@@ -80,6 +80,9 @@
 - name: vvbbqq
   handler: FinalStateDefinitions.define_vvbbqq
   id: null
+- name: vvbbbb
+  handler: FinalStateDefinitions.define_vvbbbb
+  id: null
 
 # 6q
 - name: bbqqqq
@@ -153,9 +156,9 @@
 - name: ttH
   handler: FinalStateDefinitions.define_ttH
   id: EventCategories.ttH
-- name: vvhh_vvnonbbbb
+- name: ttZ
   handler: FinalStateDefinitions.define_ttZ
   id: EventCategories.ttZ
-- name: vvqqH
+- name: ttHZ
   handler: FinalStateDefinitions.define_ttHZ
   id: null

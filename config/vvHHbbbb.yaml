@@ -60,7 +60,7 @@ sources:
     event_categorization:
       default: EventCategories.F4_OTHER
       order: null
-      items: [ vvqq, vvbb, llqq ] # lvqq, llvv
+      items: [ vvbb ] # vvqq, llqq, lvqq, llvv
     disabled: false
     reset: false
 
@@ -70,7 +70,7 @@ sources:
     event_categorization:
       default: EventCategories.F4_OTHER
       order: null
-      items: [ llll, qqqq, bbbb ] # vvvv
+      items: [ bbbb ] # qqqq, vvvv
     disabled: false
     reset: false
 
@@ -80,7 +80,7 @@ sources:
     event_categorization:
       default: EventCategories.F6_OTHER
       order: null
-      items: [ lvqqqq, lvbbqq, evbbqq, μvbbqq, τvbbqq, vvqqqq ]
+      items: [ lvbbqq, evbbqq, μvbbqq, τvbbqq, vvbbbb ] # lvqqqq
     disabled: false
     reset: false
 
@@ -100,7 +100,7 @@ sources:
     event_categorization:
       default: null
       order: null
-      items: [ vvHH, v1v1HHbbbb, v23v23HHbbbb, vvHHbbbb, vvHH_nonbbbb, vvqqH ]
+      items: [ vvHH, vvHHbbbb, v1v1HHbbbb, v23v23HHbbbb, vvHH_nonbbbb, vvqqH ]
     disabled: false
     reset: false
 
@@ -110,7 +110,7 @@ sources:
     event_categorization:
       default: EventCategories.qqqqqq
       order: []
-      items: [ bbqqqq, bbbbqq, bbbbbb ]
+      items: [ bbqqqq ] # bbbbqq, bbbbbb
     disabled: false
     reset: false
 
@@ -120,8 +120,8 @@ sources:
     event_categorization:
       default: EventCategories.ttHZ
       order: null
-      items: [ ttH, ttZ, ttHZ ]
-    disabled: true
+      items: [ ttH, ttZ ] # ttHZ
+    disabled: false
     reset: false
 
 # feature definition
@@ -178,8 +178,8 @@ features:
   - { name: fit4C_mh2, tree: EventObservablesVV, dtype: float32, nan_to: -20., clamp_min: -10. }
   - { name: ZHH_FitChi2, tree: KinFitVV_ZHH, branch: FitChi2, dtype: float32 }
   - { name: ZZH_FitChi2, tree: KinFitVV_ZZH, branch: FitChi2, dtype: float32 }
-  - { name: ZHH_p1stBeforeFit, tree: KinFitVV_ZHH, branch: p1stBeforeFit, dtype: float32 }
-  - { name: ZZH_p1stBeforeFit, tree: KinFitVV_ZZH, branch: p1stBeforeFit, dtype: float32 }
+  - { name: ZHH_p1stBeforeFit, tree: KinFitVV_ZHH, branch: p1stBeforeFit, dtype: float32, clamp_min: -999., clamp_max: 999. }
+  - { name: ZZH_p1stBeforeFit, tree: KinFitVV_ZZH, branch: p1stBeforeFit, dtype: float32, clamp_min: -999., clamp_max: 999. }
   - { name: ZHH_cosThBeforeFit, tree: KinFitVV_ZHH, branch: cosThBeforeFit, dtype: float32 }
   - { name: ZZH_cosThBeforeFit, tree: KinFitVV_ZZH, branch: cosThBeforeFit, dtype: float32 }
 
@@ -224,8 +224,8 @@ cutflow_table:
       label: bbqqqq
     - category: bbbb
       label: bbbb
-    - category: vvqqqq
-      label: vvqqqq
+    - category: vvbbbb
+      label: vvbbbb
     - category: vvqqH
       label: vvqqH
     - category: vvHH
@@ -305,7 +305,7 @@ mvas:
     - [0, 'vvHHbbbb']
     - [1, 'vvHH_nonbbbb']
     - [2, 'vvqqH']
-    - [3, 'vvqqqq']
+    - [3, 'vvbbbb']
     - [4, 'vvbb']
     - [5, 'lvbbqq']
     # note: the output is the sum for all signal categories given in steer['signal_categories'] 
@@ -354,7 +354,7 @@ actions:
     disabled: false
 
   - type: PrintSplitWeights
-    disabled: false
+    disabled: true
   
   # data_source: 'kinfit' or (TODO) 'flavortag' or 'hybrid'
   - type: AttachMatrixElements
@@ -371,7 +371,7 @@ actions:
     debug: true
     mva: default_mva
     split: 0
-    disabled: true
+    disabled: false
 
   # optional:
   # clf_prop: clf
@@ -385,7 +385,7 @@ actions:
     mva: default_mva
     split: 0
     ntrials: 250
-    disabled: false
+    disabled: true
 
   # optional:
   # clf_prop: clf
@@ -393,7 +393,7 @@ actions:
   - type: SklearnMulticlassInference
     mva: default_mva
     split: 1 # split 0 = train dataset; split 1 = test dataset
-    disabled: true
+    disabled: false
   
   # The values to cut on can be evaluated lazily
   # i.e. the value does not need to be known when the program is started
@@ -402,28 +402,28 @@ actions:
   - type: ApplyCuts
     cuts: mva_cut
     step: 1
-    disabled: true
+    disabled: false
   
   - type: CreateCutflowPlots
     file: '$hypothesis_cutflow_mva_plots.pdf'
     step_start: 1
     step_end: 1
-    disabled: true
+    disabled: false
     
   - type: CreateCutflowTable
     file: '$hypothesis_cutflow_mva_table.pdf'
     step_start: 1
     step_end: 1
-    disabled: true
+    disabled: false
 
   - type: CreateCutflowPlots
     file: 'cutflow_total_plots.pdf'
     step_start: 0
     step_end: 1
-    disabled: true
+    disabled: false
     
   - type: CreateCutflowTable
     file: 'cutflow_total_table.pdf'
     step_start: 0
     step_end: 1
-    disabled: true
+    disabled: false

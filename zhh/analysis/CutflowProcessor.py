@@ -513,7 +513,7 @@ class CutflowProcessor:
         
             return plot_combined_hist(calc_dict=calc_dict, hypothesis=self._hypothesis, **plot_kwargs)
         else:
-            return plotCalcDictTop9(self.getPlotContext(), calc_dict, quantity, signal_category_names, hypothesis=self._hypothesis, plot_options=plot_kwargs)
+            return plotCalcDictTopN(self.getPlotContext(), calc_dict, quantity, signal_category_names, hypothesis=self._hypothesis, plot_options=plot_kwargs, nrows=3, ncols=3)
 
     def registerMVA(self, name:str, features:list[str], classes:list[tuple[int, str]],
                     label_name:str, mva_file:str, threshold:float|int|None=None, **kwargs):
@@ -549,11 +549,12 @@ def cutflowPlots(cp:CutflowProcessor, output_file:str|None, display:bool=True, s
         bins,
         annotate_cut)
 
-def plotCalcDictTop9(context:PlotContext, calc_dict:dict[str, tuple[np.ndarray, np.ndarray]], quantity:str, signal_category_names:list[str],
-                     plot_options:dict={}, hist_kwargs:dict={}, hypothesis:str|None=None, bins:int=100, xlim:tuple[float, float]|None=None):
+def plotCalcDictTopN(context:PlotContext, calc_dict:dict[str, tuple[np.ndarray, np.ndarray]], quantity:str, signal_category_names:list[str],
+                     plot_options:dict={}, hist_kwargs:dict={}, hypothesis:str|None=None, bins:int=100, xlim:tuple[float, float]|None=None,
+                     nrows:int=3, ncols:int=3, figsize:tuple[int, int]=(18,18)):
     from zhh import plot_combined_hist, deepmerge
     
-    fig_tot, axes = plt.subplots(nrows=3, ncols=3, figsize=(18, 18));
+    fig_tot, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=figsize);
     flattened_axes = axes.flatten()
 
     categories = list(calc_dict.keys())
@@ -660,7 +661,7 @@ def cutflowPlotsFn(signal_category_names:list[str],
         figs_stacked.append(fig1)
         
         # non-stacked plot
-        fig2 = plotCalcDictTop9(plot_context, calc_dict, cut.label, signal_category_names, plot_options_quantity,
+        fig2 = plotCalcDictTopN(plot_context, calc_dict, cut.label, signal_category_names, plot_options_quantity,
                                 hist_kwargs=hist_kwargs, hypothesis=hypothesis, bins=bins,
                                 xlim=plot_kwargs['xlim'] if 'xlim' in plot_kwargs else None);
         

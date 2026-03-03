@@ -320,10 +320,10 @@ def tree_n_rows(sources:list[str], tree:str, use_uproot:bool=True, use_mp:bool=T
     Returns:
         int|tuple[list[str],int]|list[int]: _description_
     """
-    
-    nrows = 0 if aggregate else {}
 
     if use_mp and len(sources) > 4 * cpu_count():
+        nrows = 0 if aggregate else {}
+
         with Pool() as pool:
             chunks = []
             chunk_size = ceil(len(sources) / cpu_count()) if aggregate else 1
@@ -333,7 +333,7 @@ def tree_n_rows(sources:list[str], tree:str, use_uproot:bool=True, use_mp:bool=T
             progress = tqdm(range(len(chunks)))
             progress.set_description(f'Fetching size of TTree <{tree}> in <{len(sources)}> files using <{cpu_count()}> cores and <{len(chunks)}> chunks...')
         
-            for chunk, output in pool.imap_unordered(functools.partial(tree_n_rows, tree=tree, use_uproot=use_uproot, use_mp=False, return_path=True), chunks):
+            for chunk, output in pool.imap_unordered(functools.partial(tree_n_rows, tree=tree, use_uproot=use_uproot, use_mp=False, return_path=True, aggregate=True), chunks):
                 if aggregate:
                     nrows += output
                 else:
@@ -346,11 +346,16 @@ def tree_n_rows(sources:list[str], tree:str, use_uproot:bool=True, use_mp:bool=T
         else:
             return [nrows[name] for name in sources]
     else:
+        nrows = 0 if aggregate else []
+
         if not TYPE_CHECKING:
             if use_uproot:
                 for s in sources:
                     with ur.open(s) as uf:
-                        nrows += uf[tree].num_entries
+                        if aggregate:
+                            nrows += uf[tree].num_entries
+                        else:
+                            nrows.append(uf[tree].num_entries)
             else:
                 import ROOT
 

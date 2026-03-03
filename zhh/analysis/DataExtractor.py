@@ -101,7 +101,7 @@ class DataExtractor:
                     break
             
             if not fs_name in fs_2_source:
-                raise Exception(f'No source found for final state <{fs_name}>')
+                raise Exception(f'No source found for final state {fs_name}. Did you register it?')
 
         nrows_tot = 0
         for class_label, fs_name in to_process:
@@ -115,7 +115,7 @@ class DataExtractor:
                 mask = mask & (source.getStore()['split'] == split)
             
             if mask.sum() == 0:
-                print(f'Warning: No events considered for class <{fs_name}> with label <{class_label}> in split <{split}>')
+                print(f'Warning: No events considered for class {fs_name} with label {class_label} in split {split}')
 
             nrows_tot += int(mask.sum())
             

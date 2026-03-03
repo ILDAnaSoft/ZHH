@@ -152,7 +152,8 @@ def plot_weighted_hist(calc_dict, title:str|None=None, xlabel:str='<xlabel undef
                                 ild_style_kwargs:dict={},
                                 plot_hist_kwargs:dict={},
                                 plot_hist_kwargs_overwrite:dict={},
-                                ax:Axes|None=None):
+                                ax:Axes|None=None,
+                                signal_keys:list[str]=[]):
     
     from zhh import deepmerge
     
@@ -191,7 +192,7 @@ def plot_weighted_hist(calc_dict, title:str|None=None, xlabel:str='<xlabel undef
                             ild_style_kwargs=fig_ild_kwargs,
                             plot_hist_kwargs=fig_plot_hist_kwargs,
                             plot_hist_kwargs_overwrite=plot_hist_kwargs_overwrite,
-                            yscale=yscale)
+                            yscale=yscale, signal_keys=signal_keys)
 
 def plot_weighted_hist_old(calc_dict, title:str='<title undefined>', xlabel:str='<xlabel undefined>', plot_context:PlotContext|None=None,
                                    xunit:str|None=None,

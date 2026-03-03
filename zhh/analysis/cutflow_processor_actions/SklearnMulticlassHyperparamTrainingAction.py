@@ -71,7 +71,8 @@ class SklearnMulticlassHyperparamTrainingAction(MVAThresholdFinderInterface, Fil
         self._cfg:MVATrainingConfig = MVATrainingConfig(os.getcwd(), ntrials, trial_name=f'{os.environ["hypothesis"]}.{self._trial_name}',
                                                         signal_categories=self._signal_categories,
                                                         background_categories=self._background_categories,
-                                                        hyperparam_bounds=hyperparam_bounds)
+                                                        hyperparam_bounds=hyperparam_bounds,
+                                                        trial_data_file=self._data_file)
         self._cfg.register()
     
     def output(self):

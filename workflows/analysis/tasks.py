@@ -54,7 +54,27 @@ class CreateAnalysisChunks(AbstractCreateChunks):
         return [ AnalysisIndex.req(self), AnalysisRuntime.req(self), CreateRecoChunks.req(self) ]
         
 
-class AnalysisCombine(ShellTask):    
+class AnalysisCombine(HTCondorWorkflow):    
+    def requires(self):
+        from analysis.tasks_marlin import AnalysisFinal
+        return [ AnalysisFinal.req(self) ]
+
+    def output(self):
+        return self.local_target('Merged.root')
+
+    def build_command(self, **kwargs):
+        from analysis.configurations import zhh_configs
+        ttrees = zhh_configs.get(str(self.tag)).analysis_combine_ttrrees
+    
+        output_dirn = osp.dirname(cast(str, self.output().path))
+        source_dirn = osp.dirname(self.input()[0]['collection'][0][0].path)
+        
+        return f"""source $REPO_ROOT/setup.sh
+zhhvenv
+python $REPO_ROOT/zhh/cli/merge_root_files.py "{output_dirn}" "{",".join(ttrees)}" --dirs="{source_dirn}"
+echo Success""".replace('\n', '  &&  ')
+
+class AnalysisCombineOld(ShellTask):    
     def requires(self):
         from analysis.tasks_marlin import AnalysisFinal
         return [ AnalysisFinal.req(self) ]
