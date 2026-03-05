@@ -25,13 +25,6 @@ luminosity: 2.
 # sources section below
 reset: false
 
-# use automatic caching for faster data access. if True, reads data once from ROOT TTrees
-# and writes into a HDF5 (feature data, I/O much faster than uproot) and npz (metadata)
-# file. see the path option in the sources section. may require a few GB.
-# info: this also saves event category data. if you add/change the categorization, you
-# need to clear the cache by setting reset to true for the respective source.
-use_caching: true
-
 # definition of event categories
 # the registration of event categories to specific sources is done in the sources section
 # info: while the naming can be arbitrary, a unique ID must be supplied which must exist 

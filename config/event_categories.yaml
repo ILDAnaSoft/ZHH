@@ -155,10 +155,10 @@
 # ttH/ttZ
 - name: ttH
   handler: FinalStateDefinitions.define_ttH
-  id: EventCategories.ttH
+  id: null # EventCategories.ttH
 - name: ttZ
   handler: FinalStateDefinitions.define_ttZ
-  id: EventCategories.ttZ
+  id: null # EventCategories.ttZ
 - name: ttHZ
   handler: FinalStateDefinitions.define_ttHZ
   id: null
