@@ -8,6 +8,7 @@ if __name__ == "__main__":
     parser.add_argument('steer', type=str, default=None, help='Path to a YAML steering file, e.g. $REPO_ROOT/config/llHHbbbb.yaml')
     parser.add_argument('--skip_integrity_check', action='store_true', help='Controls whether the check of matching ROOT and HDF5 files should be skipped. Defaults to False.')
     parser.add_argument('--log_level', type=str, default='DEBUG', help='Must be any of CRITICAL, FATAL/CRITICAL, ERROR, WARNING, WARN/WARNING, INFO, DEBUG or NOTSET. Defaults to DEBUG.')
+    parser.add_argument('--reset', action='store_true', help='Controls whether or not to reset the final state definitions and weightings of each source')
 
     args = parser.parse_args()
     log_level = getattr(logging, args.log_level)
@@ -16,6 +17,9 @@ if __name__ == "__main__":
     steer = cutflow_parse_steering_file(args.steer)
     sources_map, final_state_configs, reset_sources = cutflow_process_steering(steer, integrity_check=not args.skip_integrity_check,
                                                                                check_requires_exact_path_match=not args.skip_integrity_check)
+    
+    if args.reset:
+        reset_sources = list(sources_map.keys())
 
     # initialize all sources
     sources = list(sources_map.values())

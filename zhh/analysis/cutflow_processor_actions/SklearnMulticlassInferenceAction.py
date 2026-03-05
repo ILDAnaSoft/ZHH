@@ -4,7 +4,7 @@ from tqdm.auto import tqdm
 
 class SklearnMulticlassInferenceAction(CutflowProcessorAction):
     def __init__(self, cp:CutflowProcessor, steer:dict, mva:str, split:int,
-                 step:int|None=None, clf_prop:str='clf', progress:bool=True, **kwargs):
+                 step:int|None=None, clf_prop:str='clf', progress:bool=True, overwrite:bool=True, **kwargs):
         """_summary_
 
         Args:
@@ -12,6 +12,8 @@ class SklearnMulticlassInferenceAction(CutflowProcessorAction):
             steer (dict): _description_
             mva (str): _description_
             clf_prop (str, optional): key at which to find the classifier. Defaults to 'clf'.
+            overwrite (bool, optional): whether or not the output MVA variable should over#
+                                        write existing values (if any)
         """
         assert('mvas' in steer)
 
@@ -32,6 +34,7 @@ class SklearnMulticlassInferenceAction(CutflowProcessorAction):
         self._signal_categories = get_signal_categories(steer['signal_categories'], mva_spec['classes'])        
         self._features = mva_spec['features']
         self._progress = progress
+        self._overwrite = overwrite
     
     def run(self):
         import pickle
@@ -69,7 +72,7 @@ class SklearnMulticlassInferenceAction(CutflowProcessorAction):
             
             # assign and save to HDF5
             store[self._output_label] = bdtg_sig
-            store.itemsSnapshot(items=[self._output_label])
+            store.itemsSnapshot(items=[self._output_label], overwrite=self._overwrite)
 
     def complete(self) -> bool:
         for source in self._cp.getSources():

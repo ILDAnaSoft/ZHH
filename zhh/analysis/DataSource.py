@@ -49,6 +49,9 @@ class DataSource:
     
     def getName(self)->str:
         return self._name
+
+    def getCategories(self)->list[str]:
+        return list(self._event_category_resolvers.keys())
     
     def initialize(self, lumi_inv_ab:float, evt_cat_default:int|None, evt_cat_order:list|None,
                     reset:bool=False):

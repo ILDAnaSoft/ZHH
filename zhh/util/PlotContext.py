@@ -1,5 +1,11 @@
 from matplotlib.colors import ListedColormap, Colormap
-from typing import cast, Any
+from typing import cast, Any, TYPE_CHECKING
+
+def repeat_colormap(cmap:ListedColormap):
+    colors:list = list(cmap.colors) + list(cmap.colors)
+    cmap_new = ListedColormap(colors)
+    
+    return cmap_new
 
 class PlotContext:
     def __init__(self, cmap:ListedColormap|Any=None, font:str|list[str]|None=None) -> None:
@@ -25,7 +31,8 @@ class PlotContext:
         if not key in self._keys_idx_map:
             self._keys_idx_map[key] = len(self._keys)
             if len(cast(list, self._cmap.colors)) == len(self._keys):
-                raise Exception('The colormap does not contain any remaining entries')
+                print('Warning: The colormap does not contain any remaining entries. Repeating full colormap from now on')
+                self._cmap = repeat_colormap(self._cmap)
                 
             self._keys.append(key)
         
