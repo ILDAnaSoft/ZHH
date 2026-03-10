@@ -15,6 +15,7 @@ if __name__ == "__main__":
     log_level = getattr(logging, args.log_level)
     
     # process the steering file -> sources and final state info
+    print("-----------------------LADIDA process steering file -----------------------------")
     steer = cutflow_parse_steering_file(args.steer)
     sources_map, final_state_configs, reset_sources = cutflow_process_steering(steer, integrity_check=not args.skip_integrity_check,
                                                                                check_requires_exact_path_match=not args.skip_integrity_check,
@@ -24,21 +25,25 @@ if __name__ == "__main__":
         reset_sources = list(sources_map.keys())
 
     # initialize all sources
+    print("-----------------------LADIDA initialize -----------------------------")
     sources = list(sources_map.values())
     cutflow_initialize_sources(sources, final_state_configs, lumi_inv_ab=steer['luminosity'], reset_sources=reset_sources)
     
     # parse the cuts and combine all info to a CutflowProcessor
+    print("-----------------------LADIDA parse cuts and combine info -----------------------------")
     preselection = cutflow_parse_cuts(steer['cuts']['preselection'])
     cp = CutflowProcessor(sources, hypothesis=steer['hypothesis'], cuts=preselection, signal_categories=steer['signal_categories'])
     cutflow_register_mvas(steer, cp)
 
     # prepare the cutflow processor
+    print("-----------------------LADIDA prepare cutflow processor -----------------------------")
     actions = cutflow_parse_actions(steer, cp)
 
     # dry run required for full run
+    print("-----------------------LADIDA test run -----------------------------")
     print('Going to execute following actions:')
     to_execute = cutflow_execute_actions(actions, check_only=True)
     for i, action in enumerate(to_execute):
         print(f'Action {i+1}/{len(to_execute)}:', action)
-
+    print("-----------------------LADIDA full run -----------------------------")
     cutflow_execute_actions(actions, log_level=log_level)
