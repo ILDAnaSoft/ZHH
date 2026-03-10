@@ -225,7 +225,7 @@ def cutflow_provision_features(interpretations:list[Interpretation],
     if not osp.isfile(ds_path) or not osp.isfile(ds_meta_file):
         os.makedirs(osp.dirname(ds_path), exist_ok=True)
 
-    with h5py.File(ds_path, 'r') as hf:
+    with h5py.File(ds_path, 'r' if readonly else 'a') as hf:
         nrows = hf.attrs.get('nrows', 0)
     
     if not osp.isfile(ds_meta_file) or nrows == 0:
