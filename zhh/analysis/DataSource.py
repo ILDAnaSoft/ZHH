@@ -1,6 +1,6 @@
 from collections.abc import Callable
 from .PreselectionAnalysis import sample_weight, get_pol_key
-from .DataStore import DataStore
+from .DataStore import DataStore, ReadonlyWriteAttempt, DataStoreStates
 from zhh.processes import parse_polarization_code, ProcessCategories
 from zhh.analysis.TTreeInterface import FinalStateCounts
 from typing import cast, TYPE_CHECKING
@@ -8,7 +8,7 @@ import json
 import uproot as ur, h5py, os.path as osp, os, numpy as np
 
 class DataSource:
-    def __init__(self, file:str, name:str, work_root:str|None=None):
+    def __init__(self, file:str, name:str, work_root:str|None=None, readonly:bool=False):
         """Helper class to calculate weights and prepare data for MVA.
 
         NEW: if fname ends with .h5, we assume we can read columnar feature data from
@@ -18,12 +18,17 @@ class DataSource:
         Args:
             work_root (str): directory to store Merged.root. must be user writable
             name (str, optional): _description_.
+            readonly (bool, optional): if True, will try to only use only readonly
+                                       data IO. may be slower in repeated runs due
+                                       to less agressive caching
         """
 
         self._is_ready = False
         
         self._name = name
         self._h5_file = file
+        self._readonly = readonly
+        
         self._npz_file = f'{osp.splitext(file)[0]}.npz'
         self._meta_file = f'{osp.splitext(file)[0]}.meta.json' # created by cutflow_parse.py
         self._work_root = work_root if work_root is not None else osp.dirname(file)
@@ -73,36 +78,45 @@ class DataSource:
 
         from os import unlink
 
-        if reset or not osp.isfile(self._npz_file):
+        def load_from_npz():
+            npz = np.load(self._npz_file)            
+            self._processes = npz['processes']
+            self._lumi_inv_ab = npz['lumi_inv_ab']
+
+        if self._readonly or reset or not osp.isfile(self._npz_file):
             if reset and osp.isfile(self._npz_file):
                 unlink(self._npz_file)
 
-            self._store = DataStore(self._h5_file, final_states=True)
-                
-            weight_data, processes = self.weight(lumi_inv_ab=lumi_inv_ab)
-            
-            # parses the final state counts, find the first matching category,
-            # or set to default_category
-            # if category_order is [], the default category is applied to all
-            # events
-            self.evaluateEventCategories(default_category=evt_cat_default, order=evt_cat_order)
-            
-            # store the HDF5 file
-            store = self.getStore()
-            store.itemsSnapshot(overwrite=True)
+            store = self._store = DataStore(self._h5_file, final_states=True, h5_readonly=self._readonly)
 
-            # store processes in NPZ file
-            self.setAttribute('lumi_inv_ab', lumi_inv_ab)
-            np.savez_compressed(self._npz_file, processes=processes, weight_data=weight_data, lumi_inv_ab=lumi_inv_ab)
+            # INITIALIZED_AND_READY: data store is initialized the first time -> do event weighting
+            if store._state == DataStoreStates.INITIALIZED_AND_READY or not osp.isfile(self._npz_file):
+                weight_data, processes = self.weight(lumi_inv_ab=lumi_inv_ab)
+            
+                # parses the final state counts, find the first matching category,
+                # or set to default_category
+                # if category_order is [], the default category is applied to all
+                # events
+                self.evaluateEventCategories(default_category=evt_cat_default, order=evt_cat_order)
+            else:
+                load_from_npz()
+            
+            if not self._readonly:
+                # store the HDF5 file
+                store.itemsSnapshot(overwrite=True)
+
+                # store processes in NPZ file
+                self.setAttribute('lumi_inv_ab', lumi_inv_ab)
+                np.savez_compressed(self._npz_file, processes=processes, weight_data=weight_data, lumi_inv_ab=lumi_inv_ab)
+                
         else:
             print(f'  Reading from <{self._h5_file}> and <{self._npz_file}>')
 
             # fetch from HDF5 and NPZ
-            npz = np.load(self._npz_file)            
-            self._processes = npz['processes']
-            self._lumi_inv_ab = npz['lumi_inv_ab']
+            load_from_npz()
             self._store = DataStore(self._h5_file, final_states=True,
-                                    in_memory_writable=['pid', 'pol_code', 'weight', 'event_category'])
+                                    in_memory_writable=['pid', 'pol_code', 'weight', 'event_category'],
+                                    h5_readonly=False)
     
     def getStore(self)->DataStore:
         """Returns the data store.
@@ -340,8 +354,8 @@ class DataSource:
             
             fsc = parse_final_state_counts(store)
 
-            if not 'event_category' in store.keys():
-                store['event_category'] = np.zeros(len(store), dtype='uint8')
+            #if not 'event_category' in store.keys():
+            store['event_category'] = np.zeros(len(store), dtype='uint8')
 
             for name, (mask_func, category) in self._event_category_resolvers.items():
                 mask = mask_func(self, fsc)

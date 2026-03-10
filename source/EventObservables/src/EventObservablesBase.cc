@@ -441,6 +441,7 @@ void EventObservablesBase::prepareBaseTree()
 		ttree->Branch("jet1_4v", &m_jets4v[0]);
 		ttree->Branch("jet1_4CKF_4v", &m_jets4v_post_4C_kinfit[0]);
 		ttree->Branch("jet1_m", &m_jetsMasses[0]);
+		ttree->Branch("jet1_m_4CKF_4v", &m_jetsMasses_post_4C_kinfit[0]);
 		ttree->Branch("jet1_tags", &m_jetTags[0]);
 		ttree->Branch("jet1_q", &m_jet1_q, "jet1_q/F");
         ttree->Branch("jet1_qdyn", &m_jet1_qdyn, "jet1_qdyn/F");
@@ -448,6 +449,7 @@ void EventObservablesBase::prepareBaseTree()
 		ttree->Branch("jet2_4v", &m_jets4v[1]);
 		ttree->Branch("jet2_4CKF_4v", &m_jets4v_post_4C_kinfit[1]);
 		ttree->Branch("jet2_m", &m_jetsMasses[1]);
+		ttree->Branch("jet2_m_4CKF_4v", &m_jetsMasses_post_4C_kinfit[1]);
 		ttree->Branch("jet2_tags", &m_jetTags[1]);
 		ttree->Branch("jet2_q", &m_jet2_q, "jet2_q/F");
         ttree->Branch("jet2_qdyn", &m_jet2_qdyn, "jet2_qdyn/F");
@@ -455,6 +457,7 @@ void EventObservablesBase::prepareBaseTree()
 		ttree->Branch("jet3_4v", &m_jets4v[2]);
 		ttree->Branch("jet3_4CKF_4v", &m_jets4v_post_4C_kinfit[2]);
 		ttree->Branch("jet3_m", &m_jetsMasses[2]);
+		ttree->Branch("jet3_m_4CKF_4v", &m_jetsMasses_post_4C_kinfit[2]);
 		ttree->Branch("jet3_tags", &m_jetTags[2]);
 		ttree->Branch("jet3_q", &m_jet3_q, "jet3_q/F");
         ttree->Branch("jet3_qdyn", &m_jet3_qdyn, "jet3_qdyn/F");
@@ -462,6 +465,7 @@ void EventObservablesBase::prepareBaseTree()
 		ttree->Branch("jet4_4v", &m_jets4v[3]);
 		ttree->Branch("jet4_4CKF_4v", &m_jets4v_post_4C_kinfit[3]);
 		ttree->Branch("jet4_m", &m_jetsMasses[3]);
+		ttree->Branch("jet4_m_4CKF_4v", &m_jetsMasses_post_4C_kinfit[3]);
 		ttree->Branch("jet4_tags", &m_jetTags[3]);
 		ttree->Branch("jet4_q", &m_jet4_q, "jet4_q/F");
         ttree->Branch("jet4_qdyn", &m_jet4_qdyn, "jet4_qdyn/F");
@@ -723,6 +727,7 @@ void EventObservablesBase::clearBaseValues()
 	for (size_t i = 0; i < m_jets4v.size(); i++) {
 		m_jets4v[i].SetPxPyPzE(0., 0., 0., 0.);
 		m_jetsMasses[i] = 0.;
+		m_jetsMasses_post_4C_kinfit[i] = 0.;
 	}
 
 	for (size_t i = 0; i < m_jetTags.size(); i++)
@@ -1142,6 +1147,7 @@ void EventObservablesBase::init(){
 	m_jets4v = std::vector<ROOT::Math::PxPyPzEVector>(m_nAskedJets());
 	m_jets4v_post_4C_kinfit = std::vector<ROOT::Math::PxPyPzEVector>(m_nAskedJets());
 	m_jetsMasses = std::vector<float>(m_nAskedJets());
+	m_jetsMasses_post_4C_kinfit = std::vector<float>(m_nAskedJets());
 	m_jetTags = std::vector<std::vector<float>>(m_nAskedJets(), std::vector<float>(m_JetTaggingPIDParameters.size(), 0));
 
 	m_JMK_ZHH = std::vector<int>(m_nAskedJets(), 0);
