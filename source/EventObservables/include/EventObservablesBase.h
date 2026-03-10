@@ -246,6 +246,7 @@ class EventObservablesBase: public Processor, public TrueJet_Parser {
 		std::vector<ROOT::Math::PxPyPzEVector> m_jets4v{};
 		std::vector<ROOT::Math::PxPyPzEVector> m_jets4v_post_4C_kinfit{};
 		std::vector<float> m_jetsMasses{}; 
+		std::vector<float> m_jetsMasses_post_4C_kinfit{}; 
 		std::vector<std::vector<float>> m_jetTags{};
 
 		// pure mass chi2

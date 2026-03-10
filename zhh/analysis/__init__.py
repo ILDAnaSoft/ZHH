@@ -12,7 +12,7 @@ from .Cuts import Cut, EqualCut, WindowCut, GreaterThanEqualCut, LessThanEqualCu
 from .ZHHCuts import zhh_cuts
 from .TTreeInterface import TTreeInterface, FinalStateCounts, parse_final_state_counts
 from .AnalysisChannel import AnalysisChannel
-from .DataStore import DataStore
+from .DataStore import DataStore, ReadonlyWriteAttempt
 from .DataSource import DataSource
 from .DataSourceTools import mod_weights_from_split, apply_split
 from .CutflowProcessor import CutflowProcessor, cutflowPlots, cutflowTable

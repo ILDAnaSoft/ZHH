@@ -13,6 +13,7 @@ signal_categories:
 - EventCategories.v1v1HHbbbb
 - EventCategories.v23v23HHbbbb
 - EventCategories.vvHH_nonbbbb
+- EventCategories.vvHHbbbb # includes v1v1HHbbbb and v23v23HHbbbb (needed for the MVA)
 
 # used to calculate event weights and absolute event counts
 # polarization of [ electronBeam, positronBeam ]
@@ -21,23 +22,131 @@ beam_polarization: [ -0.8, +0.3 ]
 # unit: ab^-1
 luminosity: 2.
 
-# set to true for a clean run; i.e. delete previous run through cutflow (plots/tables),
-# MVA training files + any plots/tables. can also be set individually per source in the
-# sources section below
-reset: false
-
-# use automatic caching for faster data access. if True, reads data once from ROOT TTrees
-# and writes into a HDF5 (feature data, I/O much faster than uproot) and npz (metadata)
-# file. see the path option in the sources section. may require a few GB.
-# info: this also saves event category data. if you add/change the categorization, you
-# need to clear the cache by setting reset to true for the respective source.
-use_caching: true
-
 # definition of event categories
 # the registration of event categories to specific sources is done in the sources section
 # info: while the naming can be arbitrary, a unique ID must be supplied which must exist 
 #       in the EVENT_CATEGORIES_TRUE class, too. See EventCategories.py
-event_categories: '$REPO_ROOT/config/event_categories.yaml'
+event_categories:
+
+# event categories are used for plotting/cutflow tables and assigned using MC truth information
+# if you want a category with a given NAME to be plotted explicitly, set id to EventCategories.<NAME> and make
+# sure you set handler to an existing function in FinalStateDefinitions which does the check 
+
+# each event will be assigned an 'id' (event_category column) in the following order:
+# 1  (deprecated) the TTree branch event_category is read; the value might be overwritten by 2. and 3. (if defined)
+# 2. a default value can be used to overwrite for all events of a data source (see sources section below)
+# 3. the value of the last matching registered (see event_categorization.items for each source, below) category is used, where
+#    the order is given either explicitly (event_categorization.order) or the order of definition is used.
+# plots use the id to uniquely identify categories, whereas cutflow tables can make use of the named categorization and thus
+# use different categories/be more granular (the logic to make sure no double counting occurs happens in the background :))
+
+# 4f sl
+- name: llqq
+  handler: FinalStateDefinitions.define_llqq
+  id: null # EventCategories.llqq
+- name: vvqq
+  handler: FinalStateDefinitions.define_vvqq
+  id: null # EventCategories.vvqq
+- name: lvqq
+  handler: FinalStateDefinitions.define_lvqq
+  id: null # EventCategories.lvqq
+- name: vvbb
+  handler: FinalStateDefinitions.define_vvbb
+  id: null # EventCategories.vvbb
+
+# 4f fully leptonic/hadronic
+- name: llll
+  handler: FinalStateDefinitions.define_llll
+  id: null # EventCategories.llll
+- name: qqqq
+  handler: FinalStateDefinitions.define_qqqq
+  id: null # EventCategories.qqqq
+- name: vvvv
+  handler: FinalStateDefinitions.define_vvvv
+  id: null # EventCategories.vvvv
+- name: bbbb
+  handler: FinalStateDefinitions.define_bbbb
+  id: EventCategories.bbbb
+
+# 2l4q
+- name: lvqqqq
+  handler: FinalStateDefinitions.define_lvqqqq
+  id: null # EventCategories.lvqqqq
+- name: lvbbqq
+  handler: FinalStateDefinitions.define_lvbbqq
+  id: EventCategories.lvbbqq
+- name: evbbqq
+  handler: FinalStateDefinitions.define_evbbqq
+  id: null # EventCategories.evbbqq
+- name: μvbbqq
+  handler: FinalStateDefinitions.define_μvbbqq
+  id: null # EventCategories.μvbbqq
+- name: τvbbqq
+  handler: FinalStateDefinitions.define_τvbbqq
+  id: null # EventCategories.τvbbqq
+- name: lvbbbb
+  handler: FinalStateDefinitions.define_lvbbbb
+  id: null # EventCategories.lvbbbb
+- name: llqqqq
+  handler: FinalStateDefinitions.define_llqqqq
+  id: null # EventCategories.llqqqq
+- name: llbbqq
+  handler: FinalStateDefinitions.define_llbbqq
+  id: null # EventCategories.llbbqq
+- name: llbbbb
+  handler: FinalStateDefinitions.define_llbbbb
+  id: null # EventCategories.llbbbb
+- name: vvqqqq
+  handler: FinalStateDefinitions.define_vvqqqq
+  id: null # EventCategories.vvqqqq
+- name: vvbbqq
+  handler: FinalStateDefinitions.define_vvbbqq
+  id: null # EventCategories.vvbbqq
+- name: vvbbbb
+  handler: FinalStateDefinitions.define_vvbbbb
+  id: EventCategories.vvbbbb
+
+# 6q
+- name: bbqqqq
+  handler: FinalStateDefinitions.define_bbqqqq
+  id: EventCategories.bbqqqq
+- name: bbbbqq
+  handler: FinalStateDefinitions.define_bbbbqq
+  id: null # EventCategories.bbbbqq
+- name: bbbbbb
+  handler: FinalStateDefinitions.define_bbbbbb
+  id: null # EventCategories.bbbbbb
+
+# vvhh
+- name: vvHH
+  handler: FinalStateDefinitions.define_vvhh
+  id: EventCategories.vvHH
+- name: v1v1HHbbbb
+  handler: FinalStateDefinitions.define_v1v1HHbbbb
+  id: EventCategories.v1v1HHbbbb
+- name: v23v23HHbbbb
+  handler: FinalStateDefinitions.define_v23v23HHbbbb
+  id: EventCategories.v23v23HHbbbb
+- name: vvHHbbbb
+  handler: FinalStateDefinitions.define_vvhh_vvbbbb
+  id: EventCategories.vvHHbbbb
+- name: vvHH_nonbbbb
+  handler: FinalStateDefinitions.define_vvhh_vvnonbbbb
+  id: null # EventCategories.vvHH_nonbbbb
+- name: vvqqH
+  handler: FinalStateDefinitions.define_vvqqh
+  id: EventCategories.vvqqH
+
+# ttH/ttZ
+- name: ttH
+  handler: FinalStateDefinitions.define_ttH
+  id: null # EventCategories.ttH
+- name: ttZ
+  handler: FinalStateDefinitions.define_ttZ
+  id: null # EventCategories.ttZ
+- name: ttHZ
+  handler: FinalStateDefinitions.define_ttHZ
+  id: null # EventCategories.ttHZ
 
 # definition of input data and information about the event categorization
 # path                : path to a directory containing Merged.root file whose content
@@ -109,7 +218,7 @@ sources:
     root_files: /data/dust/user/jtorndal/zhh/AnalysisFinal/550-6q-$CONF_SUFFIX/*.root
     event_categorization:
       default: EventCategories.qqqqqq
-      order: []
+      order: null
       items: [ bbqqqq ] # bbbbqq, bbbbbb
     disabled: false
     reset: false
@@ -308,6 +417,7 @@ mvas:
     - [3, 'vvbbbb']
     - [4, 'vvbb']
     - [5, 'lvbbqq']
+    - [6, 'bbbb']
     # note: the output is the sum for all signal categories given in steer['signal_categories'] 
     label_name: SigMVAOutput
 
@@ -365,8 +475,8 @@ actions:
   - type: SklearnMulticlassTraining
     hyperparams: {
       max_depth: 5,
-      n_estimators: 500,
-      learning_rate: 0.02
+      n_estimators: 380,
+      learning_rate: 0.1
     }
     debug: true
     mva: default_mva
@@ -384,7 +494,7 @@ actions:
     ]
     mva: default_mva
     split: 0
-    ntrials: 250
+    ntrials: 500
     disabled: true
 
   # optional:
@@ -417,13 +527,13 @@ actions:
     disabled: false
 
   - type: CreateCutflowPlots
-    file: 'cutflow_total_plots.pdf'
+    file: '$hypothesis_cutflow_total_plots.pdf'
     step_start: 0
     step_end: 1
     disabled: false
     
   - type: CreateCutflowTable
-    file: 'cutflow_total_table.pdf'
+    file: '$hypothesis_cutflow_total_table.pdf'
     step_start: 0
     step_end: 1
     disabled: false

@@ -8,31 +8,44 @@ from math import ceil
 from typing import cast
 from .TTreeInterface import FinalStateCounts
 
+class ReadonlyWriteAttempt(Exception):
+    pass
+
+class DATA_STORE_STATES:
+    UNINITALIZED = 0
+    READY = 10
+    INITIALIZED_AND_READY = 20
+
+DataStoreStates = DATA_STORE_STATES()    
+
 class DataStore(MixedLazyTablelike):
     cache:dict[str, np.ndarray] = {}
     
     def __init__(self, h5_file:str, final_states:bool=True,
                  in_memory:list[str]=[],
                  in_memory_writable:list[str]=[],
-                 n_jets:int=4):
-        
-        init_done = False
+                 n_jets:int=4,
+                 h5_readonly:bool=False,
+                 with_default_handler:bool=False):
 
         with h5py.File(h5_file) as hf:
             r_size = int(hf.attrs.get('nrows', 0))
             hf_keys = hf.keys()
 
-            init_done = bool(hf.attrs.get('init_done', False)) and all([
-                item in hf_keys for item in ['event_category', 'pid', 'weight']
-            ])
+            init_done = all([ item in hf_keys for item in ['event_category', 'pid', 'weight'] ])
         
         assert(r_size)
         super().__init__(r_size)
         
-        # this attaches the properties of the TTree 
-        self._defaultHandler = self.fetch
+        # this attaches the properties of the TTree
         self._h5_file = h5_file
+        self._h5_readonly = h5_readonly
         self._in_memory = in_memory
+        self._state = DataStoreStates.UNINITALIZED
+
+        # only for development purposes
+        if with_default_handler: 
+            self._defaultHandler = self.fetch
         
         # readonly
         self['process'] = lambda intf: self.fetch('process')
@@ -51,15 +64,17 @@ class DataStore(MixedLazyTablelike):
         self['sumBTags'] = lambda intf: ( self['bmax1'] + self['bmax2'] + self['bmax3'] + self['bmax4'] )
 
         self['yminus_mod100'] = lambda intf: np.mod(intf['yminus2'], 100)
+        self.propsFromFile()
         
         if not init_done:
             self.itemsInitialize(n_jets)
+            self._state = DataStoreStates.INITIALIZED_AND_READY
         else:
-            self.propsFromFile()
-
             if len(in_memory_writable):
                 for item in in_memory_writable:
                     self[item] = self.fromFile(item)[:]
+
+            self._state = DataStoreStates.READY
 
     def fetch(self, key:str):                
         if key in self._in_memory:
@@ -78,10 +93,10 @@ class DataStore(MixedLazyTablelike):
     
     def itemsInitialize(self, n_jets:int):
         # writable
-        self['event_category'] = np.nan*np.ones(len(self), dtype=np.uint8)
+        self['event_category'] = np.zeros(len(self), dtype=np.uint8)
         
         # writable; attached by DataSource.weight()
-        self['pid'] = np.nan*np.ones(len(self), dtype=np.uint32)
+        self['pid'] = np.zeros(len(self), dtype=np.uint32)
         self['weight'] = np.nan*np.ones(len(self), dtype=np.float32)
         
         jet_masses = np.zeros((len(self), n_jets), dtype=np.float32)
@@ -95,10 +110,6 @@ class DataStore(MixedLazyTablelike):
         for i in range(n_jets):
             print(f'Assigning jet{i}_m')
             self[f'jet{i+1}_m'] = jet_masses[:, i]
-
-        # mark init as done
-        with h5py.File(self._h5_file, 'a') as hf:
-            hf.attrs['init_done'] = True
     
     def propsFromFile(self):
         """Fetches data from the HDF5 file and attaches them as props to the DataStore
@@ -136,6 +147,10 @@ class DataStore(MixedLazyTablelike):
         
         if items is None:
             items = list(self._items.keys())
+
+        if self._h5_readonly:
+            print(f'Info: Not saving items to HDF5 store at {self._h5_file} because it should be opened in readonly mode:', items)
+            return
             
         print(f'Writing items <{", ".join(items)}> to file {self._h5_file}')
         

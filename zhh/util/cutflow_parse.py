@@ -12,7 +12,7 @@ from .replace_properties import replace_properties
 from .replace_references import replace_references
 from ..data.ROOT2HDF5Converter import ROOT2HDF5Converter
 from ..task.ConcurrentFuturesRunner import ProcessRunner
-from ..analysis import CutflowProcessor, CutflowProcessorAction, CreateCutflowPlotsAction
+from ..analysis import CutflowProcessor, CutflowProcessorAction, CreateCutflowPlotsAction, ReadonlyWriteAttempt
 from typing import TypedDict, NotRequired, TYPE_CHECKING
 from multiprocessing import cpu_count
 from copy import deepcopy
@@ -51,7 +51,8 @@ def cutflow_parse_steering_file(loc:str):
     })
 
 def cutflow_process_steering(steer:dict, integrity_check:bool=True,
-                             check_requires_exact_path_match:bool=False):
+                             check_requires_exact_path_match:bool=False,
+                             readonly:bool=False):
     """Processes a parsed steering dictionary and handles feature interpretations.
     Returns two dictionaries: First a dict<name, DataSource> and second, a dict
     holding <name, [cat_register_fn, cat_default, cat_order]>.
@@ -66,6 +67,9 @@ def cutflow_process_steering(steer:dict, integrity_check:bool=True,
                                                 the same ones as used for the
                                                 current run. set this to False
                                                 you have moved the files
+        readonly (bool): if True, will open HDF5 files in readonly mode, which will
+                         fail if features should be be converted from ROOT.
+                         Defaults to False (append mode)
 
     Raises:
         Exception: _description_
@@ -98,12 +102,13 @@ def cutflow_process_steering(steer:dict, integrity_check:bool=True,
             cutflow_provision_features(steer['features']['interpret'],
                                               source_spec['root_files'], path, fname,
                                               integrity_check=integrity_check,
-                                              check_requires_exact_path_match=check_requires_exact_path_match)
+                                              check_requires_exact_path_match=check_requires_exact_path_match,
+                                              readonly=readonly)
             
-        source = DataSource(fpath, name, work_root=path)
+        source = DataSource(fpath, name, work_root=path, readonly=readonly)
 
         # make sure beam polarization fits
-        with h5py.File(fpath, 'a') as hf:
+        with h5py.File(fpath, 'r' if readonly else 'a') as hf:
             if 'beam_polarization' in hf.attrs:
                 beam_pol_read = hf.attrs.get('beam_polarization', None)
                 if beam_pol_read is not None:
@@ -119,6 +124,9 @@ def cutflow_process_steering(steer:dict, integrity_check:bool=True,
                         if osp.isfile(source._npz_file):
                             os.remove(source._npz_file)
             else:
+                if readonly:
+                    raise ReadonlyWriteAttempt(f'Cannot append beam_polarization to HDF5 dataset at {fpath}')
+
                 hf.attrs['beam_polarization'] = beam_pol
 
         # Register event category definitions
@@ -179,7 +187,8 @@ def cutflow_provision_features(interpretations:list[Interpretation],
                                       root_files_glob:str, path:str, file:str,
                                       integrity_check:bool=True,
                                       base_tree:str='FinalStates',
-                                      check_requires_exact_path_match:bool=True):
+                                      check_requires_exact_path_match:bool=True,
+                                      readonly:bool=False):
     """_summary_
 
     Args:
@@ -216,16 +225,19 @@ def cutflow_provision_features(interpretations:list[Interpretation],
     if not osp.isfile(ds_path) or not osp.isfile(ds_meta_file):
         os.makedirs(osp.dirname(ds_path), exist_ok=True)
 
-    with h5py.File(ds_path, 'a') as hf:
+    with h5py.File(ds_path, 'r' if readonly else 'a') as hf:
         nrows = hf.attrs.get('nrows', 0)
     
     if not osp.isfile(ds_meta_file) or nrows == 0:
         nrows_found = tree_n_rows(root_files, base_tree, use_uproot=True, aggregate=False)
         
-        with h5py.File(ds_path, 'a') as hf:
-            nrows = hf.attrs['nrows'] = np.sum(nrows_found)
+        with h5py.File(ds_path, 'r' if readonly else 'a') as hf:
+            nrows = np.sum(nrows_found)
 
-    with h5py.File(ds_path, 'a') as hf:
+            if not readonly:
+                hf.attrs['nrows'] = np.sum(nrows_found)
+
+    with h5py.File(ds_path, 'r') as hf:
         if 'nrows' in hf.attrs:
             nrows = int(hf.attrs.get('nrows', 0))
             if nrows == 0:
@@ -236,7 +248,7 @@ def cutflow_provision_features(interpretations:list[Interpretation],
     
     # for all VDS, remove any dangling references in HDF5 file at ds_path
     # they are automatically regerenated below
-    with h5py.File(ds_path, 'a') as hf:
+    with h5py.File(ds_path, 'r' if readonly else 'a') as hf:
         vds_keys = []
         
         for key in ds_keys:            
@@ -250,6 +262,10 @@ def cutflow_provision_features(interpretations:list[Interpretation],
             for source in hf[key].virtual_sources():            
                 if not os.path.exists(source.file_name):
                     print(f'Property <{key}> will be removed (dangling reference)')
+                    
+                    if readonly:
+                        raise ReadonlyWriteAttempt(f'Property {key} cannot be removed in readonly mode')
+
                     ds_keys.remove(key)
                     del hf[key]
                     break
@@ -293,6 +309,9 @@ def cutflow_provision_features(interpretations:list[Interpretation],
         if 'auto_increment' in feature and feature['auto_increment']:
             if not name in ds_keys:
                 with h5py.File(ds_path, 'a') as hf:
+                    if readonly:
+                        raise ReadonlyWriteAttempt(f'Cannot add auto_increment column {name} to readonly dataset {ds_path}')
+
                     hf[name] = np.arange(nrows, dtype=feature['dtype'] if 'dtype' in feature else 'uint32')
             
         elif 'tree' in feature:
@@ -360,6 +379,9 @@ def cutflow_provision_features(interpretations:list[Interpretation],
     conv_done = []
     names = []
 
+    if readonly and len(to_sync):
+        raise ReadonlyWriteAttempt('Cannot request feature conversion in readonly mode')
+
     for item in to_sync:
         name, tree, branch, dtype, nan_to, clamp_min, clamp_max = item
         names.append(name)
@@ -380,7 +402,7 @@ def cutflow_provision_features(interpretations:list[Interpretation],
     if len(conv_items):
         print('Scheduling conversion of items:')
         for item in conv_items:
-            print(item)
+            print(f' {item}')
 
         runner = ProcessRunner(cores=ceil(cpu_count() * .8))
         runner.queueTasks(conv_tasks)

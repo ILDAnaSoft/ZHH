@@ -356,6 +356,16 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         }        
 
         if (m_leps4cKinFit_4v.size() == m_nAskedIsoLeps() && (int)m_JMK_best.size() >= m_nAskedJets()) {
+            m_jets4v_post_4C_kinfit[0] = m_jets4cKinFit_4v[0];
+            m_jets4v_post_4C_kinfit[1] = m_jets4cKinFit_4v[1];
+            m_jets4v_post_4C_kinfit[2] = m_jets4cKinFit_4v[2];
+            m_jets4v_post_4C_kinfit[3] = m_jets4cKinFit_4v[3];
+
+            m_jetsMasses_post_4C_kinfit[0] = m_jets4cKinFit_4v[0].M();
+            m_jetsMasses_post_4C_kinfit[1] = m_jets4cKinFit_4v[1].M();
+            m_jetsMasses_post_4C_kinfit[2] = m_jets4cKinFit_4v[2].M();
+            m_jetsMasses_post_4C_kinfit[3] = m_jets4cKinFit_4v[3].M();
+
             m_fit4C_mz = (m_leps4cKinFit_4v[0]+m_leps4cKinFit_4v[1]).M();
             m_fit4C_masses.push_back((m_jets4cKinFit_4v[m_JMK_best[0]]+m_jets4cKinFit_4v[m_JMK_best[1]]).M());
             m_fit4C_masses.push_back((m_jets4cKinFit_4v[m_JMK_best[2]]+m_jets4cKinFit_4v[m_JMK_best[3]]).M());

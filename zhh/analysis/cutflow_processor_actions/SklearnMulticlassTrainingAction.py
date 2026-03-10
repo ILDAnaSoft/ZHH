@@ -83,10 +83,21 @@ class OptunaSuggestion(TypedDict):
 # used only when using multiprocessing, e.g. in SklearnMulticlassHyperparamTrainingAction
 configs = {}
 
+def find_subclss(cls, subclss:list=[]):
+    if hasattr(cls, '__subclasses__'):
+        for subcls in cls.__subclasses__():
+            if subcls not in subclss:
+                subclss.append(subcls)
+            
+            find_subclss(subcls, subclss)
+    
+    return subclss
+
 class MVATrainingConfig:
     def __init__(self, base_path:str, n_trials:int, trial_name:str|None, trial_data:str|None=None, trial_data_file:str='train_test.npz',
                  training_mode:Literal['loss']|Literal['significance']='significance',
-                 signal_categories:list[int]=[], background_categories:list[int]=[], hyperparam_bounds:list[OptunaSuggestion]=[]):
+                 signal_categories:list[int]=[], background_categories:list[int]=[], hyperparam_bounds:list[OptunaSuggestion]=[],
+                 model:str='XGBClassifier'):
         
         """_summary_
 
@@ -112,6 +123,7 @@ class MVATrainingConfig:
         self._signal_categories = signal_categories
         self._background_categories = background_categories
         self._hyperparam_bounds = hyperparam_bounds
+        self._model = model
 
     def register(self):
         if self._trial_name in configs:
@@ -244,7 +256,7 @@ def objective(config:MVATrainingConfig, hyper_params:dict, signal_classes:list[i
         pickle.dump(dump, pf)
     
     if config._training_mode == 'loss':
-        return loss_history[-1]
+        return loss_history[-1] if len(loss_history) else []
     elif config._training_mode == 'significance':
         return 1./float(best_significance)
     else:
