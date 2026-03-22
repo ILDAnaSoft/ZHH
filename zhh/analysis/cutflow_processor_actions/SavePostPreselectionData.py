@@ -1,12 +1,13 @@
-from ..CutflowProcessorAction import CutflowProcessorAction, CutflowProcessor
-from .mva_tools import get_signal_categories
+from ..CutflowProcessorAction import CutflowProcessor, FileBasedProcessorAction
 from tqdm.auto import tqdm
 from ..DataSource import DataSource
+import os
 import numpy as np
 
-class SklearnMulticlassInferenceAction(CutflowProcessorAction):
-    def __init__(self, cp:CutflowProcessor, steer:dict, mva:str, split:int,
-                 step:int|None=None, clf_prop:str='clf', progress:bool=True, overwrite:bool=True, **kwargs):
+class SavePostPreselectionData(FileBasedProcessorAction):
+    def __init__(self, cp:CutflowProcessor, steer:dict,
+                 cache:str='$hypothesis_cutflow_presel.pickle',
+                 step:int=0, progress:bool=True, overwrite:bool=True, **kwargs):
         """_summary_
 
         Args:
@@ -17,25 +18,12 @@ class SklearnMulticlassInferenceAction(CutflowProcessorAction):
             overwrite (bool, optional): whether or not the output MVA variable should over#
                                         write existing values (if any)
         """
-        assert('mvas' in steer)
 
         super().__init__(cp, steer)
 
-        from zhh import find_by
-
-        mva_spec = find_by(steer['mvas'], 'name', mva, is_dict=True)
-        
-        self._mva_file = mva_spec['mva_file']
-        self._mva_name = mva
-        self._mva = None
-
-        self._clf_prop = clf_prop
         self._step = step
-        self._split = split
-        self._output_label = mva_spec['label_name']
-
-        self._signal_categories = get_signal_categories(steer['signal_categories'], mva_spec['classes'])        
-        self._features = mva_spec['features']
+ 
+        self._cache = os.path.expandvars(cache) if isinstance(cache, str) else None
         self._progress = progress
         self._overwrite = overwrite
     
@@ -107,14 +95,5 @@ class SklearnMulticlassInferenceAction(CutflowProcessorAction):
         return True
     
     def reset(self):
-        for source in self._cp.getSources():
-            store = source.getStore()
-            
-            if store.hasProperty(self._output_label):
-                store.removeProperty(self._output_label)
-            
-            for cat in self._signal_categories:
-                signal_label_name = f'{self._output_label}#{cat}'
-
-                if store.hasProperty(signal_label_name):
-                    store.removeProperty(signal_label_name)
+        if os.path.isfile(self._cache):
+            os.remove(self._cache)

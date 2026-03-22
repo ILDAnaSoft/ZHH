@@ -451,6 +451,10 @@ cuts:
 #
 mvas:
   - name: default_mva
+
+    # model: either 'LGBMClassifier' or 'XGBClassifier' 
+    model: XGBClassifier # LGBMClassifier
+    
     features: [
       bmax1,
       bmax2,
@@ -482,12 +486,13 @@ mvas:
     # two-element arrays of structure (label, name of registered EventCategory)
     # see sources/.../event_categorization/items
     - [0, 'vvHHbbbb']
-    - [1, 'vvqqH']
-    - [2, 'vvbbbb']
-    - [3, 'vvbb']
-    - [4, 'lvbbqq']
-    - [5, 'bbbb']
-    - [6, 'bbqqqq']
+    - [1, 'vvHH_nonbbbb']
+    - [2, 'vvqqH']
+    - [3, 'vvbbbb']
+    - [4, 'vvbb']
+    - [5, 'lvbbqq']
+    - [6, 'bbbb']
+    - [7, 'bbqqqq']
     # note: the output is the sum for all signal categories given in steer['signal_categories'] 
     label_name: SigMVAOutput
 
@@ -580,7 +585,7 @@ actions:
   - type: SklearnMulticlassTraining
     hyperparams: {
       max_depth: 5,
-      n_estimators: 380,
+      n_estimators: 10,
       learning_rate: 0.1
     }
     debug: true

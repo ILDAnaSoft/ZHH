@@ -1,6 +1,7 @@
 from zhh import cutflow_parse_steering_file, cutflow_process_steering, cutflow_initialize_sources, cutflow_parse_cuts, CutflowProcessor, \
-    cutflow_parse_actions, cutflow_execute_actions, cutflow_register_mvas
+    cutflow_parse_actions, cutflow_execute_actions, cutflow_register_mvas, CutflowProcessorAction
 import argparse, yaml, logging
+from tqdm.auto import tqdm
 from os import environ
 
 if __name__ == "__main__":
@@ -35,10 +36,21 @@ if __name__ == "__main__":
     cp = CutflowProcessor(sources, hypothesis=steer['hypothesis'], cuts=preselection, signal_categories=steer['signal_categories'])
     cutflow_register_mvas(steer, cp)
 
-    # prepare the cutflow processor
+    # prepare the cutflow processor actions
+    actions:list[CutflowProcessorAction] = cutflow_parse_actions(steer, cp)
+
+    if args.reset: # delete outputs if reset requested
+        for action in (pbar := tqdm(actions)):
+            pbar.set_description(f'Resetting action {action.__class__.__name__}')
+
+            try:
+                action.reset()
+            except Exception as e:
+                print(f'Encountered exception when trying to reset action <{action.__class__.__name__}>')
+    
     print("-----------------------LADIDA prepare cutflow processor -----------------------------")
     actions = cutflow_parse_actions(steer, cp)
-
+        
     # dry run required for full run
     print("-----------------------LADIDA test run -----------------------------")
     print('Going to execute following actions:')

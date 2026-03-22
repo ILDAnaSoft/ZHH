@@ -87,6 +87,9 @@ class DataSource:
             if reset and osp.isfile(self._npz_file):
                 unlink(self._npz_file)
 
+            if reset and osp.isfile(self._h5_file):
+                unlink(self._h5_file)
+
             store = self._store = DataStore(self._h5_file, final_states=True, h5_readonly=self._readonly)
 
             # INITIALIZED_AND_READY: data store is initialized the first time -> do event weighting

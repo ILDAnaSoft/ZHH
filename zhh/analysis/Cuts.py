@@ -1,4 +1,6 @@
-from typing import Any, Union, Generator, List, Optional, Literal
+from typing import Union, Generator, List, Literal
+from collections.abc import Sequence
+from typing import cast
 import numpy as np
 
 class CutTypes():
@@ -17,16 +19,46 @@ class Cut():
         self.xlim_view = xlim_view
         
     def __call__(self, arg):
+        """Evaluates the given cut with respect to a given value (or numpy array)
+
+        Args:
+            arg (_type_): _description_
+
+        Raises:
+            NotImplementedError: _description_
+        """
         raise NotImplementedError('Method __call__ not implemented')
     
     def formula(self, unit:str|None=None):
         raise NotImplementedError('Method formula not implemented')
     
-    def latex(self, *args, **kwargs):
+    def latex(self, *args, **kwargs)->str:
+        """Method returning a latex representation of this cut
+
+        Returns:
+            _type_: _description_
+        """
         return self.formula(*args, **kwargs)
     
     def __repr__(self):
         return f"<Cut on {self.formula()}>"
+
+    @staticmethod
+    def hash_cuts(cuts:Sequence['Cut'])->str:
+        """_summary_
+
+        Args:
+            cuts (Sequence[Cut]): _description_
+
+        Returns:
+            str: _description_
+        """
+
+        hashes = cast(list[str], [c.__hash__() for c in cuts])
+        if not all([isinstance(h, str) for h in hashes]):
+            raise Exception(f'Discovered non-string cut hash value')
+
+        return ' & '.join(hashes)
 
 class SemiInvisibleCut(Cut):
     def __init__(self, visible_cut:Cut, hidden_cut:Cut,
@@ -78,6 +110,9 @@ class EqualCut(ValueCut):
         unit = unit if unit is not None else self.unit
         
         return f"{self.label}{'' if unit is None else ('/' + unit)} = {self.value}"
+    
+    def __hash__(self)->str:
+        return f'{self.quantity} == {self.value}'
 
 class WindowCut(ValueCut):
     def __init__(self, quantity:str,
@@ -111,6 +146,9 @@ class WindowCut(ValueCut):
         unit = unit if unit is not None else self.unit
         
         return rf"{self.lower} \leq {self.label}{'' if unit is None else ('/' + unit)} \leq {self.upper}"
+    
+    def __hash__(self)->str:
+        return f'{self.lower} <= {self.quantity} <= {self.upper}'
 
 class WithinBoundsCut(WindowCut):
     def __init__(self, quantity: str, lower: int|float, upper: int|float, **cut_kwargs):
@@ -138,6 +176,9 @@ class GreaterThanEqualCut(ValueCut):
         unit = unit if unit is not None else self.unit
         
         return f"{self.label}{'' if unit is None else ('/' + unit)} \geq {self.lower}"
+    
+    def __hash__(self)->str:
+        return f'{self.quantity} >= {self.lower}'
         
 class LessThanEqualCut(ValueCut):
     def __init__(self, quantity:str, upper:Union[int,float], **cut_kwargs):
@@ -161,6 +202,9 @@ class LessThanEqualCut(ValueCut):
         unit = unit if unit is not None else self.unit
         
         return f"{self.label}{'' if unit is None else ('/' + unit)} \leq {self.upper}"
+    
+    def __hash__(self)->str:
+        return f'{self.quantity} <= {self.upper}'
 
 def apply_cuts(data:np.ndarray, cuts:List[Cut], consecutive:bool=True)->Generator:
     for i, cut in enumerate(cuts):
