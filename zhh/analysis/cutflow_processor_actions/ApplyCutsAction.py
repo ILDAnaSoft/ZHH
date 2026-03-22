@@ -1,8 +1,10 @@
 from ..CutflowProcessorAction import CutflowProcessorAction, CutflowProcessor
+from ..Cuts import Cut
 import os
 
 class ApplyCutsAction(CutflowProcessorAction):
-    def __init__(self, cp:CutflowProcessor, steer:dict, step:int, cuts:str, cache:str='$hypothesis_cutflow_presel.pickle', **kwargs):
+    def __init__(self, cp:CutflowProcessor, steer:dict, step:int, cuts:str,
+                 cache:str='$hypothesis_cutflow_presel.pickle', **kwargs):
         """_summary_
 
         Args:
@@ -31,15 +33,18 @@ class ApplyCutsAction(CutflowProcessorAction):
         if self._step in self._cp._calc_dicts:
             return True
         elif self._step == 0 and self._cache is not None and os.path.isfile(self._cache):
-            self._cp.process(step=self._step, cuts=self.fetchCuts(), cache=self._cache)
-            return True
+            cuts_steer = self.fetchCuts()
+            self._cp.process(step=self._step, cuts=cuts_steer, cache=self._cache)
+
+            return Cut.hash_cuts(cuts_steer) == self._cp._cuts_hash
         else:
             return False
     
     def reset(self):
         # only preselection/step=0 is cached in CutflowProcessor.process()
-        if self._step == 0 and os.path.isfile(self._cache):
-            os.remove(self._cache)
+        if self._cache is not None:
+            if self._step == 0 and os.path.isfile(self._cache):
+                os.remove(self._cache)
         
         if self._step in self._cp._masks:
             for step in self._cp._masks.keys():

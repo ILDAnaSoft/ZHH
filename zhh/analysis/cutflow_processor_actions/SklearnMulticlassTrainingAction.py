@@ -1,13 +1,13 @@
 from io import StringIO
 from contextlib import redirect_stdout
-from typing import TypedDict, Required, Literal, TYPE_CHECKING
+from typing import TypedDict, Required, Literal, cast
 from datetime import datetime
-from math import sqrt
+from math import sqrt, round
+from multiprocessing import cpu_count
 import os, pickle, sys, subprocess
 
 from ..CutflowProcessorAction import FileBasedProcessorAction, CutflowProcessor
 from .MVAThresholdFinderInterface import MVAThresholdFinderInterface
-from xgboost import XGBClassifier
 from .mva_tools import get_signal_categories, get_background_categories
 import numpy as np
 import optuna
@@ -39,6 +39,7 @@ class SklearnMulticlassTrainingAction(MVAThresholdFinderInterface, FileBasedProc
         self._mva_file = mva_spec['mva_file']
         self._clf_prop = clf_prop
         self._trial_name = trial_name if trial_name is not None else mva
+        self._model = mva_spec.get('model', 'XGBClassifier')
 
         self._signal_categories = get_signal_categories(steer['signal_categories'], mva_spec['classes'])
         self._background_categories = get_background_categories(self._signal_categories, mva_spec['classes'])
@@ -54,7 +55,7 @@ class SklearnMulticlassTrainingAction(MVAThresholdFinderInterface, FileBasedProc
         print(f'Sig categories', self._signal_categories)
         print(f'Bkg categories', self._background_categories)
 
-        cfg = MVATrainingConfig(os.getcwd(), 1, self._trial_name)
+        cfg = MVATrainingConfig(os.getcwd(), 1, self._trial_name, model=self._model)
 
         qty = objective(cfg, self._hyperparams, self._signal_categories, self._background_categories,
                         clf_file=self._mva_file, clf_property=self._clf_prop, train_test_npz=self._data_file,
@@ -97,7 +98,7 @@ class MVATrainingConfig:
     def __init__(self, base_path:str, n_trials:int, trial_name:str|None, trial_data:str|None=None, trial_data_file:str='train_test.npz',
                  training_mode:Literal['loss']|Literal['significance']='significance',
                  signal_categories:list[int]=[], background_categories:list[int]=[], hyperparam_bounds:list[OptunaSuggestion]=[],
-                 model:str='XGBClassifier'):
+                 model:Literal['LGBMClassifier', 'XGBClassifier']='XGBClassifier'):
         
         """_summary_
 
@@ -194,18 +195,27 @@ def objective(config:MVATrainingConfig, hyper_params:dict, signal_classes:list[i
     try:
         sys.stdout = Tee(sys.stdout, output_buffer) if debug else output_buffer
 
-        xgbclf = XGBClassifier(**hyper_params)
-        xgbclf.fit(X_train, np.array(y_train, dtype=int),
-                   eval_set=[(X_test, np.array(y_test, dtype=int))],
-                   verbose=True, sample_weight=w_train)
+        if config._model == 'XGBClassifier':
+            from xgboost import XGBClassifier
+
+            clf = XGBClassifier(**hyper_params)
+            clf.fit(X_train, np.array(y_train, dtype=int),
+                    eval_set=[(X_test, np.array(y_test, dtype=int))],
+                    verbose=True, sample_weight=w_train, n_jobs=round(0.8*cpu_count()))
+        elif config._model == 'LGBMClassifier':
+            from lightgbm import LGBMClassifier, log_evaluation
+
+            clf = LGBMClassifier(**hyper_params)
+            clf.fit(X_train, np.array(y_train, dtype=int),
+                    eval_set=[(X_test, np.array(y_test, dtype=int))],
+                    callbacks=[log_evaluation(period=1)], sample_weight=w_train)
+        else:
+            raise Exception(f'Unknown model <{config._model}>')
     finally:
         sys.stdout = old_stdout
 
-    loss_history = []
-
-    for line in output_buffer.getvalue().split('\n'):
-        if ':' in line:
-            loss_history.append(float(line.split(':')[1]))
+    # following works for XGB and LightGBM
+    loss_history = list(list(clf.evals_result_.values())[0].values())[0]
 
     NITEMS = 500
 
@@ -216,7 +226,7 @@ def objective(config:MVATrainingConfig, hyper_params:dict, signal_classes:list[i
     is_signal = np.isin(y_test, signal_classes)
     is_background = np.isin(y_test, background_classes)
 
-    y_test_pred = xgbclf.predict_proba(X_test)
+    y_test_pred = cast(np.ndarray, clf.predict_proba(X_test))
 
     for i, t in enumerate(np.nditer(x)):
         thresh = t
@@ -231,7 +241,7 @@ def objective(config:MVATrainingConfig, hyper_params:dict, signal_classes:list[i
     max_pos = np.argmax(significances)
     
     # show stats in train dataset
-    y_train_pred = xgbclf.predict_proba(X_train)
+    y_train_pred = cast(np.ndarray, clf.predict_proba(X_train))
     thresh = x[max_pos]
     sig_train = w_train_phys[np.isin(y_train, signal_classes    ) & (y_train_pred[:, signal_classes].sum(axis=1) >= thresh)].sum()
     bkg_train = w_train_phys[np.isin(y_train, background_classes) & (y_train_pred[:, signal_classes].sum(axis=1) >= thresh)].sum()
@@ -249,7 +259,7 @@ def objective(config:MVATrainingConfig, hyper_params:dict, signal_classes:list[i
         'best_significance': best_significance,
         'significance_train': significance_train,
         'thresh': thresh,
-        clf_property: xgbclf
+        clf_property: clf
     }
 
     with open(clf_file, 'wb') as pf:

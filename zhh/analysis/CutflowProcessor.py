@@ -13,6 +13,13 @@ import numpy as np
 import os.path as osp, pickle
 #import blosc2
 
+def flatten(a):
+    b = []
+    for c in a:
+        b.extend(c)
+
+    return b
+
 class MVAState(TypedDict):
     features: Required[list[str]]
     classes: Required[list[tuple[int, str]]]
@@ -74,6 +81,8 @@ class CutflowProcessor:
         self._work_dir = work_dir
         self._luminosity = self._sources[0].getIntegratedLuminosity()
         self._cuts:dict[int, Sequence[ValueCut]] = { 0: zhh_cuts(hypothesis) if cuts is None else cuts }
+        self._cuts_hash:str|None = None if self._cuts is None else Cut.hash_cuts(flatten(self._cuts.values()))
+
         self._plot_options:dict[str, dict[str, dict]] = plot_options if plot_options is not None else figure_options
         self._hypothesis = hypothesis
         
@@ -173,6 +182,9 @@ class CutflowProcessor:
         max_before_all = []
         
         if (step > 0) or cache is None or not osp.isfile(cache):
+            # for now, only compute cuts_hash for preselection
+            if step == 0:
+                self._cuts_hash = Cut.hash_cuts(self._cuts.values()[0])
             
             for i, cut in enumerate(self._cuts[step]):
                 flattened = []
@@ -243,7 +255,9 @@ class CutflowProcessor:
                     pickle.dump({
                         'masks': masks,
                         'calc_dicts': calc_dicts,
-                        'max_before': self._max_before[step]
+                        'max_before': self._max_before[step],
+                        'cuts_hash': self._cuts_hash,
+                        'cuts': self._cuts
                     }, f)
         else:
             print('Using cached preselection')
@@ -253,6 +267,10 @@ class CutflowProcessor:
                 self._masks[step] = data['masks']
                 self._calc_dicts[step] = data['calc_dicts']
                 self._max_before[step] = data['max_before']
+
+                # TODO: Remove if... (kept for backwards compatability)
+                self._cuts = data['cuts'] if 'cuts' in data else self._cuts
+                self._cuts_hash = data['cuts_hash'] if 'cuts_hash' in data else Cut.hash_cuts(flatten(self._cuts.values()))
         
         return masks, subsets, calc_dicts
     
