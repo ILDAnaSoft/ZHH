@@ -56,6 +56,12 @@ FinalStateRecorder::FinalStateRecorder() :
 				std::string("")
 				);
 
+	registerProcessorParameter("forceProcess",
+				"assume the given process for all events instead of reading it from the file. useful mostly for old event samples which do not have a process parameter",
+				m_forceProcess,
+				std::string("")
+				);
+
 	registerProcessorParameter("writeTTree",
 				"whether or not to write event meta information",
 				m_write_ttree,
@@ -554,7 +560,7 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 		m_cross_section_err = pLCEvent->getParameters().getFloatVal("crossSectionError");
 		m_event_weight = pLCEvent->getWeight();
 		m_process_id = pLCEvent->getParameters().getIntVal("ProcessID");
-		m_process_name = pLCEvent->getParameters().getStringVal("processName");
+		m_process_name = (m_forceProcess == "") ? pLCEvent->getParameters().getStringVal("processName") : m_forceProcess;
 
 		if (m_beam_pol1 == -1 && m_beam_pol2 == -1) m_polarization_code = POLARIZATION_CODES::EL_PL; else
 		if (m_beam_pol1 == -1 && m_beam_pol2 ==  1) m_polarization_code = POLARIZATION_CODES::EL_PR; else
@@ -571,7 +577,12 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 	m_n_evt_sum++;
 
 	// Extract process meta data
-	std::string process = pLCEvent->getParameters().getStringVal("processName");
+	std::string process = (m_forceProcess == "") ? pLCEvent->getParameters().getStringVal("processName") : m_forceProcess;
+
+	if (process != m_process_name) {
+		std::cerr << "Expected process: " << m_process_name << ". Found process: " << process << std::endl;
+		throw EVENT::Exception("FinalStateRecorder requires all events to have come from the same process; found different");
+	}
 
 	try {
 		LCCollection *inputMCParticleCollection;

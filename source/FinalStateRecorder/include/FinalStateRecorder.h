@@ -98,6 +98,7 @@ class FinalStateRecorder : public Processor
 		std::string m_mcParticleCollection{};
 		std::string m_outputJsonFile{};
 		std::string m_outputRootFile{};
+		std::string m_forceProcess{};
 		std::vector<std::string> m_eventFilter{};
 		bool m_writeAll{};
 		bool m_setReturnValues{};

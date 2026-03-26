@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# define inputs
+export OUT_BASE_NAME="<OUT_BASE_NAME>"
+export OUT_BASE_DIR="<OUT_BASE_DIR>"
+export ZHH_REPO_ROOT="<ZHH_REPO_ROOT>"
+export SINDARIN_FILE="<SINDARIN_FILE>"
+
+export TMPDIR="$OUT_BASE_DIR/TMP-$LSB_JOBID-${OUT_BASE_NAME}"
+
+mkdir -p $TMPDIR
+cd $TMPDIR
+
+source "$ZHH_REPO_ROOT/setup.sh"
+
+cp $SINDARIN_FILE .
+whizard $(basename "$SINDARIN_FILE")
+
+LCIO_FILE_COUNT=$(ls -l *.slcio | wc -l)
+
+if [ $LCIO_FILE_COUNT -gt 0 ]; then
+    mv "*.slcio" ..
+    mv "*.sin" ..
+
+    echo "Execution done"
+
+    rm -rf $TMPDIR
+else
+    echo "Execution failed"
+fi
