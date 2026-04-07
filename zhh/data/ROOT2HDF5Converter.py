@@ -11,7 +11,7 @@ from tqdm.auto import tqdm
 from math import ceil
 from ..task.AbstractTask import AbstractTask
 
-ChunkedConversionResult = tuple[int, tuple[tuple[int, int]|tuple[int], str]]
+ChunkedConversionResult = tuple[int, tuple[tuple|tuple[int], str]]
 
 # for creating ROOT dicts
 # if not TYPE_CHECKING:
@@ -19,12 +19,12 @@ ChunkedConversionResult = tuple[int, tuple[tuple[int, int]|tuple[int], str]]
 # ROOT.gInterpreter.GenerateDictionary("ROOT::VecOps::RVec<ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>>>", "vector;ROOT/RVec.hxx;Math/Vector4D.h")
 
 def create_chunks(tree:str, branch:str, root_files:list[str], out_bname:str, clamp:tuple[float|int|None, float|int|None], nan_to:float|int|None, chunk_size:int=256,
-                  overwrite_if_exists:bool=True, read_size:int=16, dtype:int|None=None)->list[tuple[int, str, str, list[str], str, bool, int, str]]:
+                  overwrite_if_exists:bool=True, read_size:int=16, dtype:int|None=None, keep_dim:bool=False)->list[tuple[int, str, str, list[str], str, bool, int, str, bool]]:
 
     chunks = []
     chunk_idx = 0
     for i in range(0, len(root_files), chunk_size):
-        chunks.append((chunk_idx, tree, branch, root_files[i:i+chunk_size], f'{out_bname}.{chunk_idx}.h5', overwrite_if_exists, read_size, dtype, clamp, nan_to))
+        chunks.append((chunk_idx, tree, branch, root_files[i:i+chunk_size], f'{out_bname}.{chunk_idx}.h5', overwrite_if_exists, read_size, dtype, clamp, nan_to, keep_dim))
         chunk_idx += 1
     
     return chunks
@@ -402,7 +402,7 @@ def translate_item_lazy(sources:list[str], tree:str, names:str|list[str], n_per_
         counter += size
 
 def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None,
-                         str|None, tuple[float|int|None, float|int|None]])->ChunkedConversionResult:
+                         str|None, tuple[float|int|None, float|int|None], float|int|None, bool])->ChunkedConversionResult:
     """Attempts to read tree/branch from all ROOT files in file_paths.
     Depending on the value of outp_or_None:
     1. None -> (chunk_idx, result=list[ak.array]) will be returned
@@ -427,6 +427,7 @@ def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None,
             red using uproot
         args[8] = clamp (tuple[float|int|None, float|int|None])
         args[9] = nan_to (float|int|None)
+        args[10] = keep_dim (bool)
             
     Returns:
         _type_: _description_
@@ -442,6 +443,7 @@ def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None,
     dtype:str|None = args[7]
     clamp:tuple[float|int|None, float|int|None] = args[8]
     nan_to:float|int|None = args[9]
+    keep_dim:bool|None = args[10]
 
     import h5py
 
@@ -458,10 +460,11 @@ def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None,
     
     # convert from ROOT files
     translated = translate_item_lazy(file_paths, tree, branch, n_per_iter=read_size) if read_size is not None else [translate_item(file_paths, tree, branch)]
+    total_shape = []
     nrows = 0
     ncols = 0
     is_1d = False
-    is_2d = False
+    is_multidim = False
     col_names:list[str] = []
 
     with h5py.File(output_file, 'w') as hf:
@@ -473,14 +476,15 @@ def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None,
         for i_result, result in enumerate(translated):
             columns = result[0].fields
 
-            is_named = len(columns) > 0
-            is_1d = result[0].ndim == 1
-            is_2d = result[0].ndim == 2
+            is_named = len(columns) > 0 # the case if tree/branch is a compound object like a PxPyPzEVector
+            is_1d = result[0].ndim == 1 # the case if tree/branch refers to a vector of primitives/scalars (float, int)
+            is_multidim = result[0].ndim > 1 # the case if tree/branch refers to a >= 2 dim. object (matrix, tensor).
+                                             # first dimension will be interpreted as batch dimension
 
-            assert(is_named or is_1d or is_2d)
+            assert(is_named or is_1d or is_multidim)
 
             # regularize
-            if is_2d:
+            if is_multidim:
                 for i in range(len(result)):
                     try:
                         result[i] = ak.to_regular(result[i])
@@ -494,13 +498,27 @@ def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None,
                 # infer nrows, and ncols+dtype from first entry
                 if is_named:
                     col_names = columns
-                else:
-                    col_names = [f'dim{col}' for col in range(1 if is_1d else (result[0].type.content.size))]
+                elif is_1d:
+                    col_names = ['dim0']
+                elif is_multidim:
+                    if keep_dim:
+                        col_names = ['dim0']
+                    else:
+                        col_names = [f'dim{col}' for col in range(result[0].type.content.size)]
+
+                if is_multidim and keep_dim:
+                    # get type of multidim object
+                    first_as_np = np.array(result[0])
+                    total_shape = list(first_as_np.shape)
+                    total_shape[0] = size
+                    dtype = first_as_np.dtype
 
                 if dtype is None:
                     if is_named:
+                        # get type of primitivies saved in compound object
                         dtype = str(result[0].type.content.content(result[0].fields[0]))
                     else:
+                        # get type of 1d and column-wise 2d obejcts
                         dtype = str(result[0].type.content) if is_1d else str(result[0].type.content.content)
 
                 for col in col_names:
@@ -519,7 +537,7 @@ def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None,
                     if is_named:
                         target_data = arr[col][:]
                     else:
-                        if is_2d:
+                        if is_multidim:
                             target_data = arr[:, i_col]
                         else:
                             target_data = arr
@@ -547,7 +565,10 @@ def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None,
     
     assert(isinstance(dtype, str))
 
-    return (chunk_idx, ((nrows, ncols) if (is_2d or is_named) else (nrows, ), dtype))
+    if len(total_shape) == 0:
+        total_shape = (nrows, ) if is_1d else (nrows, ncols)
+
+    return (chunk_idx, (total_shape if isinstance(total_shape, tuple) else tuple(total_shape), dtype))
 
 def process_chunks(chunks, n_files:int|None=None, ncores:int|None=None):
     chunk_outputs = []
