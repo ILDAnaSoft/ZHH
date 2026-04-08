@@ -79,6 +79,7 @@ class ROOT2HDF5Converter:
         sizes = []
         ncols_found = 0
         nrows_found = 0
+        shape = []
 
         # check output file of first chunk
         if osp.isfile(chunks[0][4]):
@@ -99,7 +100,7 @@ class ROOT2HDF5Converter:
                             already_done = False
                             break
 
-                        shape = cast(h5py.Dataset, hf['shape'])[:]
+                        shape = list(cast(h5py.Dataset, hf['shape'])[:])
                         sizes.append(shape[0])
                         ncols_found = 1 if len(shape) == 1 else shape[1]
 
@@ -148,10 +149,13 @@ class ROOT2HDF5Converter:
 
             nrows_found = int(np.sum(sizes))
         
-        tot_shape = np.copy(shape)
-        tot_shape[0] = nrows_found
+        if len(shape):
+            tot_shape = [*shape]
+            tot_shape[0] = nrows_found
+        else:
+            tot_shape = [nrows_found, ncols_found]
 
-        return (already_done, list(tot_shape), sizes)
+        return (already_done, tot_shape, sizes)
 
     def convertLazy(self, nrows:int|None=None, check_existing:bool=False,
                     check_requires_exact_path_match:bool=True, **kwargs)->tuple[AbstractTask, list[AbstractTask]]:
@@ -553,7 +557,7 @@ def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None,
                         # get type of 1d and column-wise 2d obejcts
                         dtype = str(result[0].type.content) if is_1d else str(result[0].type.content.content)
 
-                print(f'Found dtype={dtype} total_shape={total_shape}')
+                #print(f'Found dtype={dtype} total_shape={total_shape}')
 
                 for col in col_names:
                     # chunk-size 16MB
@@ -567,14 +571,14 @@ def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None,
                         ds_maxshape = [*total_shape]
                         ds_maxshape[0] = None
 
-                    print(f'Creating ds <{col}> with shape {ds_shape} and maxshape {ds_maxshape}')
+                    #print(f'Creating ds <{col}> with shape {ds_shape} and maxshape {ds_maxshape}')
 
                     hf.create_dataset(col, shape=ds_shape, maxshape=ds_maxshape, dtype=dtype,
                                       chunks=True, rdcc_nbytes=16*1024**2, fillvalue=np.nan)
 
             for i_col, col in enumerate(col_names):
                 if i_result and not (is_multidim and keep_dim):
-                    print(f'Resizing ds to ({nrows+size}, )')
+                    #print(f'Resizing ds to ({nrows+size}, )')
                     cast(h5py.Dataset, hf[col]).resize((nrows+size, ))
                 
                 counter = 0
@@ -590,8 +594,8 @@ def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None,
                         else:
                             target_data = arr
 
-                    print(f'target_data.shape = {np.array(target_data).shape}')
-                    print(f'dataset.shape = {hf[col].shape}')
+                    #print(f'target_data.shape = {np.array(target_data).shape}')
+                    #print(f'dataset.shape = {hf[col].shape}')
                     
                     if clamp[0] is not None or clamp[1] is not None:
                         target_data = np.clip(target_data, a_min=clamp[0], a_max=clamp[1], dtype=dtype)
@@ -602,7 +606,7 @@ def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None,
                         
                         target_data[np.isnan(target_data)] = nan_to
 
-                    print(f'Appending to {(nrows+counter)}:{(nrows+counter+arr_size)}')
+                    #print(f'Appending to {(nrows+counter)}:{(nrows+counter+arr_size)}')
                             
                     dataset[(nrows+counter):(nrows+counter+arr_size)] = target_data
                     counter += arr_size
