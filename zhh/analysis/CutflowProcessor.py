@@ -699,6 +699,7 @@ def cutflowPlotsFn(signal_category_names:list[str],
         bar_colors.append(plot_context.getColorByKey(name))
         bar_labels.append(name)
         bar_counts.append(count)
+        print(counts_start)
         bar_descriptions.append(f'{format_counts(count)} ({(count / counts_start[name]):.1%})')
         
     bar_container = ax.bar(bar_labels, bar_counts, label=bar_labels, color=bar_colors)

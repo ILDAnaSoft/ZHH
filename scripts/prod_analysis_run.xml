@@ -35,7 +35,7 @@
         <constant name="MCParticleCollectionName" value="MCParticlesSkimmed" />
         <constant name="PFOCollectionName" value="PandoraPFOs_pfoselection" />
         <constant name="CMSEnergy" value="550." />
-	<constant name="ISRPzMax" value="125.6" />
+	<constant name="ISRPzMax" value="158" />
         <constant name="Verbosity" value="SILENT" />
     </constants>
 

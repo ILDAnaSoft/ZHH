@@ -341,7 +341,7 @@ cutflow_table:
       label: vvHH
       is_signal: true
     - category: vvHHbbbb
-      label: (\nu\nu bbbb)
+      label: (vvbbbb)
       is_signal: true
   #ignore_categories: llbbbb
 
