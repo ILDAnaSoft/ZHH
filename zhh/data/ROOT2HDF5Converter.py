@@ -148,9 +148,10 @@ class ROOT2HDF5Converter:
 
             nrows_found = int(np.sum(sizes))
         
-        shape = [nrows_found] if ncols_found < 2 else [nrows_found, ncols_found]
+        tot_shape = np.copy(shape)
+        tot_shape[0] = nrows_found
 
-        return (already_done, shape, sizes)
+        return (already_done, list(tot_shape), sizes)
 
     def convertLazy(self, nrows:int|None=None, check_existing:bool=False,
                     check_requires_exact_path_match:bool=True, **kwargs)->tuple[AbstractTask, list[AbstractTask]]:
@@ -223,14 +224,23 @@ class ROOT2HDF5Converter:
                 self._dtype = first_entry[1]
 
             sizes = [c[1][0][0] for c in conv_result] # get number of rows for each item in result
-            nrows_found = np.sum(sizes)
-            if nrows is not None and nrows_found != nrows:
-                raise Exception(f'Size mismatch: Found nrows_found={nrows_found} rows, but expected {nrows}')
 
             assert(len(first_shape) <= 2)
 
-            ncols = first_shape[1] if len(first_shape) == 2 else 1
-            shape = (nrows_found,) if len(first_shape) == 1 else (nrows_found, ncols)
+            ndims = len(first_shape)
+            keep_dim = chunks[0][8]
+            save_columnwise = ndims == 1 or (ndims >= 1 and not keep_dim) 
+
+            if save_columnwise:
+                ncols = first_shape[1] if len(first_shape) == 2 else 1
+                shape = (nrows_found,) if len(first_shape) == 1 else (nrows_found, ncols)
+            else:
+                # use raw shape output
+                shape_mod = np.array(first_shape)
+                shape_mod[0] = np.sum(sizes)
+
+                ncols = None
+                shape = tuple(shape_mod)
 
             #print(shape)
             #is_1d = 
@@ -238,17 +248,18 @@ class ROOT2HDF5Converter:
         
         h5_files = [chunk[4] for chunk in chunks]
         
-        createVDS(h5_files, self._vds_file, self._output_name, nrows=nrows_found, ncols=ncols, dtype=self._dtype, sizes=sizes)
+        createVDS(h5_files, self._vds_file, self._output_name, ncols=ncols, dtype=self._dtype, sizes=sizes)
 
-def createVDS(h5_files:list[str], output_file:str, output_name:str, nrows:int, ncols:int=1, dtype:str|None=None, sizes:list[int]|None=None):
+def createVDS(h5_files:list[str], output_file:str, output_name:str, shape:tuple|None=None,
+              ncols:int|None=None, dtype:str|None=None, sizes:list[int]|None=None):
     """_summary_
 
     Args:
         h5_files (list[str]): _description_
         output_file (str): _description_
         output_name (str): _description_. Defaults to None.
-        nrows (int): _description_
-        ncols (int, optional): _description_. Defaults to 1.
+        shape (tuple|None): 
+        ncols (int|None): if supplied, will assume 2D shape of (nrows, ncols) where nrows is auto-inferred from the HDF5 files
         dtype (str | None, optional): _description_. Defaults to None.
         sizes (list[int] | None, optional): _description_. Defaults to None.
     """
@@ -261,24 +272,42 @@ def createVDS(h5_files:list[str], output_file:str, output_name:str, nrows:int, n
         for p in h5_files:
             with h5py.File(p, 'r') as hf:
                 sizes.append(cast(h5py.Dataset, hf['shape'])[0])
+
+    if shape is None:
+        if ncols is None:
+            with h5py.File(h5_files[0], 'r') as hf:
+                shape_arr = np.array(cast(h5py.Dataset, hf['shape'])[:])
+            
+            shape_arr[0] = np.sum(sizes)
+            shape = tuple(shape_arr)
+        else:
+            shape = (np.sum(sizes), ncols)
+    elif not np.sum(sizes) != shape[0]:
+        raise Exception(f'Shape mismatch: Expected {shape[0]} entries at dim 0, but found {np.sum(sizes)}')
+    
+    is_multidim = ncols is None and len(shape) > 1 # only true is is_multidim and keep_dim before
+    shape_arr = np.array(shape)
     
     with h5py.File(h5_files[0], 'r') as hf:
         column_names = list(cast(Sequence, hf.attrs.get('col_names')))
 
     with h5py.File(output_file, 'a') as hf:
         for column in column_names:
-            layout = h5py.VirtualLayout((nrows, ), dtype)
+            layout = h5py.VirtualLayout(shape, dtype)
 
             counter = 0
 
             for i, path in enumerate(h5_files):
                 ncur = sizes[i]
-                vsource = h5py.VirtualSource(path, column, shape=(ncur, ), dtype=dtype)
+                cur_shape = np.copy(shape_arr)
+                cur_shape[0] = ncur
+
+                vsource = h5py.VirtualSource(path, column, shape=tuple(cur_shape), dtype=dtype)
                 layout[counter:(counter+ncur)] = vsource
                 counter += ncur
 
             # Add virtual dataset to output file
-            output_column_name = f'{output_name}.{column}' if ncols > 1 else output_name
+            output_column_name = f'{output_name}.{column}' if (ncols is not None and ncols > 1) else output_name
             #print(output_column_name)
             if output_column_name in hf.keys():
                 #print('warning: deleting key', output_column_name)
@@ -463,6 +492,8 @@ def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None,
     total_shape = []
     nrows = 0
     ncols = 0
+    ndims = 0
+    is_named = False
     is_1d = False
     is_multidim = False
     col_names:list[str] = []
@@ -476,9 +507,10 @@ def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None,
         for i_result, result in enumerate(translated):
             columns = result[0].fields
 
+            ndims = result[0].ndim
             is_named = len(columns) > 0 # the case if tree/branch is a compound object like a PxPyPzEVector
             is_1d = result[0].ndim == 1 # the case if tree/branch refers to a vector of primitives/scalars (float, int)
-            is_multidim = result[0].ndim > 1 # the case if tree/branch refers to a >= 2 dim. object (matrix, tensor).
+            is_multidim = ndims > 1 # the case if tree/branch refers to a >= 2 dim. object (matrix, tensor).
                                              # first dimension will be interpreted as batch dimension
 
             assert(is_named or is_1d or is_multidim)
@@ -511,7 +543,7 @@ def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None,
                     first_as_np = np.array(result[0])
                     total_shape = list(first_as_np.shape)
                     total_shape[0] = size
-                    dtype = first_as_np.dtype
+                    dtype = str(first_as_np.dtype)
 
                 if dtype is None:
                     if is_named:
@@ -521,12 +553,28 @@ def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None,
                         # get type of 1d and column-wise 2d obejcts
                         dtype = str(result[0].type.content) if is_1d else str(result[0].type.content.content)
 
+                print(f'Found dtype={dtype} total_shape={total_shape}')
+
                 for col in col_names:
                     # chunk-size 16MB
-                    hf.create_dataset(col, shape=size, maxshape=(None, ), dtype=dtype, chunks=True, rdcc_nbytes=16*1024**2, fillvalue=np.nan)
+                    # using size for per-column storage
+                    # using total_shape for keep_dim in case of multidimensional object
+                    ds_shape = size
+                    ds_maxshape = (None, )
+
+                    if is_multidim and keep_dim:
+                        ds_shape = tuple(total_shape)
+                        ds_maxshape = [*total_shape]
+                        ds_maxshape[0] = None
+
+                    print(f'Creating ds <{col}> with shape {ds_shape} and maxshape {ds_maxshape}')
+
+                    hf.create_dataset(col, shape=ds_shape, maxshape=ds_maxshape, dtype=dtype,
+                                      chunks=True, rdcc_nbytes=16*1024**2, fillvalue=np.nan)
 
             for i_col, col in enumerate(col_names):
-                if i_result:
+                if i_result and not (is_multidim and keep_dim):
+                    print(f'Resizing ds to ({nrows+size}, )')
                     cast(h5py.Dataset, hf[col]).resize((nrows+size, ))
                 
                 counter = 0
@@ -537,10 +585,13 @@ def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None,
                     if is_named:
                         target_data = arr[col][:]
                     else:
-                        if is_multidim:
+                        if is_multidim and not keep_dim:
                             target_data = arr[:, i_col]
                         else:
                             target_data = arr
+
+                    print(f'target_data.shape = {np.array(target_data).shape}')
+                    print(f'dataset.shape = {hf[col].shape}')
                     
                     if clamp[0] is not None or clamp[1] is not None:
                         target_data = np.clip(target_data, a_min=clamp[0], a_max=clamp[1], dtype=dtype)
@@ -550,6 +601,8 @@ def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None,
                             target_data = np.array(target_data)
                         
                         target_data[np.isnan(target_data)] = nan_to
+
+                    print(f'Appending to {(nrows+counter)}:{(nrows+counter+arr_size)}')
                             
                     dataset[(nrows+counter):(nrows+counter+arr_size)] = target_data
                     counter += arr_size
@@ -557,20 +610,21 @@ def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None,
                 assert(counter == size)
 
             nrows += size
+        
+        if len(total_shape) == 0:
+            total_shape = (nrows, ) if is_1d else (nrows, ncols)
 
         ncols = len(col_names)
-        hf['shape'] = np.array([nrows] if ncols == 1 else [nrows, ncols], dtype=int)
+        hf['shape'] = np.array(total_shape, dtype=int)
         hf.attrs['col_names'] = col_names
+        hf.attrs['save_columnwise'] = is_1d or is_named or not (is_multidim and keep_dim)
         hf.attrs['dtype'] = dtype
     
     assert(isinstance(dtype, str))
 
-    if len(total_shape) == 0:
-        total_shape = (nrows, ) if is_1d else (nrows, ncols)
-
     return (chunk_idx, (total_shape if isinstance(total_shape, tuple) else tuple(total_shape), dtype))
 
-def process_chunks(chunks, n_files:int|None=None, ncores:int|None=None):
+def process_chunks(chunks, n_files:int|None=None, ncores:int|None=None)->list[ChunkedConversionResult]:
     chunk_outputs = []
 
     with Pool(ncores if ncores is not None else round(cpu_count() * .8)) as pool:
