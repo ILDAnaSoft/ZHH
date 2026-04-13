@@ -1050,7 +1050,8 @@ def cutflowTableFn(masks,
                 
             columns.insert(first_signal_pos + 2, entry)
             
-        table = transpose(columns)
+        #table = transpose(columns)
+        table = columns
         if not using_split:
             table.insert(2 if calc_cut_efficiency else 3, r'\hline')
         
