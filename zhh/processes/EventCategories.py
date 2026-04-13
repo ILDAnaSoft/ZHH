@@ -45,6 +45,8 @@ class EVENT_CATEGORY_TRUE:
     llbb = 27
     lvbbbb = 28
 
+    tatabb = 29 # replicate \u03C4\u03C4bb = 14
+    
     # NEUTRINO
     OTHER_VV = 30
     vvHH = 31 # vvbbbb (ZHH signal)
@@ -90,6 +92,7 @@ class EVENT_CATEGORY_TRUE:
     qqqq = 58
     bbbbbb = 59
     qqqqqq = 60
+    qqbb = 61
     
     # SEMILEPTONIC
     lvqq = 65

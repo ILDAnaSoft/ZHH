@@ -53,6 +53,9 @@ event_categories:
 - name: vvbb
   handler: FinalStateDefinitions.define_vvbb
   id: null # EventCategories.vvbb
+- name: tatabb
+  handler: FinalStateDefinitions.define_tatabb
+  id: null # EventCategories.tatabb
 
 # 4f fully leptonic/hadronic
 - name: llll
@@ -64,6 +67,9 @@ event_categories:
 - name: vvvv
   handler: FinalStateDefinitions.define_vvvv
   id: null # EventCategories.vvvv
+- name: qqbb
+  handler: FinalStateDefinitions.define_qqbb
+  id: EventCategories.qqbb
 - name: bbbb
   handler: FinalStateDefinitions.define_bbbb
   id: EventCategories.bbbb
@@ -169,7 +175,7 @@ sources:
     event_categorization:
       default: EventCategories.F4_OTHER
       order: null
-      items: [ vvbb ] # vvqq, llqq, lvqq, llvv
+      items: [ vvbb, tatabb ] # vvqq, llqq, lvqq, llvv
     disabled: false
     reset: false
 
@@ -179,7 +185,7 @@ sources:
     event_categorization:
       default: EventCategories.F4_OTHER
       order: null
-      items: [ bbbb ] # qqqq, vvvv
+      items: [ qqbb, bbbb ] # qqqq, vvvv
     disabled: false
     reset: false
 
@@ -324,13 +330,17 @@ cutflow_table:
     - category: vvbb
       label: '\boldsymbol{\nu\nu} bb'
     - category: evbbqq
-      label: '\boldsymbol{\mu \nu b b q q}'
+      label: '\boldsymbol{e \nu b b q q}'
     - category: μvbbqq
       label: '\boldsymbol{\mu \nu b b q q}'
     - category: τvbbqq
       label: '\boldsymbol{\tau \nu b b q q}'
+    - category: tatabb
+      label: '\boldsymbol{\tau\tau} bb'
     - category: bbqqqq
       label: bbqqqq
+    - category: qqbb
+      label: qqbb
     - category: bbbb
       label: bbbb
     - category: vvbbbb
