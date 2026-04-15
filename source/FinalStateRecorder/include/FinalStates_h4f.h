@@ -72,8 +72,8 @@ class ffffh: public p6 {
 
             assert_true(d1.size() == 2, RESOLVER_ERRORS::UNEXPECTED_CHILDREN);
 
-            m_n_b_from_higgs = count(d1.begin(), d1.end(), 5);
-            m_n_c_from_higgs = count(d1.begin(), d1.end(), 4);
+            m_n_b_from_higgs = count(d1.begin(), d1.end(), 5) + count(d1.begin(), d1.end(), -5);
+            m_n_c_from_higgs = count(d1.begin(), d1.end(), 4) + count(d1.begin(), d1.end(), -4);
 
             return vector<int>{
                 fs_particles[0]->getPDG(),

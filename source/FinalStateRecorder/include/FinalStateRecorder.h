@@ -38,6 +38,7 @@ struct ERROR_CODES {
 		PROCESS_NOT_FOUND = 6002,
 		UNKNOWN_ERROR = 6003,
 		UNALLOWED_VALUES = 6004,
+		PROCESS_MISMATCH = 6005
 	};
 };
 
@@ -45,8 +46,8 @@ struct ERROR_CODES {
 class FinalStateRecorder : public Processor
 {
 	private:
-		void register_process(FinalStateResolver* resolver) { resolvers[resolver->get_process_name()] = resolver;  };
-		std::map<std::string, FinalStateResolver*> resolvers{};
+		void register_process(FinalStateResolver* resolver) { m_resolvers[resolver->get_process_name()] = resolver;  };
+		std::map<std::string, FinalStateResolver*> m_resolvers{};
 
 		float m_beam_pol1{};
 		float m_beam_pol2{};
@@ -73,8 +74,9 @@ class FinalStateRecorder : public Processor
 		}
 		FinalStateRecorder();
 		virtual ~FinalStateRecorder() {
-			for (auto& resolver: resolvers) {
-				delete resolver.second;
+			for (auto& resolver: m_resolvers) {
+				if (resolver.second != nullptr)
+					delete resolver.second;
 			}
 		};
 		FinalStateRecorder(const FinalStateRecorder&) = delete;
@@ -99,6 +101,7 @@ class FinalStateRecorder : public Processor
 		std::string m_outputJsonFile{};
 		std::string m_outputRootFile{};
 		std::vector<std::string> m_eventFilter{};
+		bool m_multiProcess{};
 		bool m_writeAll{};
 		bool m_setReturnValues{};
 
@@ -128,6 +131,41 @@ class FinalStateRecorder : public Processor
 			{ 25, 0 } // h
 		};
 
+		std::map<int, int> m_final_state_counts_signed {
+			{ 1, 0 }, // d
+			{ 2, 0 }, // u
+			{ 3, 0 }, // s
+			{ 4, 0 }, // c
+			{ 5, 0 }, // b
+			{ 6, 0 }, // t
+			{ 11, 0 }, // e
+			{ 12, 0 }, // ve
+			{ 13, 0 }, // μ
+			{ 14, 0 }, // vμ
+			{ 15, 0 }, // tau
+			{ 16, 0 }, // vtau
+			{ 24, 0 }, // W
+
+			{ -1, 0 }, // dbar
+			{ -2, 0 }, // ubar
+			{ -3, 0 }, // sbar
+			{ -4, 0 }, // cbar
+			{ -5, 0 }, // bbar
+			{ -6, 0 }, // tbar
+			{ -11, 0 }, // e+
+			{ -12, 0 }, // vebar
+			{ -13, 0 }, // μ+
+			{ -14, 0 }, // vμbar
+			{ -15, 0 }, // tau+
+			{ -16, 0 }, // vtaubar
+			{ -24, 0 }, // W+
+
+			{ 21, 0 }, // g
+			{ 22, 0 }, // γ
+			{ 23, 0 }, // Z
+			{ 25, 0 } // h
+		};
+
 		std::vector<int> m_higgs_final_states{};
 		std::map<int, int> m_higgs_final_state_counts {
 			{ 1, 0 }, // d
@@ -146,6 +184,41 @@ class FinalStateRecorder : public Processor
 			{ 22, 0 }, // γ
 			{ 23, 0 }, // Z
 			{ 24, 0 }, // W
+			{ 25, 0 } // h
+		};
+
+		std::map<int, int> m_higgs_final_state_counts_signed {
+			{ 1, 0 }, // d
+			{ 2, 0 }, // u
+			{ 3, 0 }, // s
+			{ 4, 0 }, // c
+			{ 5, 0 }, // b
+			{ 6, 0 }, // t
+			{ 11, 0 }, // e
+			{ 12, 0 }, // ve
+			{ 13, 0 }, // μ
+			{ 14, 0 }, // vμ
+			{ 15, 0 }, // tau
+			{ 16, 0 }, // vtau
+			{ 24, 0 }, // W
+
+			{ -1, 0 }, // dbar
+			{ -2, 0 }, // ubar
+			{ -3, 0 }, // sbar
+			{ -4, 0 }, // cbar
+			{ -5, 0 }, // bbar
+			{ -6, 0 }, // tbar
+			{ -11, 0 }, // e+
+			{ -12, 0 }, // vebar
+			{ -13, 0 }, // μ+
+			{ -14, 0 }, // vμbar
+			{ -15, 0 }, // tau+
+			{ -16, 0 }, // vtaubar
+			{ -24, 0 }, // W+
+
+			{ 21, 0 }, // g
+			{ 22, 0 }, // γ
+			{ 23, 0 }, // Z
 			{ 25, 0 } // h
 		};
 

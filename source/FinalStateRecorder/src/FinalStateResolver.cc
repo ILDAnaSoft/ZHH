@@ -33,7 +33,7 @@ std::vector<int> FinalStateResolver::pdgs_of_daughter_particles(EVENT::MCParticl
     auto daughters = particle->getDaughters();
 
     for (size_t i = 0; i < daughters.size(); i++)
-        res.push_back(abs(daughters[i]->getPDG()));
+        res.push_back(daughters[i]->getPDG());
 
     return res;
 };
