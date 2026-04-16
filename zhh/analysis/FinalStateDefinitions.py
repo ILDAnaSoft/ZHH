@@ -14,11 +14,13 @@ define_μμbb:FinalStateDefinition = lambda ac, fsc: (fsc.n_mu  == 2)         & 
 define_ττbb:FinalStateDefinition = lambda ac, fsc: (fsc.n_tau == 2)         & (fsc.n_b == 2)
 define_lvqq:FinalStateDefinition = lambda ac, fsc: (fsc.n_charged_lep == 1) & (fsc.n_q == 2) & (fsc.n_neutral_lep == 1)
 define_vvbb:FinalStateDefinition = lambda ac, fsc: (fsc.n_neutral_lep == 2) & (fsc.n_b == 2)
+define_tatabb:FinalStateDefinition = lambda ac, fsc: (fsc.n_charged_lep == 2) & (fsc.n_q == 2) & (fsc.n_tau == 2) & (fsc.n_b == 2)  
 
 define_llll:FinalStateDefinition = lambda ac, fsc: (fsc.n_charged_lep == 4) & (fsc.n_q == 0) & (fsc.n_neutral_lep == 0)
 define_qqqq:FinalStateDefinition = lambda ac, fsc: (fsc.n_charged_lep == 0) & (fsc.n_q == 4) & (fsc.n_neutral_lep == 0)
 define_vvvv:FinalStateDefinition = lambda ac, fsc: (fsc.n_charged_lep == 0) & (fsc.n_q == 0) & (fsc.n_neutral_lep == 4)
-define_bbbb:FinalStateDefinition = lambda ac, fsc: (fsc.n_b == 4)
+define_qqbb:FinalStateDefinition = lambda ac, fsc: (fsc.n_charged_lep == 0) & (fsc.n_q == 4) & (fsc.n_neutral_lep == 0) & (fsc.n_b == 2)
+define_bbbb:FinalStateDefinition = lambda ac, fsc: (fsc.n_charged_lep == 0) & (fsc.n_q == 4) & (fsc.n_neutral_lep == 0) & (fsc.n_b == 4)
 
 # categorize l2q4
 define_lvqqqq:FinalStateDefinition = lambda ac, fsc: (fsc.n_charged_lep == 1) & (fsc.n_neutral_lep == 1) & (fsc.n_q == 4)

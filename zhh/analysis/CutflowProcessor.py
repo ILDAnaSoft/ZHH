@@ -699,6 +699,7 @@ def cutflowPlotsFn(signal_category_names:list[str],
         bar_colors.append(plot_context.getColorByKey(name))
         bar_labels.append(name)
         bar_counts.append(count)
+        print(counts_start)
         bar_descriptions.append(f'{format_counts(count)} ({(count / counts_start[name]):.1%})')
         
     bar_container = ax.bar(bar_labels, bar_counts, label=bar_labels, color=bar_colors)
@@ -1049,7 +1050,8 @@ def cutflowTableFn(masks,
                 
             columns.insert(first_signal_pos + 2, entry)
             
-        table = transpose(columns)
+        #table = transpose(columns)
+        table = columns
         if not using_split:
             table.insert(2 if calc_cut_efficiency else 3, r'\hline')
         

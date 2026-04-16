@@ -56,7 +56,8 @@ class EventObservablesVV : public EventObservablesBase, public EventObservablesF
 		float m_yMinus5j{};
 		float m_yPlus5j{};
 		
-		float m_massWtt5j{};
+		float m_massW1tt5j{};
+		float m_massW2tt5j{};
 		float m_massT1tt5j{};
 		float m_massT2tt5j{};
 

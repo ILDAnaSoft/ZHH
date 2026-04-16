@@ -73,6 +73,12 @@ FinalStateRecorder::FinalStateRecorder() :
 				m_eventFilter,
 				std::vector<std::string>{}
 				);
+	
+	registerProcessorParameter("MultiProcess",
+				"if true, keeps all FinalStateResolvers for the whole runtime duration. if false, only keeps the one that is used to resolve the first event. defaults to false",
+				m_multiProcess,
+				false
+				);
 }
 
 std::vector<std::pair<int*, int>> FinalStateRecorder::construct_filter_lookup(std::vector<std::string> filter) {
@@ -211,9 +217,11 @@ void FinalStateRecorder::init()
 		m_pTTree->Branch("error_code", &m_error_code);
 		m_pTTree->Branch("final_states", &m_final_states);
 		m_pTTree->Branch("final_state_counts", &m_final_state_counts);
+		m_pTTree->Branch("final_state_counts_signed", &m_final_state_counts_signed);
 
 		m_pTTree->Branch("higgs_final_states", &m_higgs_final_states);
 		m_pTTree->Branch("higgs_final_state_counts", &m_higgs_final_state_counts);
+		m_pTTree->Branch("higgs_final_state_counts_signed", &m_higgs_final_state_counts_signed);
 
 		m_pTTree->Branch("process", &m_process);
 		m_pTTree->Branch("process_id", &m_process_id);
@@ -560,6 +568,18 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 		if (m_beam_pol1 == -1 && m_beam_pol2 ==  1) m_polarization_code = POLARIZATION_CODES::EL_PR; else
 		if (m_beam_pol1 ==  1 && m_beam_pol2 == -1) m_polarization_code = POLARIZATION_CODES::ER_PL; else
 		if (m_beam_pol1 ==  1 && m_beam_pol2 ==  1) m_polarization_code = POLARIZATION_CODES::ER_PR;
+
+		if (!m_multiProcess) {
+			// delete all other resolvers if they are not required
+			auto it = m_resolvers.find(m_process_name);
+
+			if (it != m_resolvers.end()) {
+				FinalStateResolver* resolver = it->second;
+
+				m_resolvers.clear();
+				m_resolvers.emplace(m_process_name, resolver);
+			}
+		}
 	}
 
 	this->clear();
@@ -573,13 +593,18 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 	// Extract process meta data
 	std::string process = pLCEvent->getParameters().getStringVal("processName");
 
+	if (!m_multiProcess && process != m_process_name) {
+		std::cerr << "multiProcess is disabled, but found process " << process << " differs from expected process " << m_process_name << " in event " << m_n_evt << ". Aborting..." << std::endl ;
+		throw ERROR_CODES::PROCESS_MISMATCH;
+	}
+
 	try {
 		LCCollection *inputMCParticleCollection;
 
 		inputMCParticleCollection = pLCEvent->getCollection( m_mcParticleCollection );
 
-		if (resolvers.find(process) != resolvers.end()) {
-			FinalStateResolver* resolver = resolvers.at(process);
+		if (m_resolvers.find(process) != m_resolvers.end()) {
+			FinalStateResolver* resolver = m_resolvers.at(process);
 
 			m_process = resolver->get_process_id();
 			m_n_fermion = resolver->get_n_fermions();
@@ -598,23 +623,37 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 				m_n_c_from_higgs = resolver->get_n_c_from_higgs();
 
 				for (size_t i = 0; i < m_final_states.size(); i++) {
-					int particle_pdg = abs(m_final_states[i]);
+					int particle_pdg = m_final_states[i];
 
 					if (m_final_state_counts.find(abs(particle_pdg)) != m_final_state_counts.end()) {
-						m_final_state_counts[particle_pdg]++;
+						m_final_state_counts[abs(particle_pdg)]++;
 					} else {
-						std::cerr << "Encountered unallowed final state particle " << particle_pdg << " in run " << m_n_run << " (process " << m_process << ") at event " << m_n_evt << std::endl ;
+						std::cerr << "Encountered unallowed final state particle " << abs(particle_pdg) << " in run " << m_n_run << " (process " << m_process << ") at event " << m_n_evt << std::endl ;
+						throw ERROR_CODES::UNALLOWED_VALUES;
+					}
+
+					if (m_final_state_counts_signed.find(particle_pdg) != m_final_state_counts_signed.end()) {
+						m_final_state_counts_signed[particle_pdg]++;
+					} else {
+						std::cerr << "Encountered unallowed signed final state particle " << particle_pdg << " in run " << m_n_run << " (process " << m_process << ") at event " << m_n_evt << std::endl ;
 						throw ERROR_CODES::UNALLOWED_VALUES;
 					}
 				}
 
 				for (size_t i = 0; i < m_higgs_final_states.size(); i++) {
-					int particle_pdg = abs(m_higgs_final_states[i]);
+					int particle_pdg = m_higgs_final_states[i];
 
 					if (m_higgs_final_state_counts.find(abs(particle_pdg)) != m_higgs_final_state_counts.end()) {
-						m_higgs_final_state_counts[particle_pdg]++;
+						m_higgs_final_state_counts[abs(particle_pdg)]++;
 					} else {
-						std::cerr << "Encountered unallowed final state particle " << particle_pdg << " in run " << m_n_run << " (process " << m_process << ") at event " << m_n_evt << std::endl ;
+						std::cerr << "Encountered unallowed final state particle " << abs(particle_pdg) << " in run " << m_n_run << " (process " << m_process << ") at event " << m_n_evt << std::endl ;
+						throw ERROR_CODES::UNALLOWED_VALUES;
+					}
+
+					if (m_higgs_final_state_counts_signed.find(particle_pdg) != m_higgs_final_state_counts_signed.end()) {
+						m_higgs_final_state_counts_signed[particle_pdg]++;
+					} else {
+						std::cerr << "Encountered unallowed signed final state particle " << particle_pdg << " in run " << m_n_run << " (process " << m_process << ") at event " << m_n_evt << std::endl ;
 						throw ERROR_CODES::UNALLOWED_VALUES;
 					}
 				}
@@ -710,8 +749,9 @@ void FinalStateRecorder::end()
 	}
 
 	// delete all registered FinalStateRecorders
-	for (auto [key, value]: resolvers) {
+	for (auto [key, value]: m_resolvers) {
 		delete value;
+		m_resolvers[key] = nullptr;
 	};
-	resolvers.clear();
+	m_resolvers.clear();
 }
