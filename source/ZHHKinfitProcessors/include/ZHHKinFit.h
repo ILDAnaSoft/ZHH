@@ -98,7 +98,7 @@ public:
 							      EVENT::ReconstructedParticle* neutrino);
   FitResult performllbbbbFIT( pfoVector jets,pfoVector leptons,bool traceEvent);	    
   FitResult performvvbbbbFIT( pfoVector jets,bool traceEvent, LCCollection *inputMCParticleCollection);	    
-  FitResult performqqbbbbFIT( pfoVector jets,bool traceEvent);	    
+  FitResult performqqbbbbFIT( pfoVector jets,bool traceEvent, LCCollection *originalJetCollection);	    
   virtual void	getJetParameters( ReconstructedParticle* jet , float (&parameters)[ 3 ] , float (&errors)[ 3 ] );
   virtual void	getLeptonParameters( ReconstructedParticle* lepton , float (&parameters)[ 3 ] , float (&errors)[ 3 ] );
   std::pair<std::vector<double>,std::vector<double>> calculateInitialValues(pfoVector jets, pfoVector leptons, vector<int> perm);
@@ -134,6 +134,10 @@ private:
   std::string _OutLeptonPullsCol{};
   std::string _OutJetPullsCol{};
   std::string m_signature{};
+  std::string m_JetTaggingPIDAlgorithm{}; 
+  std::string m_JetTaggingPIDParameterB{};
+  std::string m_JetTaggingPIDParameterBbar{};
+  
   int m_nAskedJets{};
   int m_nAskedLeps{};
   bool m_fitISR = true;
@@ -199,6 +203,13 @@ private:
 	float m_cos1stAfterFit{};
   float m_FitProbability{};
   float m_FitChi2{};
+  float m_cosbmax{};
+	float m_bmax1{};
+	float m_bmax2{};
+  float m_bmax3{};
+	float m_bmax4{};
+  float m_bmax5{};
+  float m_bmax6{};
   std::vector<int> m_perm{};
   std::vector<ROOT::Math::PxPyPzEVector> m_PrefitJetFourMomentum{};
   std::vector<ROOT::Math::PxPyPzEVector> m_PostfitJetFourMomentum{};
@@ -224,7 +235,16 @@ private:
   std::vector<float> m_Sigma_PyE{};
   std::vector<float> m_Sigma_PzE{};
   std::vector<float> m_Sigma_E2{};
-  
+  std::vector<float> m_scoreB{};
+  std::vector<float> m_scoreBbar{};
+  std::vector<double> m_bTagValues{};
+
+  typedef std::pair<unsigned short, double> JetTaggingPair;
+  static bool jetTaggingComparator ( const JetTaggingPair& l, const JetTaggingPair& r) { return l.second > r.second || std::isnan(r.second); };
+  std::vector<JetTaggingPair> m_bTagsSorted{}; // (jet index, btag1value) sorted DESC; first highest, last lowest
+  std::vector<std::string> m_JetTaggingPIDParameters{};
+  std::vector<std::vector<float>> m_jetTags{};
 };
 
 #endif
+

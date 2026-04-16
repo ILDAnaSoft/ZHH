@@ -1,4 +1,5 @@
 #include "ZHHKinFit.h"
+#include <UTIL/PIDHandler.h>
 
 using namespace lcio ;
 using namespace marlin ;
@@ -195,6 +196,30 @@ ZHHKinFit::ZHHKinFit() :
 			     m_ievttrace,
 			     (int)0
 			     );
+
+	registerProcessorParameter("JetTaggingPIDAlgorithm",
+            "Name of flavor tagging algo",
+            m_JetTaggingPIDAlgorithm,
+            std::string("weaver")
+            );
+
+  registerProcessorParameter("JetTaggingPIDParameterB",
+            "B parameter",
+            m_JetTaggingPIDParameterB,
+            std::string("mc_b")
+            );
+
+  registerProcessorParameter("JetTaggingPIDParameterBbar",
+            "Bbar parameter",
+            m_JetTaggingPIDParameterBbar,
+            std::string("mc_bbar")
+            );
+
+  registerProcessorParameter("JetTaggingPIDParameters",
+            "Number of jet should be in the event",
+            m_JetTaggingPIDParameters,
+            std::vector<std::string>{"mc_b mc_bbar mc_c mc_cbar mc_d mc_dbar mc_g mc_s mc_sbar mc_u mc_ubar"}
+            );
   
   // Outputs: Fitted jet and leptons and their prefit counterparts, the neutrino correction, and pulls
   registerOutputCollection(LCIO::RECONSTRUCTEDPARTICLE,
@@ -356,9 +381,18 @@ void ZHHKinFit::init()
   m_pTTree->Branch("Sigma_PyE",&m_Sigma_PyE);
   m_pTTree->Branch("Sigma_PzE",&m_Sigma_PzE);
   m_pTTree->Branch("Sigma_E2",&m_Sigma_E2);
+  m_pTTree->Branch("bTags", &m_bTagValues);
+	m_pTTree->Branch("cosbmax", &m_cosbmax, "cosbmax/F");
+  m_pTTree->Branch("bmax1", &m_bmax1, "bmax1/F");
+	m_pTTree->Branch("bmax2", &m_bmax2, "bmax2/F");
+	m_pTTree->Branch("bmax3", &m_bmax3, "bmax3/F");
+	m_pTTree->Branch("bmax4", &m_bmax4, "bmax4/F");
+  m_pTTree->Branch("bmax5", &m_bmax5, "bmax5/F");
+  m_pTTree->Branch("bmax6", &m_bmax6, "bmax6/F");
+  m_pTTree->Branch("scoreB", &m_scoreB);
+  m_pTTree->Branch("scoreBbar", &m_scoreBbar);
 
-  streamlog_out(DEBUG) << "   init finished  " << std::endl;
-
+  streamlog_out(DEBUG) << "   init finished  " << std::endl;  
 }
 
 void ZHHKinFit::Clear()
@@ -401,6 +435,13 @@ void ZHHKinFit::Clear()
   m_cos1stAfterFit = 0.0;
   m_FitProbability = 0.0;
   m_FitChi2 = 0.0;
+  m_cosbmax = 0.;
+	m_bmax1 = 0.;
+	m_bmax2 = 0.;
+	m_bmax3 = 0.;
+	m_bmax4 = 0.;
+  m_bmax5 = 0.;
+  m_bmax6 = 0.;
   m_perm.clear();
   m_PrefitJetFourMomentum.clear();
   m_PostfitJetFourMomentum.clear();
@@ -426,6 +467,12 @@ void ZHHKinFit::Clear()
   m_Sigma_PyE.clear();
   m_Sigma_PzE.clear();
   m_Sigma_E2.clear();
+  m_bTagsSorted.clear();
+  m_jetTags.clear();
+
+  std::fill(m_scoreB.begin(), m_scoreB.end(), 0.0);
+  std::fill(m_scoreBbar.begin(), m_scoreBbar.end(), 0.0);
+  std::fill(m_bTagValues.begin(), m_bTagValues.end(), -1.);
 }
 
 void ZHHKinFit::processRunHeader()
@@ -642,7 +689,7 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     woNuFitResult = performvvbbbbFIT( Jets, traceEvent , inputMCParticleCollection);
   }
   if (m_signature == "qqbbbb") {
-    woNuFitResult = performqqbbbbFIT( Jets, traceEvent );
+    woNuFitResult = performqqbbbbFIT( Jets, traceEvent, pLCEvent->getCollection("RefinedJets6") );
   }
   BaseFitter* woNuFitter = woNuFitResult.fitter.get();
   
@@ -911,7 +958,7 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
 	fitResult = performvvbbbbFIT( CorrectedJets, traceEvent, inputMCParticleCollection );
       }
       if (m_signature == "qqbbbb") {
-	fitResult = performqqbbbbFIT( CorrectedJets, traceEvent );
+	fitResult = performqqbbbbFIT( CorrectedJets, traceEvent, pLCEvent->getCollection("RefinedJets6") );
       }
       BaseFitter* fitter = fitResult.fitter.get();
       
@@ -2069,7 +2116,7 @@ ZHHKinFit::FitResult ZHHKinFit::performvvbbbbFIT( pfoVector jets, bool traceEven
   return bestFitResult;
 }
 
-ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEvent) {
+ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEvent, LCCollection *originalJetCollection) {
   shared_ptr<vector<shared_ptr<JetFitObject>>> jfo = make_shared<vector<shared_ptr<JetFitObject>>>();
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //////												  //////
@@ -2088,13 +2135,68 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
     streamlog_out(MESSAGE)  << " start four-vector of jet"<< i_jet+1 <<": " << "[" << jets[ i_jet ]->getMomentum()[0] << ", " << jets[ i_jet ]->getMomentum()[1] << ", " << jets[ i_jet ]->getMomentum()[2] << ", " << jets[ i_jet ]->getEnergy() << "]" << std::endl ;
   }
 
+  PIDHandler jetPIDh(originalJetCollection);
+	int _FTAlgoID = jetPIDh.getAlgorithmID(m_JetTaggingPIDAlgorithm);
+
+	int BTagID = jetPIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterB);
+	int BbarTagID = jetPIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterBbar);
+  
+  m_bTagValues.assign(jets.size(), -1.0);
+  m_scoreB.assign(jets.size(), 0.0);
+  m_scoreBbar.assign(jets.size(), 0.0);
+  m_jetTags.assign(jets.size(), std::vector<float>(m_JetTaggingPIDParameters.size(), 0.0));
+
+	//int OTagID = jetPIDh.getParameterIndex(_FTAlgoID, "OTag");
+	streamlog_out(MESSAGE) << "--- FLAVOR TAG ---" << std::endl;
+
+	for (unsigned int i_jet = 0; i_jet < jets.size(); i_jet++) {
+      // Fetch the original unbroken jet from RefinedJets6 to read the true tags
+      ReconstructedParticle* origJet = dynamic_cast<ReconstructedParticle*>(originalJetCollection->getElementAt(i_jet));
+      const ParticleIDImpl& FTImpl = dynamic_cast<const ParticleIDImpl&>(jetPIDh.getParticleID(origJet, _FTAlgoID));
+      const FloatVec& FTPara = FTImpl.getParameters();
+
+			m_bTagValues[i_jet] = FTPara[BTagID] + FTPara[BbarTagID];
+			streamlog_out(MESSAGE) << "Jet " << i_jet << std::endl << " > Algo1 - B [B,Bbar] = " << m_bTagValues[i_jet] << " [" << FTPara[BTagID] << ", " << FTPara[BbarTagID] << "]" << std::endl;
+
+      m_scoreB[i_jet] = FTPara[BTagID];
+      m_scoreBbar[i_jet] = FTPara[BbarTagID];
+
+			// write all requested parameters
+			for (size_t j = 0; j < m_JetTaggingPIDParameters.size(); j++) {
+					int param_id = jetPIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameters[j]);
+					if (param_id + 1 > (int)FTPara.size()) {
+						std::cerr << "Parameter error: Param " << j << ", value=" << m_JetTaggingPIDParameters[j] << std::endl;
+						throw EVENT::Exception("No flavor tagging value for parameter");
+					}
+					
+					m_jetTags[i_jet][j] = FTPara[param_id];
+				}
+      }
+
+  // calculate bmax1,2,3,4
+	for (size_t i = 0; i < m_bTagValues.size(); i++)
+			m_bTagsSorted.push_back(std::make_pair(i, m_bTagValues[i]));
+
+	std::sort (m_bTagsSorted.begin(), m_bTagsSorted.end(), jetTaggingComparator);
+
+	TVector3 pjbmaxA1 (jets[m_bTagsSorted[0].first]->getMomentum());
+	TVector3 pjbmaxA2 (jets[m_bTagsSorted[1].first]->getMomentum());
+	m_cosbmax = pjbmaxA1.Dot(pjbmaxA2)/pjbmaxA1.Mag()/pjbmaxA2.Mag();
+
+	m_bmax1 = m_bTagsSorted[0].second;
+	m_bmax2 = m_bTagsSorted[1].second;
+	m_bmax3 = m_bTagsSorted[2].second;
+	m_bmax4 = m_bTagsSorted[3].second;
+	m_bmax5 = m_bTagsSorted[4].second;
+	m_bmax6 = m_bTagsSorted[5].second;
+
   double bestProb = -1;
   double bestChi2 = 9999999999999.;
   FitResult bestFitResult;
 
   assert(jets.size()==6);
   vector<vector<unsigned int>> perms;
-  if (m_fithypothesis == "ZZH" || m_fithypothesis == "ZZHsoft" || m_fithypothesis == "MH" || m_fithypothesis == "ZHH" || m_fithypothesis == "EQM") {
+  if (m_fithypothesis == "ZZH" || m_fithypothesis == "ZZHsoft" || m_fithypothesis == "MH" || m_fithypothesis == "ZHH" || m_fithypothesis == "ZHHsoft" || m_fithypothesis == "EQM") {
     //TO DO: redo permutations for each hypothesis
     perms = {
       {0, 1, 2, 3, 4, 5}, {1, 2, 0, 3, 4, 5}, {2, 4, 0, 1, 3, 5},
@@ -2154,7 +2256,7 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
     shared_ptr<MomentumConstraint> pzc = make_shared<MomentumConstraint>(0, 0, 0, 1, 0);
     pzc->setName("sum(p_z)");
     for (auto j : *jfo_perm) pzc->addToFOList(*j);
-    
+
     double E_lab = 2 * sqrt( std::pow( 0.548579909e-3 , 2 ) + std::pow( m_ECM / 2 , 2 ) + std::pow( target_p_due_crossing_angle , 2 ) + 0. + 0.); //TODO: check equation
     shared_ptr<MomentumConstraint> ec = make_shared<MomentumConstraint>(1, 0, 0, 0, E_lab);
     ec->setName("sum(E)");
@@ -2200,20 +2302,29 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
     h2m->addToFOList (*jfo_perm->at(2), 1);
     h2m->addToFOList (*jfo_perm->at(3), 1);
     h2m->setName("higgs2 mass");
-    shared_ptr<SoftGaussMassConstraint> zmsoft = make_shared<SoftGaussMassConstraint>(2.4952/2,91.2); 
-    zmsoft->addToFOList (*jfo_perm->at(2), 1);
-    zmsoft->addToFOList (*jfo_perm->at(3), 1);
-    zmsoft->setName("soft z mass");
-    shared_ptr<MassConstraint> zm = make_shared<MassConstraint>(91.2);
-    zm->addToFOList (*jfo_perm->at(2), 1);
-    zm->addToFOList (*jfo_perm->at(3), 1);
-    zm->setName("hard z mass");
+    shared_ptr<SoftGaussMassConstraint> z1msoft = make_shared<SoftGaussMassConstraint>(2.4952/2,91.2);
+    z1msoft->addToFOList (*jfo_perm->at(2), 1);
+    z1msoft->addToFOList (*jfo_perm->at(3), 1);
+    z1msoft->setName("soft z1 mass");
+    shared_ptr<MassConstraint> z1m = make_shared<MassConstraint>(91.2);
+    z1m->addToFOList (*jfo_perm->at(2), 1);
+    z1m->addToFOList (*jfo_perm->at(3), 1);
+    z1m->setName("hard z1 mass");
     shared_ptr<MassConstraint> eqm = make_shared<MassConstraint>(0.);
     eqm->addToFOList (*jfo_perm->at(0), 1);
     eqm->addToFOList (*jfo_perm->at(1), 1);
     eqm->addToFOList (*jfo_perm->at(2), 2);
     eqm->addToFOList (*jfo_perm->at(3), 2);
     eqm->setName("equal mass");
+    //New 3x mass constraint (for jet4 and jet5)
+    shared_ptr<SoftGaussMassConstraint> z2msoft = make_shared<SoftGaussMassConstraint>(2.4952/2,91.2); 
+    z2msoft->addToFOList (*jfo_perm->at(4), 1);
+    z2msoft->addToFOList (*jfo_perm->at(5), 1);
+    z2msoft->setName("soft z2 mass");
+    shared_ptr<MassConstraint> z2m = make_shared<MassConstraint>(91.2);
+    z2m->addToFOList (*jfo_perm->at(4), 1);
+    z2m->addToFOList (*jfo_perm->at(5), 1);
+    z2m->setName("hard z2 mass");    
     //Not part of fit hypothesis, added after fit:
     shared_ptr<MassConstraint> h1 = make_shared<MassConstraint>(125.);
     h1->addToFOList (*jfo_perm->at(0), 1);
@@ -2280,12 +2391,19 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
     } else if (m_fithypothesis == "ZHH") {
       fitter->addConstraint( h1m.get() );
       fitter->addConstraint( h2m.get() );
+      fitter->addConstraint( z2m.get() );
+    } else if (m_fithypothesis == "ZHHsoft") {
+      fitter->addConstraint( h1m.get() );
+      fitter->addConstraint( h2m.get() );
+      fitter->addConstraint( z2msoft.get() );
     } else if (m_fithypothesis == "ZZH") {
       fitter->addConstraint( h1m.get() );
-      fitter->addConstraint( zm.get() );
+      fitter->addConstraint( z1m.get() );
+      fitter->addConstraint( z2m.get() );
     } else if (m_fithypothesis == "ZZHsoft") {
       fitter->addConstraint( h1m.get() );
-      fitter->addConstraint( zmsoft.get() );
+      fitter->addConstraint( z1msoft.get() );
+      fitter->addConstraint( z2msoft.get() );
     } else if (m_fithypothesis == "EQM") {
       fitter->addConstraint( eqm.get() );
     }
@@ -2574,8 +2692,8 @@ std::pair<std::vector<double>,std::vector<double>> ZHHKinFit::calculateInitialVa
     } else if (m_signature == "vvbbbb") {
       z->addToFOList(*zfo, 1);      
     } else if (m_signature == "qqbbbb") {
-      z->addToFOList(*jfo->at(4), 1);
-      z->addToFOList(*jfo->at(5), 1);
+      z->addToFOList(*jfo_perm->at(4), 1);
+      z->addToFOList(*jfo_perm->at(5), 1);
     }
     z->setName("z mass");  
     shared_ptr<MassConstraint> hh = make_shared<MassConstraint>(250.);
@@ -2591,8 +2709,8 @@ std::pair<std::vector<double>,std::vector<double>> ZHHKinFit::calculateInitialVa
     } else if (m_signature == "vvbbbb") {
       zhh->addToFOList(*zfo, 1);      
     } else if (m_signature == "qqbbbb") {
-      zhh->addToFOList(*jfo->at(4), 1);
-      zhh->addToFOList(*jfo->at(5), 1);
+      zhh->addToFOList(*jfo_perm->at(4), 1);
+      zhh->addToFOList(*jfo_perm->at(5), 1);
     }
     zhh->addToFOList (*jfo_perm->at(0), 1);
     zhh->addToFOList (*jfo_perm->at(1), 1);
@@ -2728,7 +2846,7 @@ std::vector<double> ZHHKinFit::calculatePulls(std::shared_ptr<ParticleFitObject>
     //streamlog_out(MESSAGE) << "errfit = " << errfit << ", errmea = " << errmea << ", sigma = " << sigma << std::endl ;
     if (sigma > 0) {
       sigma = sqrt(sigma);
-      //streamlog_out(MESSAGE) << "pull = " << (fitted - start)/sigma << std::endl ;
+    //streamlog_out(MESSAGE) << "pull = " << (fitted - start)/sigma << std::endl ;
       pulls.push_back((fitted - start)/sigma);
     }
     else {
