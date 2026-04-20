@@ -2,8 +2,11 @@ import os.path as osp
 from subprocess import check_output
 from os import makedirs
 
-def render_latex(latex:str, location:str, overwrite:bool=True):    
-    content = "\documentclass[9pt]{article}\n\\usepackage[a4paper,margin=0.5cm,nohead,landscape]{geometry}\n\\usepackage{amsmath,amssymb}\n\\begin{document}\n " + latex + " \n\\end{document}"
+def render_latex(latex:str, location:str, overwrite:bool=True):
+    content = "\documentclass[9pt]{article}\n\\usepackage[a4paper,margin=0.5cm,nohead,landscape]{geometry}\n\\usepackage{amsmath,amssymb}\n\\usepackage{tabularx}\n\\usepackage{siunitx}\n\\usepackage{booktabs}\n\\begin{document}\n "
+    #content+= "\sisetup{round-mode=uncertainty, round-precision=1, exponent-mode = scientific}\n"
+    content+= "\sisetup{round-mode=figures, round-precision=3}\n"
+    content+= latex + " \n\\end{document}"
 
     drn = osp.dirname(location)
     bname = osp.splitext(osp.basename(location))[0]

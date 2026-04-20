@@ -1053,10 +1053,10 @@ def cutflowTableFn(masks,
         #table = transpose(columns)
         table = columns
         if not using_split:
-            table.insert(2 if calc_cut_efficiency else 3, r'\hline')
+            table.insert(1, r'\hline')
         
         if step_start == 0 and not using_split:
-            table.insert(5 if calc_cut_efficiency else 6, r'\hline')
+            table.insert(16, r'\hline')
 
         # print(tabulate(table, headers='firstrow', stralign='center', numalign='center', disable_numparse=True)) #tablefmt='latex_raw', ))
         # latex_out = tabulate(table, headers='firstrow', tablefmt='latex_raw', numalign='right', disable_numparse=True)
