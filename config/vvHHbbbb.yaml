@@ -285,7 +285,7 @@ features:
                yplus, yminus,
                zz_mz1, zz_mz2,
                massWtt4j, massT1tt4j, massT2tt4j,
-               massWtt5j, massT1tt5j, massT2tt5j], tree: EventObservablesVV, dtype: float32 }
+               massW1tt5j, massW2tt5j, massT1tt5j, massT2tt5j], tree: EventObservablesVV, dtype: float32 }
   
   # renamed/clamped quantities
   - { name: fit4C_mhh, tree: EventObservablesVV, dtype: float32, nan_to: -20., clamp_min: -10. }
@@ -327,24 +327,28 @@ features:
 
 cutflow_table:
   items:
-    - category: vvbb
-      label: '\boldsymbol{\nu\nu} bb'
     - category: evbbqq
       label: '\boldsymbol{e \nu b b q q}'
     - category: μvbbqq
       label: '\boldsymbol{\mu \nu b b q q}'
     - category: τvbbqq
       label: '\boldsymbol{\tau \nu b b q q}'
-    - category: tatabb
-      label: '\boldsymbol{\tau\tau} bb'
+    - category: vvbbbb
+      label: '\boldsymbol{\nu \nu b b b b}'
     - category: bbqqqq
       label: bbqqqq
-    - category: qqbb
-      label: qqbb
+    - category: vvbb
+      label: '\boldsymbol{\nu\nu} bb'
+    - category: tatabb
+      label: '\boldsymbol{\tau\tau} bb'
     - category: bbbb
       label: bbbb
-    - category: vvbbbb
-      label: vvbbbb
+    - category: qqbb
+      label: qqbb
+    - category: ttH
+      label: ttH
+    - category: ttZ
+      label: ttZ
     - category: vvqqH
       label: vvqqH
     - category: vvHH
@@ -391,6 +395,46 @@ cuts:
   #    for this, use the syntax: <mva_name>.threshold
   mva_cut:
   - { quantity: SigMVAOutput, operator: gte, value: default_mva.threshold }
+  feature_nocut:
+  - { quantity: bmax1, operator: gte, value: 0. }
+  - { quantity: bmax2, operator: gte, value: 0. }
+  - { quantity: bmax3, operator: gte, value: 0. }
+  - { quantity: bmax4, operator: gte, value: 0. }
+  - { quantity: jet1_m, operator: gte, value: 0. }
+  - { quantity: jet2_m, operator: gte, value: 0. }
+  - { quantity: jet3_m, operator: gte, value: 0. }
+  - { quantity: jet4_m, operator: gte, value: 0. }
+  - { quantity: zz_mz1, operator: gte, value: 0. }
+  - { quantity: zz_mz2, operator: gte, value: 0. }
+  - { quantity: massWtt4j, operator: gte, value: 0. }
+  - { quantity: massW2tt5j, operator: gte, value: 0. }
+  - { quantity: ZHH_FitChi2, operator: gte, value: 0. }
+  - { quantity: fit4C_mh1, operator: gte, value: 0. }
+  - { quantity: npfos, operator: gte, value: 0. }
+  - { quantity: yplus, operator: gte, value: 0. }
+  mva_zero_cut:
+  - { quantity: SigMVAOutput, operator: lte, value: 0.00001 }
+  mva_nocut:
+  - { quantity: SigMVAOutput, operator: gte, value: 0. }
+  eval_cut:
+  - { quantity: bmax1, operator: gte, value: 0. }
+  - { quantity: bmax2, operator: gte, value: 0. }
+  - { quantity: bmax3, operator: gte, value: 0. }
+  - { quantity: bmax4, operator: gte, value: 0. }
+  - { quantity: jet1_m, operator: gte, value: 0. }
+  - { quantity: jet2_m, operator: gte, value: 0. }
+  - { quantity: jet3_m, operator: gte, value: 0. }
+  - { quantity: jet4_m, operator: gte, value: 0. }
+  - { quantity: zz_mz1, operator: gte, value: 0. }
+  - { quantity: zz_mz2, operator: gte, value: 0. }
+  - { quantity: massWtt4j, operator: gte, value: 0. }
+  - { quantity: massW2tt5j, operator: gte, value: 0. }
+  - { quantity: ZHH_FitChi2, operator: gte, value: 0. }
+  - { quantity: fit4C_mh1, operator: gte, value: 0. }
+  - { quantity: npfos, operator: gte, value: 0. }
+  - { quantity: yplus, operator: gte, value: 0. }
+  #second_mva_cut:
+  #- { quantity: SecondMVAOutput, operator: gte, value: second_mva.threshold }
 
 # MVAs are defined here
 # training, inference and optimization (i.e. assignment which threshold value to use) are
@@ -408,26 +452,42 @@ cuts:
 mvas:
   - name: default_mva
     features: [
-      jet1_m, jet2_m, jet3_m, jet4_m,
-      zz_mz1, zz_mz2,
-      massWtt4j, massT1tt4j, massT2tt4j,
-      massWtt5j, massT1tt5j, massT2tt5j,
-      zhh_mhh, fit4C_mh1, fit4C_mh2,
-      npfos, thrust, costhrust,
-      yplus, ptmiss,
-      ZHH_FitChi2, ZZH_FitChi2, ZHH_p1stBeforeFit,
-      ZZH_p1stBeforeFit, ZHH_cosThBeforeFit, ZZH_cosThBeforeFit,
-      bmax1, bmax2, bmax3, bmax4 ]
+      bmax1,
+      bmax2,
+      bmax3,
+      bmax4,
+      jet1_m,
+      jet2_m,
+      jet3_m,
+      jet4_m,
+      zz_mz1,
+      zz_mz2,
+      massWtt4j,
+      massW2tt5j,
+      ZHH_FitChi2,
+      fit4C_mh1,
+      npfos,
+      yplus,
+      ####
+      #ZZH_FitChi2, ZHH_p1stBeforeFit,
+      #ZZH_p1stBeforeFit, ZHH_cosThBeforeFit, ZZH_cosThBeforeFit,
+      #massT1tt4j, massT2tt4j,
+      #massW2tt5j, massT1tt5j, massT2tt5j,
+      #zhh_mhh,
+      #fit4C_mh2,
+      #thrust, costhrust,
+      #ptmiss,
+      ]
     classes:
     # two-element arrays of structure (label, name of registered EventCategory)
     # see sources/.../event_categorization/items
     - [0, 'vvHHbbbb']
-    - [1, 'vvHH_nonbbbb']
-    - [2, 'vvqqH']
-    - [3, 'vvbbbb']
-    - [4, 'vvbb']
-    - [5, 'lvbbqq']
-    - [6, 'bbbb']
+    - [1, 'vvqqH']
+    - [2, 'vvbbbb']
+    - [3, 'vvbb']
+    - [4, 'lvbbqq']
+    - [5, 'bbbb']
+    - [6, 'bbqqqq']
     # note: the output is the sum for all signal categories given in steer['signal_categories'] 
     label_name: SigMVAOutput
 
@@ -435,6 +495,41 @@ mvas:
     data_file: $hypothesis_train_test.npz
 
     mva_file: $hypothesis_mva.pickle
+  - name: splitsignal_mva
+    features: [
+      #bmax1, bmax2, bmax3, bmax4,
+      #jet1_m, jet2_m, jet3_m, jet4_m,
+      #zz_mz1, zz_mz2,
+      #massWtt4j, massW2tt5j,
+      #ZHH_FitChi2, fit4C_mh1,
+      #npfos, yplus,
+      ####
+      ZZH_FitChi2, ZHH_p1stBeforeFit,
+      ZZH_p1stBeforeFit, ZHH_cosThBeforeFit, ZZH_cosThBeforeFit,
+      massT1tt4j, massT2tt4j,
+      massW2tt5j, massT1tt5j, massT2tt5j,
+      zhh_mhh,
+      fit4C_mh2,
+      thrust, costhrust,
+      ptmiss,
+      ]
+    classes:
+    # two-element arrays of structure (label, name of registered EventCategory)
+    # see sources/.../event_categorization/items
+    - [0, 'vvHHbbbb']
+    - [1, 'vvqqH']
+    - [2, 'vvbbbb']
+    - [3, 'vvbb']
+    - [4, 'lvbbqq']
+    - [5, 'bbbb']
+    - [6, 'bbqqqq']
+    # note: the output is the sum for all signal categories given in steer['signal_categories'] 
+    label_name: SplitSigMVAOutput
+
+    # file to store the training and testing data in for training this classifier
+    data_file: $hypothesis_splitsignal_train_test.npz
+
+    mva_file: $hypothesis_splitsignal_mva.pickle
 
 # define what should be done after the data is loaded
 # for a documentation of supplied actions, see zhh/analysis/cutflow_processor_actions/README.md
@@ -463,7 +558,7 @@ actions:
   # value 1[..]n-1 to fractions given at position 1 to n-1
   # value n is assigned to the remaining events [fraction (1 - sum(all previous values))]
   - type: SplitDatasets
-    fractions: [ 0.5 ]
+    fractions: [ 0.75 ]
     disabled: false
     
   # writes out training/testing data
@@ -523,7 +618,37 @@ actions:
     cuts: mva_cut
     step: 1
     disabled: false
-  
+
+### #To plot features before mva cut, first apply non-cuts and then create cutflowplots
+###   - type: ApplyCuts
+###     cuts: feature_nocut
+###     step: 1
+###     disabled: false
+###   - type: CreateCutflowPlots
+###     file: '$hypothesis_cutflow_mva_plots_input.pdf'
+###     step_start: 1
+###     step_end: 1
+###     disabled: false
+### #Then apply a zero cut on the mva (<= 0.00001)
+###   - type: ApplyCuts
+###     cuts: mva_zero_cut
+###     step: 2 
+###     disabled: true
+### #Apply non-cuts to plot distributions after mva cut
+###   - type: ApplyCuts
+###     cuts: mva_nocut
+###     step: 3
+###     disabled: true
+###   - type: ApplyCuts
+###     cuts: eval_cut
+###     step: 4
+###     disabled: true
+### #Create plots for step 1 to 4 
+###   - type: CreateCutflowPlots
+###     file: '$hypothesis_cutflow_mva_eval_plots.pdf'
+###     step_start: 1
+###     step_end: 4
+###     disabled: true
   - type: CreateCutflowPlots
     file: '$hypothesis_cutflow_mva_plots.pdf'
     step_start: 1
@@ -547,3 +672,10 @@ actions:
     step_start: 0
     step_end: 1
     disabled: false
+
+
+
+
+
+
+

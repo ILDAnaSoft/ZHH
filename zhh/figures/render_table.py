@@ -36,9 +36,8 @@ def render_table(lines:list[list[str]|str], col_sep:str='8pt', row_sep:float=1.2
         for old, new in replacements:
             content = content.replace(old, new)
     
-    return rf"""\setlength{{\tabcolsep}}{{ {col_sep} }}
-\renewcommand{{\arraystretch}}{{ {row_sep} }}
-\begin{{tabular}}{{ {'r' * len(lines[0])} }}
+    return rf"""
+\begin{{tabularx}}{{\linewidth}}{{ X|{'X' * (len(lines[0])-1)} }}
 \hline
 {content}\hline
-\end{{tabular}}"""
+\end{{tabularx}}"""
