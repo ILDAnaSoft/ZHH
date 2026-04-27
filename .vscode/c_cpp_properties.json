@@ -36,6 +36,7 @@
                 "${workspaceFolder}/dependencies/MarlinMLFlavorTagging/StoreVariablesForMLTagging/include/**",
                 "${workspaceFolder}/dependencies/MarlinMLFlavorTagging/JetTaggers/include/**",
                 "${workspaceFolder}/dependencies/MarlinMLFlavorTagging/PFOTaggers/include/**",
+                "${workspaceFolder}/dependencies/MarlinMLFlavorTagging/JetFilter/include/**",
                 "${workspaceFolder}/dependencies/MarlinKinfit/**" // MarlinKinfit
             ],
             "defines": [],

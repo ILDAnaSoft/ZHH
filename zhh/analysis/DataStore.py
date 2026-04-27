@@ -5,7 +5,7 @@ import os.path as osp
 from dataclasses import dataclass
 from tqdm.auto import tqdm
 from math import ceil
-from typing import cast
+from typing import Any, cast
 from .TTreeInterface import FinalStateCounts
 
 class ReadonlyWriteAttempt(Exception):
@@ -55,7 +55,7 @@ class DataStore(MixedLazyTablelike):
             from .PreselectionAnalysis import fs_columns
             
             for i in range(len(fs_columns)):
-                self[fs_columns[i]] = mk_ref(self._h5_file, f'final_state_counts.dim{i}')
+                self[fs_columns[i]] = NamedHDF5Mapping(self._h5_file, f'final_state_counts.dim{i}')
         
         # NEW: explicit definition of properties inside TTrees that are of type float are no more necessary
         #self['zhh_mh1'] = lambda intf: fetch('zhh_mh1', f'{prop_prefix}zhh_mh1')
@@ -90,6 +90,10 @@ class DataStore(MixedLazyTablelike):
     def fromFile(self, prop:str)->np.ndarray:        
         with h5py.File(self._h5_file) as hf:
             return cast(h5py.Dataset, hf[prop])[:]
+
+    def fromFileRange(self, prop:str, idx_or_mask)->np.ndarray:
+        with h5py.File(self._h5_file) as hf:
+            return cast(h5py.Dataset, hf[prop])[idx_or_mask]
     
     def itemsInitialize(self, n_jets:int):
         # writable
@@ -121,7 +125,7 @@ class DataStore(MixedLazyTablelike):
         with h5py.File(self._h5_file, 'r') as hf:
             for key in hf.keys():
                 if key not in existing_keys:
-                    self._props[key] = mk_ref(self._h5_file, key)
+                    self._props[key] = NamedHDF5Mapping(self._h5_file, key)
     
     def removeProperty(self, prop:str):
         del self._props[prop]
@@ -175,13 +179,15 @@ class DataStore(MixedLazyTablelike):
 
                 dset = hf.create_dataset(item, value.shape, dtype=value.dtype, compression='gzip')
                 dset[:] = value
-        
-def mk_ref(fname, item):
-    def ref(intf):
-        with h5py.File(fname, 'r') as hf:
-            return cast(h5py.Dataset, hf[item])[:]
-            
-    return ref
+
+class NamedHDF5Mapping:
+    def __init__(self, file, item):
+        self._file = file
+        self._item = item
+    
+    def __call__(self, *args: Any, **kwds: Any) -> Any:
+        with h5py.File(self._file, 'r') as hf:
+            return cast(h5py.Dataset, hf[self._item])[:]
 
 def parse_final_state_counts(store:DataStore)->FinalStateCounts:    
     store.resetView()

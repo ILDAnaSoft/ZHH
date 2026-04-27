@@ -26,8 +26,8 @@ if False:
         tag = '550-llbb-fast-perf'
         
         whizard_options = [
-            { 'process_name': 'eebb_sl0', 'process_definition': '', 'template_dir': '$REPO_ROOT/workflows/resources/whizard_template', 'sindarin_file': 'whizard.base.sin' },
-            { 'process_name': 'llbb_sl0', 'process_definition': '', 'template_dir': '$REPO_ROOT/workflows/resources/whizard_template', 'sindarin_file': 'whizard.base.sin' }
+            { 'process_name': 'eebb_sl0', 'process_definition': '', 'template_dir': '$REPO_ROOT/workflows/resources/whizard_template', 'sindarin_file': 'whizard.base550.sin' },
+            { 'process_name': 'llbb_sl0', 'process_definition': '', 'template_dir': '$REPO_ROOT/workflows/resources/whizard_template', 'sindarin_file': 'whizard.base550.sin' }
         ]
         
         def sgv_inputs(self, fast_sim_task):
@@ -60,8 +60,8 @@ if False:
         tag = '550-llbb-fast-pfl'
         
         whizard_options = [
-            { 'process_name': 'eebb_sl0', 'process_definition': '', 'template_dir': '$REPO_ROOT/workflows/resources/whizard_template', 'sindarin_file': 'whizard.base.sin' },
-            { 'process_name': 'llbb_sl0', 'process_definition': '', 'template_dir': '$REPO_ROOT/workflows/resources/whizard_template', 'sindarin_file': 'whizard.base.sin' }
+            { 'process_name': 'eebb_sl0', 'process_definition': '', 'template_dir': '$REPO_ROOT/workflows/resources/whizard_template', 'sindarin_file': 'whizard.base550.sin' },
+            { 'process_name': 'llbb_sl0', 'process_definition': '', 'template_dir': '$REPO_ROOT/workflows/resources/whizard_template', 'sindarin_file': 'whizard.base550.sin' }
         ]
         
         def sgv_inputs(self, fast_sim_task):
@@ -259,7 +259,7 @@ class Config_550_bbbb_fast_perf(AnalysisConfiguration):
     tag = '550-bbbb-fast-perf'
     
     whizard_options = [
-        { 'process_name': 'bbbb_sl0', 'process_definition': '', 'template_dir': '$REPO_ROOT/workflows/resources/whizard_template', 'sindarin_file': 'whizard.base.sin', 'iters_per_polarization': {} }
+        { 'process_name': 'bbbb_sl0', 'process_definition': '', 'template_dir': '$REPO_ROOT/workflows/resources/whizard_template', 'sindarin_file': 'whizard.base550.sin', 'iters_per_polarization': {} }
     ]
     
     def sgv_inputs(self, fast_sim_task):

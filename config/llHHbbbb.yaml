@@ -298,37 +298,50 @@ mvas:
 # define what should be done after the data is loaded
 # for a documentation of supplied actions, see zhh/analysis/cutflow_processor_actions/README.md
 actions:
-  # optional:
   - type: ApplyCuts
     cuts: preselection
+    weight_column: weight
+    split: Null # split is only read if weight_column is different than the default value 'weight'
     step: 0 # step=0 is always preselection
     cache: '$hypothesis_cutflow_presel.pickle'
   
-  # optional:
-  # step_start: 0
-  # step_end: 0
   - type: CreateCutflowPlots
     file: '$hypothesis_cutflow_preselection_plots.pdf'
+    # optional:
+    # step_start: 0
+    # step_end: 0
     
-  # optional:
-  # step_start: 0
-  # step_end: 0
   - type: CreateCutflowTable
     file: '$hypothesis_cutflow_preselection_table.pdf'
+    # optional:
+    # step_start: 0
+    # step_end: 0
+
+  - type: WriteROOTSnapshot
+    file: '$hypothesis_inputs.root'
+    include_custom_columns: [event_category, weight]
+    include_input_columns: true
+    include_mva_outputs: false
+    # optional:
+    # tree: cutflow
 
   # split in train/testing [accross all steps, i.e. regardless of cut group]
   # creates a new integer column 'split'; for n entries in fractions:
-  # value 0 is assigned to a fraction of events specified as first entry in fractions
-  # value 1[..]n-1 to fractions given at position 1 to n-1
+  # value 0 is assigned to a fraction of events specified at 0-th(first) entry in fractions
+  # value 1[..]n-1 to fractions given at position 1[..]n-1
   # value n is assigned to the remaining events [fraction (1 - sum(all previous values))]
   - type: SplitDatasets
     fractions: [ 0.5 ]
     
+    # the following two are just here to be explicit and should not be changed
+    split_column: split
+    wt_split_column: weights_split
+    
   # writes out training/testing data
-  # optional:
-  # step: 0
   - type: WriteMVAData
     mva: default_mva
+    # optional:
+    # step: 0
 
   - type: PrintSplitWeights
     disabled: true
@@ -350,9 +363,6 @@ actions:
     split: 0
     disabled: false
 
-  # optional:
-  # clf_prop: clf
-  # step: 0
   - type: SklearnMulticlassHyperparamTraining
     hyperparam_bounds: [
       { name: max_depth, type: int, lower: 3, upper: 7 },
@@ -363,14 +373,21 @@ actions:
     split: 0
     ntrials: 250
     disabled: true
+    # optional:
+    # clf_prop: clf
+    # step: 0
 
-  # optional:
-  # clf_prop: clf
-  # step: 0
   - type: SklearnMulticlassInference
     mva: default_mva
     split: 1 # split 0 = train dataset; split 1 = test dataset
     disabled: false
+    # optional:
+    # clf_prop: clf
+    # step: 0
+
+  - type: WriteROOTSnapshot
+    file: '$hypothesis_mva.root'
+    include_custom_columns: [split, weights_split]
   
   # The values to cut on can be evaluated lazily
   # i.e. the value does not need to be known when the program is started
@@ -379,6 +396,8 @@ actions:
   - type: ApplyCuts
     cuts: mva_cut
     step: 1
+    split: 1 # use only testing data
+    weight_column: weights_split # use the weights after splitting the dataset
   
   - type: CreateCutflowPlots
     file: '$hypothesis_cutflow_mva_plots.pdf'

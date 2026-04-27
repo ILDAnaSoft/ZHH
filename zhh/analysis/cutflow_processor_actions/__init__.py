@@ -5,6 +5,7 @@ from .CreateCutflowTableAction import CreateCutflowTableAction
 from .PrintSplitWeightsAction import PrintSplitWeightsAction
 from .SplitDatasetsAction import SplitDatasetsAction
 from .WriteMVADataAction import WriteMVADataAction
+from .WriteROOTSnapshotAction import WriteROOTSnapshotAction
 from .SklearnMulticlassInferenceAction import SklearnMulticlassInferenceAction
 from .SklearnMulticlassTrainingAction import SklearnMulticlassTrainingAction
 from .SklearnMulticlassHyperparamTrainingAction import SklearnMulticlassHyperparamTrainingAction
