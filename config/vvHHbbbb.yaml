@@ -433,8 +433,10 @@ cuts:
   - { quantity: fit4C_mh1, operator: gte, value: 0. }
   - { quantity: npfos, operator: gte, value: 0. }
   - { quantity: yplus, operator: gte, value: 0. }
-  #second_mva_cut:
-  #- { quantity: SecondMVAOutput, operator: gte, value: second_mva.threshold }
+  mva_eval_cut:
+  - { quantity: SigMVAOutput, operator: gte, value: 0.1 }
+  splitsignal_mva_cut:
+  - { quantity: SplitSigMVAOutput, operator: gte, value: second_mva.threshold }
 
 # MVAs are defined here
 # training, inference and optimization (i.e. assignment which threshold value to use) are
@@ -558,7 +560,7 @@ actions:
   # value 1[..]n-1 to fractions given at position 1 to n-1
   # value n is assigned to the remaining events [fraction (1 - sum(all previous values))]
   - type: SplitDatasets
-    fractions: [ 0.75 ]
+    fractions: [ 0.50 ]
     disabled: false
     
   # writes out training/testing data
@@ -617,7 +619,7 @@ actions:
   - type: ApplyCuts
     cuts: mva_cut
     step: 1
-    disabled: false
+    disabled: true
 
 ### #To plot features before mva cut, first apply non-cuts and then create cutflowplots
 ###   - type: ApplyCuts
@@ -649,6 +651,37 @@ actions:
 ###     step_start: 1
 ###     step_end: 4
 ###     disabled: true
+
+  - type: ApplyCuts
+    cuts: mva_eval_cut
+    step: 1
+    disabled: false
+
+  - type: SplitDatasets
+    fractions: [ 0.50 ]
+    disabled: false
+  - type: WriteMVAData
+    mva: splitsignal_mva
+    disabled: false
+  - type: SklearnMulticlassTraining
+    hyperparams: {
+      max_depth: 5,
+      n_estimators: 380,
+      learning_rate: 0.1
+    }
+    debug: true
+    mva: splitsignal_mva
+    split: 0
+    disabled: false
+  - type: SklearnMulticlassInference
+    mva: splitsignal_mva
+    split: 1 # split 0 = train dataset; split 1 = test dataset
+    disabled: false
+  - type: ApplyCuts
+    cuts: splitsignal_mva_cut
+    step: 2
+    disabled: true
+
   - type: CreateCutflowPlots
     file: '$hypothesis_cutflow_mva_plots.pdf'
     step_start: 1
