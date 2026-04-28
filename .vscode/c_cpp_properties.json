@@ -38,6 +38,7 @@
                 "${workspaceFolder}/dependencies/MarlinMLFlavorTagging/PFOTaggers/include/**",
                 "${workspaceFolder}/dependencies/MarlinMLFlavorTagging/JetFilter/include/**",
                 "${workspaceFolder}/dependencies/MarlinMLFlavorTagging/TorchDataProvider/include/**",
+                "${workspaceFolder}/dependencies/MarlinMLFlavorTagging/TorchDataProvider/include/**",
                 "${workspaceFolder}/dependencies/MarlinKinfit/**" // MarlinKinfit
             ],
             "defines": [],

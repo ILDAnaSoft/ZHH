@@ -1,5 +1,6 @@
 from ..CutflowProcessorAction import CutflowProcessorAction, CutflowProcessor
 from ..Cuts import Cut
+from ..Cuts import Cut
 import os
 
 class ApplyCutsAction(CutflowProcessorAction):
@@ -46,11 +47,18 @@ class ApplyCutsAction(CutflowProcessorAction):
             self._cp.process(step=self._step, cuts=cuts_steer, cache=self._cache)
 
             return Cut.hash_cuts(cuts_steer) == self._cp._cuts_hash
+            cuts_steer = self.fetchCuts()
+            self._cp.process(step=self._step, cuts=cuts_steer, cache=self._cache)
+
+            return Cut.hash_cuts(cuts_steer) == self._cp._cuts_hash
         else:
             return False
     
     def reset(self):
         # only preselection/step=0 is cached in CutflowProcessor.process()
+        if self._cache is not None:
+            if self._step == 0 and os.path.isfile(self._cache):
+                os.remove(self._cache)
         if self._cache is not None:
             if self._step == 0 and os.path.isfile(self._cache):
                 os.remove(self._cache)
