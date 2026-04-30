@@ -14,6 +14,16 @@ Each action must implement a `run()` method that does the actual job, a `complet
 
 If an action is supposed to create a file output, the `FileBasedProcessorAction` can be used. It requires implementing an `output()` method that should return either one `LocalTarget` or a list of `LocalTargets`, similar to a law task.
 
+## Abstract classes
+
+TODO
+
+### MVAThresholdFinderInterface
+
+Allows an MVA optimizer to dynamically supply a threshold value. An action inheriting from this can dynamically bind properties to registered MVAs. E.g., a property threshold can be assigned to a MVA default_mva and referenced in a greater-equal-cut as default_mva.threshold.
+
+Must implement: findThreshold()
+
 ## Implementations
 
 TODO
@@ -32,9 +42,30 @@ TODO
 
 ### SplitDatasets
 
-TODO
+Splits the dataset in n smaller subsets, e.g. for train/testing. The splitting is done accross all steps, i.e. regardless of cut group.
+
+The action creates two new columns: `split_column` and `wt_split_column`.
+
+1. `uint8` column split_column; for n entries in fractions:
+    - value 0 is assigned to a fraction of events specified at position 0 in fractions
+    - value `1[..]n-1` to fractions given at position `1[..]n-1`
+    - value n is assigned to the remaining events [fraction (1 - sum(all previous values))]
+
+2. `float` column wt_split_column: re-calculated event weights
+    - scaled from the original weights while making sure that across all events in a split, the total sum is the same as before the split
+    - for example, for `fractions=[0.5]`, the dataset will be split in two equally large subsets, with values in `wt_split_column` being twice as large as in `source_weight_column`
+
+Optional arguments:
+
+- (str) `split_column`: name of the new column for storing the split value 
+- (str) `wt_split_column`: name of the new column for scaled event weights
+- (str) `source_weight_column`: name of the column of weights to scale
 
 ### WriteMVAData
+
+TODO
+
+### WriteROOTSnapshotAction
 
 TODO
 

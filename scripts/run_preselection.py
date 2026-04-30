@@ -110,7 +110,7 @@ if __name__ == "__main__":
         ('llbbbb', 'llbbbb'),
         ('llqqh', 'llqqh'),
         ('llHH', 'llhh'),
-        ('(llbbbb)', 'llhh_llbbbb'),
+        ('(llbbbb)', 'llHH_llbbbb'),
         ('(eebbbb)', 'eeHHbbbb'),
         ('(\\mu\\mu bbbb)', 'μμHHbbbb'),
     ])

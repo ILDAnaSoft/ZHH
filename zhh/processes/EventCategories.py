@@ -1,3 +1,6 @@
+from ..analysis.FinalStateDefinitions import FinalStateDefinition
+from ..analysis import FinalStateDefinitions
+
 class EVENT_CATEGORY_TRUE:
     OTHER = 0
     
@@ -34,8 +37,8 @@ class EVENT_CATEGORY_TRUE:
     llll = 18
     llqq = 19
     llvv = 20
-    eeWW = 21
-    llWW = 22
+    #eeWW = 21
+    #llWW = 22
     
     lvqqqq = 23
     lvbbqq = 24
@@ -67,7 +70,7 @@ class EVENT_CATEGORY_TRUE:
     vvqqH = 34
     vv = 35
     vvqq = 36
-    vvWW = 37
+    #vvWW = 37
     
     vvqqqq = 38
     vvbbqq = 39
@@ -87,7 +90,7 @@ class EVENT_CATEGORY_TRUE:
     qqqqH = 52
     bbbbqq = 53
     bbbb = 54
-    ttbb = 56
+    #ttbb = 56
     qq = 57
     qqqq = 58
     bbbbbb = 59
@@ -110,29 +113,29 @@ class EVENT_CATEGORY_TRUE:
     μvbbqq = 72
     τvbbqq = 73
     
-    evbbcs = 74
-    μvbbcs = 75
-    τvbbcs = 76
+    #evbbcs = 74
+    #μvbbcs = 75
+    #τvbbcs = 76
 
-    evbbud = 77
-    μvbbud = 78
-    τvbbud = 79
+    #evbbud = 77
+    #μvbbud = 78
+    #τvbbud = 79
 
     # tt/WWZ -> bbqqqq
     # for tt: tt -> bbqqqq : 2x [t->Wb; W->qq]
     # for WWZ: WWZ -> bbqqqq : 2x [W->qq; Z->bb]
     OTHER_FULL_HADRONIC = 80
     bbqqqq = 81
-    bbcssc = 82
-    bbuddu = 83
-    bbcsdu = 84 
+    #bbcssc = 82
+    #bbuddu = 83
+    #bbcsdu = 84 
 
     OTHER_EVENTS = 90
-    f5_any = 91
+    F5_OTHER = 91
 
-    f6_yyyyZ = 95
-    f6_xxWW = 96
-    f6_xxxxZ = 97
+    #f6_yyyyZ = 95
+    #f6_xxWW = 96
+    #f6_xxxxZ = 97
     
     F6_OTHER = 98
     
@@ -141,3 +144,32 @@ class EVENT_CATEGORY_TRUE:
         self.inverted:dict[int, str] = { v: k for k, v in self.map.items() }
     
 EventCategories = EVENT_CATEGORY_TRUE()
+
+def find_event_category_definition(name:str,
+                                   definitions=FinalStateDefinitions,
+                                   definitions_map:dict[str, FinalStateDefinition]={})->FinalStateDefinition:
+    """Tries to find the definition for the event category given by name in the
+    registered definitions in the FinalStateDefinitions module. This is the
+    default way in which event categories may be implemented.
+    
+    Optionally, more definitions can be provided in definitions_map 
+
+    Args:
+        name (str): _description_
+        definitions (_type_, optional): _description_. Defaults to FinalStateDefinitions.
+        definitions_map (dict[str, FinalStateDefinition], optional): _description_. Defaults to {}.
+
+    Raises:
+        Exception: _description_
+
+    Returns:
+        FinalStateDefinition: _description_
+    """
+    def_name = f'define_{name}'
+
+    if hasattr(definitions, def_name):
+        return getattr(definitions, def_name)
+    elif def_name in definitions_map:
+        return definitions_map[def_name]
+    else:
+        raise Exception(f'Could not find definition <{def_name}> for final state {name}')

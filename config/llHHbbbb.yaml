@@ -82,7 +82,7 @@ sources:
     event_categorization:
       default: null
       order: null
-      items: [ llHH, eeHHbbbb, μμHHbbbb, ττHHbbbb, llHH_llbbbb, llHH_llnonbbbb, llqqH ]
+      items: [ llHH, eeHHbbbb, μμHHbbbb, ττHHbbbb, llHH_llnonbbbb, llqqH ]
     disabled: false
     reset: false
 
@@ -195,24 +195,31 @@ features:
 cutflow_table:
   items:
     - category: μμbb
-      label: '\boldsymbol{\mu\mu} bb'
-    - category: μvbbqq
-      label: '\boldsymbol{\mu \nu b b q q}'
+      label: '\HepProcess{\Pgm\Pgm\Pqb\Pqb}'
+    - remaining_of: 4fsl
+      label: 'other 4f sl'
     - category: bbqqqq
-      label: bbqqqq
+      label: '\HepProcess{\Pqb\Pqb\Pq\Pq\Pq\Pq}'
+    - category: μvbbqq
+      label: '\HepProcess{\Pgm\Pgngm\Pqb\Pqb\Pq\Pq}'
     - category: llqqqq
-      label: llqqqq
+      label: '\HepProcess{\Plpm\Plpm\Pq\Pq\Pq\Pq}'
     - category: llbbbb
-      label: (llbbbb)
+      label: '(\HepProcess{\Plpm\Plpm\Pqb\Pqb\Pqb\Pqb})'
+    - remaining_of: 2l4q
+      label: 'other 2l4q'
     - category: bbbb
-      label: bbbb
+      label: '\HepProcess{\Pqb\Pqb\Pqb\Pqb}'
+    - remaining_of: 4flh
+      label: 'other 4fl / 4fh'
     - category: llqqH
-      label: llqqH
+      label: '\HepProcess{\Plpm\Plpm\Pq\Pq\PH}'
+    - latex: \hline
     - category: llHH
-      label: llHH
+      label: '\HepProcess{\Plpm\Plpm\PH\PH}'
       is_signal: true
     - category: μμHHbbbb
-      label: (\mu\mu bbbb)
+      label: '(\HepProcess{\Pgm\Pgm\Pqb\Pqb\Pqb\Pqb})'
       is_signal: true
   ignore_categories: llbbbb
 
@@ -295,13 +302,15 @@ mvas:
 
     mva_file: $hypothesis_mva.pickle
 
+    #model: LGBMClassifier
+
 # define what should be done after the data is loaded
 # for a documentation of supplied actions, see zhh/analysis/cutflow_processor_actions/README.md
 actions:
   - type: ApplyCuts
     cuts: preselection
     weight_column: weight
-    split: Null # split is only read if weight_column is different than the default value 'weight'
+    split: 0 # split is only read if weight_column is different than the default value 'weight'
     step: 0 # step=0 is always preselection
     cache: '$hypothesis_cutflow_presel.pickle'
   
@@ -326,10 +335,16 @@ actions:
     # tree: cutflow
 
   # split in train/testing [accross all steps, i.e. regardless of cut group]
-  # creates a new integer column 'split'; for n entries in fractions:
+  # creates two new columns
+  # 1. integer column split_column; for n entries in fractions:
   # value 0 is assigned to a fraction of events specified at 0-th(first) entry in fractions
   # value 1[..]n-1 to fractions given at position 1[..]n-1
   # value n is assigned to the remaining events [fraction (1 - sum(all previous values))]
+  # 2. float column wt_split_column: re-calculated event weights
+  # these are scaled from the original weights while making sure
+  # that across all events in a split, the total sum is the same
+  # as before the split. For example, when fractions: [0.5], the
+  # dataset will be split in two equally large subsets
   - type: SplitDatasets
     fractions: [ 0.5 ]
     

@@ -1,7 +1,6 @@
 from collections.abc import Callable
 from .PreselectionAnalysis import sample_weight, get_pol_key
 from .DataStore import DataStore, ReadonlyWriteAttempt, DataStoreStates
-from zhh.processes import parse_polarization_code, ProcessCategories
 from zhh.analysis.TTreeInterface import FinalStateCounts
 from typing import cast, TYPE_CHECKING
 import json
@@ -185,6 +184,8 @@ class DataSource:
         Returns:
             tuple[np.ndarray,np.ndarray]: weight_data, processes
         """
+
+        from zhh.processes import parse_polarization_code, ProcessCategories
         
         self._lumi_inv_ab = lumi_inv_ab
         # fetch data for weight calculation
@@ -413,7 +414,7 @@ class DataSource:
             ValueError: _description_
 
         Returns:
-            _type_: _description_
+            np.ndarray: binary mask
         """
 
         if name not in self._event_categories:
@@ -426,7 +427,42 @@ class DataSource:
             else:
                 raise ValueError(f'Event category {name} not registered.')
         
-        return self._event_categories[name][0]
+        return np.copy(self._event_categories[name][0])
+
+    def getCategoryMasks(self, names:list[str])->dict[str, np.ndarray]:
+        """Returns binary masks specifying whether or not an event belongs to the
+        requested event categories. This may be faster than calling getCategoryMask()
+        for multiple categories when called the first time.
+
+        Args:
+            names (list[str]): list of category names
+
+        Raises:
+            ValueError: _description_
+
+        Returns:
+            dict[str, np.ndarray]: dictionary of structure category => binary mask
+        """
+        fsc = None
+
+        for name in names:
+            if name not in self._event_categories:
+                from .DataStore import parse_final_state_counts
+                if fsc is None:
+                    fsc = parse_final_state_counts(self.getStore())
+
+                if name in self._event_category_resolvers:
+                    mask_func, category = self._event_category_resolvers[name]
+                    mask = mask_func(self, fsc)
+                    self._event_categories[name] = (mask, category)
+                else:
+                    raise ValueError(f'Event category {name} not registered.')
+        
+        masks:dict[str, np.ndarray] = {}
+        for name in names:
+            masks[name] = np.copy(self._event_categories[name][0])
+        
+        return masks
     
     def containsProcess(self, process:str):
         """Checks if the process is in the processes array.
@@ -441,7 +477,7 @@ class DataSource:
         assert(self._processes is not None)
         return process in self._processes['process']
     
-    def containsFinalState(self, name:str):
+    def containsCategory(self, name:str):
         """Checks if the final state is in the processes array.
 
         Args:

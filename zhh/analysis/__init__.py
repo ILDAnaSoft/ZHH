@@ -22,10 +22,10 @@ from .FinalStateDefinitions import define_eebb, define_μμbb, define_ττbb, \
     define_lvbbbb, define_llqqqq, define_llbbqq, define_llbbbb, \
     define_vvqqqq, define_vvbbqq, \
     define_bbqqqq, define_bbbbqq, define_bbbbbb, \
-    define_llhh, define_eeHHbbbb, define_μμHHbbbb, define_ττHHbbbb, \
-    define_llhh_llbbbb, define_llqqh, define_ttH, define_ttZ, \
+    define_llHH, define_eeHHbbbb, define_μμHHbbbb, define_ττHHbbbb, \
+    define_llHH_llbbbb, define_llqqH, define_ttH, define_ttZ, \
     FinalStateDefinition, \
-    categorize_llhh, categorize_4fsl, categorize_2l4q, categorize_6q, \
+    categorize_llHH, categorize_4fsl, categorize_2l4q, categorize_6q, \
     categorize_tthz, categorize_vvhh
 from .DataExtractor import DataExtractor
 from .cutflow_processor_actions import *

@@ -78,6 +78,8 @@ def cutflow_process_steering(steer:dict, integrity_check:bool=True,
         _type_: _description_
     """
 
+    from zhh import find_event_category_definition, EventCategories
+
     source_map:dict[str, DataSource] = {}
     final_state_configs:dict[str, tuple[Callable, int|None, list|None]] = {}
     reset_sources:list[str] = []
@@ -139,11 +141,19 @@ def cutflow_process_steering(steer:dict, integrity_check:bool=True,
 
         for item in cat_items:
             found = False
-            for entry in steer['event_categories']:
-                if entry['name'] == item:
-                    found = True
-                    items.append((item, entry['handler'], entry['id']))
-                    break
+
+            if item in EventCategories.map:
+                found = True
+                
+                handler = find_event_category_definition(item)
+                id = EventCategories.map[item]
+                items.append((item, handler, id))
+
+            #for entry in steer['event_categories']:
+            #    if entry['name'] == item:
+            #        found = True
+            #        items.append((item, entry['handler'], entry['id']))
+            #        break
 
             if not found:
                 raise Exception(f'Could not resolve event category <{item}>')

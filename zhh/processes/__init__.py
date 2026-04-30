@@ -1,4 +1,4 @@
 from .ProcessIndex import ProcessIndex, lcio_event_count
-from .EventCategories import EVENT_CATEGORY_TRUE, EventCategories
+from .EventCategories import EVENT_CATEGORY_TRUE, EventCategories, find_event_category_definition
 from .ProcessCategories import ProcessCategories
 from .PolarizationCodes import PolarizationCodes, parse_polarization_code

@@ -96,7 +96,7 @@ class DataExtractor:
             
         for class_label, fs_name in to_process:
             for source in sources:
-                if source.containsFinalState(fs_name):
+                if source.containsCategory(fs_name):
                     fs_2_source[fs_name] = source
                     break
             

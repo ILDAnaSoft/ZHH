@@ -41,6 +41,9 @@ class SklearnMulticlassTrainingAction(MVAThresholdFinderInterface, FileBasedProc
         self._trial_name = trial_name if trial_name is not None else mva
         self._model = mva_spec.get('model', 'XGBClassifier')
 
+        if not self._model in ['LGBMClassifier', 'XGBClassifier']:
+            raise Exception('SklearnMulticlassTrainingAction only supports model=LGBMClassifier or XGBClassifier')
+
         self._signal_categories = get_signal_categories(steer['signal_categories'], mva_spec['classes'])
         self._background_categories = get_background_categories(self._signal_categories, mva_spec['classes'])
         self._debug = debug

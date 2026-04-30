@@ -97,7 +97,7 @@
 
 # llhh
 - name: llHH
-  handler: FinalStateDefinitions.define_llhh
+  handler: FinalStateDefinitions.define_llHH
   id: EventCategories.llHH
 - name: eeHHbbbb
   handler: FinalStateDefinitions.define_eeHHbbbb
@@ -109,18 +109,18 @@
   handler: FinalStateDefinitions.define_ττHHbbbb
   id: EventCategories.ττHHbbbb
 - name: llHH_llbbbb
-  handler: FinalStateDefinitions.define_llbbbb
+  handler: FinalStateDefinitions.define_llHH_llbbbb
   id: null
 - name: llHH_llnonbbbb
-  handler: FinalStateDefinitions.define_llhh_llnonbbbb
+  handler: FinalStateDefinitions.define_llHH_llnonbbbb
   id: null
 - name: llqqH
-  handler: FinalStateDefinitions.define_llqqh
+  handler: FinalStateDefinitions.define_llqqH
   id: EventCategories.llqqH
 
 # vvhh
 - name: vvHH
-  handler: FinalStateDefinitions.define_vvhh
+  handler: FinalStateDefinitions.define_vvHH
   id: EventCategories.vvHH
 - name: v1v1HHbbbb
   handler: FinalStateDefinitions.define_v1v1HHbbbb
@@ -129,27 +129,27 @@
   handler: FinalStateDefinitions.define_v23v23HHbbbb
   id: EventCategories.v23v23HHbbbb
 - name: vvHHbbbb
-  handler: FinalStateDefinitions.define_vvhh_vvbbbb
+  handler: FinalStateDefinitions.define_vvHHbbbb
   id: EventCategories.vvHHbbbb
 - name: vvHH_nonbbbb
-  handler: FinalStateDefinitions.define_vvhh_vvnonbbbb
+  handler: FinalStateDefinitions.define_vvHH_nonbbbb
   id: null
 - name: vvqqH
-  handler: FinalStateDefinitions.define_vvqqh
+  handler: FinalStateDefinitions.define_vvqqH
   id: EventCategories.vvqqH
 
 # qqhh TODO
 - name: qqHH
-  handler: FinalStateDefinitions.define_qqhh
+  handler: FinalStateDefinitions.define_qqHH
   id: EventCategories.vvHH
 - name: qqqqH
-  handler: FinalStateDefinitions.define_qqqqh
+  handler: FinalStateDefinitions.define_qqqqH
   id: EventCategories.qqqqH
 - name: qqHHbbbb
   handler: FinalStateDefinitions.define_qqHHbbbb
   id: EventCategories.qqHHbbbb
 - name: qqHH_nonbbbb
-  handler: FinalStateDefinitions.define_qqHHnonbbbb
+  handler: FinalStateDefinitions.define_qqHH_nonbbbb
   id: EventCategories.qqHH_nonbbbb
 
 # ttH/ttZ

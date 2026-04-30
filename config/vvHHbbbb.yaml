@@ -137,10 +137,10 @@ event_categories:
   handler: FinalStateDefinitions.define_vvhh_vvbbbb
   id: EventCategories.vvHHbbbb
 - name: vvHH_nonbbbb
-  handler: FinalStateDefinitions.define_vvhh_vvnonbbbb
+  handler: FinalStateDefinitions.define_vvHH_nonbbbb
   id: null # EventCategories.vvHH_nonbbbb
 - name: vvqqH
-  handler: FinalStateDefinitions.define_vvqqh
+  handler: FinalStateDefinitions.define_vvqqH
   id: EventCategories.vvqqH
 
 # ttH/ttZ

@@ -1,4 +1,4 @@
-from .TTreeInterface import FinalStateCounts, TTreeInterface
+from .TTreeInterface import FinalStateCounts
 from .DataSource import DataSource
 from collections.abc import Callable
 from ..processes.ProcessCategories import ProcessCategories
@@ -6,13 +6,25 @@ import numpy as np
 
 FinalStateDefinition = Callable[[DataSource, FinalStateCounts], np.ndarray]
 
+# define 2f categories
+define_ll:FinalStateDefinition = lambda ac, fsc: (fsc.n_charged_lep == 2) & (fsc.n_q == 0) & (fsc.n_neutral_lep == 0)
+define_qq:FinalStateDefinition = lambda ac, fsc: (fsc.n_charged_lep == 0) & (fsc.n_q == 2) & (fsc.n_neutral_lep == 0)
+define_vv:FinalStateDefinition = lambda ac, fsc: (fsc.n_charged_lep == 0) & (fsc.n_q == 0) & (fsc.n_neutral_lep == 2)
+
+# define 2f H categories
+define_llH:FinalStateDefinition     = lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.e1e1h, ProcessCategories.e2e2h, ProcessCategories.e3e3h])
+define_vvH:FinalStateDefinition     = lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.n1n1h, ProcessCategories.n23n23h])
+define_qqH:FinalStateDefinition     = lambda ac, fsc: ac.getStore()['process'] == ProcessCategories.qqh
+
 # define 4f sl/lh categories
 define_llqq:FinalStateDefinition = lambda ac, fsc: (fsc.n_charged_lep == 2) & (fsc.n_q == 2)
 define_vvqq:FinalStateDefinition = lambda ac, fsc: (fsc.n_neutral_lep == 2) & (fsc.n_q == 2)
+define_llbb:FinalStateDefinition = lambda ac, fsc: (fsc.n_charged_lep == 2) & (fsc.n_b == 2)
 define_eebb:FinalStateDefinition = lambda ac, fsc: (fsc.n_e   == 2)         & (fsc.n_b == 2)
 define_μμbb:FinalStateDefinition = lambda ac, fsc: (fsc.n_mu  == 2)         & (fsc.n_b == 2)
 define_ττbb:FinalStateDefinition = lambda ac, fsc: (fsc.n_tau == 2)         & (fsc.n_b == 2)
 define_lvqq:FinalStateDefinition = lambda ac, fsc: (fsc.n_charged_lep == 1) & (fsc.n_q == 2) & (fsc.n_neutral_lep == 1)
+define_llvv:FinalStateDefinition = lambda ac, fsc: (fsc.n_charged_lep == 2) & (fsc.n_q == 0) & (fsc.n_neutral_lep == 2)
 define_vvbb:FinalStateDefinition = lambda ac, fsc: (fsc.n_neutral_lep == 2) & (fsc.n_b == 2)
 define_tatabb:FinalStateDefinition = lambda ac, fsc: (fsc.n_charged_lep == 2) & (fsc.n_q == 2) & (fsc.n_tau == 2) & (fsc.n_b == 2)  
 
@@ -37,40 +49,49 @@ define_vvbbqq:FinalStateDefinition = lambda ac, fsc: (fsc.n_charged_lep == 0) & 
 define_vvbbbb:FinalStateDefinition = lambda ac, fsc: (fsc.n_charged_lep == 0) & (fsc.n_neutral_lep == 2) & (fsc.n_q == 4) & (fsc.n_b == 4)
 
 # categorize q6
+define_qqqqqq:FinalStateDefinition = lambda ac, fsc: (fsc.n_charged_lep == 0) & (fsc.n_neutral_lep == 0) & (fsc.n_q == 6)
 define_bbqqqq:FinalStateDefinition = lambda ac, fsc: (fsc.n_charged_lep == 0) & (fsc.n_neutral_lep == 0) & (fsc.n_q == 6) & (fsc.n_b >= 2)
 define_bbbbqq:FinalStateDefinition = lambda ac, fsc: (fsc.n_charged_lep == 0) & (fsc.n_neutral_lep == 0) & (fsc.n_q == 6) & (fsc.n_b >= 4)
 define_bbbbbb:FinalStateDefinition = lambda ac, fsc: (fsc.n_charged_lep == 0) & (fsc.n_neutral_lep == 0) & (fsc.n_q == 6) & (fsc.n_b == 6)
 
-# categorize llhh
-define_llhh:FinalStateDefinition     = lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.e1e1hh, ProcessCategories.e2e2hh, ProcessCategories.e3e3hh])
+# categorize llHH
+define_llHH:FinalStateDefinition     = lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.e1e1hh, ProcessCategories.e2e2hh, ProcessCategories.e3e3hh])
+define_eeHH:FinalStateDefinition     = lambda ac, fsc: ac.getStore()['process'] == ProcessCategories.e1e1hh
+define_μμHH:FinalStateDefinition     = lambda ac, fsc: ac.getStore()['process'] == ProcessCategories.e2e2hh
+define_ττHH:FinalStateDefinition     = lambda ac, fsc: ac.getStore()['process'] == ProcessCategories.e3e3hh
 define_eeHHbbbb:FinalStateDefinition = lambda ac, fsc: (fsc.n_e == 2)   & (fsc.n_charged_lep == 2) & (fsc.n_neutral_lep == 0) & (fsc.n_q == 4) & (fsc.n_b_from_higgs == 4)
 define_μμHHbbbb:FinalStateDefinition = lambda ac, fsc: (fsc.n_mu == 2)  & (fsc.n_charged_lep == 2) & (fsc.n_neutral_lep == 0) & (fsc.n_q == 4) & (fsc.n_b_from_higgs == 4)
 define_ττHHbbbb:FinalStateDefinition = lambda ac, fsc: (fsc.n_tau == 2) & (fsc.n_charged_lep == 2) & (fsc.n_neutral_lep == 0) & (fsc.n_q == 4) & (fsc.n_b_from_higgs == 4)
 
-define_llhh_llnonbbbb:FinalStateDefinition = lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.e1e1hh, ProcessCategories.e2e2hh, ProcessCategories.e3e3hh]) & (fsc.n_charged_lep == 2) & (fsc.n_neutral_lep == 0) & (fsc.n_b_from_higgs != 4)
-define_llhh_llbbbb:FinalStateDefinition = lambda ac, fsc: np.logical_or.reduce( # required correct naming in registerEventCategory
+define_llHH_llnonbbbb:FinalStateDefinition = lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.e1e1hh, ProcessCategories.e2e2hh, ProcessCategories.e3e3hh]) & (fsc.n_charged_lep == 2) & (fsc.n_neutral_lep == 0) & (fsc.n_b_from_higgs != 4)
+define_llHH_llbbbb:FinalStateDefinition = lambda ac, fsc: np.logical_or.reduce( # required correct naming in registerEventCategory
     (ac.getCategoryMask('eeHHbbbb'), ac.getCategoryMask('μμHHbbbb'), ac.getCategoryMask('ττHHbbbb')))
-define_llqqh:FinalStateDefinition = lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.e1e1qqh, ProcessCategories.e2e2qqh, ProcessCategories.e3e3qqh])
+define_llqqH:FinalStateDefinition = lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.e1e1qqh, ProcessCategories.e2e2qqh, ProcessCategories.e3e3qqh])
 
 # categorize vvhh
-define_vvhh:FinalStateDefinition         = lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.n1n1hh, ProcessCategories.n23n23hh]) # vvHH
-define_vvqqh:FinalStateDefinition        = lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.n1n1qqh, ProcessCategories.n23n23qqh])
+define_vvHH:FinalStateDefinition         = lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.n1n1hh, ProcessCategories.n23n23hh]) # vvHH
+define_vvqqH:FinalStateDefinition        = lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.n1n1qqh, ProcessCategories.n23n23qqh])
 
-define_vvhh_vvbbbb:FinalStateDefinition    = lambda ac, fsc: ac.getCategoryMask('vvHH') & (fsc.n_charged_lep == 0) & (fsc.n_neutral_lep == 2) & (fsc.n_b_from_higgs == 4) # vvHHbbbb
-define_vvhh_vvnonbbbb:FinalStateDefinition = lambda ac, fsc: ac.getCategoryMask('vvHH') & (fsc.n_charged_lep == 0) & (fsc.n_neutral_lep == 2) & (fsc.n_b_from_higgs != 4)
+define_v1v1HH:FinalStateDefinition   = lambda ac, fsc: ac.getStore()['process'] == ProcessCategories.n1n1hh
+define_v23v23HH:FinalStateDefinition = lambda ac, fsc: ac.getStore()['process'] == ProcessCategories.n23n23hh
+
+define_vvHHbbbb:FinalStateDefinition     = lambda ac, fsc: ac.getCategoryMask('vvHH') & (fsc.n_charged_lep == 0) & (fsc.n_neutral_lep == 2) & (fsc.n_b_from_higgs == 4) # vvHHbbbb
+define_vvHH_nonbbbb:FinalStateDefinition = lambda ac, fsc: ac.getCategoryMask('vvHH') & (fsc.n_charged_lep == 0) & (fsc.n_neutral_lep == 2) & (fsc.n_b_from_higgs != 4)
 define_v1v1HHbbbb:FinalStateDefinition   = lambda ac, fsc: ac.getCategoryMask('vvHHbbbb') & (fsc.n_ve == 2) & (fsc.n_vmu == 0) & (fsc.n_vtau == 0)
 define_v23v23HHbbbb:FinalStateDefinition = lambda ac, fsc: ac.getCategoryMask('vvHHbbbb') & (fsc.n_ve == 0) & ((fsc.n_vmu == 2) | (fsc.n_vtau == 2))
+define_WBFHHbbbb:FinalStateDefinition    = lambda ac, fsc: ac.getStore()['massDiNeutrino'] < 1 & (fsc.n_ve + fsc.n_vmu + fsc.n_vtau == 2)
 
 # categorize qqhh
-define_qqhh:FinalStateDefinition     = lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.qqhh]) # qqHH
-define_qqqqh:FinalStateDefinition     = lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.qqqqh]) # qqqqH
-define_qqHHbbbb:FinalStateDefinition      = lambda ac, fsc: ac.getCategoryMask('qqHH') & (fsc.n_b_from_higgs == 4)
-define_qqHHnonbbbb:FinalStateDefinition = lambda ac, fsc: ac.getCategoryMask('qqHH') & (fsc.n_b_from_higgs != 4)
+define_qqHH:FinalStateDefinition         = lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.qqhh]) # qqHH
+define_qqqqH:FinalStateDefinition        = lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.qqqqh]) # qqqqH
+define_qqHHbbbb:FinalStateDefinition     = lambda ac, fsc: ac.getCategoryMask('qqHH') & (fsc.n_b_from_higgs == 4)
+define_qqHH_nonbbbb:FinalStateDefinition = lambda ac, fsc: ac.getCategoryMask('qqHH') & (fsc.n_b_from_higgs != 4)
+define_bbHHbbbb:FinalStateDefinition     = lambda ac, fsc: ac.getCategoryMask('qqHHbbbb') & (fsc.n_b == 6)
 
 # categorize ttH + ttZ
 define_ttH:FinalStateDefinition     = lambda ac, fsc: ac.getStore()['process'] == ProcessCategories.f8_tth
 define_ttZ:FinalStateDefinition     = lambda ac, fsc: ac.getStore()['process'] == ProcessCategories.f8_ttz
-define_ttHZ:FinalStateDefinition     = lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.f8_tth, ProcessCategories.f8_ttz])
+define_ttHZ:FinalStateDefinition    = lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.f8_tth, ProcessCategories.f8_ttz])
 
 def categorize_4fsl(ac:DataSource):
     from zhh import EventCategories
@@ -102,26 +123,26 @@ def categorize_6q(ac:DataSource):
     ac.registerEventCategory('bbbbqq', define_bbbbqq, EventCategories.bbbbqq)
     ac.registerEventCategory('bbbbbb', define_bbbbbb, EventCategories.bbbbbb)
 
-def categorize_llhh(ac:DataSource):
+def categorize_llHH(ac:DataSource):
     from zhh import EventCategories
     
-    ac.registerEventCategory('llhh', define_llhh, EventCategories.llHH)
+    ac.registerEventCategory('llHH', define_llHH, EventCategories.llHH)
     ac.registerEventCategory('eeHHbbbb', define_eeHHbbbb, EventCategories.eeHHbbbb)
     ac.registerEventCategory('μμHHbbbb', define_μμHHbbbb, EventCategories.μμHHbbbb)
     ac.registerEventCategory('ττHHbbbb', define_ττHHbbbb, EventCategories.ττHHbbbb)
-    ac.registerEventCategory('llhh_llbbbb', define_llhh_llbbbb, None)
-    ac.registerEventCategory('llhh_llnonbbbb', define_llhh_llnonbbbb, None)
-    ac.registerEventCategory('llqqh', define_llqqh, EventCategories.llqqh)
+    ac.registerEventCategory('llHH_llbbbb', define_llHH_llbbbb, None)
+    ac.registerEventCategory('llHH_llnonbbbb', define_llHH_llnonbbbb, None)
+    ac.registerEventCategory('llqqh', define_llqqH, EventCategories.llqqH)
 
 def categorize_vvhh(ac:DataSource):
     from zhh import EventCategories
     
-    ac.registerEventCategory('vvhh', define_vvhh, EventCategories.vvHH)
+    ac.registerEventCategory('vvhh', define_vvHH, EventCategories.vvHH)
     ac.registerEventCategory('v1v1HHbbbb', define_v1v1HHbbbb, EventCategories.v1v1HHbbbb)
     ac.registerEventCategory('v23v23HHbbbb', define_v23v23HHbbbb, EventCategories.v23v23HHbbbb)
-    ac.registerEventCategory('vvhh_vvbbbb', define_vvhh_vvbbbb, None)
-    ac.registerEventCategory('vvhh_vvnonbbbb', define_vvhh_vvnonbbbb, None)
-    ac.registerEventCategory('vvqqh', define_vvqqh, EventCategories.vvqqH)
+    ac.registerEventCategory('vvhh_vvbbbb', define_vvHHbbbb, None)
+    ac.registerEventCategory('vvhh_vvnonbbbb', define_vvHH_nonbbbb, None)
+    ac.registerEventCategory('vvqqh', define_vvqqH, EventCategories.vvqqH)
 
 def categorize_tthz(ac:DataSource):
     from zhh import EventCategories

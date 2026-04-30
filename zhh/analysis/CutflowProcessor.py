@@ -896,7 +896,7 @@ def cutflowTableFn(masks,
         
             found = False
             for analysis in sources:
-                if analysis.containsFinalState(mask_names[0]):
+                if analysis.containsCategory(mask_names[0]):
                     if found:
                         raise ValueError(f"Multiple analyses found containing the final state {mask_name}. Support needs to be checked.")
                     else:
@@ -907,7 +907,7 @@ def cutflowTableFn(masks,
                         break
 
             for i in range(len(mask_names) - 1):
-                assert(analysis.containsFinalState(mask_names[i + 1]))
+                assert(analysis.containsCategory(mask_names[i + 1]))
             
             if not found:
                 raise ValueError(f"No analysis found containing the final state {mask_name}.")
