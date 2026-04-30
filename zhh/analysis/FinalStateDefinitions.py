@@ -58,8 +58,10 @@ define_vvqqh:FinalStateDefinition        = lambda ac, fsc: np.isin(ac.getStore()
 
 define_vvhh_vvbbbb:FinalStateDefinition    = lambda ac, fsc: ac.getCategoryMask('vvHH') & (fsc.n_charged_lep == 0) & (fsc.n_neutral_lep == 2) & (fsc.n_b_from_higgs == 4) # vvHHbbbb
 define_vvhh_vvnonbbbb:FinalStateDefinition = lambda ac, fsc: ac.getCategoryMask('vvHH') & (fsc.n_charged_lep == 0) & (fsc.n_neutral_lep == 2) & (fsc.n_b_from_higgs != 4)
-define_v1v1HHbbbb:FinalStateDefinition   = lambda ac, fsc: ac.getCategoryMask('vvHHbbbb') & (fsc.n_ve == 2) & (fsc.n_vmu == 0) & (fsc.n_vtau == 0)
-define_v23v23HHbbbb:FinalStateDefinition = lambda ac, fsc: ac.getCategoryMask('vvHHbbbb') & (fsc.n_ve == 0) & ((fsc.n_vmu == 2) | (fsc.n_vtau == 2))
+define_v1v1HHbbbb:FinalStateDefinition   = lambda ac, fsc: ac.getCategoryMask('vvHHbbbb') & (fsc.n_ve == 2) & (fsc.n_vmu == 0) & (fsc.n_vtau == 0) & (fsc.n_b_from_higgs == 4)
+define_v23v23HHbbbb:FinalStateDefinition = lambda ac, fsc: ac.getCategoryMask('vvHHbbbb') & (fsc.n_ve == 0) & ((fsc.n_vmu == 2) | (fsc.n_vtau == 2)) & (fsc.n_b_from_higgs == 4)
+
+define_WBF_vvbbbb:FinalStateDefinition = lambda ac, fsc: ((ac.getStore()['massDiNeutrino'] < 79) | (ac.getStore()['massDiNeutrino'] > 102)) & (fsc.n_ve + fsc.n_vmu + fsc.n_vtau == 2) & (fsc.n_b_from_higgs == 4)
 
 # categorize qqhh
 define_qqhh:FinalStateDefinition     = lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.qqhh]) # qqHH
@@ -121,6 +123,7 @@ def categorize_vvhh(ac:DataSource):
     ac.registerEventCategory('v23v23HHbbbb', define_v23v23HHbbbb, EventCategories.v23v23HHbbbb)
     ac.registerEventCategory('vvhh_vvbbbb', define_vvhh_vvbbbb, None)
     ac.registerEventCategory('vvhh_vvnonbbbb', define_vvhh_vvnonbbbb, None)
+    ac.registerEventCategory('WBF_vvbbbb', define_WBF_vvbbbb, None)
     ac.registerEventCategory('vvqqh', define_vvqqh, EventCategories.vvqqH)
 
 def categorize_tthz(ac:DataSource):
