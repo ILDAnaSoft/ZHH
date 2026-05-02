@@ -33,13 +33,15 @@ class SklearnMulticlassTrainingAction(MVAThresholdFinderInterface, FileBasedProc
 
         from zhh import find_by
 
-        mva_spec = find_by(steer['mvas'], 'name', mva, is_dict=True)
-        
+        self._mva_spec = mva_spec = find_by(steer['mvas'], 'name', mva, is_dict=True)
+
         self._data_file = mva_spec['data_file']
         self._mva_file = mva_spec['mva_file']
         self._clf_prop = clf_prop
         self._trial_name = trial_name if trial_name is not None else mva
         self._model = mva_spec.get('model', 'XGBClassifier')
+
+        mva_spec['model'] = self._model
 
         if not self._model in ['LGBMClassifier', 'XGBClassifier']:
             raise Exception('SklearnMulticlassTrainingAction only supports model=LGBMClassifier or XGBClassifier')
@@ -53,19 +55,30 @@ class SklearnMulticlassTrainingAction(MVAThresholdFinderInterface, FileBasedProc
     
     def output(self):
         return self.localTarget(self._mva_file)
+    
+    def getConfig(self)->'MVATrainingConfig':
+        return MVATrainingConfig(os.getcwd(), 1, self._trial_name, model=self._model,
+                                 signal_categories=self._signal_categories,
+                                 background_categories=self._background_categories,
+                                 clf_file=self._mva_file, clf_prop=self._clf_prop)
 
     def run(self):
         print(f'Sig categories', self._signal_categories)
         print(f'Bkg categories', self._background_categories)
 
-        cfg = MVATrainingConfig(os.getcwd(), 1, self._trial_name, model=self._model)
-
-        qty = objective(cfg, self._hyperparams, self._signal_categories, self._background_categories,
-                        clf_file=self._mva_file, clf_property=self._clf_prop, train_test_npz=self._data_file,
-                        debug=self._debug)
+        qty = objective(self.getConfig(), self._hyperparams, train_test_npz=self._data_file, debug=self._debug)
         
     def complete(self)->bool:
-        complete = super().complete()
+        file_exist = super().complete()
+        complete = False
+        
+        if file_exist:
+            # check that the used mva config is the same as the current one
+            with open(self._mva_file, 'rb') as pf:
+                dump = pickle.load(pf)
+
+            complete = dump['hash'] == self.getConfig().hash()
+
         if complete:
             self.assignThreshold(self.findThreshold())
         
@@ -97,11 +110,21 @@ def find_subclss(cls, subclss:list=[]):
     
     return subclss
 
+def parse_to_string(value):
+    try:
+        string_rep = str(value)
+    except Exception as e:
+        string_rep = f'Unknown'
+
+    return string_rep
+
 class MVATrainingConfig:
-    def __init__(self, base_path:str, n_trials:int, trial_name:str|None, trial_data:str|None=None, trial_data_file:str='train_test.npz',
+    def __init__(self, base_path:str, n_trials:int,
+                 trial_name:str|None, trial_data:str|None=None, trial_data_file:str='train_test.npz',
                  training_mode:Literal['loss']|Literal['significance']='significance',
                  signal_categories:list[int]=[], background_categories:list[int]=[], hyperparam_bounds:list[OptunaSuggestion]=[],
-                 model:Literal['LGBMClassifier', 'XGBClassifier']='XGBClassifier'):
+                 model:Literal['LGBMClassifier', 'XGBClassifier']='XGBClassifier',
+                 clf_file:str|None=None, clf_prop:str='clf'):
         
         """_summary_
 
@@ -120,6 +143,7 @@ class MVATrainingConfig:
 
         self._trial_data = f'{base_path}/{trial_data_file}' if trial_data is None else trial_data
         self._n_trials = n_trials
+        self._clf_file = clf_file
         self._trial_name = trial_name
         self._base_path  = base_path
         self._trial_path = f'{base_path}/trial-{trial_name}'
@@ -128,6 +152,19 @@ class MVATrainingConfig:
         self._background_categories = background_categories
         self._hyperparam_bounds = hyperparam_bounds
         self._model = model
+        self._clf_prop = clf_prop
+    
+    def __str__(self)->str:
+        from json import dumps
+        dump = ''
+        for key, val in self.__dict__.items():
+            dump += f'\n{key}={parse_to_string(val)}'
+
+        return f'<MVATrainingConfig {dump}>'
+
+    def hash(self)->str:
+        from hashlib import md5
+        return md5(self.__str__().encode()).hexdigest()
 
     def register(self):
         if self._trial_name in configs:
@@ -158,11 +195,19 @@ def parse_suggestions(trial:optuna.Trial, suggestions:list[OptunaSuggestion])->d
         
     return kwargs
 
-def objective(config:MVATrainingConfig, hyper_params:dict, signal_classes:list[int], background_classes:list[int], trial:optuna.Trial|None=None,
-              clf_file:str|None=None, clf_property:str='clf', train_test_npz:str|None=None, n_trial:int=0, debug:bool=False):
+def objective(config:MVATrainingConfig, hyper_params:dict, trial:optuna.Trial|None=None,
+              train_test_npz:str|None=None, n_trial:int=0, debug:bool=False, hash:str|None=None):
     
     import os.path as osp, os
     from zhh import Tee
+
+    signal_classes = config._signal_categories
+    background_classes = config._background_categories
+    clf_property = config._clf_prop
+    clf_file = config._clf_file
+
+    if hash is None:
+        hash = config.hash()
 
     if trial is not None:
         n_trial = trial.number
@@ -262,8 +307,9 @@ def objective(config:MVATrainingConfig, hyper_params:dict, signal_classes:list[i
         'best_significance': best_significance,
         'significance_train': significance_train,
         'thresh': thresh,
-        clf_property: clf
+        'hash': hash
     }
+    dump[clf_property] = clf
 
     with open(clf_file, 'wb') as pf:
         pickle.dump(dump, pf)

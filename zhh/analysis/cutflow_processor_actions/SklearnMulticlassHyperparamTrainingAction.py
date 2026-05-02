@@ -13,7 +13,7 @@ def objective_mod(trial:optuna.Trial):
     cfg = configs[trial.study.study_name]
     
     hyper_params = parse_suggestions(trial, cfg._hyperparam_bounds)
-    return objective(cfg, hyper_params, cfg._signal_categories, cfg._background_categories, trial=trial)
+    return objective(cfg, hyper_params, trial=trial)
 
 def run_optimization(cfg:MVATrainingConfig):
     from optuna.storages import JournalStorage
@@ -68,7 +68,9 @@ class SklearnMulticlassHyperparamTrainingAction(MVAThresholdFinderInterface, Fil
         self._background_categories = get_background_categories(self._signal_categories, mva_spec['classes'])
 
         self._features = mva_spec['features']
-        self._cfg:MVATrainingConfig = MVATrainingConfig(os.getcwd(), ntrials, trial_name=f'{os.environ["hypothesis"]}.{self._trial_name}',
+        self._cfg:MVATrainingConfig = MVATrainingConfig(os.getcwd(), ntrials,
+                                                        
+                                                        trial_name=f'{os.environ["hypothesis"]}.{self._trial_name}',
                                                         signal_categories=self._signal_categories,
                                                         background_categories=self._background_categories,
                                                         hyperparam_bounds=hyperparam_bounds,

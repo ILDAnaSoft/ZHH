@@ -8,7 +8,7 @@ from .TTreeInterface import TTreeInterface
 from ..util.deepmerge import deepmerge
 import matplotlib.pyplot as plt
 from matplotlib.colors import Colormap
-from typing import TypedDict, Required, NotRequired
+from typing import TypedDict, Required, NotRequired, Mapping
 import numpy as np
 import os.path as osp, pickle
 #import blosc2
@@ -1104,3 +1104,172 @@ def calc_cross_section(analysis:DataSource, process:str):
 
 def significant_digits(num:float|int, ndigits=3):
     return f'${num:.{ndigits}}$'
+
+def evaluate_categories_ordered(source:DataSource, categories:list[str], overlap_free:bool=True)->dict[str, np.ndarray]:
+    """For a given DataSource, evaluates a list of categories in the given order
+    and will produce (per-default) overlap-free binary masks for each category.
+    If overlap_free=True, in cases where one event matches multiple categories,
+    only the last one will be assigned.
+    An additional category 'other' is added which will include True for all un-
+    matched events.
+
+    Args:
+        source (DataSource): _description_
+        categories (list[str]): _description_
+
+    Raises:
+        Exception: _description_
+
+    Returns:
+        dict[str, np.ndarray]: _description_
+    """
+
+    for category in categories:
+        if not source.containsCategory(category):
+            raise Exception(f'Category <{category}> is unknown in source <{source.getName()}>')
+            
+    masks = source.getCategoryMasks(categories)
+    
+    if overlap_free:
+        for i, category in enumerate(categories):
+            if i+1 < len(categories):
+                for category_rewrite in categories[i+1:]:
+                    masks[category][masks[category_rewrite]] = False
+    
+    # compile other category
+    covered = np.logical_or.reduce([ masks[category] for category in categories ])
+
+    masks['other'] = ~covered
+
+    return masks
+
+def counts_by_category(masks:list[list[dict[str, np.ndarray]]],
+                       cuts:list[list[Cut]],
+                       source:DataSource,
+                       categories:list[str],
+                       weight_props:list[str])->dict[str, np.ndarray]:
+    """Fetches the number of events passing a list of cut groups.
+    masks, cuts and weight_props must have the same number of entries (i.e. cut groups).
+    Within each cut j in cut_group i, masks[i][j] must be a dict[str, np.ndarray] where
+    the key is the name of a source and the value is a binary mask of events passing the
+    the cut j. There must be a value for the given source.
+    categories is a list of event categories for the given source to calculate the event
+    count for (at each cut j). To calculate the event count, event weights from the
+    column weight_props[i] are used and the label is inferred frm cuts[i][j].
+    The output is a dict[str, np.ndaray] where the key is the category and the value a
+    numpy array with size=(Sum[1] over j,i), i.e. total number of cuts.
+    
+    Note: the count _before_ cuts is not calculated by this function. 
+
+    Args:
+        masks (list[list[dict[str, np.ndarray]]]): _description_
+        cuts (list[list[Cut]]): _description_
+        source (DataSource): _description_
+        categories (list[str]): _description_
+        weight_props (list[str]): _description_
+
+    Returns:
+        dict[str, np.ndarray]: _description_
+    """
+
+    n_cuts = 0
+    for i, cut_group in enumerate(cuts):
+        n_cuts += len(cut_group)
+
+    n_categories_tot = 0
+
+    ordered_categories = evaluate_categories_ordered(source, categories)
+    n_categories = len(ordered_categories.keys())
+
+    categories_2_count:dict[str, np.ndarray] = {}
+    for category in ordered_categories:
+        categories_2_count[category] = np.zeros(n_cuts)
+
+    n_categories_tot += n_categories
+
+    # fill the counts in source_2_category_2_count per source/category and cut
+    i_cut = 0
+    for i, cut_mask_group in enumerate(masks):
+        weight_prop = weight_props[i]
+        weights = source.getStore()[weight_prop]
+
+        for j, cut_masks in enumerate(cut_mask_group):
+            cut = cuts[i][j]
+            found = False
+
+            for src_name, cut_mask in cut_masks:
+                if src_name == source.getName():
+                    found = True
+                    break
+            
+            assert(found)
+
+            for k, category in enumerate(ordered_categories):
+                category_mask = ordered_categories[category]
+                categories_2_count[category][i_cut] = weights[cut_mask & category_mask].sum()
+        
+            i_cut += 1
+
+    # delete 0 entries in source_2_category_2_count[source.getName()][category]
+    for category in ordered_categories.keys():
+        if categories_2_count[category].sum() == 0:
+            del categories_2_count[category]
+
+    return categories_2_count
+
+def match_sources_to_categories(sources:list[DataSource], categories:list[str])->dict[str, list[str]]:
+    """For each category A in event_categories, finds a source in sources in which
+    category A is registered. Throws an exception if no source can be found for A.
+
+    Returns a dict of structure category => source_name.
+
+    Args:
+        sources (list[DataSource]): _description_
+        categories (list[str]): _description_
+
+    Raises:
+        Exception: _description_
+
+    Returns:
+        dict[str, list[str]]: _description_
+    """
+    source_to_category_names:dict[str, list[str]] = {}
+
+    for category in categories:
+        found = False
+
+        for source in sources:
+            if source.containsCategory(category):
+                if source.getName() not in source_to_category_names:
+                    source_to_category_names[source.getName()] = []
+                
+                source_to_category_names[source.getName()] += [category]
+
+                found = True
+                break
+
+        if not found:
+            raise Exception(f'Category <{category}> is unknown in all registered sources')
+
+    return source_to_category_names
+
+def invert_dict(a:Mapping[str, str|list[str]])->dict[str, str]:
+    """Inverts a mapping (here usually a dict), i.e. transforms values to key and
+    vice-versa. If the value is a list, each item will be treated as a value.
+
+    Args:
+        a (Mapping[str, str | list[str]]): _description_
+
+    Returns:
+        dict[str, str]: _description_
+    """
+    b = {}
+
+    for item, var in a.items():
+        if isinstance(var, str):
+            b[var] = item
+        else:
+            for c in var:
+                b[c] = item
+
+    return b

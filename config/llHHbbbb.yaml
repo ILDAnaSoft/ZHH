@@ -196,7 +196,7 @@ cutflow_table:
   items:
     - category: μμbb
       label: '\HepProcess{\Pgm\Pgm\Pqb\Pqb}'
-    - remaining_of: 4fsl
+    - remaining_of_source: 4fsl
       label: 'other 4f sl'
     - category: bbqqqq
       label: '\HepProcess{\Pqb\Pqb\Pq\Pq\Pq\Pq}'
@@ -206,11 +206,11 @@ cutflow_table:
       label: '\HepProcess{\Plpm\Plpm\Pq\Pq\Pq\Pq}'
     - category: llbbbb
       label: '(\HepProcess{\Plpm\Plpm\Pqb\Pqb\Pqb\Pqb})'
-    - remaining_of: 2l4q
+    - remaining_of_source: 2l4q
       label: 'other 2l4q'
     - category: bbbb
       label: '\HepProcess{\Pqb\Pqb\Pqb\Pqb}'
-    - remaining_of: 4flh
+    - remaining_of_source: 4flh
       label: 'other 4fl / 4fh'
     - category: llqqH
       label: '\HepProcess{\Plpm\Plpm\Pq\Pq\PH}'
@@ -221,6 +221,11 @@ cutflow_table:
     - category: μμHHbbbb
       label: '(\HepProcess{\Pgm\Pgm\Pqb\Pqb\Pqb\Pqb})'
       is_signal: true
+    - latex: \hline
+    - sum: signal
+      label: 'Total signal'
+    - sum: background
+      label: 'Total background'
   ignore_categories: llbbbb
 
 # general note about cuts:
@@ -302,7 +307,7 @@ mvas:
 
     mva_file: $hypothesis_mva.pickle
 
-    #model: LGBMClassifier
+    model: LGBMClassifier
 
 # define what should be done after the data is loaded
 # for a documentation of supplied actions, see zhh/analysis/cutflow_processor_actions/README.md
