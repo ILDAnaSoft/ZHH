@@ -8,9 +8,10 @@ from .TTreeInterface import TTreeInterface
 from ..util.deepmerge import deepmerge
 import matplotlib.pyplot as plt
 from matplotlib.colors import Colormap
-from typing import TypedDict, Required, NotRequired, Mapping
+from typing import TypedDict, Required, Mapping, cast
 import numpy as np
 import os.path as osp, pickle
+from .CutflowTableEntry import LatexCutflowTableEntry, CutflowTableEntry
 #import blosc2
 
 def flatten(a):
@@ -133,6 +134,7 @@ class CutflowProcessor:
 
     def process(self, step:int|None=None, cuts:Sequence[ValueCut]|None=None,
                 weight_prop:str='weight', split:int|None=None,
+                step_start:int|None=None,
                 cache:str|None='cutflow_presel.pickle'):
         """Processes the preselection cuts and stores masks for each event in
         each source passing each cut in _masks. Also stores for each passing
@@ -155,6 +157,10 @@ class CutflowProcessor:
                                     pressed pickle format. If None, no file
                                     will be read (use this to study different
                                     cut values) 
+            step_start (int, optional): step whose mask to use to infer the
+                                        events to apply these cuts on. If None,
+                                        will use the previous step, i.e. cut
+                                        group.
 
         Returns:
             _type_: _description_
@@ -184,7 +190,7 @@ class CutflowProcessor:
         if (step > 0) or cache is None or not osp.isfile(cache):
             # for now, only compute cuts_hash for preselection
             if step == 0:
-                self._cuts_hash = Cut.hash_cuts(self._cuts.values()[0])
+                self._cuts_hash = Cut.hash_cuts(list(self._cuts.values())[0])
             
             for i, cut in enumerate(self._cuts[step]):
                 flattened = []
@@ -196,18 +202,22 @@ class CutflowProcessor:
                     source_name = source.getName()
                     subset = subsets[source_name]
                     
-                    # for post-preselection cuts, use the very last subset as base
+                    # for post-preselection cuts, use the very last subset as base per default
+                    # if step_start is given, use that
                     if i == 0 and step > 0:
-                        if not (step - 1) in self._masks:
+                        if step_start is None:
+                            step_start = step - 1
+
+                        if not step_start in self._masks:
                             raise Exception('step > 0 requires previous cuts to have been applied already')
                         
-                        prev_mask = find_entry(self._masks[step - 1][-1], source_name)[1]
+                        prev_mask = find_entry(self._masks[step_start][-1], source_name)[1]
                         
                         # also apply a split, if one is given
                         if split is not None:
                             prev_mask = prev_mask & (subset['split'] == split)
 
-                        subsets[source_name] = subset[prev_mask]
+                        subsets[source_name] = cast(DataStore, subset[prev_mask])
                         subset = subsets[source_name]
                     
                     processes = source.getProcesses()
@@ -229,7 +239,7 @@ class CutflowProcessor:
                         
                     print(f'{source_name} Processing {cut} before: {before} after {after} ({(after/before):.1%})')
                     
-                    subsets[source_name] = subset[mask]
+                    subsets[source_name] = cast(DataStore, subset[mask])
                     masks_current_cut.append((source_name, subset._mask))
                 
                 max_before_all.append(max_before)
@@ -379,9 +389,8 @@ class CutflowProcessor:
         
         return context_and_figures
         
-    def cutflowTable(self, final_state_labels_and_names_or_processes:Sequence[tuple[str,str]|
-                                                                              tuple[str,str,str]|tuple[str,list[str]]],
-                     path:str|None=None, step_start:int=0, step_end:int|None=None, weight_prop:str='weight',
+    def cutflowTable(self, cutflow_table_entries:Sequence[CutflowTableEntry|LatexCutflowTableEntry],
+                     weight_props:list[str], path:str|None=None, step_start:int=0, step_end:int|None=None,
                      filename:str|None=None, signal_categories:list[str]=[], ignore_categories:list[str]=[]):
         
         """Creates a cutflow table considering all cuts from groups
@@ -411,11 +420,10 @@ class CutflowProcessor:
             
             path = f'{self._work_dir}/{filename}'
             
-        return cutflowTable(self, final_state_labels_and_names_or_processes, path,
+        return cutflowTable(self, cutflow_table_entries, path,
                             step_start=step_start,
-                            step_end=step_end if step_end is not None else
-                            len(self._cuts)-1,
-                            signal_categories=signal_categories, ignore_categories=ignore_categories, weight_prop=weight_prop)
+                            step_end=step_end if step_end is not None else len(self._cuts)-1,
+                            weight_props=weight_props)
     
     def getPlotContext(self)->PlotContext:
         """Returns the plot context for the preselection processor.
@@ -827,23 +835,122 @@ def cutflowPlotSummaryFn(signal_category_names:list[str], cuts:Sequence[ValueCut
     
     return fig
 
-def cutflowTable(cp:CutflowProcessor, final_state_labels_and_names_or_processes:Sequence[tuple[str,str]|tuple[str,str,str]|tuple[str,list[str]]], path:str,
-                 step_start:int, step_end:int, weight_prop:str='weight', signal_categories:list[str]=[], ignore_categories:list[str]=[]):
+def cutflowTable(cp:CutflowProcessor, cutflow_table_entries:Sequence[CutflowTableEntry|LatexCutflowTableEntry],
+                 path:str, step_start:int, step_end:int, weight_props:list[str]):
     
-    masks, cuts, calc_dicts, max_before = cp._flattenSteps(step_end, step_start)
+    masks = []
+    cuts = []
+
+    for step in range(step_start, step_end+1):
+        masks.append(cp._masks[step])
+        cuts.append(cp._cuts[step])
+
+    #masks, cuts, calc_dicts, max_before = cp._flattenSteps(step_end, step_start)
     
     return cutflowTableFn(masks,
                         cp._luminosity,
                         cp._sources,
-                        final_state_labels_and_names_or_processes,
+                        cutflow_table_entries,
                         cuts,
                         path,
-                        weight_prop,
-                        step_start,
-                        signal_categories,
-                        ignore_categories)
+                        weight_props)
 
 def cutflowTableFn(masks,
+                 luminosity:float,
+                 sources:list[DataSource],
+                 cutflow_table_entries:Sequence[CutflowTableEntry|LatexCutflowTableEntry],
+                 cuts:Sequence[Sequence[Cut]],
+                 path:str,
+                 weight_props:list[str]):
+    
+    from zhh import combined_cross_section, render_table, render_latex, EventCategories, \
+        SumCutflowTableEntry, CategorizedCutflowTableEntry, UncategorizedCutflowTableEntry
+    from tqdm.auto import tqdm
+
+    cat_cutflow_table_entries = cast(list[CategorizedCutflowTableEntry], list(filter(lambda a: isinstance(a, CategorizedCutflowTableEntry), cutflow_table_entries)))
+    all_categories = [a.category for a in cat_cutflow_table_entries]
+
+    # find all categories for which is_signal=True
+    signal_categories = []
+    for entry in cutflow_table_entries:
+        if isinstance(entry, CategorizedCutflowTableEntry):
+            if entry.is_signal:
+                signal_categories.append(entry.category)
+
+    print('all_categories', all_categories)
+
+    source_2_category_names = match_sources_to_categories(sources, all_categories)
+    category_names_2_source = invert_dict(source_2_category_names)
+    source_2_counts = {}
+
+    for source in (pbar := tqdm(sources)):
+        pbar.set_description(f'Calculating event count for source {source.getName()} with categories {", ".join(source_2_category_names[source.getName()])}')
+        source_2_counts[source.getName()] = counts_by_category(masks, cuts, source, source_2_category_names[source.getName()],
+                                                               weight_props=weight_props)
+    
+    # do plotting for absolute and efficiency values
+    for calc_cut_efficiency in [False, True]:
+
+        table = []
+        header = ['']
+
+        for cut_group in cuts:
+            for cut in cut_group:
+                header += [f'${cut.latex()}$']
+
+        # each entry in row must either be a str or a list of n strings (where n equal for all lists)
+
+        for entry in cutflow_table_entries:
+            if isinstance(entry, CategorizedCutflowTableEntry):
+                category = entry.category
+                source_name = category_names_2_source[category]
+                
+                table += [[ entry.label, *[format_counts(a) for a in source_2_counts[source_name][category]] ]]
+            elif isinstance(entry, UncategorizedCutflowTableEntry):
+                source_name = entry.source
+
+                table += [[ entry.label, *[format_counts(a) for a in source_2_counts[source_name]['other']] ]]
+            elif isinstance(entry, LatexCutflowTableEntry):
+                table += [entry.latex]
+            elif isinstance(entry, SumCutflowTableEntry):
+                cats = entry.sum
+
+                first_counts_dict = source_2_counts[list(source_2_counts.keys())]
+                first_counts = first_counts_dict[list(first_counts_dict.keys())[0]]
+
+                counts = np.zeros(len(first_counts))
+
+                if isinstance(cats, str):
+                    if cats.lower() in ['signal', 'background']:
+                        count_signal = cats.lower() == 'lower'
+                        
+                        for source, source_counts in source_2_counts.items():
+                            for category, count in source_counts:
+                                if (count_signal and category in signal_categories) or (
+                                    not count_signal and category not in signal_categories):
+                                    counts += count
+                    else:
+                        raise Exception(f'Cannot parse <{cats}>')
+                else:
+                    for category in cats:
+                        source = category_names_2_source[category]
+                        counts += source_2_counts[source][category]
+
+                table += [[ entry.label, *[format_counts(a) for a in counts ]]]
+            else:
+                print(entry)
+                raise Exception(f'Received non-parseable item <{entry.__class__.__name__}>')
+
+        table.insert(0, header)
+
+        latex_out = render_table(table)
+        print(latex_out)
+
+        print(osp.splitext(path)[0] +('_efficiency.pdf' if calc_cut_efficiency else '_abs.pdf'))
+        render_latex(latex_out, osp.splitext(path)[0] +('_efficiency.pdf' if calc_cut_efficiency else '_abs.pdf'))
+
+
+def cutflowTableFnOld(masks,
                  luminosity:float,
                  sources:list[DataSource],
                  final_state_labels_and_names_or_processes:Sequence[tuple[str,str]|tuple[str,str,str]|tuple[str,list[str]]],
@@ -1144,7 +1251,7 @@ def evaluate_categories_ordered(source:DataSource, categories:list[str], overlap
     return masks
 
 def counts_by_category(masks:list[list[dict[str, np.ndarray]]],
-                       cuts:list[list[Cut]],
+                       cuts:Sequence[Sequence[Cut]],
                        source:DataSource,
                        categories:list[str],
                        weight_props:list[str])->dict[str, np.ndarray]:
