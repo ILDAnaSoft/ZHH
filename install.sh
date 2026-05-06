@@ -146,6 +146,14 @@ if [ "$ZHH_COMMAND" = "install" ]; then
     # Python virtual environment (venv)
     zhh_install_venv
 
+    # install cutflow shorthand
+    mkdir -p "$REPO_ROOT/bin"
+
+    if [ ! -f "$REPO_ROOT/bin/cutflow" ]; then
+        cp "$REPO_ROOT/shell/cutflow.template" "$REPO_ROOT/bin/cutflow"
+        sed -i -e "s|<REPO_ROOT>|$REPO_ROOT|g" "$REPO_ROOT/bin/cutflow"
+    fi
+
     # Dependencies
     if [ -z "$ZHH_INSTALL_DIR" ]; then
         get_input_arg "Where do you wish to install all the dependencies? ($( realpath "$REPO_ROOT/dependencies" )) " ZHH_INSTALL_DIR $( realpath "$REPO_ROOT/dependencies" )

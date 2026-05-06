@@ -106,13 +106,13 @@ class DataStore(MixedLazyTablelike):
         jet_masses = np.zeros((len(self), n_jets), dtype=np.float32)
 
         for i in range(n_jets):
-            print(f'Fetching jet{i}_m')
+            #print(f'Fetching jet{i}_m')
             jet_masses[:, i] = self[f'jet{i+1}_m']
             
         jet_masses.sort(axis=1)
         
         for i in range(n_jets):
-            print(f'Assigning jet{i}_m')
+            #print(f'Assigning jet{i}_m')
             self[f'jet{i+1}_m'] = jet_masses[:, i]
     
     def propsFromFile(self):
@@ -168,10 +168,10 @@ class DataStore(MixedLazyTablelike):
                                                        'Should it be overwritten? (y=yes, n=skip, a=abort)')
                     match cont.lower():
                         case 'y':
-                            print(f'Overwriting <{item}>')
+                            pbar.set_description(f'Overwriting <{item}>')
                             del hf[item]
                         case 'n':
-                            print(f'Skipping <{item}>')
+                            pbar.set_description(f'Skipping <{item}>')
                             continue
                         case _:
                             raise Exception(f'Item <{item}> already exists')

@@ -92,7 +92,7 @@ sources:
     event_categorization:
       default: EventCategories.qqqqqq
       order: []
-      items: [ bbqqqq, bbbbqq, bbbbbb ]
+      items: [ bbqqqq ] #, bbbbqq, bbbbbb ]
     disabled: false
     reset: false
 
@@ -193,6 +193,7 @@ features:
 #                    category B must be given here to avoid double counting
 
 cutflow_table:
+  # use heppennames for particles in \HepProcess environment. see CutflowTableLatexPreamble.tex
   items:
     - category: μμbb
       label: '\HepProcess{\Pgm\Pgm\Pqb\Pqb}'
@@ -201,7 +202,7 @@ cutflow_table:
     - category: bbqqqq
       label: '\HepProcess{\Pqb\Pqb\Pq\Pq\Pq\Pq}'
     - category: μvbbqq
-      label: '\HepProcess{\Pgm\Pgngm\Pqb\Pqb\Pq\Pq}'
+      label: '\HepProcess{\Pgm\Pgn\Pqb\Pqb\Pq\Pq}'
     - category: llqqqq
       label: '\HepProcess{\Plpm\Plpm\Pq\Pq\Pq\Pq}'
     - category: llbbbb
@@ -215,15 +216,18 @@ cutflow_table:
     - category: llqqH
       label: '\HepProcess{\Plpm\Plpm\Pq\Pq\PH}'
     - latex: \hline
-    - category: llHH
+    - sum: signal
       label: '\HepProcess{\Plpm\Plpm\PH\PH}'
-      is_signal: true
     - category: μμHHbbbb
       label: '(\HepProcess{\Pgm\Pgm\Pqb\Pqb\Pqb\Pqb})'
       is_signal: true
+    - category: llHH
+      label: 'other signal'
+      #label: '\HepProcess{\Plpm\Plpm\PH\PH}'
+      is_signal: true
     - latex: \hline
-    - sum: signal
-      label: 'Total signal'
+    #- sum: signal
+    #  label: 'Total signal'
     - sum: background
       label: 'Total background'
   ignore_categories: llbbbb
@@ -281,6 +285,10 @@ cuts:
 #
 mvas:
   - name: default_mva
+
+    # model: either 'LGBMClassifier' or 'XGBClassifier' 
+    model: LGBMClassifier
+
     features: [
       jet1_m, jet2_m, jet3_m, jet4_m,
       mhh, fit4C_mz, fit4C_mh1, fit4C_mh2,
@@ -306,8 +314,6 @@ mvas:
     data_file: $hypothesis_train_test.npz
 
     mva_file: $hypothesis_mva.pickle
-
-    model: LGBMClassifier
 
 # define what should be done after the data is loaded
 # for a documentation of supplied actions, see zhh/analysis/cutflow_processor_actions/README.md
@@ -338,6 +344,7 @@ actions:
     include_mva_outputs: false
     # optional:
     # tree: cutflow
+    disabled: True
 
   # split in train/testing [accross all steps, i.e. regardless of cut group]
   # creates two new columns
@@ -376,7 +383,7 @@ actions:
     hyperparams: {
       max_depth: 5,
       n_estimators: 500,
-      learning_rate: 0.02
+      learning_rate: 0.012
     }
     debug: true
     mva: default_mva
@@ -393,26 +400,18 @@ actions:
     split: 0
     ntrials: 250
     disabled: true
-    # optional:
-    # clf_prop: clf
-    # step: 0
 
   - type: SklearnMulticlassInference
     mva: default_mva
     split: 1 # split 0 = train dataset; split 1 = test dataset
     disabled: false
-    # optional:
-    # clf_prop: clf
-    # step: 0
 
   - type: WriteROOTSnapshot
     file: '$hypothesis_mva.root'
     include_custom_columns: [split, weights_split]
-  
-  # The values to cut on can be evaluated lazily
-  # i.e. the value does not need to be known when the program is started
-  # This can be useful for cuts on MVA output, when the best value can
-  # be fetched from training/validation. 
+    include_input_columns: false
+    include_mva_outputs: true
+
   - type: ApplyCuts
     cuts: mva_cut
     step: 1

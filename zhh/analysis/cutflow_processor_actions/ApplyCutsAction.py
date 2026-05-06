@@ -4,6 +4,8 @@ from ..Cuts import Cut
 import os
 
 class ApplyCutsAction(CutflowProcessorAction):
+    interruptible = False # makes sure to delete HDF5 dataset to avoid corrupted datasets on interrupt
+
     def __init__(self, cp:CutflowProcessor, steer:dict, step:int, cuts:str,
                  weight_column:str, split:int|None, cache:str|None=None, **kwargs):
         """_summary_
@@ -59,9 +61,6 @@ class ApplyCutsAction(CutflowProcessorAction):
         if self._cache is not None:
             if self._step == 0 and os.path.isfile(self._cache):
                 os.remove(self._cache)
-        if self._cache is not None:
-            if self._step == 0 and os.path.isfile(self._cache):
-                os.remove(self._cache)
         
         if self._step in self._cp._masks:
             for step in self._cp._masks.keys():
@@ -69,3 +68,4 @@ class ApplyCutsAction(CutflowProcessorAction):
                     del self._cp._masks[step]
                     del self._cp._calc_dicts[step]
                     del self._cp._max_before[step]
+                    del self._cp._weight_columns[step]

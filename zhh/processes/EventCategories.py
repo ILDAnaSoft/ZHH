@@ -95,7 +95,7 @@ class EVENT_CATEGORY_TRUE:
     qqqq = 58
     bbbbbb = 59
     qqqqqq = 60
-    qqbb = 61
+    qqbb = 61 # TODO: this should be renamed to bbqq at some point...
     
     # SEMILEPTONIC
     lvqq = 65

@@ -2,6 +2,8 @@
 
 The cutflow tool is used for statistical analysis on large-scale, ROOT-based analysis. However, on it's own, it only manages data IO (i.e. input of feature data in ROOT TTrees), event categorization and weighting. Anything beyond that must be implemented as CutflowProcessorAction. These are classes implementing desired functionalities such as plotting, MVA analysis etc.
 
+For a documentation about the configuration of `cutflow`, see `config/README.md`.
+
 ## Base classes
 
 Any action must implement at least `CutflowProcessorAction`. If you want to implement a custom action, make sure to import it. Only available subclasses of `CutflowProcessorAction` (or any action inheriting from it) can be used in cutflow.
@@ -69,6 +71,10 @@ TODO
 
 TODO
 
+### PlotObservableAction
+
+
+
 ### PrintSplitWeights
 
 TODO
@@ -100,4 +106,19 @@ This action will store one pickle file for each set of hyperparameters in the tr
 
 ### SklearnMulticlassInference
 
-TODO
+Runs inference for a MVA registered with `cutflow` for a selection of events. Requires the MVA to have been trained before (see, e.g., [SklearnMulticlassTraining](#sklearnmulticlasstraining)). Writes out one total signal classifier variable at column `mva_spec['output_label']` (from a sum of individual classes) as well as all individual class outputs.
+
+Individual class outputs are written to `{mva_spec['output_label']}#{category}` for each category registered in `mva_spec['classes']`.
+
+Data for events which do not match the selection will be set to zero.
+
+Required arguments:
+
+- (str) `mva`: name of the MVA registered in cutflow
+- (int) `split`: defines the split of events to run inference for. e.g. 0 for training dataset, 1 for testing. See SplitDatasets for more info
+
+Optional arguments:
+
+- (int|None) `step`: defines the cut group to select the events to run inference for. if None, will use the last registered cut group. Defaults to None.
+- (str) `clf_prop`: key at which the classifier is saved in the output pickle file. Defaults to 'clf'
+- (bool) `overwrite`: whether or not to overwrite already potentially existing output columns. Defaults to True.

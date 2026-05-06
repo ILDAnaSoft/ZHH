@@ -6,6 +6,7 @@ source/*/xml
 source/build
 source/lib
 zhh/mem/Physsim/build
+bin
 *test*
 *#
 *oldsrc*

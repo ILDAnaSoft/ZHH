@@ -23,4 +23,3 @@ class UncategorizedCutflowTableEntry(CutflowTableEntry):
 class SumCutflowTableEntry(CutflowTableEntry):
     label: str
     sum: str|list[str]
-    source: str

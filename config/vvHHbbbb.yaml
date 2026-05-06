@@ -22,138 +22,6 @@ beam_polarization: [ -0.8, +0.3 ]
 # unit: ab^-1
 luminosity: 2.
 
-# definition of event categories
-# the registration of event categories to specific sources is done in the sources section
-# info: while the naming can be arbitrary, a unique ID must be supplied which must exist 
-#       in the EVENT_CATEGORIES_TRUE class, too. See EventCategories.py
-event_categories:
-
-# event categories are used for plotting/cutflow tables and assigned using MC truth information
-# if you want a category with a given NAME to be plotted explicitly, set id to EventCategories.<NAME> and make
-# sure you set handler to an existing function in FinalStateDefinitions which does the check 
-
-# each event will be assigned an 'id' (event_category column) in the following order:
-# 1  (deprecated) the TTree branch event_category is read; the value might be overwritten by 2. and 3. (if defined)
-# 2. a default value can be used to overwrite for all events of a data source (see sources section below)
-# 3. the value of the last matching registered (see event_categorization.items for each source, below) category is used, where
-#    the order is given either explicitly (event_categorization.order) or the order of definition is used.
-# plots use the id to uniquely identify categories, whereas cutflow tables can make use of the named categorization and thus
-# use different categories/be more granular (the logic to make sure no double counting occurs happens in the background :))
-
-# 4f sl
-- name: llqq
-  handler: FinalStateDefinitions.define_llqq
-  id: null # EventCategories.llqq
-- name: vvqq
-  handler: FinalStateDefinitions.define_vvqq
-  id: null # EventCategories.vvqq
-- name: lvqq
-  handler: FinalStateDefinitions.define_lvqq
-  id: null # EventCategories.lvqq
-- name: vvbb
-  handler: FinalStateDefinitions.define_vvbb
-  id: null # EventCategories.vvbb
-- name: tatabb
-  handler: FinalStateDefinitions.define_tatabb
-  id: null # EventCategories.tatabb
-
-# 4f fully leptonic/hadronic
-- name: llll
-  handler: FinalStateDefinitions.define_llll
-  id: null # EventCategories.llll
-- name: qqqq
-  handler: FinalStateDefinitions.define_qqqq
-  id: null # EventCategories.qqqq
-- name: vvvv
-  handler: FinalStateDefinitions.define_vvvv
-  id: null # EventCategories.vvvv
-- name: qqbb
-  handler: FinalStateDefinitions.define_qqbb
-  id: EventCategories.qqbb
-- name: bbbb
-  handler: FinalStateDefinitions.define_bbbb
-  id: EventCategories.bbbb
-
-# 2l4q
-- name: lvqqqq
-  handler: FinalStateDefinitions.define_lvqqqq
-  id: null # EventCategories.lvqqqq
-- name: lvbbqq
-  handler: FinalStateDefinitions.define_lvbbqq
-  id: EventCategories.lvbbqq
-- name: evbbqq
-  handler: FinalStateDefinitions.define_evbbqq
-  id: null # EventCategories.evbbqq
-- name: μvbbqq
-  handler: FinalStateDefinitions.define_μvbbqq
-  id: null # EventCategories.μvbbqq
-- name: τvbbqq
-  handler: FinalStateDefinitions.define_τvbbqq
-  id: null # EventCategories.τvbbqq
-- name: lvbbbb
-  handler: FinalStateDefinitions.define_lvbbbb
-  id: null # EventCategories.lvbbbb
-- name: llqqqq
-  handler: FinalStateDefinitions.define_llqqqq
-  id: null # EventCategories.llqqqq
-- name: llbbqq
-  handler: FinalStateDefinitions.define_llbbqq
-  id: null # EventCategories.llbbqq
-- name: llbbbb
-  handler: FinalStateDefinitions.define_llbbbb
-  id: null # EventCategories.llbbbb
-- name: vvqqqq
-  handler: FinalStateDefinitions.define_vvqqqq
-  id: null # EventCategories.vvqqqq
-- name: vvbbqq
-  handler: FinalStateDefinitions.define_vvbbqq
-  id: null # EventCategories.vvbbqq
-- name: vvbbbb
-  handler: FinalStateDefinitions.define_vvbbbb
-  id: EventCategories.vvbbbb
-
-# 6q
-- name: bbqqqq
-  handler: FinalStateDefinitions.define_bbqqqq
-  id: EventCategories.bbqqqq
-- name: bbbbqq
-  handler: FinalStateDefinitions.define_bbbbqq
-  id: null # EventCategories.bbbbqq
-- name: bbbbbb
-  handler: FinalStateDefinitions.define_bbbbbb
-  id: null # EventCategories.bbbbbb
-
-# vvhh
-- name: vvHH
-  handler: FinalStateDefinitions.define_vvhh
-  id: EventCategories.vvHH
-- name: v1v1HHbbbb
-  handler: FinalStateDefinitions.define_v1v1HHbbbb
-  id: EventCategories.v1v1HHbbbb
-- name: v23v23HHbbbb
-  handler: FinalStateDefinitions.define_v23v23HHbbbb
-  id: EventCategories.v23v23HHbbbb
-- name: vvHHbbbb
-  handler: FinalStateDefinitions.define_vvhh_vvbbbb
-  id: EventCategories.vvHHbbbb
-- name: vvHH_nonbbbb
-  handler: FinalStateDefinitions.define_vvHH_nonbbbb
-  id: null # EventCategories.vvHH_nonbbbb
-- name: vvqqH
-  handler: FinalStateDefinitions.define_vvqqH
-  id: EventCategories.vvqqH
-
-# ttH/ttZ
-- name: ttH
-  handler: FinalStateDefinitions.define_ttH
-  id: null # EventCategories.ttH
-- name: ttZ
-  handler: FinalStateDefinitions.define_ttZ
-  id: null # EventCategories.ttZ
-- name: ttHZ
-  handler: FinalStateDefinitions.define_ttHZ
-  id: null # EventCategories.ttHZ
-
 # definition of input data and information about the event categorization
 # path                : path to a directory containing Merged.root file whose content
 #                       must be compliant to the one output from the AnalysisCombine
@@ -164,8 +32,9 @@ event_categories:
 #                       order: optional, will use the order used in items if null or
 #                              not apply any category beyond the default one if []
 #                       
-#                       for configuring the items for event_categorization, see
-#                         config/event_categories.yaml
+#                       event categories are defined in EventCategories.py as name => ID
+#                       where ID must be a unique number. in FinalStateDefinitions.py,
+#                       a function define_<name> must exist that defines the category
 # file                : optional, default: Merged.root; ROOT file with EventObservables*,
 #                       KinFit*, FinalStates TTrees etc.
 sources:
@@ -326,38 +195,43 @@ features:
 #                    category B must be given here to avoid double counting
 
 cutflow_table:
+  # use heppennames for particles in \HepProcess environment. see CutflowTableLatexPreamble.tex
   items:
     - category: evbbqq
-      label: '\boldsymbol{e \nu b b q q}'
+      label: '\HepProcess{\Pe\Pgn\Pqb\Pqb\Pq\Pq}'
     - category: μvbbqq
-      label: '\boldsymbol{\mu \nu b b q q}'
+      label: '\HepProcess{\Pgm\Pgn\Pqb\Pqb\Pq\Pq}'
     - category: τvbbqq
-      label: '\boldsymbol{\tau \nu b b q q}'
+      label: '\HepProcess{\Pgt\Pgn\Pqb\Pqb\Pq\Pq}'
     - category: vvbbbb
-      label: '\boldsymbol{\nu \nu b b b b}'
+      label: '\HepProcess{\Pgn\Pgn\Pqb\Pqb\Pqb\Pqb}'
     - category: bbqqqq
-      label: bbqqqq
+      label: '\HepProcess{\Pqb\Pqb\Pq\Pq\Pq\Pq}'
     - category: vvbb
-      label: '\boldsymbol{\nu\nu} bb'
+      label: '\HepProcess{\Pgn\Pgn\Pqb\Pqb}'
     - category: tatabb
-      label: '\boldsymbol{\tau\tau} bb'
+      label: '\HepProcess{\Pgt\Pgt\Pqb\Pqb}'
     - category: bbbb
-      label: bbbb
+      label: '\HepProcess{\Pqb\Pqb\Pqb\Pqb}'
     - category: qqbb
-      label: qqbb
+      label: '\HepProcess{\Pqb\Pqb\Pq\Pq}'
     - category: ttH
-      label: ttH
+      label: '\HepProcess{\Pqt\Pqt\PH}'
     - category: ttZ
-      label: ttZ
+      label: '\HepProcess{\Pqt\Pqt\PZ}'
     - category: vvqqH
-      label: vvqqH
+      label: '\HepProcess{\Pgn\Pgn\Pq\Pq\PH}'
+    - sum: background
+      label: 'Total background'
+    - latex: \hline
     - category: vvHH
-      label: vvHH
+      label: '\HepProcess{\Pgn\Pgn\PH\PH}'
       is_signal: true
     - category: vvHHbbbb
-      label: (vvbbbb)
+      label: '\HepProcess{\Pgn\Pgn\PH\PH\Pqb\Pqb}'
       is_signal: true
-  #ignore_categories: llbbbb
+    - sum: signal
+      label: 'Total signal'
 
 # general note about cuts:
 # they appear in groups composed of at least one cut and are denoted in code by the
@@ -542,20 +416,22 @@ actions:
   # optional:
   - type: ApplyCuts
     cuts: preselection
+    weight_column: weight
+    split: 0 # split is only read if weight_column is different than the default value 'weight'
     step: 0 # step=0 is always preselection
     cache: '$hypothesis_cutflow_presel.pickle'
   
-  # optional:
-  # step_start: 0
-  # step_end: 0
   - type: CreateCutflowPlots
     file: '$hypothesis_cutflow_preselection_plots.pdf'
+    # optional:
+    # step_start: 0
+    # step_end: 0
     
-  # optional:
-  # step_start: 0
-  # step_end: 0
   - type: CreateCutflowTable
     file: '$hypothesis_cutflow_preselection_table.pdf'
+    # optional:
+    # step_start: 0
+    # step_end: 0
 
   # split in train/testing [accross all steps, i.e. regardless of cut group]
   # creates a new integer column 'split'; for n entries in fractions:
@@ -564,14 +440,17 @@ actions:
   # value n is assigned to the remaining events [fraction (1 - sum(all previous values))]
   - type: SplitDatasets
     fractions: [ 0.75 ]
-    disabled: false
+
+    # the following two are just here to be explicit and should not be changed
+    split_column: split
+    wt_split_column: weights_split
     
   # writes out training/testing data
-  # optional:
-  # step: 0
   - type: WriteMVAData
     mva: default_mva
     disabled: false
+    # optional:
+    # step: 0
 
   - type: PrintSplitWeights
     disabled: true
@@ -607,13 +486,13 @@ actions:
     ntrials: 500
     disabled: true
 
-  # optional:
-  # clf_prop: clf
-  # step: 0
   - type: SklearnMulticlassInference
     mva: default_mva
     split: 1 # split 0 = train dataset; split 1 = test dataset
     disabled: false
+    # optional:
+    # clf_prop: clf
+    # step: 0
   
   # The values to cut on can be evaluated lazily
   # i.e. the value does not need to be known when the program is started
@@ -622,6 +501,8 @@ actions:
   - type: ApplyCuts
     cuts: mva_cut
     step: 1
+    split: 1 # use only testing data
+    weight_column: weights_split # use the weights after splitting the dataset
     disabled: false
 
 ### #To plot features before mva cut, first apply non-cuts and then create cutflowplots

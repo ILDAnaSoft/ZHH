@@ -212,7 +212,7 @@ class ROOT2HDF5Converter:
 
         # check if potentially existing chunks are valid
         if check_existing:
-            done, shape, sizes = self.checkExisting(chunks)
+            done, shape, sizes = self.checkExisting(chunks, check_requires_exact_path_match=False)
             ncols = shape[1] if len(shape) == 2 else shape[0]
             nrows_found = int(np.sum(sizes))
         else:
@@ -254,7 +254,7 @@ class ROOT2HDF5Converter:
         
         createVDS(h5_files, self._vds_file, self._output_name, ncols=ncols, dtype=self._dtype, sizes=sizes)
 
-def createVDS(h5_files:list[str], output_file:str, output_name:str, shape:tuple|None=None,
+def createVDS(h5_files:list[str], output_file:str, output_name:str, shape:np.ndarray|None=None,
               ncols:int|None=None, dtype:str|None=None, sizes:list[int]|None=None):
     """_summary_
 
@@ -276,43 +276,45 @@ def createVDS(h5_files:list[str], output_file:str, output_name:str, shape:tuple|
         for p in h5_files:
             with h5py.File(p, 'r') as hf:
                 sizes.append(cast(h5py.Dataset, hf['shape'])[0])
-
-    if shape is None:
-        if ncols is None:
-            with h5py.File(h5_files[0], 'r') as hf:
-                shape_arr = np.array(cast(h5py.Dataset, hf['shape'])[:])
-            
-            shape_arr[0] = np.sum(sizes)
-            shape = tuple(shape_arr)
-        else:
-            shape = (np.sum(sizes), ncols)
-    elif not np.sum(sizes) != shape[0]:
-        raise Exception(f'Shape mismatch: Expected {shape[0]} entries at dim 0, but found {np.sum(sizes)}')
     
-    is_multidim = ncols is None and len(shape) > 1 # only true is is_multidim and keep_dim before
-    shape_arr = np.array(shape)
+    size = np.sum(sizes)
+
+    # is_multidim = ncols is None and len(shape) > 1 # only true is is_multidim and keep_dim before
+    shapes:dict[str, np.ndarray] = {}
     
     with h5py.File(h5_files[0], 'r') as hf:
         column_names = list(cast(Sequence, hf.attrs.get('col_names')))
+        #print('column_names', column_names)
+
+        for column in column_names:
+            shapes[column] = np.array(cast(h5py.Dataset, hf[column]).shape)
+            shapes[column][0] = size
+
+            # avoid shapes (N, 1) for 1-dimensional arrays
+            if shapes[column][-1] == 1:
+                shapes[column] = shapes[column][:-1]
 
     with h5py.File(output_file, 'a') as hf:
         for column in column_names:
-            layout = h5py.VirtualLayout(shape, dtype)
+            shape = shapes[column]
+            layout = h5py.VirtualLayout(tuple(shape), dtype)
 
             counter = 0
 
             for i, path in enumerate(h5_files):
                 ncur = sizes[i]
-                cur_shape = np.copy(shape_arr)
+                cur_shape = np.copy(shape)
                 cur_shape[0] = ncur
+
+                # print(output_name, column, tuple(cur_shape))
 
                 vsource = h5py.VirtualSource(path, column, shape=tuple(cur_shape), dtype=dtype)
                 layout[counter:(counter+ncur)] = vsource
                 counter += ncur
 
             # Add virtual dataset to output file
-            output_column_name = f'{output_name}.{column}' if (ncols is not None and ncols > 1) else output_name
-            #print(output_column_name)
+            output_column_name = f'{output_name}.{column}' if (ncols is not None and ncols != 1) else output_name
+            #print(column, counter, shape, ncols, output_column_name, 'output_column_name in hf.keys()=', output_column_name in hf.keys())
             if output_column_name in hf.keys():
                 #print('warning: deleting key', output_column_name)
                 del hf[output_column_name]
@@ -335,7 +337,7 @@ class CreateVDSTask(AbstractTask):
             ncols = first_shape[1] if len(first_shape) == 2 else 1
 
         #return True
-        return createVDS(h5_files, vds_file, output_name, nrows=np.sum(sizes), ncols=ncols, dtype=dtype, sizes=sizes)
+        return createVDS(h5_files, vds_file, output_name, ncols=ncols, dtype=dtype, sizes=sizes)
 
 def tree_n_rows(sources:list[str], tree:str, use_uproot:bool=True, use_mp:bool=True, aggregate:bool=True, return_path:bool=False)->int|tuple[list[str],int]|list[int]:
     """Returns the number of entries in a TTree tree in the files sources

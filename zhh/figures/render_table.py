@@ -3,6 +3,7 @@ import shutil
 import os.path as osp
 from os import makedirs
 from subprocess import check_output
+from typing import Sequence
 
 latex_replacements = [
     ('>=', r'\geq '),
@@ -13,7 +14,7 @@ latex_replacements = [
     ('<=', r'\Leftarrow '),
 ]
     
-def render_table(lines:list[list[str]|str], col_sep:str='8pt', row_sep:float=1.2, replacements:list[tuple[str, str]]|None=latex_replacements):            
+def render_table(lines:Sequence[Sequence[str]|str], col_sep:str='8pt', row_sep:float=1.2, replacements:list[tuple[str, str]]|None=latex_replacements):            
     column_widths = [1] * len(lines[0])
     n_lines = len(lines)
     
@@ -36,8 +37,7 @@ def render_table(lines:list[list[str]|str], col_sep:str='8pt', row_sep:float=1.2
         for old, new in replacements:
             content = content.replace(old, new)
     
-    return rf"""
-\begin{{tabularx}}{{\linewidth}}{{ X|{'X' * (len(lines[0])-1)} }}
+    return rf"""\begin{{tabular}}{{ c|{'c' * (len(lines[0])-1)} }}
 \hline
 {content}\hline
-\end{{tabularx}}"""
+\end{{tabular}}"""

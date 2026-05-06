@@ -204,7 +204,7 @@ sample_format = lcio
 # ##################################################################################
 beams_pol_density = @(-1), @(+1)
 process_num_id = 411201
-n_events = 100000
+n_events = 10000
 $sample = "E250-SetA.Pn23n23h_e3e3.Gwhizard-3_1_4.eL.pR.I411201"
 simulate (n23n23h) {?polarized_events = true}
 show(results)

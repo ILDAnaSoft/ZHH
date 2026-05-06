@@ -15,8 +15,7 @@ from .AnalysisChannel import AnalysisChannel
 from .DataStore import DataStore, ReadonlyWriteAttempt
 from .DataSource import DataSource
 from .DataSourceTools import mod_weights_from_split, apply_split
-from .CutflowProcessor import CutflowProcessor, cutflowPlots, cutflowTable, evaluate_categories_ordered, counts_by_category, \
-    invert_dict, match_sources_to_categories
+from .CutflowProcessor import CutflowProcessor, cutflowPlots, evaluate_categories_ordered, invert_dict
 from .figure_options import figure_options
 from .FinalStateDefinitions import define_eebb, define_μμbb, define_ττbb, \
     define_lvqqqq, define_lvbbqq, define_evbbqq, define_μvbbqq, define_τvbbqq, \

@@ -34,7 +34,8 @@ class SklearnMulticlassInferenceAction(CutflowProcessorAction):
         self._split = split
         self._output_label = mva_spec['label_name']
 
-        self._signal_categories = get_signal_categories(steer['signal_categories'], mva_spec['classes'])        
+        self._signal_categories = get_signal_categories(steer['signal_categories'], mva_spec['classes'])
+        self._class_names = [ item[1] for item in  mva_spec['classes'] ]
         self._features = mva_spec['features']
         self._progress = progress
         self._overwrite = overwrite
@@ -47,16 +48,23 @@ class SklearnMulticlassInferenceAction(CutflowProcessorAction):
             
             store = source.getStore()
             store.resetView()
-            probas = self.calculateMVAValuesOfSource(source)
+            mask, probas = self.calculateMVAValuesOfSource(source)
             
-            # assign and save to HDF5
-            store[self._output_label] = probas[:, self._signal_categories].sum(axis=1)
+            # assign and save total signal score to HDF5
+            score = np.zeros(len(mask))
+            score[mask] = probas[:, self._signal_categories].sum(axis=1)
+
+            store[self._output_label] = score
             store.itemsSnapshot(items=[self._output_label], overwrite=self._overwrite)
 
-            for cat in self._signal_categories:
-                signal_label_name = f'{self._output_label}#{cat}'
+            # assign and save individual scores to HDF5
+            for i, category in enumerate(self._class_names):                
+                signal_label_name = f'{self._output_label}#{category}'
                 
-                store[signal_label_name] = probas[cat].sum(axis=1)
+                score = np.zeros(len(mask))
+                score[mask] = probas[:, i]
+
+                store[signal_label_name] = mask
                 store.itemsSnapshot(items=[signal_label_name], overwrite=self._overwrite)
 
     def loadMVAFromFile(self):
@@ -71,9 +79,10 @@ class SklearnMulticlassInferenceAction(CutflowProcessorAction):
                 raise Exception(f'Could not find a classifier in pickle file <{self._mva_file}> at location <{self._clf_prop}>')
 
     def calculateMVAValuesOfSource(self, source:DataSource, pbar:tqdm|None=None):
-        assert(self._mva is not None)
-
         self.loadMVAFromFile()
+
+        if self._mva is None or not hasattr(self._mva, 'predict_proba'):
+            raise Exception('MVA does not support predict_proba() method')
 
         features = self._features
         store = source.getStore()
@@ -95,7 +104,7 @@ class SklearnMulticlassInferenceAction(CutflowProcessorAction):
             
             probas = self._mva.predict_proba(inputs)
         
-        return probas
+        return (mask, probas)
 
     def complete(self) -> bool:
         for source in self._cp.getSources():

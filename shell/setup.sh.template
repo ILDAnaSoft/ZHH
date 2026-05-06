@@ -76,8 +76,10 @@ if [[ ! -d "$LCFIPlus" || ! -d "$LCFIPlusConfig" || ! -d "$LCIO" || ! -d "${ILD_
     return 1
 fi
 
-if [[ $MARLIN_DLL != *"libZHHProcessors"* ]]; then
+if [ -z "$ZHH_SETUP" ]; then
     zhh_attach_marlin_dlls
+
+    export PATH="$PATH:$REPO_ROOT/bin"
 fi
 
 function MarlinZHH() {

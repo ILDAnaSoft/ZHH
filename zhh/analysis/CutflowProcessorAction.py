@@ -14,6 +14,10 @@ class CutflowProcessorAction:
     # a rescheduling of downstream actions with transforms_data=True
     transforms_data = True
 
+    # if interruptible=False, will catch a KeyboardInterrupt to reset()
+    # the affected action
+    interruptible = True
+
     def __init__(self, cp:CutflowProcessor, steer:dict):
         self._cp = cp
         self._steer = steer

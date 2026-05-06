@@ -43,6 +43,7 @@ class DataSource:
         # registerEventCategory(): event selection masks
         self._event_categories:dict[str, tuple[np.ndarray, int|None]] = {}
         self._event_category_resolvers:dict[str, tuple[Callable, int|None]] = {}
+        self._event_category_order:list[str] = []
         self._evalutatedEventCategories = False
     
     def __repr__(self)->str:
@@ -53,6 +54,9 @@ class DataSource:
     
     def getName(self)->str:
         return self._name
+    
+    def getCategoryOrder(self)->list[str]:
+        return self._event_category_order
 
     def getCategories(self)->list[str]:
         return list(self._event_category_resolvers.keys())
@@ -82,17 +86,19 @@ class DataSource:
             self._processes = npz['processes']
             self._lumi_inv_ab = npz['lumi_inv_ab']
 
+        # integrity check
+        if osp.isfile(self._npz_file):
+            assert(osp.isfile(self._h5_file))
+            with h5py.File(self._h5_file) as hf:
+                for key in ['event_category', 'pid', 'weight']:
+                    if not key in hf.keys():
+                        raise Exception(f'Inconsistent state encountered. Please delete {osp.splitext(self._h5_file)[0]}* and re-run again.')
+
         if self._readonly or reset or not osp.isfile(self._npz_file):
-            if reset and osp.isfile(self._npz_file):
-                unlink(self._npz_file)
-
-            if reset and osp.isfile(self._h5_file):
-                unlink(self._h5_file)
-
             store = self._store = DataStore(self._h5_file, final_states=True, h5_readonly=self._readonly)
 
             # INITIALIZED_AND_READY: data store is initialized the first time -> do event weighting
-            if store._state == DataStoreStates.INITIALIZED_AND_READY or not osp.isfile(self._npz_file):
+            if reset or store._state == DataStoreStates.INITIALIZED_AND_READY or not osp.isfile(self._npz_file):
                 weight_data, processes = self.weight(lumi_inv_ab=lumi_inv_ab)
             
                 # parses the final state counts, find the first matching category,
@@ -369,6 +375,9 @@ class DataSource:
                 order = list(self._event_categories.keys())
             
             if default_category is not None:
+                from zhh import EventCategories
+                self._event_category_order.append(EventCategories.inverted[default_category])
+                
                 store['event_category'][:] = default_category
                 print(f' Assigned default event category (ID={default_category}) to all' +
                       f'{len(store["event_category"]):d} events')
@@ -378,6 +387,12 @@ class DataSource:
             mask_sum = np.zeros(len(self._event_categories[next(iter(self._event_categories))][0]), dtype='B')
             
             for i, category_name in enumerate(order):
+                from zhh import EventCategories
+                if not category_name in EventCategories.map:
+                    raise Exception(f'Category {category_name} is not a registered event category')
+
+                self._event_category_order.append(category_name)
+
                 mask, replace = self._event_categories[category_name]
                 
                 print(f' Assigned event category {category_name} (ID={replace}) to {np.sum(mask):d} events with'+

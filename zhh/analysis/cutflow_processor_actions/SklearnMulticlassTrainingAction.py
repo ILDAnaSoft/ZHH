@@ -77,7 +77,7 @@ class SklearnMulticlassTrainingAction(MVAThresholdFinderInterface, FileBasedProc
             with open(self._mva_file, 'rb') as pf:
                 dump = pickle.load(pf)
 
-            complete = dump['hash'] == self.getConfig().hash()
+            complete = 'hash' in dump and dump['hash'] == self.getConfig().hash()
 
         if complete:
             self.assignThreshold(self.findThreshold())
@@ -243,13 +243,16 @@ def objective(config:MVATrainingConfig, hyper_params:dict, trial:optuna.Trial|No
     try:
         sys.stdout = Tee(sys.stdout, output_buffer) if debug else output_buffer
 
+        if not 'n_jobs' in hyper_params:
+            hyper_params['n_jobs'] = round(0.8*cpu_count())
+
         if config._model == 'XGBClassifier':
             from xgboost import XGBClassifier
 
             clf = XGBClassifier(**hyper_params)
             clf.fit(X_train, np.array(y_train, dtype=int),
                     eval_set=[(X_test, np.array(y_test, dtype=int))],
-                    verbose=True, sample_weight=w_train, n_jobs=round(0.8*cpu_count()))
+                    verbose=True, sample_weight=w_train)
         elif config._model == 'LGBMClassifier':
             from lightgbm import LGBMClassifier, log_evaluation
 

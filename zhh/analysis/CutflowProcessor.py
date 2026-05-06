@@ -100,7 +100,8 @@ class CutflowProcessor:
         self._masks:dict[int, list[list[tuple[str, np.ndarray]]]] = {}
         self._calc_dicts:dict[int, list[dict[str, tuple[np.ndarray, np.ndarray]]]] = {}
         self._max_before:dict[int, np.ndarray] = {} # maximum weighted event count accross all categories before cut
-        
+        self._weight_columns:dict[int, str] = {}
+
         # MVA states including thresholds
         self._mvas:dict[str, MVAState] = {}
         
@@ -257,6 +258,7 @@ class CutflowProcessor:
             self._masks[step] = masks
             self._calc_dicts[step] = calc_dicts
             self._max_before[step] = np.array(max_before_all)
+            self._weight_columns[step] = weight_prop
             
             if cache is not None and step == 0:
                 print(f'Storing preselection in cache at {cache}')
@@ -267,7 +269,8 @@ class CutflowProcessor:
                         'calc_dicts': calc_dicts,
                         'max_before': self._max_before[step],
                         'cuts_hash': self._cuts_hash,
-                        'cuts': self._cuts
+                        'cuts': self._cuts,
+                        'weight_columns': self._weight_columns
                     }, f)
         else:
             print('Using cached preselection')
@@ -278,10 +281,17 @@ class CutflowProcessor:
                 self._calc_dicts[step] = data['calc_dicts']
                 self._max_before[step] = data['max_before']
 
+                # TODO: Remove if... later (kept for backwards compatability)
+                self._weight_columns[step] = data['weight_columns'][step] if 'weight_columns' in data else 'weight'
+
                 # TODO: Remove if... (kept for backwards compatability)
                 self._cuts = data['cuts'] if 'cuts' in data else self._cuts
                 self._cuts_hash = data['cuts_hash'] if 'cuts_hash' in data else Cut.hash_cuts(flatten(self._cuts.values()))
         
+        # reset the view of the sources
+        for source in subsets.values():
+            source.resetView()
+
         return masks, subsets, calc_dicts
     
     def getFinalEventMasks(self, step:int|None=None)->list[tuple[str, np.ndarray]]:
@@ -390,10 +400,12 @@ class CutflowProcessor:
         return context_and_figures
         
     def cutflowTable(self, cutflow_table_entries:Sequence[CutflowTableEntry|LatexCutflowTableEntry],
-                     weight_props:list[str], path:str|None=None, step_start:int=0, step_end:int|None=None,
-                     filename:str|None=None, signal_categories:list[str]=[], ignore_categories:list[str]=[]):
+                     weight_columns:list[str], path:str|None=None, step_start:int=0, step_end:int|None=None,
+                     filename:str|None=None):
         
-        """Creates a cutflow table considering all cuts from groups
+        """(deprecated: use CreateCutflowTableAction. will be removed soon)
+        
+        Creates a cutflow table considering all cuts from groups
         step_start until step_end.
 
         Args:
@@ -420,10 +432,8 @@ class CutflowProcessor:
             
             path = f'{self._work_dir}/{filename}'
             
-        return cutflowTable(self, cutflow_table_entries, path,
-                            step_start=step_start,
-                            step_end=step_end if step_end is not None else len(self._cuts)-1,
-                            weight_props=weight_props)
+        return self.cutflowPrint(step_start=step_start,
+                                 step_end=step_end if step_end is not None else (len(self._calc_dicts) - 1))
     
     def getPlotContext(self)->PlotContext:
         """Returns the plot context for the preselection processor.
@@ -519,8 +529,12 @@ class CutflowProcessor:
             
         return calc_dict
             
-    def plotAt(self, quantity:str, step:int|None=None, split:int|None=None, plotTop9:bool=False, signal_category_names:list[str]=[], weight_prop:str='weight', **plot_kwargs):
-        from zhh import plot_combined_hist
+    def plotAt(self, quantity:str, step:int|None=None, split:int|None=None, plotTop9:bool=False,
+               signal_category_names:list[str]|None=None, weight_prop:str='weight', **plot_kwargs):
+        
+        from zhh import plot_combined_hist, EventCategories
+
+        signal_category_names = [EventCategories.inverted[cat] for cat in self._signal_categories] if signal_category_names is None else signal_category_names
 
         #plot_kwargs['ild_style_kwargs']['title_postfix'] = rf' before cut on ${cut.formula(unit=plot_kwargs["xunit"] if ("xunit" in plot_kwargs) else None)}$'
         calc_dict = self.getCalcDictAt(quantity, step=step, split=split, weight_prop=weight_prop)
@@ -726,7 +740,7 @@ def cutflowPlotsFn(signal_category_names:list[str],
         bar_labels.append(name)
         bar_counts.append(count)
         #print(counts_start)
-        bar_descriptions.append(f'{format_counts(count)} ({(count / counts_start[name]):.1%})')
+        bar_descriptions.append(f'{format_counts(count)} ({(count / counts_start[name]):.1%})' if name in counts_start else 'No data') # TODO: 'No data' should not appear, why does it?
         
     bar_container = ax.bar(bar_labels, bar_counts, label=bar_labels, color=bar_colors)
     ax.bar_label(bar_container, labels=bar_descriptions, label_type='edge', fontname=plot_context.getFont(), fontsize=9)
@@ -835,119 +849,145 @@ def cutflowPlotSummaryFn(signal_category_names:list[str], cuts:Sequence[ValueCut
     
     return fig
 
-def cutflowTable(cp:CutflowProcessor, cutflow_table_entries:Sequence[CutflowTableEntry|LatexCutflowTableEntry],
-                 path:str, step_start:int, step_end:int, weight_props:list[str]):
-    
-    masks = []
-    cuts = []
-
-    for step in range(step_start, step_end+1):
-        masks.append(cp._masks[step])
-        cuts.append(cp._cuts[step])
-
-    #masks, cuts, calc_dicts, max_before = cp._flattenSteps(step_end, step_start)
-    
-    return cutflowTableFn(masks,
-                        cp._luminosity,
-                        cp._sources,
-                        cutflow_table_entries,
-                        cuts,
-                        path,
-                        weight_props)
-
-def cutflowTableFn(masks,
-                 luminosity:float,
-                 sources:list[DataSource],
-                 cutflow_table_entries:Sequence[CutflowTableEntry|LatexCutflowTableEntry],
-                 cuts:Sequence[Sequence[Cut]],
-                 path:str,
-                 weight_props:list[str]):
+def cutflowTableFn(source_2_counts:dict[str, dict[str, np.ndarray]],
+                   source_2_category_names:dict[str, list[str]],
+                   signal_categories:list[str],
+                   luminosity:float,
+                   cutflow_table_entries:Sequence[CutflowTableEntry|LatexCutflowTableEntry],
+                   cuts:Sequence[Sequence[Cut]],
+                   path:str):
     
     from zhh import combined_cross_section, render_table, render_latex, EventCategories, \
-        SumCutflowTableEntry, CategorizedCutflowTableEntry, UncategorizedCutflowTableEntry
+        SumCutflowTableEntry, CategorizedCutflowTableEntry, UncategorizedCutflowTableEntry, \
+        LatexRenderContext
     from tqdm.auto import tqdm
 
-    cat_cutflow_table_entries = cast(list[CategorizedCutflowTableEntry], list(filter(lambda a: isinstance(a, CategorizedCutflowTableEntry), cutflow_table_entries)))
-    all_categories = [a.category for a in cat_cutflow_table_entries]
-
-    # find all categories for which is_signal=True
-    signal_categories = []
-    for entry in cutflow_table_entries:
-        if isinstance(entry, CategorizedCutflowTableEntry):
-            if entry.is_signal:
-                signal_categories.append(entry.category)
-
-    print('all_categories', all_categories)
-
-    source_2_category_names = match_sources_to_categories(sources, all_categories)
     category_names_2_source = invert_dict(source_2_category_names)
-    source_2_counts = {}
-
-    for source in (pbar := tqdm(sources)):
-        pbar.set_description(f'Calculating event count for source {source.getName()} with categories {", ".join(source_2_category_names[source.getName()])}')
-        source_2_counts[source.getName()] = counts_by_category(masks, cuts, source, source_2_category_names[source.getName()],
-                                                               weight_props=weight_props)
     
-    # do plotting for absolute and efficiency values
-    for calc_cut_efficiency in [False, True]:
+    first_item = source_2_counts[list(source_2_counts.keys())[0]]
+    first_item = first_item[list(first_item.keys())[0]]
+
+    entry_counts = np.zeros((len(cutflow_table_entries), len(first_item)))
+    entry_efficiencies = np.zeros((len(cutflow_table_entries), len(first_item) - 1))
+    entry_passing_frac = np.zeros((len(cutflow_table_entries), len(first_item) - 1))
+    category_counts:dict[str, np.ndarray] = {}
+
+    csv_out = f'{osp.splitext(path)[0]}_counts.csv'
+
+    render_context = LatexRenderContext(work_dir=f'{osp.dirname(csv_out)}/latex-build-{osp.splitext(osp.basename(path))[0]}', packages=[ 'ydoc', 'standalone', 'upgreek' ])
+
+    for n_run in range(3):
+        render_abs_table = n_run == 0
+        render_eff_table = n_run == 1
+        render_frac_table = n_run == 2
+
+        if render_eff_table:
+            for i in range(entry_counts.shape[1] - 1):
+                entry_efficiencies[:, i] = entry_counts[:, i+1] / entry_counts[:, i]
+                entry_passing_frac[:, i] = entry_counts[:, i+1] / entry_counts[:, 0]
+
+        entries = (entry_counts if render_abs_table else (entry_efficiencies if render_eff_table else entry_passing_frac))
+        out_name = osp.splitext(path)[0] +('.pdf' if render_abs_table else ('_efficiency.pdf' if render_eff_table else '_frac.pdf'))
 
         table = []
         header = ['']
+
+        if render_abs_table:
+            header.append('expected')
 
         for cut_group in cuts:
             for cut in cut_group:
                 header += [f'${cut.latex()}$']
 
+        table.append(r'\hline') # line separating header and body
+
         # each entry in row must either be a str or a list of n strings (where n equal for all lists)
 
-        for entry in cutflow_table_entries:
+        for i, entry in enumerate(cutflow_table_entries):
+            category_out:str|None = None
+
             if isinstance(entry, CategorizedCutflowTableEntry):
                 category = entry.category
                 source_name = category_names_2_source[category]
-                
-                table += [[ entry.label, *[format_counts(a) for a in source_2_counts[source_name][category]] ]]
+
+                if render_abs_table:
+                    #print(source_name, category, source_2_counts[source_name].keys())
+                    entry_counts[i, :] = source_2_counts[source_name][category]
+                    category_out = f'{source_name}.{category}'
+
+                    table += [[ entry.label, *[format_counts(a) for a in entries[i, :] ] ]]
+                else:
+                    table += [[ entry.label, *[f'{a:.2%}'.replace('%', r'\%') for a in entries[i, :] ] ]]
             elif isinstance(entry, UncategorizedCutflowTableEntry):
                 source_name = entry.source
+                
+                if render_abs_table:
+                    entry_counts[i, :] = source_2_counts[source_name]['other']
+                    category_out = f'{source_name}.other'
 
-                table += [[ entry.label, *[format_counts(a) for a in source_2_counts[source_name]['other']] ]]
+                    table += [[ entry.label, *[format_counts(a) for a in entries[i, :] ] ]]
+                else:
+                    table += [[ entry.label, *[f'{a:.2%}'.replace('%', r'\%') for a in entries[i, :] ] ]]
             elif isinstance(entry, LatexCutflowTableEntry):
                 table += [entry.latex]
             elif isinstance(entry, SumCutflowTableEntry):
                 cats = entry.sum
-
-                first_counts_dict = source_2_counts[list(source_2_counts.keys())]
-                first_counts = first_counts_dict[list(first_counts_dict.keys())[0]]
-
-                counts = np.zeros(len(first_counts))
+                counts = np.zeros(entry_counts.shape[1])
 
                 if isinstance(cats, str):
                     if cats.lower() in ['signal', 'background']:
-                        count_signal = cats.lower() == 'lower'
+                        count_signal = cats.lower() == 'signal'
                         
                         for source, source_counts in source_2_counts.items():
-                            for category, count in source_counts:
+                            for category, count in source_counts.items():
                                 if (count_signal and category in signal_categories) or (
                                     not count_signal and category not in signal_categories):
                                     counts += count
                     else:
                         raise Exception(f'Cannot parse <{cats}>')
+                    
+                    category_out = f'total_{cats}'
                 else:
                     for category in cats:
-                        source = category_names_2_source[category]
-                        counts += source_2_counts[source][category]
+                        if '.' in category:
+                            split_items = '.'.split(category)
+                            source, cat = split_items[0], split_items[1]
+                            counts += source_2_counts[source][cat]
+                        else:
+                            source = category_names_2_source[category]
+                            counts += source_2_counts[source][category]
 
-                table += [[ entry.label, *[format_counts(a) for a in counts ]]]
+                    category_out = '_and_'.join(cats)
+
+                if render_abs_table:
+                    entry_counts[i, :] = counts
+                    
+                    table += [[ entry.label, *[format_counts(a) for a in counts ]]]
+                else:
+                    table += [[ entry.label, *[f'{a:.2%}'.replace('%', r'\%') for a in entries[i, :] ]]]
             else:
                 print(entry)
                 raise Exception(f'Received non-parseable item <{entry.__class__.__name__}>')
+            
+            if render_abs_table and category_out is not None and entry_counts[i, :].sum():
+                category_counts[category_out] = entry_counts[i, :]
 
         table.insert(0, header)
 
         latex_out = render_table(table)
-        print(latex_out)
+        
+        print(out_name, latex_out)
 
-        print(osp.splitext(path)[0] +('_efficiency.pdf' if calc_cut_efficiency else '_abs.pdf'))
-        render_latex(latex_out, osp.splitext(path)[0] +('_efficiency.pdf' if calc_cut_efficiency else '_abs.pdf'))
+        render_context.render(latex_out, out_name)
+    
+    # write out CSV file with counts
+    with open(csv_out, 'tw') as cf:
+        cf.write(','.join(header))
+        for cat, counts in category_counts.items():
+            cf.write(f'\n{cat}')
+            for count in counts:
+                cf.write(f',{count}')
+                #cf.write(f',{count:.6g}') # round to 6 significant digits
 
 
 def cutflowTableFnOld(masks,
@@ -981,7 +1021,8 @@ def cutflowTableFnOld(masks,
         first_column += [rf"${cut.__repr__().replace('<Cut on ', '')[:-1]}$" for cut in cuts]
         if not calc_cut_efficiency and not using_split:
             first_column.insert(1, r'$\sigma$ [fb]')
-        columns = [first_column]
+        
+        columns:list[Sequence[str]|str] = [first_column]
 
         for j, entry in enumerate(final_state_labels_and_names_or_processes):
             process = None
@@ -1176,7 +1217,7 @@ def cutflowTableFnOld(masks,
             columns.insert(first_signal_pos + 2, entry)
             
         #table = transpose(columns)
-        table = columns
+        table:list[Sequence[str]|str] = columns
         if not using_split:
             table.insert(1, r'\hline')
         
@@ -1211,6 +1252,34 @@ def calc_cross_section(analysis:DataSource, process:str):
 
 def significant_digits(num:float|int, ndigits=3):
     return f'${num:.{ndigits}}$'
+
+def evaluate_categories(source:DataSource, categories:list[str], category_column:str)->dict[str, np.ndarray]:
+    """For a given DataSource, returns binary event masks for each of the supplied categories
+    by matching a previously evaluated event category in column category_column.  
+
+    Args:
+        source (DataSource): _description_
+        categories (list[str]): _description_
+        category_column (str): _description_
+
+    Returns:
+        dict[str, np.ndarray]: _description_
+    """
+    from zhh import EventCategories
+
+    store = source.getStore()
+    eval_category = store[category_column]
+
+    masks = {}
+    for category in categories:
+        masks[category] = eval_category == EventCategories.map[category]
+
+    # compile other category
+    covered = np.logical_or.reduce([ masks[category] for category in categories ])
+
+    masks['other'] = ~covered
+
+    return masks
 
 def evaluate_categories_ordered(source:DataSource, categories:list[str], overlap_free:bool=True)->dict[str, np.ndarray]:
     """For a given DataSource, evaluates a list of categories in the given order
@@ -1249,116 +1318,6 @@ def evaluate_categories_ordered(source:DataSource, categories:list[str], overlap
     masks['other'] = ~covered
 
     return masks
-
-def counts_by_category(masks:list[list[dict[str, np.ndarray]]],
-                       cuts:Sequence[Sequence[Cut]],
-                       source:DataSource,
-                       categories:list[str],
-                       weight_props:list[str])->dict[str, np.ndarray]:
-    """Fetches the number of events passing a list of cut groups.
-    masks, cuts and weight_props must have the same number of entries (i.e. cut groups).
-    Within each cut j in cut_group i, masks[i][j] must be a dict[str, np.ndarray] where
-    the key is the name of a source and the value is a binary mask of events passing the
-    the cut j. There must be a value for the given source.
-    categories is a list of event categories for the given source to calculate the event
-    count for (at each cut j). To calculate the event count, event weights from the
-    column weight_props[i] are used and the label is inferred frm cuts[i][j].
-    The output is a dict[str, np.ndaray] where the key is the category and the value a
-    numpy array with size=(Sum[1] over j,i), i.e. total number of cuts.
-    
-    Note: the count _before_ cuts is not calculated by this function. 
-
-    Args:
-        masks (list[list[dict[str, np.ndarray]]]): _description_
-        cuts (list[list[Cut]]): _description_
-        source (DataSource): _description_
-        categories (list[str]): _description_
-        weight_props (list[str]): _description_
-
-    Returns:
-        dict[str, np.ndarray]: _description_
-    """
-
-    n_cuts = 0
-    for i, cut_group in enumerate(cuts):
-        n_cuts += len(cut_group)
-
-    n_categories_tot = 0
-
-    ordered_categories = evaluate_categories_ordered(source, categories)
-    n_categories = len(ordered_categories.keys())
-
-    categories_2_count:dict[str, np.ndarray] = {}
-    for category in ordered_categories:
-        categories_2_count[category] = np.zeros(n_cuts)
-
-    n_categories_tot += n_categories
-
-    # fill the counts in source_2_category_2_count per source/category and cut
-    i_cut = 0
-    for i, cut_mask_group in enumerate(masks):
-        weight_prop = weight_props[i]
-        weights = source.getStore()[weight_prop]
-
-        for j, cut_masks in enumerate(cut_mask_group):
-            cut = cuts[i][j]
-            found = False
-
-            for src_name, cut_mask in cut_masks:
-                if src_name == source.getName():
-                    found = True
-                    break
-            
-            assert(found)
-
-            for k, category in enumerate(ordered_categories):
-                category_mask = ordered_categories[category]
-                categories_2_count[category][i_cut] = weights[cut_mask & category_mask].sum()
-        
-            i_cut += 1
-
-    # delete 0 entries in source_2_category_2_count[source.getName()][category]
-    for category in ordered_categories.keys():
-        if categories_2_count[category].sum() == 0:
-            del categories_2_count[category]
-
-    return categories_2_count
-
-def match_sources_to_categories(sources:list[DataSource], categories:list[str])->dict[str, list[str]]:
-    """For each category A in event_categories, finds a source in sources in which
-    category A is registered. Throws an exception if no source can be found for A.
-
-    Returns a dict of structure category => source_name.
-
-    Args:
-        sources (list[DataSource]): _description_
-        categories (list[str]): _description_
-
-    Raises:
-        Exception: _description_
-
-    Returns:
-        dict[str, list[str]]: _description_
-    """
-    source_to_category_names:dict[str, list[str]] = {}
-
-    for category in categories:
-        found = False
-
-        for source in sources:
-            if source.containsCategory(category):
-                if source.getName() not in source_to_category_names:
-                    source_to_category_names[source.getName()] = []
-                
-                source_to_category_names[source.getName()] += [category]
-
-                found = True
-                break
-
-        if not found:
-            raise Exception(f'Category <{category}> is unknown in all registered sources')
-
-    return source_to_category_names
 
 def invert_dict(a:Mapping[str, str|list[str]])->dict[str, str]:
     """Inverts a mapping (here usually a dict), i.e. transforms values to key and

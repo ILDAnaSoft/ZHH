@@ -1,0 +1,11 @@
+#!/bin/bash
+
+if [ -z "$REPO_ROOT" ]; then
+    source "<REPO_ROOT>/setup.sh"
+fi
+
+if [[ "$(which python)" != *"zhhvenv"* ]]; then
+  source "<REPO_ROOT>/zhhvenv/bin/activate"
+fi
+
+python "$REPO_ROOT/zhh/cli/cutflow.py" "$@"

@@ -83,6 +83,11 @@ def find_vars_from_steer(steer,
         for mva in steer['mvas']:
             var_list += [mva['label_name']]
 
+            for item in mva['classes']:
+                category = item[1]
+
+                var_list += [f'{mva["label_name"]}#{category}']
+
     if include_input_columns:
         for item in steer['features']['interpret']:
             var_list += item['names'] if 'names' in item else [item['name']]

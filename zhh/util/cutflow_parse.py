@@ -13,7 +13,7 @@ from .replace_references import replace_references
 from ..data.ROOT2HDF5Converter import ROOT2HDF5Converter
 from ..task.ConcurrentFuturesRunner import ProcessRunner
 from ..analysis import CutflowProcessor, CutflowProcessorAction, CreateCutflowPlotsAction, ReadonlyWriteAttempt
-from typing import TypedDict, NotRequired, TYPE_CHECKING
+from typing import TypedDict, NotRequired, cast
 from multiprocessing import cpu_count
 from copy import deepcopy
 from math import ceil
@@ -263,13 +263,13 @@ def cutflow_provision_features(interpretations:list[Interpretation],
         
         for key in ds_keys:            
             try:
-                hf[key].virtual_sources()
+                cast(h5py.Dataset, hf[key]).virtual_sources()
                 vds_keys.append(key)
             except RuntimeError as e:
                 pass
             
         for key in vds_keys:
-            for source in hf[key].virtual_sources():            
+            for source in cast(h5py.Dataset, hf[key]).virtual_sources():            
                 if not os.path.exists(source.file_name):
                     print(f'Property <{key}> will be removed (dangling reference)')
                     
@@ -537,11 +537,16 @@ def cutflow_parse_steer_cutflow_table(steer:dict, **kwargs):
     
     return (cutflow_table_items, { 'signal_categories': cutflow_table_is_signal, **kwargs })
 
-def cutflow_register_mvas(steer:dict, cp:CutflowProcessor):
+def cutflow_register_mvas(steer:dict, cp:CutflowProcessor)->list[str]:
+    registered_mvas = []
+
     if 'mvas' in steer:
-        for mva_spec in steer['mvas']:            
+        for mva_spec in steer['mvas']:
             if not mva_spec['name'] in cp._mvas:
+                registered_mvas += [mva_spec['name']]
                 cp.registerMVA(**mva_spec)
+
+    return registered_mvas
 
 def cutflow_parse_actions(steer:dict, cp:CutflowProcessor):
     action_map = {}
@@ -609,7 +614,15 @@ def cutflow_execute_actions(actions:list[CutflowProcessorAction], check_only:boo
     if force_rerun or not check_only:
         for i, action in enumerate(todo):
             logger.info(f'. Running action {i+1}/{len(todo)} <{actions[i].__class__.__name__}>')
-            action.run()
+            try:
+                action.run()
+            except KeyboardInterrupt as interrupt:
+                print('Interrupt received. Stopping...')
+                if not action.interruptible:
+                    print(f'Action {action.__class__.__name__} is non-interruptible. Cleaning outputs')
+                    action.reset()
+                
+                raise interrupt
 
             if action.complete():
                 logger.info(f'+ Finished action {i+1}/{len(todo)} <{actions[i].__class__.__name__}>')
