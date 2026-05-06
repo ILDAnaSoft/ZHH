@@ -72,14 +72,12 @@ define_llqqH:FinalStateDefinition = lambda ac, fsc: np.isin(ac.getStore()['proce
 define_vvHH:FinalStateDefinition         = lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.n1n1hh, ProcessCategories.n23n23hh]) # vvHH
 define_vvqqH:FinalStateDefinition        = lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.n1n1qqh, ProcessCategories.n23n23qqh])
 
-define_v1v1HH:FinalStateDefinition   = lambda ac, fsc: ac.getStore()['process'] == ProcessCategories.n1n1hh
-define_v23v23HH:FinalStateDefinition = lambda ac, fsc: ac.getStore()['process'] == ProcessCategories.n23n23hh
-
 define_vvHHbbbb:FinalStateDefinition     = lambda ac, fsc: ac.getCategoryMask('vvHH') & (fsc.n_charged_lep == 0) & (fsc.n_neutral_lep == 2) & (fsc.n_b_from_higgs == 4) # vvHHbbbb
 define_vvHH_nonbbbb:FinalStateDefinition = lambda ac, fsc: ac.getCategoryMask('vvHH') & (fsc.n_charged_lep == 0) & (fsc.n_neutral_lep == 2) & (fsc.n_b_from_higgs != 4)
-define_v1v1HHbbbb:FinalStateDefinition   = lambda ac, fsc: ac.getCategoryMask('vvHHbbbb') & (fsc.n_ve == 2) & (fsc.n_vmu == 0) & (fsc.n_vtau == 0)
-define_v23v23HHbbbb:FinalStateDefinition = lambda ac, fsc: ac.getCategoryMask('vvHHbbbb') & (fsc.n_ve == 0) & ((fsc.n_vmu == 2) | (fsc.n_vtau == 2))
-define_WBFHHbbbb:FinalStateDefinition    = lambda ac, fsc: ac.getStore()['massDiNeutrino'] < 1 & (fsc.n_ve + fsc.n_vmu + fsc.n_vtau == 2)
+define_v1v1HHbbbb:FinalStateDefinition   = lambda ac, fsc: ac.getCategoryMask('vvHHbbbb') & (fsc.n_ve == 2) & (fsc.n_vmu == 0) & (fsc.n_vtau == 0) & (fsc.n_b_from_higgs == 4)
+define_v23v23HHbbbb:FinalStateDefinition = lambda ac, fsc: ac.getCategoryMask('vvHHbbbb') & (fsc.n_ve == 0) & ((fsc.n_vmu == 2) | (fsc.n_vtau == 2)) & (fsc.n_b_from_higgs == 4)
+
+define_WBF_vvbbbb:FinalStateDefinition = lambda ac, fsc: ac.getCategoryMask('vvHHbbbb') & ((ac.getStore()['massDiNeutrino'] < 79) | (ac.getStore()['massDiNeutrino'] > 102)) & (fsc.n_ve + fsc.n_vmu + fsc.n_vtau == 2) & (fsc.n_b_from_higgs == 4)
 
 # categorize qqhh
 define_qqHH:FinalStateDefinition         = lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.qqhh]) # qqHH
@@ -140,9 +138,10 @@ def categorize_vvhh(ac:DataSource):
     ac.registerEventCategory('vvhh', define_vvHH, EventCategories.vvHH)
     ac.registerEventCategory('v1v1HHbbbb', define_v1v1HHbbbb, EventCategories.v1v1HHbbbb)
     ac.registerEventCategory('v23v23HHbbbb', define_v23v23HHbbbb, EventCategories.v23v23HHbbbb)
-    ac.registerEventCategory('vvhh_vvbbbb', define_vvHHbbbb, None)
-    ac.registerEventCategory('vvhh_vvnonbbbb', define_vvHH_nonbbbb, None)
-    ac.registerEventCategory('vvqqh', define_vvqqH, EventCategories.vvqqH)
+    ac.registerEventCategory('vvhh_vvbbbb', define_vvhh_vvbbbb, None)
+    ac.registerEventCategory('vvhh_vvnonbbbb', define_vvhh_vvnonbbbb, None)
+    ac.registerEventCategory('WBF_vvbbbb', define_WBF_vvbbbb, None)
+    ac.registerEventCategory('vvqqh', define_vvqqh, EventCategories.vvqqH)
 
 def categorize_tthz(ac:DataSource):
     from zhh import EventCategories

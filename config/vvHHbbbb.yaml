@@ -14,6 +14,7 @@ signal_categories:
 - EventCategories.v23v23HHbbbb
 - EventCategories.vvHH_nonbbbb
 - EventCategories.vvHHbbbb # includes v1v1HHbbbb and v23v23HHbbbb (needed for the MVA)
+- EventCategories.WBF_vvbbbb
 
 # used to calculate event weights and absolute event counts
 # polarization of [ electronBeam, positronBeam ]
@@ -84,7 +85,7 @@ sources:
     event_categorization:
       default: null
       order: null
-      items: [ vvHH, vvHHbbbb, v1v1HHbbbb, v23v23HHbbbb, vvHH_nonbbbb, vvqqH ]
+      items: [ vvHH, vvHHbbbb, v1v1HHbbbb, v23v23HHbbbb, WBF_vvbbbb, vvHH_nonbbbb, vvqqH ]
     disabled: false
     reset: false
 
@@ -154,7 +155,7 @@ features:
                yplus, yminus,
                zz_mz1, zz_mz2,
                massWtt4j, massT1tt4j, massT2tt4j,
-               massW1tt5j, massW2tt5j, massT1tt5j, massT2tt5j], tree: EventObservablesVV, dtype: float32 }
+               massW1tt5j, massW2tt5j, massT1tt5j, massT2tt5j, massDiNeutrino], tree: EventObservablesVV, dtype: float32 }
   
   # renamed/clamped quantities
   - { name: fit4C_mhh, tree: EventObservablesVV, dtype: float32, nan_to: -20., clamp_min: -10. }
@@ -307,8 +308,10 @@ cuts:
   - { quantity: fit4C_mh1, operator: gte, value: 0. }
   - { quantity: npfos, operator: gte, value: 0. }
   - { quantity: yplus, operator: gte, value: 0. }
-  #second_mva_cut:
-  #- { quantity: SecondMVAOutput, operator: gte, value: second_mva.threshold }
+  mva_eval_cut:
+  - { quantity: SigMVAOutput, operator: gte, value: 0.1 }
+  splitsignal_mva_cut:
+  - { quantity: SplitSigMVAOutput, operator: gte, value: second_mva.threshold }
 
 # MVAs are defined here
 # training, inference and optimization (i.e. assignment which threshold value to use) are
@@ -347,20 +350,20 @@ mvas:
       npfos,
       yplus,
       ####
-      #ZZH_FitChi2, ZHH_p1stBeforeFit,
-      #ZZH_p1stBeforeFit, ZHH_cosThBeforeFit, ZZH_cosThBeforeFit,
-      #massT1tt4j, massT2tt4j,
-      #massW2tt5j, massT1tt5j, massT2tt5j,
-      #zhh_mhh,
-      #fit4C_mh2,
-      #thrust, costhrust,
-      #ptmiss,
+      ZZH_FitChi2, ZHH_p1stBeforeFit,
+      ZZH_p1stBeforeFit, ZHH_cosThBeforeFit, ZZH_cosThBeforeFit,
+      massT1tt4j, massT2tt4j,
+      massW2tt5j, massT1tt5j, massT2tt5j,
+      zhh_mhh,
+      fit4C_mh2,
+      thrust, costhrust,
+      ptmiss,
       ]
     classes:
     # two-element arrays of structure (label, name of registered EventCategory)
     # see sources/.../event_categorization/items
-    - [0, 'vvHHbbbb']
-    - [1, 'vvHH_nonbbbb']
+    - [0, 'v23v23HHbbbb']
+    - [1, 'WBF_vvbbbb']
     - [2, 'vvqqH']
     - [3, 'vvbbbb']
     - [4, 'vvbb']
@@ -413,7 +416,6 @@ mvas:
 # define what should be done after the data is loaded
 # for a documentation of supplied actions, see zhh/analysis/cutflow_processor_actions/README.md
 actions:
-  # optional:
   - type: ApplyCuts
     cuts: preselection
     weight_column: weight
@@ -429,28 +431,36 @@ actions:
     
   - type: CreateCutflowTable
     file: '$hypothesis_cutflow_preselection_table.pdf'
+  # optional:
+  # step_start: 0
+  # step_end: 0
+
+  - type: WriteROOTSnapshot
+    file: '$hypothesis_inputs.root'
+    include_custom_columns: [event_category, weight]
+    include_input_columns: true
+    include_mva_outputs: false
     # optional:
-    # step_start: 0
-    # step_end: 0
+    # tree: cutflow
 
   # split in train/testing [accross all steps, i.e. regardless of cut group]
   # creates a new integer column 'split'; for n entries in fractions:
-  # value 0 is assigned to a fraction of events specified as first entry in fractions
-  # value 1[..]n-1 to fractions given at position 1 to n-1
+  # value 0 is assigned to a fraction of events specified at 0-th(first) entry in fractions
+  # value 1[..]n-1 to fractions given at position 1[..]n-1
   # value n is assigned to the remaining events [fraction (1 - sum(all previous values))]
   - type: SplitDatasets
-    fractions: [ 0.75 ]
-
+    fractions: [ 0.50 ]
+    disabled: false
     # the following two are just here to be explicit and should not be changed
-    split_column: split
+    split_column: split 
     wt_split_column: weights_split
-    
+
   # writes out training/testing data
   - type: WriteMVAData
     mva: default_mva
     disabled: false
-    # optional:
-    # step: 0
+  # optional:
+  # step: 0
 
   - type: PrintSplitWeights
     disabled: true
@@ -472,9 +482,6 @@ actions:
     split: 0
     disabled: false
 
-  # optional:
-  # clf_prop: clf
-  # step: 0
   - type: SklearnMulticlassHyperparamTraining
     hyperparam_bounds: [
       { name: max_depth, type: int, lower: 3, upper: 7 },
@@ -485,15 +492,25 @@ actions:
     split: 0
     ntrials: 500
     disabled: true
+  # optional:
+  # clf_prop: clf
+  # step: 0
+
 
   - type: SklearnMulticlassInference
     mva: default_mva
     split: 1 # split 0 = train dataset; split 1 = test dataset
     disabled: false
-    # optional:
-    # clf_prop: clf
-    # step: 0
-  
+  # optional:
+  # clf_prop: clf
+  # step: 0
+
+  - type: WriteROOTSnapshot
+    file: '$hypothesis_mva.root'
+    include_custom_columns: [split, weights_split]
+    include_input_columns: false
+    include_mva_outputs: true
+
   # The values to cut on can be evaluated lazily
   # i.e. the value does not need to be known when the program is started
   # This can be useful for cuts on MVA output, when the best value can
@@ -503,38 +520,81 @@ actions:
     step: 1
     split: 1 # use only testing data
     weight_column: weights_split # use the weights after splitting the dataset
+    split: 1 # use only testing data
+    weight_column: weights_split # use the weights after splitting the dataset
     disabled: false
 
-### #To plot features before mva cut, first apply non-cuts and then create cutflowplots
-###   - type: ApplyCuts
-###     cuts: feature_nocut
-###     step: 1
-###     disabled: false
-###   - type: CreateCutflowPlots
-###     file: '$hypothesis_cutflow_mva_plots_input.pdf'
-###     step_start: 1
-###     step_end: 1
-###     disabled: false
-### #Then apply a zero cut on the mva (<= 0.00001)
-###   - type: ApplyCuts
-###     cuts: mva_zero_cut
-###     step: 2 
-###     disabled: true
-### #Apply non-cuts to plot distributions after mva cut
-###   - type: ApplyCuts
-###     cuts: mva_nocut
-###     step: 3
-###     disabled: true
-###   - type: ApplyCuts
-###     cuts: eval_cut
-###     step: 4
-###     disabled: true
-### #Create plots for step 1 to 4 
-###   - type: CreateCutflowPlots
-###     file: '$hypothesis_cutflow_mva_eval_plots.pdf'
-###     step_start: 1
-###     step_end: 4
-###     disabled: true
+####To plot features before mva cut, first apply non-cuts and then create cutflowplots
+###  - type: ApplyCuts
+###    cuts: feature_nocut
+###    step: 1
+###    weight_column: weights 
+###    split: Null 
+###    disabled: false
+###  - type: CreateCutflowPlots
+###    file: '$hypothesis_cutflow_mva_plots_input.pdf'
+###    step_start: 1
+###    step_end: 1
+###    disabled: false
+####Then apply a zero cut on the mva (<= 0.00001)
+###  - type: ApplyCuts
+###    cuts: mva_zero_cut
+###    split: 1 # use only testing data
+###    weight_column: weights_split # use the weights after splitting the dataset
+###    step: 2 
+###    disabled: false
+####Apply non-cuts to plot distributions after mva cut
+###  - type: ApplyCuts
+###    cuts: mva_nocut
+###    split: 1 # use only testing data
+###    weight_column: weights_split # use the weights after splitting the dataset
+###    step: 3
+###    disabled: false
+###  - type: ApplyCuts
+###    cuts: eval_cut
+###    split: 1 # use only testing data
+###    weight_column: weights_split # use the weights after splitting the dataset
+###    step: 4
+###    disabled: false
+####Create plots for step 1 to 4 
+###  - type: CreateCutflowPlots
+###    file: '$hypothesis_cutflow_mva_eval_plots.pdf'
+###    step_start: 1
+###    step_end: 4
+###    disabled: false
+
+  - type: ApplyCuts
+    cuts: mva_eval_cut
+    step: 1
+    split: 1 # use only testing data
+    weight_column: weights_split # use the weights after splitting the dataset
+    disabled: true
+
+###  - type: SplitDatasets
+###    fractions: [ 0.50 ]
+###    disabled: false
+###  - type: WriteMVAData
+###    mva: splitsignal_mva
+###    disabled: false
+###  - type: SklearnMulticlassTraining
+###    hyperparams: {
+###      max_depth: 5,
+###      n_estimators: 380,
+###      learning_rate: 0.1
+###    }
+###    debug: true
+###    mva: splitsignal_mva
+###    split: 0
+###    disabled: false
+###  - type: SklearnMulticlassInference
+###    mva: splitsignal_mva
+###    split: 1 # split 0 = train dataset; split 1 = test dataset
+###    disabled: false
+###  - type: ApplyCuts
+###    cuts: splitsignal_mva_cut
+###    step: 2
+###    disabled: true
+###
   - type: CreateCutflowPlots
     file: '$hypothesis_cutflow_mva_plots.pdf'
     step_start: 1

@@ -62,7 +62,8 @@ class EVENT_CATEGORY_TRUE:
     v23v23HHbbbb = 134
     vvHHbbbb = 135
     vvHH_nonbbbb = 136
-
+    WBF_vvbbbb = 137
+    
     # END
     
     vvbb = 32

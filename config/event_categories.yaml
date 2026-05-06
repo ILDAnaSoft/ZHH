@@ -137,6 +137,9 @@
 - name: vvqqH
   handler: FinalStateDefinitions.define_vvqqH
   id: EventCategories.vvqqH
+- name: WBF_vvbbbb
+  handler: FinalStateDefinitions.define_WBF_vvbbbb
+  id: EventCategories.WBF_vvbbbb
 
 # qqhh TODO
 - name: qqHH
