@@ -25,6 +25,8 @@ class PlotObservableAction(FileBasedProcessorAction):
         figure = self._cp.plotAt(self._observable, self._step, self._split, self._plotTop9,
                                  weight_prop=self._weight_prop, signal_category_names=self._signal_categories,
                                  plot_kwargs=self._plot_kwargs)
+        
+        export_figures(self._plot_file, [ figure ])
     
     def output(self):
         return self.localTarget(self._plot_file)
