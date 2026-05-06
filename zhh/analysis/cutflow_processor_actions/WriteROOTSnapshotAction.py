@@ -161,7 +161,7 @@ def rootSnapshot(cp, output_file:str, columns:list[str], tree:str, CHUNK_SIZE:in
                     this_chunk = min(remaining, CHUNK_SIZE)
                     
                     batch = { }
-                    pbar.set_description(f'Writing batch {k+1}/{n_batches} with data from {soure_name}') 
+                    pbar.set_description(f'Writing batch with data from {soure_name}') 
                     #t0 = datetime.now()
                 
                     for column in missing_keys:
