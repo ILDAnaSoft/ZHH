@@ -227,10 +227,13 @@ cutflow_table:
       label: '\HepProcess{\Pgn\Pgn\PH\PH}'
       is_signal: true
     - category: v23v23HHbbbb
-      label: (vvbbbb (all))
+      label: (v23v23bbbb)
+      is_signal: true
+    - category: v1v1HHbbbb
+      label: (v1v1bbbb)
       is_signal: true
     - category: WBF_vvbbbb
-      label: (vvbbbb (WBF))
+      label: (WBF)
       is_signal: true
     - category: vvHHbbbb
       label: '\HepProcess{\Pgn\Pgn\PH\PH\Pqb\Pqb}'
