@@ -235,9 +235,9 @@ cutflow_table:
     - category: WBF_vvbbbb
       label: (WBF)
       is_signal: true
-    - category: vvHHbbbb
-      label: '\HepProcess{\Pgn\Pgn\PH\PH\Pqb\Pqb}'
-      is_signal: true
+    #- category: vvHHbbbb
+    #  label: '\HepProcess{\Pgn\Pgn\PH\PH\Pqb\Pqb}'
+    #  is_signal: true
     - sum: signal
       label: 'Total signal'
 
