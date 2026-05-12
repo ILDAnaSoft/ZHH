@@ -111,10 +111,13 @@ class ROOT2HDF5Converter:
                         else:
                             assert(ncols == ncols_found)
 
+                        input_files:list[str] = hf.attrs['input_files']
+
                         if check_requires_exact_path_match:
-                            path_check = np.all(hf.attrs['input_files'] == chunk_files)
+                            path_checks = input_files == chunk_files
+                            path_check = np.all(path_checks)
                         else:
-                            bnames_found = [osp.basename(f) for f in hf.attrs['input_files']]
+                            bnames_found = [osp.basename(f) for f in input_files]
                             bnames_expected = [osp.basename(f) for f in chunk_files]
 
                             path_checks = [bnames_found[i] == bnames_expected[i] for i in range(len(bnames_found))]
@@ -135,7 +138,7 @@ class ROOT2HDF5Converter:
                             
                             for idx, matches in enumerate(path_checks):
                                 if not matches:
-                                    print(f'<{bnames_found[i]}>:<{bnames_expected[i]}>')
+                                    print(f'<{input_files[i]}>:<{chunk_files[i]}>' if check_requires_exact_path_match else f'<{bnames_found[i]}>:<{bnames_expected[i]}>')
 
                             raise Exception(f'File <{out_file}> for chunk <{chunk_idx}> does not fit to expected '+
                                             'data structure. See above print for property=<found> <expected>')
@@ -158,7 +161,7 @@ class ROOT2HDF5Converter:
         return (already_done, tot_shape, sizes)
 
     def convertLazy(self, nrows:int|None=None, check_existing:bool=False,
-                    check_requires_exact_path_match:bool=True, **kwargs)->tuple[AbstractTask, list[AbstractTask]]:
+                    check_requires_exact_path_match:bool=True, use_vds:bool=False, **kwargs)->tuple[AbstractTask, list[AbstractTask]]:
         """Returns one or multiple tasks which represent the ROOT->HDF5 conversion
         See ProcessRunner for a tool to execute them.
 
@@ -186,11 +189,12 @@ class ROOT2HDF5Converter:
 
         h5_files = [chunk[4] for chunk in chunks]
         conversion_tasks = [] if done else [AbstractTask(f'ROOT2HDF5Task:{self._tree}.{self._branch}', per_chunk, (chunk, )) for chunk in chunks]
-        create_vds_task = CreateVDSTask(f'CreateVDS:{self._tree}.{self._branch}',
+        
+        finalization_task = (CreateVDSTask if use_vds else CombineDatasetsTask)(('CreateVDS' if use_vds else 'CombineDatasets')+f':{self._tree}.{self._branch}',
                                         args=(h5_files, self._vds_file, self._output_name, self._dtype, done, sizes, ncols))
-        create_vds_task.requires('conversion', conversion_tasks)
+        finalization_task.requires('conversion', conversion_tasks)
 
-        return create_vds_task, conversion_tasks
+        return finalization_task, conversion_tasks
 
     def convert(self, nrows:int|None=None, check_existing:bool=False, **kwargs):
         """_summary_
@@ -254,15 +258,13 @@ class ROOT2HDF5Converter:
         
         createVDS(h5_files, self._vds_file, self._output_name, ncols=ncols, dtype=self._dtype, sizes=sizes)
 
-def createVDS(h5_files:list[str], output_file:str, output_name:str, shape:np.ndarray|None=None,
-              ncols:int|None=None, dtype:str|None=None, sizes:list[int]|None=None):
+def createVDS(h5_files:list[str], output_file:str, output_name:str, ncols:int|None=None, dtype:str|None=None, sizes:list[int]|None=None):
     """_summary_
 
     Args:
         h5_files (list[str]): _description_
         output_file (str): _description_
         output_name (str): _description_. Defaults to None.
-        shape (tuple|None): 
         ncols (int|None): if supplied, will assume 2D shape of (nrows, ncols) where nrows is auto-inferred from the HDF5 files
         dtype (str | None, optional): _description_. Defaults to None.
         sizes (list[int] | None, optional): _description_. Defaults to None.
@@ -322,7 +324,43 @@ def createVDS(h5_files:list[str], output_file:str, output_name:str, shape:np.nda
             hf.create_virtual_dataset(output_column_name, layout, fillvalue=np.nan)
     return True
 
+class CombineDatasetsTask(AbstractTask):
+    """Makes data accessible at the main file main_file by copying all converted data from the individual
+    sub files. May improve access speed for large datasets, but increases storage consumption
+
+    Args:
+        AbstractTask (_type_): _description_
+    """
+
+    def work(self, h5_files:list[str], main_file:str, output_name:str, dtype:str|None, done:bool, sizes:list[int], ncols:int, **kwargs):
+        conversion:list[ChunkedConversionResult] = kwargs['conversion']
+
+        with h5py.File(h5_files[0], 'r') as hf:
+            column_names = list(cast(Sequence, hf.attrs.get('col_names')))
+        print('column_names', column_names)
+
+        for column in column_names:
+            data = []
+            for file in h5_files:
+                with h5py.File(file) as hf:
+                    data.append(hf['dim0'][:])
+            data = np.concatenate(data)
+                
+            with h5py.File(main_file, 'a') as hf:
+                output_column_name = f'{output_name}.{column}' if (ncols is not None and ncols != 1) else output_name
+
+                hf.create_dataset(output_column_name, shape=data.shape, dtype=dtype, chunks=True, fillvalue=np.nan)
+                hf[output_column_name][:] = data
+
+        return True
+
 class CreateVDSTask(AbstractTask):
+    """Makes data accessible at the main file vds_file by linking to the individual sub-files
+    using HDF5's virtual dataset functionality.
+
+    Args:
+        AbstractTask (_type_): _description_
+    """
     def work(self, h5_files:list[str], vds_file:str, output_name:str, dtype:str|None, done:bool, sizes:list[int], ncols:int, **kwargs):
         if not done:
             conversion:list[ChunkedConversionResult] = kwargs['conversion']

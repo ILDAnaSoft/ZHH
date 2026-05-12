@@ -52,7 +52,7 @@ def cutflow_parse_steering_file(loc:str):
 
 def cutflow_process_steering(steer:dict, integrity_check:bool=True,
                              check_requires_exact_path_match:bool=False,
-                             readonly:bool=False):
+                             readonly:bool=False, use_vds:bool=True,):
     """Processes a parsed steering dictionary and handles feature interpretations.
     Returns two dictionaries: First a dict<name, DataSource> and second, a dict
     holding <name, [cat_register_fn, cat_default, cat_order]>.
@@ -70,6 +70,11 @@ def cutflow_process_steering(steer:dict, integrity_check:bool=True,
         readonly (bool): if True, will open HDF5 files in readonly mode, which will
                          fail if features should be be converted from ROOT.
                          Defaults to False (append mode)
+        use_vds (bool): if True, and no HDF5 file exists for a source in steer,
+                        will link to converted data using virtual datasets. if False,
+                        will copy the data. the latter may allow faster access speeds
+                        for large datasets at the cost of storage consumption and added
+                        time for copying. defaults to True.  
 
     Raises:
         Exception: _description_
@@ -105,7 +110,7 @@ def cutflow_process_steering(steer:dict, integrity_check:bool=True,
                                               source_spec['root_files'], path, fname,
                                               integrity_check=integrity_check,
                                               check_requires_exact_path_match=check_requires_exact_path_match,
-                                              readonly=readonly)
+                                              use_vds=use_vds, readonly=readonly)
             
         source = DataSource(fpath, name, work_root=path, readonly=readonly)
 
@@ -198,16 +203,23 @@ def cutflow_provision_features(interpretations:list[Interpretation],
                                       integrity_check:bool=True,
                                       base_tree:str='FinalStates',
                                       check_requires_exact_path_match:bool=True,
+                                      use_vds:bool=True,
                                       readonly:bool=False):
     """_summary_
 
     Args:
-        interpretations (list[Interpretation]): _description_
-        root_files_glob (str): _description_
-        path (str): _description_
-        file (str): _description_
+        interpretations (list[Interpretation]): List of features to provision. see Interpretation
+        root_files_glob (str): argument to glob() to find input ROOT files
+        path (str): location at which the main HDF5 file should be created. converted ROOT TTree data
+                    will be stored in a sub-directory '{path}/items/{tree_name}.{branch_name}/*.h5'
+        file (str): file name of the main HDF5 file
         integrity_check (bool, optional): _description_. Defaults to True.
         base_tree (str, optional): TTree to use for estimating length. Defaults to 'FinalStates'.
+        check_requires_exact_path_match (bool, optional): if True, requires that the HDF5 files found at
+            root_files_glob match exactly to those the main HDF5 was created with (if it exists).
+            If False, only the basename must match. Useful when using symbolic links. Defaults to True. 
+        readonly (bool, optional): If True, will attempt to only do read operations and skip all
+            write operations or only do them in-memory (if possible)
 
     Raises:
         Exception: _description_
@@ -384,7 +396,7 @@ def cutflow_provision_features(interpretations:list[Interpretation],
                     found.append(name)
     
     conv_tasks:list[AbstractTask] = []
-    vds_tasks:list[AbstractTask] = []
+    finalization_tasks:list[AbstractTask] = []
     conv_items = []
     conv_done = []
     names = []
@@ -399,10 +411,10 @@ def cutflow_provision_features(interpretations:list[Interpretation],
         conv = ROOT2HDF5Converter(root_files, ds_path, tree, branch,
                                   osp.expandvars(f'{bname}/{tree}.{branch.replace("/", ".")}/item'), name, dtype, clamp=(clamp_min, clamp_max),
                                   nan_to=nan_to)
-        vds_task, item_conv_tasks = conv.convertLazy(nrows=nrows, check_existing=True, check_requires_exact_path_match=check_requires_exact_path_match)
+        finalization_task, item_conv_tasks = conv.convertLazy(nrows=nrows, check_existing=True, check_requires_exact_path_match=check_requires_exact_path_match, use_vds=use_vds)
         
         [conv_tasks.append(task) for task in item_conv_tasks]
-        vds_tasks.append(vds_task)
+        finalization_tasks.append(finalization_task)
         conv_items.append(f'{tree}.{branch} -> {name} ({dtype})')
 
         if len(item_conv_tasks) == 0:
@@ -419,9 +431,9 @@ def cutflow_provision_features(interpretations:list[Interpretation],
         runner.run()
 
         # after successful conversion, create the VDS'es
-        print('Creating virtual datasets (VDSes)')
+        print('Creating virtual datasets (VDSes)' if use_vds else 'Combining datasets by copying')
 
-        for i, task in enumerate(pbar := tqdm(vds_tasks)):
+        for i, task in enumerate(pbar := tqdm(finalization_tasks)):
             name = names[i]
             pbar.set_description(conv_items[i])
             deps = task.getDependencies()['conversion']

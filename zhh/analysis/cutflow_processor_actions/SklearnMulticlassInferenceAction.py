@@ -61,10 +61,10 @@ class SklearnMulticlassInferenceAction(CutflowProcessorAction):
             for i, category in enumerate(self._class_names):                
                 signal_label_name = f'{self._output_label}#{category}'
                 
-                score = np.zeros(len(mask))
+                score = np.zeros(len(mask), dtype=np.float32)
                 score[mask] = probas[:, i]
 
-                store[signal_label_name] = mask
+                store[signal_label_name] = score
                 store.itemsSnapshot(items=[signal_label_name], overwrite=self._overwrite)
 
     def loadMVAFromFile(self):

@@ -17,7 +17,7 @@ class WriteMVADataAction(FileBasedProcessorAction):
             train_split (int, optional): split of training dataset. Defaults to 0.
             test_split (int, optional): split of test dataset. Defaults to 1.
             val_split (int, optional): split of validation dataset. if None, no _val
-                                       columns will be written. Defaults to 1.
+                                       columns will be written. Defaults to None.
         """
         super().__init__(cp, steer)
         

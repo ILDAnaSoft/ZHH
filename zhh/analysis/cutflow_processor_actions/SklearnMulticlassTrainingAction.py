@@ -1,6 +1,7 @@
 from io import StringIO
+from copy import deepcopy
 from contextlib import redirect_stdout
-from typing import TypedDict, Required, Literal, cast
+from typing import TypedDict, Required, Literal, cast, Any
 from datetime import datetime
 from math import sqrt
 from multiprocessing import cpu_count
@@ -57,7 +58,9 @@ class SklearnMulticlassTrainingAction(MVAThresholdFinderInterface, FileBasedProc
         return self.localTarget(self._mva_file)
     
     def getConfig(self)->'MVATrainingConfig':
-        return MVATrainingConfig(os.getcwd(), 1, self._trial_name, model=self._model,
+        return MVATrainingConfig(os.getcwd(), 1, self._trial_name,
+                                 hyperparams=self._hyperparams, # required to make sure that injecting n_jobs to hyperparams will not alter the dict and thereby the hash in complete()
+                                 model=self._model,
                                  signal_categories=self._signal_categories,
                                  background_categories=self._background_categories,
                                  clf_file=self._mva_file, clf_prop=self._clf_prop)
@@ -66,10 +69,14 @@ class SklearnMulticlassTrainingAction(MVAThresholdFinderInterface, FileBasedProc
         print(f'Sig categories', self._signal_categories)
         print(f'Bkg categories', self._background_categories)
 
-        qty = objective(self.getConfig(), self._hyperparams, train_test_npz=self._data_file, debug=self._debug)
+        qty = objective(self.getConfig(), deepcopy(self._hyperparams), train_test_npz=self._data_file, debug=self._debug)
+
+        # assign threshold
+        if not self.complete():
+            raise Exception(f'Unexpected error when training MVA <{self._trial_name}>')
         
     def complete(self)->bool:
-        file_exist = super().complete()
+        file_exist = self.output().exists()
         complete = False
         
         if file_exist:
@@ -78,6 +85,9 @@ class SklearnMulticlassTrainingAction(MVAThresholdFinderInterface, FileBasedProc
                 dump = pickle.load(pf)
 
             complete = 'hash' in dump and dump['hash'] == self.getConfig().hash()
+            print('hash check', 'hash' in dump, dump['hash'] == self.getConfig().hash())
+            print(dump['hash'], self.getConfig().hash())
+            print(self.getConfig())
 
         if complete:
             self.assignThreshold(self.findThreshold())
@@ -98,7 +108,7 @@ class OptunaSuggestion(TypedDict):
 
 # global registry of MVATrainingConfig
 # used only when using multiprocessing, e.g. in SklearnMulticlassHyperparamTrainingAction
-configs = {}
+configs:dict[str, 'MVATrainingConfig'] = {}
 
 def find_subclss(cls, subclss:list=[]):
     if hasattr(cls, '__subclasses__'):
@@ -122,7 +132,9 @@ class MVATrainingConfig:
     def __init__(self, base_path:str, n_trials:int,
                  trial_name:str|None, trial_data:str|None=None, trial_data_file:str='train_test.npz',
                  training_mode:Literal['loss']|Literal['significance']='significance',
-                 signal_categories:list[int]=[], background_categories:list[int]=[], hyperparam_bounds:list[OptunaSuggestion]=[],
+                 signal_categories:list[int]=[], background_categories:list[int]=[],
+                 hyperparams: dict[str, Any]={},
+                 hyperparam_bounds:list[OptunaSuggestion]=[],
                  model:Literal['LGBMClassifier', 'XGBClassifier']='XGBClassifier',
                  clf_file:str|None=None, clf_prop:str='clf'):
         
@@ -150,6 +162,7 @@ class MVATrainingConfig:
         self._training_mode = training_mode.lower()
         self._signal_categories = signal_categories
         self._background_categories = background_categories
+        self._hyperparams = hyperparams
         self._hyperparam_bounds = hyperparam_bounds
         self._model = model
         self._clf_prop = clf_prop
@@ -211,6 +224,7 @@ def objective(config:MVATrainingConfig, hyper_params:dict, trial:optuna.Trial|No
 
     if trial is not None:
         n_trial = trial.number
+        hyper_params['n_jobs'] = 1
         print(f'Running trial {n_trial} in process {os.getpid()}')
 
     if clf_file is None:
@@ -268,9 +282,9 @@ def objective(config:MVATrainingConfig, hyper_params:dict, trial:optuna.Trial|No
     # following works for XGB and LightGBM
     loss_history = list(list(clf.evals_result_.values())[0].values())[0]
 
-    NITEMS = 500
+    NITEMS = 100
 
-    x = np.linspace(0, 1, NITEMS, endpoint=False)
+    x = np.linspace(0.5, 0.99, NITEMS, endpoint=False)
     sig = np.zeros(NITEMS)
     bkg = np.zeros(NITEMS)
 

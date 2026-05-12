@@ -192,8 +192,6 @@ features:
 # items/label: column label (supports LaTeX)
 # items/is_signal: optional, defaults to false; whether or not this category belongs to
 #                  the signal
-# ignore_categories: for each background category A that includes another category B,
-#                    category B must be given here to avoid double counting
 
 cutflow_table:
   # use heppennames for particles in \HepProcess environment. see CutflowTableLatexPreamble.tex
@@ -510,6 +508,12 @@ actions:
   # optional:
   # clf_prop: clf
   # step: 0
+
+  - type: PlotMVAFeatures
+    mva: default_mva
+    file: $hypothesis_mva_training_distributions.pdf
+    plot_kwargs:
+    - bins: 50
 
   - type: WriteROOTSnapshot
     file: '$hypothesis_mva.root'

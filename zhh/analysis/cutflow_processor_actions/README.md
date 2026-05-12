@@ -22,7 +22,7 @@ TODO
 
 ### MVAThresholdFinderInterface
 
-Allows an MVA optimizer to dynamically supply a threshold value. An action inheriting from this can dynamically bind properties to registered MVAs. E.g., a property threshold can be assigned to a MVA default_mva and referenced in a greater-equal-cut as default_mva.threshold.
+Allows an MVA optimizer to dynamically supply a threshold value so that a cut on the optimal value can be defined without the cut value being known. Use the syntax `<mva_name>.threshold` in a cut to accomplish this. For example, with a MVA default_mva, the optimal value can be referenced in a greater-equal-cut as default_mva.threshold.
 
 Must implement: findThreshold()
 
@@ -69,11 +69,35 @@ TODO
 
 ### WriteROOTSnapshotAction
 
-TODO
+Writes out column-wise data from all data sources to ROOT TTrees in `file.` The columns to write must be explicitly stated in `include_custom_columns` or, input/MVA outputs columns may be added automatically by setting `include_input_columns` / `include_mva_outputs`. An additional column `source` is always written. It stores an uint8 specifying the index of the `DataSource` (as registered in steer['sources']) an event belongs to.   
+
+Required arguments:
+
+- (str) `file`: name of the output ROOT file. file will be re-created if the action is executed again.
+
+Optional arguments:
+- (str) `tree`: name of the output TTree. Defaults to `cutflow`.
+- (list[str]) `include_custom_columns`: list of columns to write out. Defaults to [].
+- (bool) `include_input_columns`: if True, all registered inputs from the steering file's `interpret` section will be stored. Defaults to `False`.
+- (bool) `include_mva_outputs`: if True, all MVA output distributions will be stored. Defaults to `False`.
+- (int) `CHUNK_SIZE`: Data is written in batches of `CHUNK_SIZE` rows for each of the `n` selected columns at a time (i.e. `n x CHUNK_SIZE` per batch). Defaults to 65536.
+
+### PlotMVAFeatures
+
+Creates plots of all the input distributions for MVA training. Uses the data written out by [WriteMVAData](#writemvadata).
+
+Required arguments:
+
+- (str) `mva`: name of the MVA registered in cutflow
+- (str) `file`: name of the output PDF file
+
+Optional arguments:
+- (Literal['train', 'test']) `plot_which`: which dataset should be plotted. Defaults to 'train'.
+- (dict) `plot_kwargs`: base options to control the plotting by plot_weighted_hist(). other plotting optins are merged into a copy of this. Defaults to an empty dict.
 
 ### PlotObservableAction
 
-
+TODO
 
 ### PrintSplitWeights
 

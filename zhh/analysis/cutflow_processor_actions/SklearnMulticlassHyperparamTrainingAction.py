@@ -1,5 +1,6 @@
 from math import ceil
 from multiprocessing import cpu_count, Pool
+from copy import deepcopy
 import os, pickle, shutil
 
 from ..CutflowProcessorAction import CutflowProcessorAction, CutflowProcessor, FileBasedProcessorAction
@@ -11,9 +12,12 @@ import optuna
 def objective_mod(trial:optuna.Trial):
     from zhh.analysis.cutflow_processor_actions.SklearnMulticlassTrainingAction import configs
     cfg = configs[trial.study.study_name]
-    
-    hyper_params = parse_suggestions(trial, cfg._hyperparam_bounds)
-    return objective(cfg, hyper_params, trial=trial)
+     
+    hyperparams = {
+        **deepcopy(cfg._hyperparams),
+        **parse_suggestions(trial, cfg._hyperparam_bounds) }
+
+    return objective(cfg, hyperparams, trial=trial)
 
 def run_optimization(cfg:MVATrainingConfig):
     from optuna.storages import JournalStorage
@@ -34,7 +38,8 @@ def run_optimization(cfg:MVATrainingConfig):
 
 class SklearnMulticlassHyperparamTrainingAction(MVAThresholdFinderInterface, FileBasedProcessorAction):
     def __init__(self, cp:CutflowProcessor, steer:dict, mva:str, hyperparam_bounds:list[OptunaSuggestion],
-                 clf_prop:str='clf', trial_name:str|None=None, ntrials:int=500, nprocesses:int|None=None, **kwargs):
+                 clf_prop:str='clf', trial_name:str|None=None, ntrials:int=500, nprocesses:int|None=None,
+                 hyperparams:dict={}, **kwargs):
         """_summary_
 
         Args:
@@ -68,11 +73,11 @@ class SklearnMulticlassHyperparamTrainingAction(MVAThresholdFinderInterface, Fil
         self._background_categories = get_background_categories(self._signal_categories, mva_spec['classes'])
 
         self._features = mva_spec['features']
-        self._cfg:MVATrainingConfig = MVATrainingConfig(os.getcwd(), ntrials,
-                                                        
+        self._cfg = MVATrainingConfig(os.getcwd(), ntrials,
                                                         trial_name=f'{os.environ["hypothesis"]}.{self._trial_name}',
                                                         signal_categories=self._signal_categories,
                                                         background_categories=self._background_categories,
+                                                        hyperparams=hyperparams,
                                                         hyperparam_bounds=hyperparam_bounds,
                                                         trial_data_file=self._data_file)
         self._cfg.register()
@@ -95,6 +100,7 @@ class SklearnMulticlassHyperparamTrainingAction(MVAThresholdFinderInterface, Fil
             with Pool(processes=NPROCESSES) as pool:
                 pool.map(run_optimization, [cfg] * n_left) #range(self._ntrials * NPROCESSES))
 
+        # assign threshold
         if not self.complete():
             raise Exception(f'Unexpected error when training MVA <{self._trial_name}>')
 

@@ -223,11 +223,11 @@ def counts_by_category(masks:list[list[dict[str, np.ndarray]]],
         
             i_cut += 1
 
-    # delete 0 entries in source_2_category_2_count[source.getName()][category]
+    # print if 0 entries in source_2_category_2_count[source.getName()][category] found
     for category in ordered_categories.keys():
         if categories_2_count[category].sum() == 0:
-            print(f'Deleting count for {category} in {source.getName()} because it\'s 0')
-            del categories_2_count[category]
+            print(f'Warning: Found 0 count for {category} in {source.getName()}. Are you sure the ordering of categories is correct?')
+    #        del categories_2_count[category]
 
     return categories_2_count
 
@@ -280,6 +280,11 @@ def get_sources_2_categories(steer:dict, sources:list[DataSource], all_categorie
 
         categories_sorted = list(sorted(categories_unsorted, key=lambda x: order.index(x)))
         source_2_category_names[source] = categories_sorted
+
+    # account for the case that no category was requested for a source --> it does not exist in source_2_category_names
+    for source in sources:
+        if not source.getName() in source_2_category_names.keys():
+            source_2_category_names[source.getName()] = []
     
     return source_2_category_names
 

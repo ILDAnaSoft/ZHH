@@ -50,7 +50,7 @@ if __name__ == "__main__":
             except Exception as e:
                 print(f'Encountered exception when trying to reset action <{action.__class__.__name__}>')
     
-    print('Going to execute following actions:')
+    print('Prepared actions:')
     to_execute = cutflow_execute_actions(actions, check_only=True)
     for i, action in enumerate(to_execute):
         print(f'Action {i+1}/{len(to_execute)}:', action)

@@ -152,6 +152,7 @@ if [ "$ZHH_COMMAND" = "install" ]; then
     if [ ! -f "$REPO_ROOT/bin/cutflow" ]; then
         cp "$REPO_ROOT/shell/cutflow.template" "$REPO_ROOT/bin/cutflow"
         sed -i -e "s|<REPO_ROOT>|$REPO_ROOT|g" "$REPO_ROOT/bin/cutflow"
+        chmod 755 "$REPO_ROOT/bin/cutflow"
     fi
 
     # Dependencies

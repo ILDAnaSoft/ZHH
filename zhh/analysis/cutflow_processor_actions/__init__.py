@@ -3,6 +3,7 @@ from .AttachMatrixElementsAction import AttachMatrixElementsAction
 from .CreateCutflowPlotsAction import CreateCutflowPlotsAction
 from .CreateCutflowTableAction import CreateCutflowTableAction
 from .PlotObservableAction import PlotObservableAction
+from .PlotMVAFeaturesAction import PlotMVAFeaturesAction
 from .PrintSplitWeightsAction import PrintSplitWeightsAction
 from .SplitDatasetsAction import SplitDatasetsAction
 from .WriteMVADataAction import WriteMVADataAction

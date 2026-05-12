@@ -7,10 +7,10 @@
 
 # hypothesis: used as label in plots and for naming output files
 # made available within the run of cutflow as environment variable '$hypothesis'
-hypothesis: μμbbbb
+hypothesis: eebbbb
 
 signal_categories:
-- EventCategories.μμHHbbbb
+- EventCategories.eeHHbbbb
 - EventCategories.llHH_llnonbbbb
 
 # used to calculate event weights and absolute event counts
@@ -24,12 +24,6 @@ luminosity: 2.
 # MVA training files + any plots/tables. can also be set individually per source in the
 # sources section below
 reset: false
-
-# definition of event categories
-# the registration of event categories to specific sources is done in the sources section
-# info: while the naming can be arbitrary, a unique ID must be supplied which must exist 
-#       in the EVENT_CATEGORIES_TRUE class, too. See EventCategories.py
-event_categories: '$REPO_ROOT/config/event_categories.yaml'
 
 # definition of input data and information about the event categorization
 # path                : path to a directory containing Merged.root file whose content
@@ -52,7 +46,7 @@ sources:
     event_categorization:
       default: EventCategories.F4_OTHER
       order: null
-      items: [ llqq, μμbb, lvqq ] # eebb, ττbb, μμbb
+      items: [ llqq, eebb, lvqq ] # eebb, ττbb, μμbb
     disabled: false
     reset: false
   
@@ -61,8 +55,8 @@ sources:
     root_files: /data/dust/user/jtorndal/zhh/AnalysisFinal/550-4flh-$CONF_SUFFIX/*.root
     event_categorization:
       default: EventCategories.F4_OTHER
-      order: null
-      items: [ bbbb ]
+      order: [ ]
+      items: [ llll, qqqq, bbbb ]
     disabled: false
     reset: false
 
@@ -149,10 +143,10 @@ features:
   - { names: [ jet1_m, jet2_m, jet3_m, jet4_m ], tree: EventObservablesLL, dtype: float32 }
   - { name: mz_pre_pairing, tree: EventObservablesLL, branch: mzll_pre_pairing, dtype: float32 }
   - { name: mhh, tree: EventObservablesLL, branch: m_invjet, dtype: float32 }
-  - { names: [ fit4C_mz, ptmiss, thrust, evis ], tree: EventObservablesLL, dtype: float32 }
+  - { names: [ fit4C_mz, ptmiss, thrust, evis, 2jet1_m, 2jet2_m ], tree: EventObservablesLL, dtype: float32 }
   - { name: fit4C_mh1, tree: EventObservablesLL, dtype: float32, nan_to: -20., clamp_min: -10. }
   - { name: fit4C_mh2, tree: EventObservablesLL, dtype: float32, nan_to: -20., clamp_min: -10. }
-  - { names: [ nisomuons, pairedLepType ], tree: EventObservablesLL, dtype: uint8 }
+  - { names: [ nisoelectrons, pairedLepType ], tree: EventObservablesLL, dtype: uint8 }
   
   # for MVA analysis
   - { names: [ npfos ], tree: EventObservablesLL, dtype: uint16 }
@@ -189,20 +183,20 @@ features:
 # items/label: column label (supports LaTeX)
 # items/is_signal: optional, defaults to false; whether or not this category belongs to
 #                  the signal
-# ignore_categories: for each background category A that includes another category B,
-#                    category B must be given here to avoid double counting
 
 cutflow_table:
   # use heppennames for particles in \HepProcess environment. see CutflowTableLatexPreamble.tex
   items:
-    - category: μμbb
-      label: '\HepProcess{\Pgm\Pgm\Pqb\Pqb}'
+    - category: eebb
+      label: '\HepProcess{\Pe\Pe\Pqb\Pqb}'
     - remaining_of_source: 4fsl
       label: 'other 4f sl'
     - category: bbqqqq
       label: '\HepProcess{\Pqb\Pqb\Pq\Pq\Pq\Pq}'
-    - category: μvbbqq
-      label: '\HepProcess{\Pgm\Pgn\Pqb\Pqb\Pq\Pq}'
+    - remaining_of_source: 6q
+      label: 'other 6q'
+    - category: evbbqq
+      label: '\HepProcess{\Pe\Pgn\Pqb\Pqb\Pq\Pq}'
     - category: llqqqq
       label: '\HepProcess{\Plpm\Plpm\Pq\Pq\Pq\Pq}'
     - category: llbbbb
@@ -215,22 +209,17 @@ cutflow_table:
       label: 'other 4fl / 4fh'
     - category: llqqH
       label: '\HepProcess{\Plpm\Plpm\Pq\Pq\PH}'
+    - sum: background
+      label: 'Total background'
     - latex: \hline
-    - sum: signal
-      label: '\HepProcess{\Plpm\Plpm\PH\PH}'
-    - category: μμHHbbbb
-      label: '(\HepProcess{\Pgm\Pgm\Pqb\Pqb\Pqb\Pqb})'
+    - category: eeHHbbbb
+      label: '(\HepProcess{\Pe\Pe\Pqb\Pqb\Pqb\Pqb})'
       is_signal: true
     - category: llHH
       label: 'other signal'
-      #label: '\HepProcess{\Plpm\Plpm\PH\PH}'
       is_signal: true
-    - latex: \hline
-    #- sum: signal
-    #  label: 'Total signal'
-    - sum: background
-      label: 'Total background'
-  ignore_categories: llbbbb
+    - sum: signal
+      label: 'Total signal'
 
 # general note about cuts:
 # they appear in groups composed of at least one cut and are denoted in code by the
@@ -252,8 +241,8 @@ cutflow_table:
 
 cuts:
   preselection:
-  - { quantity: nisomuons, operator: gte, value: 2, label: IsoMuons }
-  - { quantity: pairedLepType, operator: eq, value: 13, label: Paired Lepton Type }
+  - { quantity: nisoelectrons, operator: gte, value: 2, label: IsoElectrons }
+  - { quantity: pairedLepType, operator: eq, value: 11, label: Paired Lepton Type }
   - { quantity: fit4C_mz, operator: within_bounds, lower: 20., upper: 150., label: 'm_{ll}^{4C}', unit: 'GeV', xlim_view: [0, 270] }
   - { quantity: fit4C_mh1, operator: within_bounds, lower: 50., upper: 200., label: 'm_{H1}^{4C}', unit: 'GeV', xlim_view: [0, 500] }
   - { quantity: fit4C_mh2, operator: within_bounds, lower: 50., upper: 200., label: 'm_{H2}^{4C}', unit: 'GeV', xlim_view: [0, 550] }
@@ -287,11 +276,11 @@ mvas:
   - name: default_mva
 
     # model: either 'LGBMClassifier' or 'XGBClassifier' 
-    model: LGBMClassifier
+    model: LGBMClassifier # XGBClassifier #
 
     features: [
       jet1_m, jet2_m, jet3_m, jet4_m,
-      mhh, fit4C_mz, fit4C_mh1, fit4C_mh2,
+      mhh, evis, 2jet1_m, 2jet2_m, fit4C_mz, fit4C_mh1, fit4C_mh2,
       npfos, thrust, costhrust, pjmax2, cosjzmax,
       npfosmin4j, yplus, yminus_mod100, plmin,
       mbmax34, ptmiss, mvalepminus,
@@ -301,12 +290,14 @@ mvas:
     classes:
     # two-element arrays of structure (label, name of registered EventCategory)
     # see sources/.../event_categorization/items
-    - [0, 'μμHHbbbb']
+    - [0, 'eeHHbbbb']
     - [1, 'llHH_llnonbbbb']
     - [2, 'llqqH']
     - [3, 'llqqqq']
-    - [4, 'μμbb']
+    - [4, 'eebb']
     - [5, 'lvbbqq']
+    #- [6, 'llll']
+    #- [7, 'ttHZ']
     # note: the output is the sum for all signal categories given in steer['signal_categories'] 
     label_name: SigMVAOutput
 
@@ -383,14 +374,15 @@ actions:
     hyperparams: {
       max_depth: 5,
       n_estimators: 500,
-      learning_rate: 0.012
+      learning_rate: 0.3
     }
     debug: true
     mva: default_mva
     split: 0
-    disabled: false
+    disabled: true
 
   - type: SklearnMulticlassHyperparamTraining
+    hyperparams: { n_jobs: 1 } # use only 1 thread per classifier
     hyperparam_bounds: [
       { name: max_depth, type: int, lower: 3, upper: 7 },
       { name: n_estimators, type: int, lower: 250, upper: 750 },
@@ -398,13 +390,20 @@ actions:
     ]
     mva: default_mva
     split: 0
-    ntrials: 250
-    disabled: true
+    ntrials: 500
+    nprocesses: 8
+    disabled: false
 
   - type: SklearnMulticlassInference
     mva: default_mva
     split: 1 # split 0 = train dataset; split 1 = test dataset
     disabled: false
+  
+  - type: PlotMVAFeatures
+    mva: default_mva
+    file: $hypothesis_mva_training_distributions.pdf
+    plot_kwargs:
+    - bins: 50
 
   - type: WriteROOTSnapshot
     file: '$hypothesis_mva.root'
