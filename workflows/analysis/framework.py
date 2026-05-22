@@ -47,7 +47,7 @@ class HTCondorWorkflow(law.contrib.htcondor.HTCondorWorkflow):
         significant=False,
         description="whether or not to run with increased RAM and time requirements if the job is failing; default: True",
     )
-    higher_req_ram_mb = 4000
+    higher_req_ram_mb = 6000
     higher_req_time_hours = 6
     
     def __init__(self, *args, **kwargs):
@@ -97,7 +97,7 @@ class HTCondorWorkflow(law.contrib.htcondor.HTCondorWorkflow):
             session_submissions[name] = 0 if name not in session_submissions else session_submissions[name] + 1
         else:
             # Default at DESY NAF: 1.5GB RAM and 3h of runtime
-            config.custom_content.append(('request_memory', '3000 Mb'))
+            config.custom_content.append(('request_memory', '6000 Mb'))
             #if self.max_runtime:
             #    config.custom_content.append(('request_runtime', math.floor(cast(int|float, self.max_runtime) * 3600)))
                 

@@ -1,0 +1,22 @@
+<marlin>
+ <execute>
+  <processor name="MyAIDAProcessor"/>
+  <processor name="MyZHHTest"/>
+ </execute>
+
+ <global>
+  <parameter name="LCIOInputFiles">/afs/desy.de/user/t/tmanhong/pool/ZHH/piplus_gun_SIM.slcio</parameter>
+  <parameter name="MaxRecordNumber" value="-1"/>
+  <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> MESSAGE </parameter>
+ </global>
+
+ <processor name="MyAIDAProcessor" type="AIDAProcessor">
+  <parameter name="FileName" type="string"> my_histograms </parameter>
+  <parameter name="FileType" type="string"> root </parameter>
+ </processor>
+
+ <processor name="MyZHHTest" type="MyZHHProcessor">
+  <parameter name="MCParticleCollection" type="string"> MCParticle </parameter>
+  <parameter name="RecoParticleCollection" type="string"> PandoraPFOs </parameter>
+ </processor>
+</marlin>

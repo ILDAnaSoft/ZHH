@@ -1,0 +1,237 @@
+#ifndef ttbarKinFit_h
+#define ttbarKinFit_h 1
+
+#include <iostream>
+#include <vector>
+#include <string>
+
+#include "marlin/Processor.h"
+#include "lcio.h"
+#include <UTIL/LCRelationNavigator.h>
+#include <EVENT/Vertex.h>
+#include <EVENT/ReconstructedParticle.h>
+#include "TLorentzVector.h"
+#include "DDMarlinCED.h"
+#include "v4.h"
+
+#include <GeometryUtil.h>
+#include <CLHEP/Vector/LorentzVector.h>
+#include "JetFitObject.h"
+#include "LeptonFitObject.h"
+#include "ISRPhotonFitObject.h"
+#include "NeutrinoFitObject.h"
+#include "NeutrinoFitObjectNew.h"
+#include "MomentumConstraint.h"
+#include "OPALFitterGSL.h"
+#include "NewFitterGSL.h"
+#include "TextTracer.h"
+#include "NewtonFitterGSL.h"
+#include "MassConstraint.h"
+#include "SoftGaussParticleConstraint.h"
+#include "SoftGaussMassConstraint.h"
+#include "FourJetPairing.h"
+#include "IMPL/ReconstructedParticleImpl.h"
+#include "IMPL/LCCollectionVec.h"
+#include <EVENT/LCCollection.h>
+#include "TFile.h"
+#include "TH1F.h"
+#include "TH2I.h"
+#include "TH2F.h"
+#include "TTree.h"
+#include <Math/Vector4D.h>
+#include "BaseHardConstraint.h"
+
+using namespace lcio ;
+using namespace marlin ;
+using namespace std;
+
+class ttbarKinFit : public Processor
+{
+  
+public:
+  
+  virtual Processor*  newProcessor()
+  {
+    return new ttbarKinFit;
+  }
+  ttbarKinFit() ;
+  virtual ~ttbarKinFit() = default;
+  ttbarKinFit(const ttbarKinFit&) = delete;
+  ttbarKinFit& operator=(const ttbarKinFit&) = delete;
+  typedef vector<EVENT::ReconstructedParticle*>	pfoVector;
+  typedef vector<vector<EVENT::ReconstructedParticle*>>	pfoVectorVector;
+  struct FitResult {
+    FitResult():
+      fitter(shared_ptr<BaseFitter>()),
+      constraints(shared_ptr<vector<shared_ptr<BaseHardConstraint>>>()),
+      fitobjects(shared_ptr<vector<shared_ptr<BaseFitObject>>>()) {};
+    FitResult(shared_ptr<BaseFitter> _fitter, 
+	      shared_ptr<vector<shared_ptr<BaseHardConstraint>>> _constraints, 
+	      shared_ptr<vector<shared_ptr<BaseFitObject>>> _fitobjects) : 
+      fitter(_fitter), constraints(_constraints), fitobjects(_fitobjects) {};
+    shared_ptr<BaseFitter> fitter;
+    shared_ptr<vector<shared_ptr<BaseHardConstraint>>> constraints;
+    shared_ptr<vector<shared_ptr<BaseFitObject>>> fitobjects;
+  };
+  struct JetAndCorrection {
+    ReconstructedParticle* particle;
+    pfoVector nu;
+  };
+  virtual void	init();
+  virtual void	Clear();
+  virtual void	processRunHeader();
+  virtual void	processEvent( EVENT::LCEvent *pLCEvent );
+  
+FitResult performlvqqbbFIT( pfoVector jets, pfoVector leptons, bool traceEvent, LCCollection* inputMCParticleCollection);      
+  FitResult performtvqqbbFIT( pfoVector jets, bool traceEvent, LCCollection* inputMCParticleCollection);     
+  FitResult performqqqqbbFIT( pfoVector jets, bool traceEvent, LCCollection* originalJetCollection);   
+  virtual void	getJetParameters( ReconstructedParticle* jet , float (&parameters)[ 3 ] , float (&errors)[ 3 ] );
+  virtual void	getLeptonParameters( ReconstructedParticle* lepton , float (&parameters)[ 3 ] , float (&errors)[ 3 ] );
+  std::pair<std::vector<double>,std::vector<double>> calculateInitialValues(pfoVector jets, pfoVector leptons, vector<int> perm);
+  std::vector<double> calculateMassesFromSimpleChi2Pairing(pfoVector jets, pfoVector leptons);
+  std::vector<double> calculatePulls(std::shared_ptr<ParticleFitObject> fittedobject, ReconstructedParticle* startobject, int type);
+  double calcChi2(shared_ptr<vector<shared_ptr<BaseFitObject>>> fitobjects);
+  virtual void	check( LCEvent * evt );
+  virtual void	end();
+  string get_recoMCTruthLink()
+  {
+    return _recoMCTruthLink;
+  };
+  
+private:
+  
+  std::string m_inputleptonCollection{};
+  std::string m_inputJetCollection{};
+  std::string m_inputSLDVertexCollection{};
+  std::string m_inputJetSLDLink{};
+  std::string m_inputSLDNuLink{};
+  std::string m_recoNumcNuLinkName{};
+  std::string _MCParticleColllectionName{};
+  std::string _recoParticleCollectionName{};
+  std::string _recoMCTruthLink{};
+  std::string m_outputFile{};
+  std::string m_treeName{};
+  std::string m_fithypothesis{};
+  std::string m_outputLeptonCollection{};
+  std::string m_outputJetCollection{};
+  std::string m_outputStartLeptonCollection{};
+  std::string m_outputStartJetCollection{};
+  std::string m_outputNuEnergyCollection{};
+  std::string _OutLeptonPullsCol{};
+  std::string _OutJetPullsCol{};
+  std::string m_signature{};
+  std::string m_JetTaggingPIDAlgorithm{}; 
+  std::string m_JetTaggingPIDParameterB{};
+  std::string m_JetTaggingPIDParameterBbar{};
+  
+  int m_nAskedJets{};
+  int m_nAskedLeps{};
+  bool m_fitISR = true;
+  bool m_solveNu = false;
+  int m_fitter{};
+  bool m_traceall{};
+  int m_ievttrace{};
+  bool m_matchTrueJetWithAngle = false;
+  
+  int m_nJets{};
+  int m_nLeps{};
+  int m_nRun;
+  int m_nEvt;
+  int m_nRunSum;
+  int m_nEvtSum;
+  float m_Bfield;
+  float c;
+  float mm2m;
+  float eV2GeV;
+  float eB;
+  float m_ECM{};
+  float m_isrpzmax{};
+  float m_SigmaInvPtScaleFactor{};
+  float m_SigmaEnergyScaleFactor{};
+  float m_SigmaAnglesScaleFactor{};
+  float m_NeutrinoPxPyError{};
+  float m_NeutrinoPzError{};
+  double b{};
+  double ISRPzMaxB{};
+  TFile *m_pTFile{};
+  TTree *m_pTTree{};
+  int m_nSLDecayBHadron{};
+  int m_nSLDecayCHadron{};
+  int m_nSLDecayTauLepton{};
+  int m_nSLDecayTotal{};
+  int m_nCorrectedSLD{};
+  float m_ISREnergyTrue{};
+  float m_BSEnergyTrue{};
+  float m_W1MassHardProcess{};
+  float m_W2MassHardProcess{};
+  float m_tMassHardProcess{};
+  float m_tbarMassHardProcess{};
+  float m_ttbarMassHardProcess{};
+  int m_FitErrorCode{};
+  int m_invalidCovMatrixAtJet{};
+  float m_pxcstartvalue{};
+  float m_pycstartvalue{};
+  float m_pzcstartvalue{};
+  float m_ecstartvalue{};
+  float m_W1MassBeforeFit{};
+  float m_W2MassBeforeFit{};
+  float m_tMassBeforeFit{};
+  float m_tbarMassBeforeFit{};
+  float m_ttbarMassBeforeFit{};
+  float m_ISREnergyBeforeFit{};
+  float	m_p1stBeforeFit{};
+  float m_cos1stBeforeFit{};
+  float m_W1MassAfterFit{};
+  float m_W2MassAfterFit{};
+  float m_tMassAfterFit{};
+  float m_tbarMassAfterFit{};
+  float m_ttbarMassAfterFit{};
+  float m_ISREnergyAfterFit{};
+  float	m_p1stAfterFit{};
+  float m_cos1stAfterFit{};
+  float m_FitProbability{};
+  float m_FitChi2{};
+  float m_cosbmax{};
+  float m_bmax1{};
+  float m_bmax2{};
+  float m_bmax3{};
+  float m_bmax4{};
+  float m_bmax5{};
+  float m_bmax6{};
+  std::vector<int> m_perm{};
+  std::vector<ROOT::Math::PxPyPzEVector> m_PrefitJetFourMomentum{};
+  std::vector<ROOT::Math::PxPyPzEVector> m_PostfitJetFourMomentum{};
+  std::vector<float> m_pullJetEnergy{};
+  std::vector<float> m_pullJetTheta{};
+  std::vector<float> m_pullJetPhi{};
+  std::vector<float> m_pullLeptonInvPt{};
+  std::vector<float> m_pullLeptonTheta{};
+  std::vector<float> m_pullLeptonPhi{};
+  std::vector<float> m_pullInvPx{};
+  std::vector<float> m_pullInvPy{};
+  std::vector<float> m_pullInvPz{};
+  std::vector<float> m_TrueNeutrinoEnergy{};
+  std::vector<float> m_RecoNeutrinoEnergy{};
+  std::vector<float> m_RecoNeutrinoEnergyKinfit{};
+  std::vector<float> m_Sigma_Px2{};
+  std::vector<float> m_Sigma_PxPy{};
+  std::vector<float> m_Sigma_Py2{};
+  std::vector<float> m_Sigma_PxPz{};
+  std::vector<float> m_Sigma_PyPz{};
+  std::vector<float> m_Sigma_Pz2{};
+  std::vector<float> m_Sigma_PxE{};
+  std::vector<float> m_Sigma_PyE{};
+  std::vector<float> m_Sigma_PzE{};
+  std::vector<float> m_Sigma_E2{};
+  std::vector<float> m_scoreB{};
+  std::vector<float> m_scoreBbar{};
+  std::vector<double> m_bTagValues{};
+
+  typedef std::pair<unsigned short, double> JetTaggingPair;
+  static bool jetTaggingComparator ( const JetTaggingPair& l, const JetTaggingPair& r) { return l.second > r.second || std::isnan(r.second); };
+  std::vector<JetTaggingPair> m_bTagsSorted{}; // (jet index, btag1value) sorted DESC; first highest, last lowest
+  std::vector<std::string> m_JetTaggingPIDParameters{};
+  std::vector<std::vector<float>> m_jetTags{};
+};
+
+#endif

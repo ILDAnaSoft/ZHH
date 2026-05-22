@@ -6,7 +6,6 @@ using namespace marlin ;
 using namespace std ;
 using namespace CLHEP ;
 
-
 template<class T>
 double inv_mass(T* p1, T* p2){
   double e = p1->getEnergy()+p2->getEnergy() ;
@@ -31,7 +30,6 @@ ZHHKinFit::ZHHKinFit() :
   eB(0.0),
   m_pTFile(nullptr)
 {
-  
   //	modify processor description
   _description = "ZHHKinFit does a fit on ZHH events with 4-momentum conservation and possiblity for mass constraints" ;
   
@@ -100,12 +98,81 @@ ZHHKinFit::ZHHKinFit() :
 			  std::string("RecoMCTruthLink")
 			  );
   
+   registerInputCollection( LCIO::RECONSTRUCTEDPARTICLE,
+			   "TrueJets" ,
+			   "Name of the TrueJetCollection input collection",
+			   _trueJetCollectionName ,
+			   string("TrueJets")
+			   );
+
+  registerInputCollection( LCIO::RECONSTRUCTEDPARTICLE,
+			   "FinalColourNeutrals" ,
+			   "Name of the FinalColourNeutralCollection input collection"  ,
+			   _finalColourNeutralCollectionName ,
+			   string("FinalColourNeutrals")
+			   );
+
+  registerInputCollection( LCIO::RECONSTRUCTEDPARTICLE,
+			   "InitialColourNeutrals" ,
+			   "Name of the InitialColourNeutralCollection input collection"  ,
+			   _initialColourNeutralCollectionName ,
+			   string("InitialColourNeutrals")
+			   );
+
+  registerInputCollection( LCIO::LCRELATION,
+			   "TrueJetPFOLink" ,
+			   "Name of the TrueJetPFOLink input collection"  ,
+			   _trueJetPFOLink,
+			   string("TrueJetPFOLink")
+			   );
+
+  registerInputCollection( LCIO::LCRELATION,
+			   "TrueJetMCParticleLink" ,
+			   "Name of the TrueJetMCParticleLink input collection"  ,
+			   _trueJetMCParticleLink,
+			   string("TrueJetMCParticleLink")
+			   );
+
+  registerInputCollection( LCIO::LCRELATION,
+			   "FinalElementonLink rueJetMCParticleLink" ,
+			   "Name of the  FinalElementonLink input collection",
+			   _finalElementonLink,
+			   string("FinalElementonLink")
+			   );
+
+  registerInputCollection( LCIO::LCRELATION,
+			   "InitialElementonLink" ,
+			   "Name of the  InitialElementonLink input collection"  ,
+			   _initialElementonLink,
+			   string("InitialElementonLink")
+			   );
+
+  registerInputCollection( LCIO::LCRELATION,
+			 "FinalColourNeutralLink" ,
+			 "Name of the  FinalColourNeutralLink input collection"  ,
+			 _finalColourNeutralLink,
+			 string("FinalColourNeutralLink")
+			 );
+
+ registerInputCollection( LCIO::LCRELATION,
+			  "InitialColourNeutralLink" ,
+			  "Name of the  InitialColourNeutralLink input collection"  ,
+			  _initialColourNeutralLink,
+			  string("InitialColourNeutralLink")
+			  );
+
+  registerInputCollection( LCIO::RECONSTRUCTEDPARTICLE,
+        "RecoJetCollection" ,
+        "Name of the input Reconstructed Jet collection"  ,
+        m_recoJetCollectionName ,
+        std::string("Durham_nJets")
+       );
+        
   registerProcessorParameter("whichSignature",
 			     "Which signature; llbbbb, vvbbbb or qqbbbb",
 			     m_signature,
 			     std::string("llbbbb")
 			     );
-  
   
   registerProcessorParameter("ECM" ,
 			     "Center-of-Mass Energy in GeV",
@@ -369,6 +436,7 @@ void ZHHKinFit::init()
   m_pTTree->Branch( "pullInvPy" , &m_pullInvPy );
   m_pTTree->Branch( "pullInvPz" , &m_pullInvPz );
   m_pTTree->Branch( "TrueNeutrinoEnergy", &m_TrueNeutrinoEnergy );
+  m_pTTree->Branch( "true_jet_pdgs", m_true_jet_pdgs, "true_jet_pdgs[10]/I" );
   m_pTTree->Branch( "RecoNeutrinoEnergy", &m_RecoNeutrinoEnergy );
   m_pTTree->Branch( "RecoNeutrinoEnergyKinfit", &m_RecoNeutrinoEnergyKinfit );
   m_pTTree->Branch("Sigma_Px2",&m_Sigma_Px2);
@@ -389,8 +457,18 @@ void ZHHKinFit::init()
 	m_pTTree->Branch("bmax4", &m_bmax4, "bmax4/F");
   m_pTTree->Branch("bmax5", &m_bmax5, "bmax5/F");
   m_pTTree->Branch("bmax6", &m_bmax6, "bmax6/F");
+  m_pTTree->Branch("scoreU", &m_scoreU);
+  m_pTTree->Branch("scoreUbar", &m_scoreUbar);
+  m_pTTree->Branch("scoreD", &m_scoreD);
+  m_pTTree->Branch("scoreDbar", &m_scoreDbar);
+  m_pTTree->Branch("scoreS", &m_scoreS);
+  m_pTTree->Branch("scoreSbar", &m_scoreSbar);
+  m_pTTree->Branch("scoreC", &m_scoreC);
+  m_pTTree->Branch("scoreCbar", &m_scoreCbar);
   m_pTTree->Branch("scoreB", &m_scoreB);
   m_pTTree->Branch("scoreBbar", &m_scoreBbar);
+  m_pTTree->Branch("scoreG", &m_scoreG);
+
 
   streamlog_out(DEBUG) << "   init finished  " << std::endl;  
 }
@@ -458,7 +536,18 @@ void ZHHKinFit::Clear()
   m_RecoNeutrinoEnergy.clear();
   m_RecoNeutrinoEnergyKinfit.clear();
   m_Sigma_Px2.clear();
-  m_Sigma_PxPy.clear();
+  m_Sigma_PxPy.clear();  
+  m_scoreU.clear();
+  m_scoreUbar.clear();
+  m_scoreD.clear();
+  m_scoreDbar.clear();
+  m_scoreS.clear();
+  m_scoreSbar.clear();
+  m_scoreC.clear();
+  m_scoreCbar.clear();
+  m_scoreB.clear();
+  m_scoreBbar.clear();
+  m_scoreG.clear();
   m_Sigma_Py2.clear();
   m_Sigma_PxPz.clear();
   m_Sigma_PyPz.clear();
@@ -470,8 +559,17 @@ void ZHHKinFit::Clear()
   m_bTagsSorted.clear();
   m_jetTags.clear();
 
+  std::fill(m_scoreU.begin(), m_scoreU.end(), 0.0);
+  std::fill(m_scoreUbar.begin(), m_scoreUbar.end(), 0.0);
+  std::fill(m_scoreD.begin(), m_scoreD.end(), 0.0);
+  std::fill(m_scoreDbar.begin(), m_scoreDbar.end(), 0.0);
+  std::fill(m_scoreS.begin(), m_scoreS.end(), 0.0);
+  std::fill(m_scoreSbar.begin(), m_scoreSbar.end(), 0.0);
+  std::fill(m_scoreC.begin(), m_scoreC.end(), 0.0);
+  std::fill(m_scoreCbar.begin(), m_scoreCbar.end(), 0.0);
   std::fill(m_scoreB.begin(), m_scoreB.end(), 0.0);
   std::fill(m_scoreBbar.begin(), m_scoreBbar.end(), 0.0);
+  std::fill(m_scoreG.begin(), m_scoreG.end(), 0.0);
   std::fill(m_bTagValues.begin(), m_bTagValues.end(), -1.);
 }
 
@@ -483,6 +581,11 @@ void ZHHKinFit::processRunHeader()
 void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
 {
   this->Clear();
+
+  for(int i = 0; i < 10; ++i) {
+      m_true_jet_pdgs[i] = 0;
+  }
+
   m_nRun = pLCEvent->getRunNumber();
   m_nEvt = pLCEvent->getEventNumber();
   streamlog_out(MESSAGE1) << "	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
@@ -562,6 +665,35 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     streamlog_out(MESSAGE) << "processEvent : NuMCNav collection not found in event " << m_nEvt << std::endl;
     m_pTTree->Fill();
     return;
+  }
+
+  LCCollection *recoJetCol{};
+
+  try {
+    streamlog_out(MESSAGE3) << "ladida" << endl;
+    recoJetCol= pLCEvent->getCollection( m_recoJetCollectionName );
+    m_nRecoJets = recoJetCol->getNumberOfElements();
+    streamlog_out(MESSAGE3) << "Number of Reconstructed Jets: " << m_nRecoJets << endl;
+    
+    TrueJet_Parser* trueJet= this;
+    try {
+      LCCollection* trueJets = pLCEvent->getCollection(_trueJetCollectionName);
+
+      trueJet->getall(pLCEvent);
+      int njets = trueJet->njets();
+      int m_nTrueJets = 0;
+      streamlog_out(MESSAGE3) << "Number of True Jets: " << njets << endl;
+      
+      for (int i_jet = 0 ; i_jet < njets ; i_jet++ ) {
+        if ( type_jet( i_jet ) == 1 ) {
+          ++m_nTrueJets;
+        }
+      }
+    } catch (DataNotAvailableException &e) {
+      streamlog_out(MESSAGE) << "TrueJet collections not found" << std::endl;
+    }
+  } catch(DataNotAvailableException &e) {
+    streamlog_out(MESSAGE) << "processEvent : RecoJetCollection not found" << std::endl;
   }
 
   m_nCorrectedSLD = inputSLDecayCollection->getNumberOfElements();
@@ -2137,20 +2269,36 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
 
   PIDHandler jetPIDh(originalJetCollection);
 	int _FTAlgoID = jetPIDh.getAlgorithmID(m_JetTaggingPIDAlgorithm);
-
-	int BTagID = jetPIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterB);
-	int BbarTagID = jetPIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterBbar);
+  int UTagID = jetPIDh.getParameterIndex(_FTAlgoID, "mc_u");
+  int UbarTagID = jetPIDh.getParameterIndex(_FTAlgoID, "mc_ubar");
+  int DTagID = jetPIDh.getParameterIndex(_FTAlgoID, "mc_d");
+  int DbarTagID = jetPIDh.getParameterIndex(_FTAlgoID, "mc_dbar");
+  int STagID = jetPIDh.getParameterIndex(_FTAlgoID, "mc_s");
+  int SbarTagID = jetPIDh.getParameterIndex(_FTAlgoID, "mc_sbar");
+  int CTagID = jetPIDh.getParameterIndex(_FTAlgoID, "mc_c");
+  int CbarTagID = jetPIDh.getParameterIndex(_FTAlgoID, "mc_cbar");
+  int BTagID = jetPIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterB);
+  int BbarTagID = jetPIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterBbar);
+  int GTagID = jetPIDh.getParameterIndex(_FTAlgoID, "mc_g");
   
   m_bTagValues.assign(jets.size(), -1.0);
+  m_scoreU.assign(jets.size(), 0.0);
+  m_scoreUbar.assign(jets.size(), 0.0);
+  m_scoreD.assign(jets.size(), 0.0);
+  m_scoreDbar.assign(jets.size(), 0.0);
+  m_scoreS.assign(jets.size(), 0.0);
+  m_scoreSbar.assign(jets.size(), 0.0);
+  m_scoreC.assign(jets.size(), 0.0);
+  m_scoreCbar.assign(jets.size(), 0.0);
   m_scoreB.assign(jets.size(), 0.0);
   m_scoreBbar.assign(jets.size(), 0.0);
+  m_scoreG.assign(jets.size(), 0.0);
   m_jetTags.assign(jets.size(), std::vector<float>(m_JetTaggingPIDParameters.size(), 0.0));
 
 	//int OTagID = jetPIDh.getParameterIndex(_FTAlgoID, "OTag");
 	streamlog_out(MESSAGE) << "--- FLAVOR TAG ---" << std::endl;
 
 	for (unsigned int i_jet = 0; i_jet < jets.size(); i_jet++) {
-      // Fetch the original unbroken jet from RefinedJets6 to read the true tags
       ReconstructedParticle* origJet = dynamic_cast<ReconstructedParticle*>(originalJetCollection->getElementAt(i_jet));
       const ParticleIDImpl& FTImpl = dynamic_cast<const ParticleIDImpl&>(jetPIDh.getParticleID(origJet, _FTAlgoID));
       const FloatVec& FTPara = FTImpl.getParameters();
@@ -2158,8 +2306,17 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
 			m_bTagValues[i_jet] = FTPara[BTagID] + FTPara[BbarTagID];
 			streamlog_out(MESSAGE) << "Jet " << i_jet << std::endl << " > Algo1 - B [B,Bbar] = " << m_bTagValues[i_jet] << " [" << FTPara[BTagID] << ", " << FTPara[BbarTagID] << "]" << std::endl;
 
+      m_scoreU[i_jet] = FTPara[UTagID];
+      m_scoreUbar[i_jet] = FTPara[UbarTagID];
+      m_scoreD[i_jet] = FTPara[DTagID];
+      m_scoreDbar[i_jet] = FTPara[DbarTagID];
+      m_scoreS[i_jet] = FTPara[STagID];
+      m_scoreSbar[i_jet] = FTPara[SbarTagID];
+      m_scoreC[i_jet] = FTPara[CTagID];
+      m_scoreCbar[i_jet] = FTPara[CbarTagID];
       m_scoreB[i_jet] = FTPara[BTagID];
       m_scoreBbar[i_jet] = FTPara[BbarTagID];
+      m_scoreG[i_jet] = FTPara[GTagID];
 
 			// write all requested parameters
 			for (size_t j = 0; j < m_JetTaggingPIDParameters.size(); j++) {
@@ -2173,7 +2330,7 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
 				}
       }
 
-  // calculate bmax1,2,3,4
+  // calculate bmax1,2,3,4,5,6
 	for (size_t i = 0; i < m_bTagValues.size(); i++)
 			m_bTagsSorted.push_back(std::make_pair(i, m_bTagValues[i]));
 
@@ -2194,30 +2351,165 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
   double bestChi2 = 9999999999999.;
   FitResult bestFitResult;
 
+  //btag_sum = "bmax1 + bmax2 + bmax3 +bmax4 + bmax5 + bmax6"
+  //if btagsum < 4, 
+  //if (m_fithypothesis == "ZHH" || m_fithypothesis == "ZHHsoft" || m_fithypothesis == "EQM")
+  // HiggsB = bmax1, bmax2, bmax3, bmax4
+  // zB=bmax5,bmax6
+  //perm = bmax1,bmax2,bmax3,bmax4 bmax1,bmax3,bmax2,bmax4 bmax1,bmax4,bmax2,bmax3
+
+  //elif (m_fithypothesis == "ZZH" || m_fithypothesis == "ZZHsoft" || m_fithypothesis == "MH")
+  //zB=bmax5,bmax6
+  //perms=
+
+  //if btagsum > 4
   assert(jets.size()==6);
   vector<vector<unsigned int>> perms;
   if (m_fithypothesis == "ZZH" || m_fithypothesis == "ZZHsoft" || m_fithypothesis == "MH" || m_fithypothesis == "ZHH" || m_fithypothesis == "ZHHsoft" || m_fithypothesis == "EQM") {
     //TO DO: redo permutations for each hypothesis
-    perms = {
-      {0, 1, 2, 3, 4, 5}, {1, 2, 0, 3, 4, 5}, {2, 4, 0, 1, 3, 5},
-      {0, 1, 2, 4, 3, 5}, {1, 2, 0, 4, 3, 5}, {2, 4, 0, 3, 1, 5},
-      {0, 1, 2, 5, 3, 4}, {1, 2, 0, 5, 3, 4}, {2, 4, 0, 5, 1, 3},
-      {0, 2, 1, 3, 4, 5}, {1, 3, 0, 2, 4, 5}, {2, 5, 0, 1, 3, 4},
-      {0, 2, 1, 4, 3, 5}, {1, 3, 0, 4, 2, 5}, {2, 5, 0, 3, 1, 4},
-      {0, 2, 1, 5, 3, 4}, {1, 3, 0, 5, 2, 4}, {2, 5, 0, 4, 1, 3},
-      {0, 3, 1, 2, 4, 5}, {1, 4, 0, 2, 3, 5}, {3, 4, 0, 1, 2, 5},
-      {0, 3, 1, 4, 2, 5}, {1, 4, 0, 3, 2, 5}, {3, 4, 0, 2, 1, 5},
-      {0, 3, 1, 5, 2, 4}, {1, 4, 0, 5, 2, 3}, {3, 4, 0, 5, 1, 2},
-      {0, 4, 1, 2, 3, 5}, {1, 5, 0, 2, 3, 4}, {3, 5, 0, 1, 2, 4},
-      {0, 4, 1, 3, 2, 5}, {1, 5, 0, 3, 2, 4}, {3, 5, 0, 2, 1, 4},
-      {0, 4, 1, 5, 2, 3}, {1, 5, 0, 4, 2, 3}, {3, 5, 0, 4, 1, 2},
-      {0, 5, 1, 2, 3, 4}, {2, 3, 0, 1, 4, 5}, {4, 5, 0, 1, 2, 3},
-      {0, 5, 1, 3, 2, 4}, {2, 3, 0, 4, 1, 5}, {4, 5, 0, 2, 1, 3},
-      {0, 5, 1, 4, 2, 3}, {2, 3, 0, 5, 1, 4}, {4, 5, 0, 3, 1, 2},
-    };
-  } else {
-    perms = {{0, 1, 2, 3, 4, 5}};
-  }
+    float ratiocut = 0.4; 
+    std::vector<unsigned int> quarks;
+    std::vector<unsigned int> antiquarks;
+    std::vector<unsigned int> ambiguous;
+    
+    for (unsigned int i_jet = 0; i_jet < jets.size(); i_jet++) {
+      float score_b = std::max((float)m_scoreB[i_jet], 1e-10f);
+      float score_bbar = std::max((float)m_scoreBbar[i_jet], 1e-10f);
+      //float score_c = std::max((float)m_scoreC[i_jet], 1e-10f);
+      //float score_cbar = std::max((float)m_scoreCbar[i_jet], 1e-10f);
+
+      float logB = std::log10(score_b / score_bbar);
+      //float logC = std::log10(score_c / score_cbar);
+
+      int sign_tag = 0; 
+      if (logB > ratiocut) sign_tag = 1; //|| logC > ratiocut
+      if (logB < -ratiocut ) { //|| logC < -ratiocut
+          //if (sign_tag == 1) sign_tag = 0; else
+           sign_tag = -1;
+      }
+  
+      if (sign_tag == 1) quarks.push_back(i_jet);
+      else if (sign_tag == -1) antiquarks.push_back(i_jet);
+      else ambiguous.push_back(i_jet);
+    }
+
+    //assign the 3 tags to 'a, b, c' and the others to 'x, y, z'
+    if (quarks.size() == 3 || antiquarks.size() == 3) {
+      vector<unsigned int> tag = (quarks.size() == 3) ? quarks : antiquarks;
+      vector<unsigned int> rem;
+      for (unsigned int i = 0; i < 6; i++) {
+          if (i != tag[0] && i != tag[1] && i != tag[2]) rem.push_back(i);
+      }
+
+      unsigned int a = tag[0], b = tag[1], c = tag[2];
+      unsigned int x = rem[0], y = rem[1], z = rem[2];
+
+      perms = {
+          {a,x, b,y, c,z}, {b,y, c,z, a,x}, {c,z, a,x, b,y},
+          {a,x, b,z, c,y}, {b,z, c,y, a,x}, {c,y, a,x, b,z},
+          {a,y, b,x, c,z}, {b,x, c,z, a,y}, {c,z, a,y, b,x},
+          {a,y, b,z, c,x}, {b,z, c,x, a,y}, {c,x, a,y, b,z},
+          {a,z, b,x, c,y}, {b,x, c,y, a,z}, {c,y, a,z, b,x},
+          {a,z, b,y, c,x}, {b,y, c,x, a,z}, {c,x, a,z, b,y}
+      };
+    }
+
+    //assign quarks to 'q1, q2', antiquarks to 'a1, a2', ambiguous to 'x, y'
+    else if (quarks.size() == 2 && antiquarks.size() == 2) {
+      
+      unsigned int q1 = quarks[0], q2 = quarks[1];
+      unsigned int a1 = antiquarks[0], a2 = antiquarks[1];
+      unsigned int x = ambiguous[0], y = ambiguous[1];
+
+      //pairing them to avoid q1-q2 and a1-a2)
+      perms = {
+          //pairings where x and y are together
+          {q1,a1, q2,a2, x,y}, {q2,a2, x,y, q1,a1}, {x,y, q1,a1, q2,a2},
+          {q1,a2, q2,a1, x,y}, {q2,a1, x,y, q1,a2}, {x,y, q1,a2, q2,a1},
+          
+          //pairings mixed with x and y
+          {q1,a1, q2,x, a2,y}, {q2,x, a2,y, q1,a1}, {a2,y, q1,a1, q2,x},
+          {q1,a1, q2,y, a2,x}, {q2,y, a2,x, q1,a1}, {a2,x, q1,a1, q2,y},
+          
+          {q1,a2, q2,x, a1,y}, {q2,x, a1,y, q1,a2}, {a1,y, q1,a2, q2,x},
+          {q1,a2, q2,y, a1,x}, {q2,y, a1,x, q1,a2}, {a1,x, q1,a2, q2,y},
+          
+          {q1,x, q2,a1, a2,y}, {q2,a1, a2,y, q1,x}, {a2,y, q1,x, q2,a1},
+          {q1,x, q2,a2, a1,y}, {q2,a2, a1,y, q1,x}, {a1,y, q1,x, q2,a2},
+          
+          {q1,y, q2,a1, a2,x}, {q2,a1, a2,x, q1,y}, {a2,x, q1,y, q2,a1},
+          {q1,y, q2,a2, a1,x}, {q2,a2, a1,x, q1,y}, {a1,x, q1,y, q2,a2}
+      };
+    }
+
+    //assign the 2 tags to 'a, b' and the 4 remaining jets to 'w, x, y, z'
+    else if (quarks.size() == 2 || antiquarks.size() == 2 || quarks.size() == 4 || antiquarks.size() == 4) {
+      
+      //isolate the 2 jets that must be separated into 'tag'
+      vector<unsigned int> tag;
+      if (quarks.size() == 2) tag = quarks;
+      else if (antiquarks.size() == 2) tag = antiquarks;
+      else if (quarks.size() == 4) {
+          for (unsigned int i = 0; i < 6; i++) {
+              if (std::find(quarks.begin(), quarks.end(), i) == quarks.end()) tag.push_back(i);
+          }
+      } else {
+          for (unsigned int i = 0; i < 6; i++) {
+              if (std::find(antiquarks.begin(), antiquarks.end(), i) == antiquarks.end()) tag.push_back(i);
+          }
+      }
+
+      //put the other 4 jets into 'rem'
+      vector<unsigned int> rem;
+      for (unsigned int i = 0; i < 6; i++) {
+          if (i != tag[0] && i != tag[1]) rem.push_back(i);
+      }
+
+      unsigned int a = tag[0], b = tag[1];
+      unsigned int w = rem[0], x = rem[1], y = rem[2], z = rem[3];
+
+      perms = {
+          // 'a' pairs with 'w'
+          {a,w, b,x, y,z}, {b,x, y,z, a,w}, {y,z, a,w, b,x},
+          {a,w, b,y, x,z}, {b,y, x,z, a,w}, {x,z, a,w, b,y},
+          {a,w, b,z, x,y}, {b,z, x,y, a,w}, {x,y, a,w, b,z},
+          // 'a' pairs with 'x'
+          {a,x, b,w, y,z}, {b,w, y,z, a,x}, {y,z, a,x, b,w},
+          {a,x, b,y, w,z}, {b,y, w,z, a,x}, {w,z, a,x, b,y},
+          {a,x, b,z, w,y}, {b,z, w,y, a,x}, {w,y, a,x, b,z},
+          // 'a' pairs with 'y'
+          {a,y, b,w, x,z}, {b,w, x,z, a,y}, {x,z, a,y, b,w},
+          {a,y, b,x, w,z}, {b,x, w,z, a,y}, {w,z, a,y, b,x},
+          {a,y, b,z, w,x}, {b,z, w,x, a,y}, {w,x, a,y, b,z},
+          // 'a' pairs with 'z'
+          {a,z, b,w, x,y}, {b,w, x,y, a,z}, {x,y, a,z, b,w},
+          {a,z, b,x, w,y}, {b,x, w,y, a,z}, {w,y, a,z, b,x},
+          {a,z, b,y, w,x}, {b,y, w,x, a,z}, {w,x, a,z, b,y}
+      };
+    }
+
+    else { 
+      perms = {
+          {0, 1, 2, 3, 4, 5}, {2, 3, 4, 5, 0, 1}, {4, 5, 0, 1, 2, 3},
+          {0, 1, 2, 4, 3, 5}, {2, 4, 3, 5, 0, 1}, {3, 5, 0, 1, 2, 4},
+          {0, 1, 2, 5, 3, 4}, {2, 5, 3, 4, 0, 1}, {3, 4, 0, 1, 2, 5},
+          {0, 2, 1, 3, 4, 5}, {1, 3, 4, 5, 0, 2}, {4, 5, 0, 2, 1, 3},
+          {0, 2, 1, 4, 3, 5}, {1, 4, 3, 5, 0, 2}, {3, 5, 0, 2, 1, 4},
+          {0, 2, 1, 5, 3, 4}, {1, 5, 3, 4, 0, 2}, {3, 4, 0, 2, 1, 5},
+          {0, 3, 1, 2, 4, 5}, {1, 2, 4, 5, 0, 3}, {4, 5, 0, 3, 1, 2},
+          {0, 3, 1, 4, 2, 5}, {1, 4, 2, 5, 0, 3}, {2, 5, 0, 3, 1, 4},
+          {0, 3, 1, 5, 2, 4}, {1, 5, 2, 4, 0, 3}, {2, 4, 0, 3, 1, 5},
+          {0, 4, 1, 2, 3, 5}, {1, 2, 3, 5, 0, 4}, {3, 5, 0, 4, 1, 2},
+          {0, 4, 1, 3, 2, 5}, {1, 3, 2, 5, 0, 4}, {2, 5, 0, 4, 1, 3},
+          {0, 4, 1, 5, 2, 3}, {1, 5, 2, 3, 0, 4}, {2, 3, 0, 4, 1, 5},
+          {0, 5, 1, 2, 3, 4}, {1, 2, 3, 4, 0, 5}, {3, 4, 0, 5, 1, 2},
+          {0, 5, 1, 3, 2, 4}, {1, 3, 2, 4, 0, 5}, {2, 4, 0, 5, 1, 3},
+          {0, 5, 1, 4, 2, 3}, {1, 4, 2, 3, 0, 5}, {2, 3, 0, 5, 1, 4}
+      };
+    }
+  } else { 
+      perms = {{0, 1, 2, 3, 4, 5}};
+    }
 
   for (unsigned int iperm = 0; iperm < perms.size(); iperm++) {
     streamlog_out(MESSAGE) << " ================================================= " << std::endl ;
@@ -2412,15 +2704,17 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
     auto fitconstraints = fitter->getConstraints();
     auto fitsoftconstraints = fitter->getSoftConstraints();
     for (auto it = fitconstraints->begin(); it != fitconstraints->end(); ++it) {
-      streamlog_out(MESSAGE8) << (*it)->getName() << " constraint value = " << (*it)->getValue() << std::endl; //changed from debug level 
+      streamlog_out(MESSAGE8) << (*it)->getName() << " hard constraint value = " << (*it)->getValue() << std::endl; //changed from debug level 
     }
     for (auto it = fitsoftconstraints->begin(); it != fitsoftconstraints->end(); ++it) {
-      streamlog_out(MESSAGE8) << (*it)->getName() << " constraint value = " << (*it)->getValue() << std::endl; //changed from debug level 
+      streamlog_out(MESSAGE8) << (*it)->getName() << " soft constraint value = " << (*it)->getValue() << std::endl; //changed from debug level 
     }
 
     //perform fit: 
     //streamlog_out(MESSAGE) << "chi2 before fit" << calcChi2(fos) << endl; 
-    float fitProbability = fitter->fit();
+    double fitProbability = fitter->fit();
+
+    // why is fitter->getProbability() != fitProbability
     //streamlog_out(MESSAGE) << "chi2 after fit (from fitter)" << fitter->getChi2() << endl; 
     //streamlog_out(MESSAGE) << "chi2 after fit (from calcchi2)" << (dynamic_pointer_cast<NewFitterGSL>(fitter))->calcChi2() << endl; 
     //streamlog_out(MESSAGE) << "chi2 after fit (from fitter)" << fitter->getChi2() << endl; 

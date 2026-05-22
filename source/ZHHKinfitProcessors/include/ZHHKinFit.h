@@ -40,12 +40,14 @@
 #include "TTree.h"
 #include <Math/Vector4D.h>
 #include "BaseHardConstraint.h"
+#include "TrueJet_Parser.h"
+#include <TVector3.h>
 
 using namespace lcio ;
 using namespace marlin ;
 using namespace std;
 
-class ZHHKinFit : public Processor
+class ZHHKinFit : public Processor, public TrueJet_Parser
 {
   
 public:
@@ -101,6 +103,7 @@ public:
   FitResult performqqbbbbFIT( pfoVector jets,bool traceEvent, LCCollection *originalJetCollection);	    
   virtual void	getJetParameters( ReconstructedParticle* jet , float (&parameters)[ 3 ] , float (&errors)[ 3 ] );
   virtual void	getLeptonParameters( ReconstructedParticle* lepton , float (&parameters)[ 3 ] , float (&errors)[ 3 ] );
+  void getJetResidualsByAngularSpace( EVENT::LCEvent *pLCEvent, std::vector<EVENT::ReconstructedParticle*> recoJets );
   std::pair<std::vector<double>,std::vector<double>> calculateInitialValues(pfoVector jets, pfoVector leptons, vector<int> perm);
   std::vector<double> calculateMassesFromSimpleChi2Pairing(pfoVector jets, pfoVector leptons);
   std::vector<double> calculatePulls(std::shared_ptr<ParticleFitObject> fittedobject, ReconstructedParticle* startobject, int type);
@@ -120,6 +123,7 @@ private:
   std::string m_inputJetSLDLink{};
   std::string m_inputSLDNuLink{};
   std::string m_recoNumcNuLinkName{};
+  std::string m_recoJetCollectionName{};
   std::string _MCParticleColllectionName{};
   std::string _recoParticleCollectionName{};
   std::string _recoMCTruthLink{};
@@ -153,6 +157,9 @@ private:
   int m_nEvt;
   int m_nRunSum;
   int m_nEvtSum;
+  unsigned int m_nTrueJets;
+  unsigned int m_nRecoJets;
+  int m_true_jet_pdgs[10];
   float m_Bfield;
   float c;
   float mm2m;
@@ -235,8 +242,17 @@ private:
   std::vector<float> m_Sigma_PyE{};
   std::vector<float> m_Sigma_PzE{};
   std::vector<float> m_Sigma_E2{};
+  std::vector<float> m_scoreU{};
+  std::vector<float> m_scoreUbar{};
+  std::vector<float> m_scoreD{};
+  std::vector<float> m_scoreDbar{};
+  std::vector<float> m_scoreS{};
+  std::vector<float> m_scoreSbar{};
+  std::vector<float> m_scoreC{};
+  std::vector<float> m_scoreCbar{};
   std::vector<float> m_scoreB{};
   std::vector<float> m_scoreBbar{};
+  std::vector<float> m_scoreG{};
   std::vector<double> m_bTagValues{};
 
   typedef std::pair<unsigned short, double> JetTaggingPair;
