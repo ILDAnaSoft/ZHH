@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/dd4hep/1.30-fx72h5/bin/ddsim", line 22, in <module>
+    RUNNER.parseOptions()
+  File "/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/dd4hep/1.30-fx72h5/lib/python3.11/site-packages/DDSim/DD4hepSimulation.py", line 136, in parseOptions
+    self.readSteeringFile()
+  File "/cvmfs/sw.hsf.org/key4hep/releases/2024-10-03/x86_64-almalinux9-gcc14.2.0-opt/dd4hep/1.30-fx72h5/lib/python3.11/site-packages/DDSim/DD4hepSimulation.py", line 114, in readSteeringFile
+    exec(compile(io.open(self.steeringFile).read(), self.steeringFile, 'exec'), globs, locs)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: './ddsim_steer.py'

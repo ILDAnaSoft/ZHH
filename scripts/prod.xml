@@ -16,7 +16,7 @@
         -->
         <constant name="Runllbbbb" value="true" />
         <constant name="Runvvbbbb" value="true" />
-        <constant name="Runqqbbbb" value="false" />
+        <constant name="Runqqbbbb" value="true" />
         <constant name="RunTruthRecoComparison" value="false" />
         <constant name="WriteLCIO" value="false" />
 
@@ -36,10 +36,10 @@
         <constant name="OutputRootFile" value="${OutputBaseName}.root" />
         <constant name="NumberOfHiggs" value="2" />
         <constant name="MCParticleCollectionName" value="MCParticlesSkimmed" />
-	<constant name="PFOCollectionName" value="PandoraPFOs_pfoselection" />
+	    <constant name="PFOCollectionName" value="PandoraPFOs_pfoselection" />
         <constant name="CMSEnergy" value="550." />
 	<constant name="ISRPzMax" value="158" />
-        <constant name="Verbosity" value="SILENT" />
+        <constant name="Verbosity" value="MESSAGE" />
     </constants>
 
     <execute>
@@ -60,16 +60,18 @@
         <!-- Analysis -->
         <group name="prodAnalysisAll" />
 
-        <if condition="${Runllbbbb}">
-            <group name="prodAnalysisLL" />
-        </if>
-        <if condition="${Runvvbbbb}">
-            <group name="prodAnalysisVV" />
-        </if>
-        <if condition="${Runqqbbbb}">
-            <group name="prodAnalysisQQ" />
-        </if>
+        <if condition="MyHdecayMode.GoodEvent">
 
+          <if condition="${Runllbbbb}">
+            <group name="prodAnalysisLL" />
+          </if>
+          <if condition="${Runvvbbbb}">
+            <group name="prodAnalysisVV" />
+          </if>
+          <if condition="${Runqqbbbb}">
+            <group name="prodAnalysisQQ" />
+          </if>
+        </if>
         <if condition="${WriteLCIO}">
             <processor name="MyLCIOOutputProcessor" />
         </if>
