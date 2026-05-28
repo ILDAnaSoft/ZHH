@@ -26,7 +26,7 @@ from .FinalStateDefinitions import define_eebb, define_μμbb, define_ττbb, \
     define_llHH_llbbbb, define_llqqH, define_ttH, define_ttZ, \
     FinalStateDefinition, \
     categorize_llHH, categorize_4fsl, categorize_2l4q, categorize_6q, \
-    categorize_tthz, categorize_vvhh
+    categorize_tthz
 from .DataExtractor import DataExtractor
 from .cutflow_processor_actions import *
 from .CutflowProcessorAction import CutflowProcessorAction, FileBasedProcessorAction
