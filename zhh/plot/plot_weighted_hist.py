@@ -1,10 +1,13 @@
-# Snapshot of plot_preselection_by_calc_dict
+from copy import deepcopy
+from typing import Union, cast, TYPE_CHECKING
+
 from ..util.PlotContext import PlotContext
 from .ild_style import fig_ild_style
 import numpy as np
-from matplotlib.axes import Axes
-from matplotlib.figure import Figure
-from copy import deepcopy
+
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
+    from matplotlib.figure import Figure
 
 def plot_combined_hist(calc_dict:dict[str, tuple[np.ndarray, np.ndarray]],
                        xlabel:str, plot_context:PlotContext,
@@ -14,8 +17,9 @@ def plot_combined_hist(calc_dict:dict[str, tuple[np.ndarray, np.ndarray]],
                        ild_style_kwargs:dict={},
                        plot_hist_kwargs:dict={},
                        plot_hist_kwargs_overwrite:dict={},
-                       ax:Axes|None=None,
-                       signal_keys:list[str]=[])->Figure:
+                       ax:Union['Axes', None]=None,
+                       signal_keys:list[str]=[],
+                       stacked:bool|None=None)->'Figure':
     """Plots the properties in calc_dict
 
     Args:
@@ -61,7 +65,7 @@ def plot_combined_hist(calc_dict:dict[str, tuple[np.ndarray, np.ndarray]],
     colorpalette = plot_context.getColorPalette(list(plot_dict.keys()))
     
     fig_plot_hist_kwargs = {
-        'stacked': True,
+        'stacked': stacked if stacked is not None else len(calc_dict.keys()) > 1,
         'custom_styling': True,
         'colorpalette': colorpalette,
         'hist_kwargs': { }
@@ -79,7 +83,7 @@ def plot_combined_hist(calc_dict:dict[str, tuple[np.ndarray, np.ndarray]],
                                   hist_kwargs_overwrite=plot_hist_kwargs_overwrite, **fig_plot_hist_kwargs)
     
     assert(isinstance(fig_and_hist, tuple))
-    fig, _, counts_wt = fig_and_hist
+    fig, bin_centers, counts_wt = fig_and_hist
     
     if ax is None:
         ax = fig.get_axes()[0]
@@ -129,10 +133,10 @@ def plot_combined_hist(calc_dict:dict[str, tuple[np.ndarray, np.ndarray]],
     for sig_key, values_and_weights in sig_calc_dict.items():
         if int_bins:
             # bins already adjusted to -/+0.5
-            sig_bins = xlim[0] + np.arange(round(xlim[1] - xlim[0]) + 2)
+            sig_bins = (xlim[0] + np.arange(round(xlim[1] - xlim[0]) + 2)).tolist()
         else:
-            sig_bins = fig_and_hist[1][0]
-        
+            sig_bins = cast(list[float], bin_centers[0])
+
         h_sig = ax.hist(values_and_weights[0], weights=values_and_weights[1], color=plot_context.getColorByKey(sig_key),
                         bins=sig_bins, histtype='step', linewidth=3, label=sig_key)
 
@@ -152,7 +156,7 @@ def plot_weighted_hist(calc_dict, title:str|None=None, xlabel:str='<xlabel undef
                                 ild_style_kwargs:dict={},
                                 plot_hist_kwargs:dict={},
                                 plot_hist_kwargs_overwrite:dict={},
-                                ax:Axes|None=None,
+                                ax:Union['Axes', None]=None,
                                 signal_keys:list[str]=[]):
     
     from zhh import deepmerge
@@ -201,7 +205,7 @@ def plot_weighted_hist_old(calc_dict, title:str='<title undefined>', xlabel:str=
                                  ild_style_kwargs:dict={},
                                  plot_hist_kwargs:dict={},
                                  plot_hist_kwargs_overwrite:dict={},
-                                 ax:Axes|None=None):
+                                 ax:Union['Axes', None]=None):
     
     from phc import plot_hist
     if plot_context is None:

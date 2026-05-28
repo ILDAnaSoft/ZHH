@@ -1,12 +1,12 @@
-import matplotlib
-import matplotlib.font_manager
-
 font_cache = {
     'fallback_font': 'DejaVu Sans',
     'list': []
 }
 
 def get_matplotlib_fonts()->list[str]:
+    import matplotlib
+    import matplotlib.font_manager
+
     font_families = []
     fpaths = matplotlib.font_manager.findSystemFonts()
 

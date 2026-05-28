@@ -1,4 +1,5 @@
-import psutil, time, pickle, subprocess, numpy as np, matplotlib.pyplot as plt
+import psutil, time, pickle, subprocess
+import numpy as np
 
 def find_child_process(Popen:subprocess.Popen, childName:str, T0:int|float=.5):
     process = psutil.Process(Popen.pid)
@@ -56,6 +57,8 @@ class MemoryProfiler:
             pickle.dump(dump, f)
 
     def plot(self, prop:str|None=None):
+        import matplotlib.pyplot as plt
+
         if prop is None:
             fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(10, 5))
             axes = axes.flatten()

@@ -123,7 +123,7 @@ class DataSource:
             # fetch from HDF5 and NPZ
             load_from_npz()
             self._store = DataStore(self._h5_file, final_states=True,
-                                    in_memory_writable=['pid', 'pol_code', 'weight', 'event_category'],
+                                    #in_memory_writable=['pid', 'pol_code', 'weight', 'event_category'],
                                     h5_readonly=False)
     
     def getStore(self)->DataStore:
@@ -504,3 +504,82 @@ class DataSource:
         
         assert(self._processes is not None)
         return (name in self._event_categories or name in self._event_category_resolvers)
+
+    @staticmethod
+    def match_sources_to_categories(sources:list['DataSource'], categories:list[str])->dict[str, list[str]]:
+        """For each category A in event_categories, finds a source in sources in which
+        category A is registered. Throws an exception if no source can be found for A.
+
+        Returns a dict of structure category => source_name.
+
+        Args:
+            sources (list[DataSource]): _description_
+            categories (list[str]): _description_
+
+        Raises:
+            Exception: _description_
+
+        Returns:
+            dict[str, list[str]]: _description_
+        """
+        source_to_category_names:dict[str, list[str]] = {}
+
+        for category in categories:
+            found = False
+
+            for source in sources:
+                if source.containsCategory(category):
+                    if source.getName() not in source_to_category_names:
+                        source_to_category_names[source.getName()] = []
+                    
+                    source_to_category_names[source.getName()] += [category]
+
+                    found = True
+                    break
+
+            if not found:
+                raise Exception(f'Category <{category}> is unknown in all registered sources')
+
+        return source_to_category_names
+
+    @staticmethod
+    def signal_background_masks(sources:list['DataSource'], masks:dict[str, np.ndarray], signal_categories:list[str], ignore_categories:list[str]=[]):
+        tot_size = np.sum([ mask.sum() for mask in masks.values() ])
+
+        is_signal = np.zeros(tot_size, dtype=bool)
+        is_background = np.zeros(tot_size, dtype=bool)
+
+        src_to_ignore_categories = DataSource.match_sources_to_categories(sources, ignore_categories)
+
+        counter = 0
+        for i, source in enumerate(sources):
+            src_name = source.getName()
+            mask = masks[src_name]
+            size = mask.sum()
+
+            matches = list(filter(lambda category: source.containsCategory(category), signal_categories))
+
+            if len(matches):
+                is_signal_current = source.getCategoryMasks(matches)
+                is_signal_current = np.logical_or.reduce([ is_signal_current[category] for category in matches ])
+
+                is_signal[counter:counter+size] = is_signal_current[mask]
+                is_background[counter:counter+size] = ~is_signal_current[mask]
+            else:
+                is_signal[counter:counter+size] = False
+                is_background[counter:counter+size] = True
+
+            # handle categories ignored during optimization 
+            if src_name in src_to_ignore_categories:
+                ignore_masks = source.getCategoryMasks(src_to_ignore_categories[src_name])
+                ignore_mask = np.logical_or.reduce(list(ignore_masks.values()))
+
+                is_signal[counter:counter+size][ignore_mask[mask]] = False
+                is_background[counter:counter+size][ignore_mask[mask]] = False
+            
+            counter += size
+
+        return (
+            is_signal,
+            is_background
+        )

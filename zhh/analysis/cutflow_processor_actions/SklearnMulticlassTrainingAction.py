@@ -1,7 +1,7 @@
 from io import StringIO
 from copy import deepcopy
 from contextlib import redirect_stdout
-from typing import TypedDict, Required, Literal, cast, Any
+from typing import TypedDict, Required, Literal, cast, Any, TYPE_CHECKING
 from datetime import datetime
 from math import sqrt
 from multiprocessing import cpu_count
@@ -11,11 +11,14 @@ from ..CutflowProcessorAction import FileBasedProcessorAction, CutflowProcessor
 from .MVAThresholdFinderInterface import MVAThresholdFinderInterface
 from .mva_tools import get_signal_categories, get_background_categories
 import numpy as np
-import optuna
+
+if TYPE_CHECKING:
+    import optuna
 
 class SklearnMulticlassTrainingAction(MVAThresholdFinderInterface, FileBasedProcessorAction):
     def __init__(self, cp:CutflowProcessor, steer:dict, mva:str, hyperparams:dict,
-                 clf_prop:str='clf', trial_name:str|None=None, debug:bool=False, **kwargs):
+                 clf_prop:str='clf', trial_name:str|None=None, debug:bool=False,
+                 check_hash:bool=True, **kwargs):
         """_summary_
 
         Args:
@@ -38,6 +41,7 @@ class SklearnMulticlassTrainingAction(MVAThresholdFinderInterface, FileBasedProc
 
         self._data_file = mva_spec['data_file']
         self._mva_file = mva_spec['mva_file']
+        self._hyperparams = hyperparams
         self._clf_prop = clf_prop
         self._trial_name = trial_name if trial_name is not None else mva
         self._model = mva_spec.get('model', 'XGBClassifier')
@@ -50,9 +54,9 @@ class SklearnMulticlassTrainingAction(MVAThresholdFinderInterface, FileBasedProc
         self._signal_categories = get_signal_categories(steer['signal_categories'], mva_spec['classes'])
         self._background_categories = get_background_categories(self._signal_categories, mva_spec['classes'])
         self._debug = debug
+        self._check_hash = check_hash
 
         self._features = mva_spec['features']
-        self._hyperparams = hyperparams
     
     def output(self):
         return self.localTarget(self._mva_file)
@@ -84,10 +88,15 @@ class SklearnMulticlassTrainingAction(MVAThresholdFinderInterface, FileBasedProc
             with open(self._mva_file, 'rb') as pf:
                 dump = pickle.load(pf)
 
-            complete = 'hash' in dump and dump['hash'] == self.getConfig().hash()
-            print('hash check', 'hash' in dump, dump['hash'] == self.getConfig().hash())
-            print(dump['hash'], self.getConfig().hash())
-            print(self.getConfig())
+            complete = not self._check_hash or ('hash' in dump and dump['hash'] == self.getConfig().hash())
+
+            if not complete and self._debug:
+                answer = ''
+
+                while answer.lower() not in ['y', 'n']:
+                    answer = input(f'An model was found at {self._mva_file}, but it\'s config does not fit the current settings. Do you want to continue and use the existing MVA? If not, the current file will be overwritten (y/n)')
+
+                complete = answer.lower() == 'y'
 
         if complete:
             self.assignThreshold(self.findThreshold())
@@ -188,7 +197,7 @@ class MVATrainingConfig:
     def release(self):
         del configs[self._trial_name]
 
-def parse_suggestions(trial:optuna.Trial, suggestions:list[OptunaSuggestion])->dict:
+def parse_suggestions(trial:'optuna.Trial', suggestions:list[OptunaSuggestion])->dict:
     """Given an optuna trial and a list of hyperparameter bounds,
     samples a set of hyperparameters and returns it as dictionary.
 
@@ -208,11 +217,13 @@ def parse_suggestions(trial:optuna.Trial, suggestions:list[OptunaSuggestion])->d
         
     return kwargs
 
-def objective(config:MVATrainingConfig, hyper_params:dict, trial:optuna.Trial|None=None,
+def objective(config:MVATrainingConfig, hyper_params:dict, trial=None,
               train_test_npz:str|None=None, n_trial:int=0, debug:bool=False, hash:str|None=None):
-    
+
     import os.path as osp, os
     from zhh import Tee
+
+    trial:optuna.Trial|None
 
     signal_classes = config._signal_categories
     background_classes = config._background_categories
@@ -232,6 +243,7 @@ def objective(config:MVATrainingConfig, hyper_params:dict, trial:optuna.Trial|No
 
     os.makedirs(osp.dirname(osp.abspath(clf_file)), exist_ok=True)
     
+    # expects train_test_npz to be in a format as written by WriteMVADataAction
     if train_test_npz is None:
         train_test_npz = config._trial_data
     
@@ -321,6 +333,9 @@ def objective(config:MVATrainingConfig, hyper_params:dict, trial:optuna.Trial|No
         'sig': sig,
         'bkg': bkg,
         'x': x,
+        'features': data['features'],
+        'classes': data['classes'],
+        'train_sample_size': X_train.shape[0],
         'best_significance': best_significance,
         'significance_train': significance_train,
         'thresh': thresh,

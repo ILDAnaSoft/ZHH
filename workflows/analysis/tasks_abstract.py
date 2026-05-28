@@ -36,8 +36,8 @@ class AbstractMarlin(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
     
     # Append to these of you want to set additional constants or globals
     # You may define a pre_run_command to do so in a dynamic way 
-    constants:list[tuple[str,str]] = []
-    globals:list[tuple[str,str]] = []
+    constants:dict[str,str] = {}
+    globals:dict[str,str] = {}
     
     steering_file:str = '$REPO_ROOT/scripts/prod.xml'
     
@@ -108,11 +108,11 @@ class AbstractMarlin(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
             raise Exception('Either input_file must be a string, or a list while output_bname is a str')
     
     def parse_marlin_globals(self) -> str:
-        globals = filter(lambda tup: tup[0] not in ['MaxRecordNumber', 'LCIOInputFiles', 'SkipNEvents'], self.globals)
+        globals = filter(lambda tup: tup[0] not in ['MaxRecordNumber', 'LCIOInputFiles', 'SkipNEvents'], self.globals.items())
         return ' '.join([f'--global.{key}="{value}"' for key, value in globals])
     
     def parse_marlin_constants(self) -> str:
-        return ' '.join([f'--constant.{key}="{value}"' for key, value in self.constants])
+        return ' '.join([f'--constant.{key}="{value}"' for key, value in self.constants.items()])
     
     def build_command(self, **kwargs):
         steering = self.get_steering_parameters()

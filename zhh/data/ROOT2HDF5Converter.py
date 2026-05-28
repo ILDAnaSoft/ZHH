@@ -1,5 +1,4 @@
 import functools, os.path as osp
-import awkward as ak
 import numpy as np
 import h5py
 import uproot as ur
@@ -12,6 +11,9 @@ from math import ceil
 from ..task.AbstractTask import AbstractTask
 
 ChunkedConversionResult = tuple[int, tuple[tuple|tuple[int], str]]
+
+if TYPE_CHECKING:
+    import awkward as ak
 
 # for creating ROOT dicts
 # if not TYPE_CHECKING:
@@ -441,8 +443,10 @@ def tree_n_rows(sources:list[str], tree:str, use_uproot:bool=True, use_mp:bool=T
         
         return (sources, nrows) if return_path else nrows
 
-def translate_item(sources:list[str], tree:str, names:str|list[str], use_uproot:bool=True)->list[ak.Array]:
-    result:list[ak.Array] = []
+def translate_item(sources:list[str], tree:str, names:str|list[str], use_uproot:bool=True)->list['ak.Array']:
+    import awkward as ak
+
+    result = []
 
     if not TYPE_CHECKING:
         if use_uproot:
@@ -518,7 +522,7 @@ def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None,
     nan_to:float|int|None = args[9]
     keep_dim:bool|None = args[10]
 
-    import h5py
+    import awkward as ak
 
     # load from HDF5
     if osp.isfile(output_file) and not overwrite_if_exists:

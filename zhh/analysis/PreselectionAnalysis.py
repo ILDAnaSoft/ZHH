@@ -8,7 +8,6 @@ import json
 import numpy as np
 import uproot as ur
 from collections.abc import Callable, Sequence
-import awkward as ak
 from .TTreeInterface import TTreeInterface
 from .DataStore import DataStore
 
@@ -287,6 +286,8 @@ def get_preselection_passes(
     return results
 
 def extract_dijet_masses(dijetMass:ur.TBranch)->tuple[np.ndarray, np.ndarray]:
+    import awkward as ak
+
     aka = dijetMass.array()
     mask = ak.num(aka) > 0
 
@@ -296,6 +297,8 @@ def extract_dijet_masses(dijetMass:ur.TBranch)->tuple[np.ndarray, np.ndarray]:
     return mh1, mh2
 
 def extract_b_tagging_values(bTags:ur.TBranch)->tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    import awkward as ak
+    
     btags = ak.sort(bTags.array(), ascending=False)
 
     return (
@@ -585,25 +588,25 @@ def apply_order(categories:list[str], order:Sequence[str]|Callable)->list:
         print(order)
         raise Exception('No implementation to process given order')
 
-def weighted_counts_by_categories(presel_results:TTreeInterface|DataStore, categories_selected:Optional[np.ndarray]=None):
+def weighted_counts_by_categories(presel_results:TTreeInterface|DataStore, categories_selected:Optional[np.ndarray]=None, weight_prop:str='weight', weights:np.ndarray|None=None):
     
     categories = np.array(categories_selected) if categories_selected is not None else np.unique(presel_results['event_category'])
     counts = np.zeros(len(categories), dtype=float)
     
     for i, cat in enumerate(categories):
-        counts[i] += presel_results['weight'][presel_results['event_category'] == cat].sum()
+        counts[i] += (weights if weights is not None else presel_results[weight_prop])[presel_results['event_category'] == cat].sum()
         
     return categories, counts
 
-def calc_preselection_by_event_categories(presel_results:TTreeInterface|DataStore, processes:np.ndarray,
+def calc_preselection_by_event_categories(subset:TTreeInterface|DataStore, processes:np.ndarray,
                                           quantity:Optional[str]=None,
                                           order:list[str]|Callable|None=None,
                                           categories_selected:Optional[list[int]]=None,
                                           categories_additional:Optional[int]=3,
                                           weighted:bool=True,
                                           weight_prop:str='weight',
-                                          categories:Optional[np.ndarray]=None, counts:Optional[np.ndarray]=None,
-                                          xlim:Optional[tuple]=None)->dict[str, np.ndarray]:
+                                          weights:np.ndarray|None=None,
+                                          categories:Optional[np.ndarray]=None, counts:Optional[np.ndarray]=None)->dict[str, np.ndarray]:
     
     """Processes event categories. For a given TTreeInterface, in the default case,
     for all event categories, a list of events processes with weight and selected quantity
@@ -613,16 +616,14 @@ def calc_preselection_by_event_categories(presel_results:TTreeInterface|DataStor
     the sum of event weights.
 
     Args:
-        presel_results (np.ndarray): _description_
+        subset (np.ndarray): _description_
         processes (np.ndarray): _description_  
         weighted (bool, optional): Whether the correct proc_pol weighting should be used. Defaults to True.
         quantity (str, optional): _description_. Defaults to 'll_mz'.
         categories_selected (list, optional): Event categories to include in any case. Defaults to [17].
         categories_additional (Optional[int], optional): n-th most contributing categories to include as well. Defaults to 3.
         order (Optional[list, Callable]): Either Callable that sorts the given categories or list which may be used for sorting. Defaults to None.
-        unit (str, optional): _description_. Defaults to 'GeV'.
         nbins (int, optional): _description_. Defaults to 100.
-        xlim (Optional[tuple], optional): _description_. Defaults to None.
         yscale (Optional[str], optional): _description_. Defaults to None.
         ild_style_kwargs (dict, optional): _description_. Defaults to {}.
 
@@ -634,22 +635,24 @@ def calc_preselection_by_event_categories(presel_results:TTreeInterface|DataStor
     if categories_additional == 0:
         categories_additional = None
     
-    if xlim is not None and isinstance(quantity, str):
-        subset = presel_results[(presel_results[quantity] > xlim[0]) & (presel_results[quantity] < xlim[1])]
-    else:
-        subset = presel_results
+    if weights is not None:
+        weighted = True
     
     # Find relevant event categories
+    event_category = subset['event_category']
+    pid_arr = subset['pid']
+    weights = weights if weights is not None else subset[weight_prop]
+
     if weighted:
         if categories is None or counts is None:
-            categories = np.array(categories_selected) if (categories_additional is None and categories_selected is not None) else np.unique(subset['event_category'])
-            categories, counts = weighted_counts_by_categories(presel_results, categories)
+            categories = np.array(categories_selected) if (categories_additional is None and categories_selected is not None) else np.unique(event_category)
+            categories, counts = weighted_counts_by_categories(subset, categories, weights=weights)
         else:
             if categories_selected is not None and categories_additional is None:
                 mask = np.isin(categories, categories_selected)
                 categories, counts = categories[mask], counts[mask]
     else:
-        categories, counts = np.unique(subset['event_category'], return_counts=True)
+        categories, counts = np.unique(event_category, return_counts=True)
         
     # Sort and include categories_additional (descending)
     if categories_additional is not None:
@@ -688,8 +691,8 @@ def calc_preselection_by_event_categories(presel_results:TTreeInterface|DataStor
         
         covered_processes = []
 
-        mask = (subset['event_category'] == category)
-        pids = np.unique(subset['pid'][mask])
+        mask = (event_category == category)
+        pids = np.unique(pid_arr[mask])
         
         process_masks = []
         
@@ -706,7 +709,7 @@ def calc_preselection_by_event_categories(presel_results:TTreeInterface|DataStor
             
             for pidc in processes['pid'][processes['process'] == process_name]:
                 #print(f"> {processes['proc_pol'][processes['pid'] == pidc][0]}")
-                mask_process = mask_process | (subset['pid'] == pidc)
+                mask_process = mask_process | (pid_arr == pidc)
             
             mask_process = mask & mask_process
             
@@ -715,9 +718,9 @@ def calc_preselection_by_event_categories(presel_results:TTreeInterface|DataStor
         category_mask = np.logical_or.reduce(process_masks)
         
         if quantity is None:
-            calc_dict[label] = (None, subset[weight_prop][category_mask])
+            calc_dict[label] = (None, weights[category_mask])
         else:
-            calc_dict[label] = (subset[quantity][category_mask], subset[weight_prop][category_mask])
+            calc_dict[label] = (subset[quantity][category_mask], weights[category_mask])
             
     return calc_dict
 

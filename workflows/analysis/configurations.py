@@ -288,6 +288,26 @@ class Config_550_bbbb_fast_perf(AnalysisConfiguration):
     marlin_globals = {  }
     marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
 
+class Config_550_n1n1hhnores_fast_perf(AnalysisConfiguration):
+    tag = '550-n1n1hhnores-fast-perf'
+    
+    def sgv_inputs(self, fast_sim_task):
+        input_files:list[str] = glob_exp('/data/dust/user/jtorndal/whizard/noresonance/*.slcio')
+        input_files.sort()
+        
+        input_options = [{
+            'global_steering.MAXEV': 999999,
+            'global_generation_steering.CMS_ENE': 550,
+            'external_read_generation_steering.GENERATOR_INPUT_TYPE': 'LCIO',
+            'external_read_generation_steering.INPUT_FILENAMES': 'input.slcio',
+            'analysis_steering.CALO_TREATMENT': 'PERF'
+        }] * len(input_files)
+        
+        return input_files, input_options
+    
+    marlin_globals = {  }
+    marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
+
 from .configs.conf_550_fast_perf import *
 from .configs.conf_550_fast_pfl import *
 from .configs.conf_550_full import *
@@ -296,3 +316,9 @@ from .configs.conf_550_fast_perfsmbc import *
 #print('List of registered configs/tags:')
 #for key, val in zhh_configs.definitions.items():
 #    print(key)
+
+zhh_configs.add(Config_500_zh_tau_fast_perf())
+zhh_configs.add(Config_500_zh10_tau_fast_perf())
+zhh_configs.add(Config_250_ftag_fast_perf())
+zhh_configs.add(Config_550_bbbb_fast_perf())
+zhh_configs.add(Config_550_n1n1hhnores_fast_perf())

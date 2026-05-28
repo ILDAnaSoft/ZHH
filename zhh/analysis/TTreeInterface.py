@@ -289,6 +289,9 @@ def mk_ref(bname, item):
             
     return ref
 
+FSC_KEYS = ['n_d', 'n_u', 'n_s', 'n_c', 'n_b', 'n_t', 'n_ve', 'n_vmu', 'n_vtau', 'n_e', 'n_mu', 'n_tau', 'n_b_from_higgs']
+FSC_LABELS = ['d', 'u', 's', 'c', 'b', 't', 'v1', 'v2', 'v3', 'e1', 'e2', 'e3', 'bfH']
+
 @dataclass
 class FinalStateCounts:
     n_d: np.ndarray
@@ -310,6 +313,126 @@ class FinalStateCounts:
     n_charged_lep: np.ndarray
     
     n_b_from_higgs: np.ndarray
+
+    def encode(self, mask:np.ndarray|None=None):
+        return FinalStateCounts.encode_fsc(self, mask)
+
+    @staticmethod
+    def encode_fsc(fsc:'FinalStateCounts', mask:np.ndarray|None=None):
+        """Encodes final state counts to a numpy uint64 array by creating
+        a 15-digit integer k for each event. The count for particle FSC_LABELS[i]
+        is given at decimal position -i in k.
+
+        Args:
+            fsc (FinalStateCounts): _description_
+            mask (np.ndarray | None, optional): _description_. Defaults to None.
+
+        Returns:
+            np.ndarray: _description_
+        """
+
+        NROWS = len(fsc.n_e) if mask is None else mask.sum()
+        NCOLS = len(FSC_KEYS) # 13
+
+        fsc_encoded = np.ones(NROWS, dtype=np.uint64) * (10**(1 + NCOLS))
+        for i, key in enumerate(FSC_KEYS):
+            count = getattr(fsc, key)[slice(None) if mask is None else mask]
+            addition = np.array(count, dtype=np.uint64) * (10 ** i)
+
+            assert(np.all(count < 10))
+            fsc_encoded += addition
+        
+        return fsc_encoded
+    
+    @staticmethod
+    def decode(fsid:int|np.uint64, fsc_labels:list[str]=FSC_LABELS)->str:
+        """Generates a raw string representation of an uint64 encoded final state
+
+        Args:
+            fsid (int): An encoded final state representation
+            fsc_labels (list[str], optional): _description_. Defaults to FSC_LABELS.
+
+        Returns:
+            str: _description_
+        """
+        id_str = str(fsid)
+        cur_str = ''
+
+        for i, key in enumerate(fsc_labels):
+            count = int(id_str[-(i+1)])
+            #print(f'{key} -> {count}')
+
+            if count > 0:
+                cur_str += key * count
+
+        return cur_str
+
+    @staticmethod
+    def decode_fancy(fsid:int|np.uint64, fsc_labels:list[str]=FSC_LABELS)->str:
+        """Similar to FinalStateCounts.decode, but additionally fixes bfH
+        (b from Higgs) occurences in the string and replaces occurences of 'b'
+
+        Args:
+            fsid (int): An encoded final state representation
+            fsc_labels (list[str], optional): _description_. Defaults to FSC_LABELS.
+
+        Returns:
+            str: _description_
+        """
+        label = FinalStateCounts.decode(fsid, fsc_labels=fsc_labels)
+        nHtobb = label.count('bfH')
+
+        if nHtobb > 0:
+            fancy_label = label.replace('bfH', '').replace('b' * nHtobb, '', 1)
+            fancy_label = f'(H->{"b" * nHtobb}) {fancy_label}'
+        else:
+            fancy_label = label
+
+        return fancy_label
+    
+    @staticmethod
+    def decode_fancy_formula(fsid:int|np.uint64, fsc_labels:list[str]=FSC_LABELS)->str:
+        fancy_label = FinalStateCounts.decode_fancy(fsid, fsc_labels=fsc_labels)
+
+        replacements = [
+            ('->', r'\rightarrow '),
+            ('n1', r'\nu_{e} '),
+            ('n2', r'\nu_{\mu} '),
+            ('n3', r'\nu_{\tau} '),
+            ('e2', r'\mu '),
+            ('e3', r'\tau '),
+            ('e1', 'e '),
+        ]
+        
+        for needle, repl in replacements:
+            fancy_label = fancy_label.replace(needle, repl)
+        
+        return rf'$\mathrm{{ {fancy_label} }}$'
+
+    @staticmethod
+    def encoded_by_frequency(fsc_coded:np.ndarray, weights:np.ndarray):
+        """Extracts a list of tuples of structure (fsc_id, weight_sum) that is sorted
+        in descending order by event weight. 
+
+        Args:
+            fsc_coded (np.ndarray): np.uint64 array
+            weights (np.ndarray): _description_
+
+        Returns:
+            _type_: _description_
+        """
+
+        assert(len(fsc_coded) == len(weights))
+
+        fs_unique = np.unique(fsc_coded)
+        counts:list[tuple[np.uint64, float]] = []
+
+        for fs in fs_unique:
+            counts.append(( fs, weights[fsc_coded == fs].sum() ))
+
+        counts = sorted(counts, key=lambda x: -x[1])
+
+        return counts
 
 def parse_final_state_counts(store:TTreeInterface)->FinalStateCounts:
     from zhh import PDG2FSC

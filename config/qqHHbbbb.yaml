@@ -371,8 +371,9 @@ actions:
   - type: PlotMVAFeatures
     mva: default_mva
     file: $hypothesis_mva_training_distributions.pdf
-    plot_kwargs:
-    - bins: 50
+    plot_kwargs: {
+      bins: 50
+    }
   
   # The values to cut on can be evaluated lazily
   # i.e. the value does not need to be known when the program is started

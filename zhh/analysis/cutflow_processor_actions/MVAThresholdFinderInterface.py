@@ -1,7 +1,7 @@
 from ..CutflowProcessorAction import CutflowProcessorAction, CutflowProcessor
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
-class MVAThresholdFinderInterface(CutflowProcessorAction):
+class MVAThresholdFinderInterface(CutflowProcessorAction, ABC):
     def __init__(self, cp:CutflowProcessor, steer:dict, **kwargs):
         """Interface for an action that assigns a threshold parameter to a MVA in a CutflowProcessor
 

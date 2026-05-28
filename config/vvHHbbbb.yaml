@@ -512,8 +512,9 @@ actions:
   - type: PlotMVAFeatures
     mva: default_mva
     file: $hypothesis_mva_training_distributions.pdf
-    plot_kwargs:
-    - bins: 50
+    plot_kwargs: {
+      bins: 50
+    }
 
   - type: WriteROOTSnapshot
     file: '$hypothesis_mva.root'

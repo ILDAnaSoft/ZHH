@@ -18,6 +18,7 @@
 
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
         <parameter name="Verbosity" type="string">${Verbosity}</parameter>
+        <parameter name="forceProcess" type="string">${forceProcess}</parameter>
     </processor>
 
     <processor name="MyThrust" type="ThrustReconstruction">

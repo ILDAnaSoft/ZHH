@@ -28,7 +28,7 @@ class CompositeBinaryModel(MulticlassModel):
                    plot_options:dict[str, dict]={},
                    cache:str|None='cache',
                    train_kwargs:dict[int, dict]={},
-                   plot_context:PlotContext|bool=True):
+                   plot_context:PlotContext|None=None):
         """Initialized the whole model. Trains the individuals classifiers (if
         needed) and optionally plots the training input distributions and si-
         gnificance curves using the test dataset.
@@ -51,14 +51,14 @@ class CompositeBinaryModel(MulticlassModel):
         if plot_features_bname is None:
             plot_features_bname = 'mva_inputs_$i.pdf'
         
-        generate_plot_context = plot_context == True
+        generate_plot_context = plot_context is None
         use_plot_context_in = not generate_plot_context and isinstance(plot_context, PlotContext)
         
         for i in range(self._nclasses - 1):
             sig_class, bkg_class = self._classes[0][0], self._classes[i + 1][0]
             if not use_plot_context_in:
                 if generate_plot_context:
-                    plot_context = None
+                    plot_context = PlotContext()
                 else:
                     plot_context = self._extractor._cp.getPlotContext()                
             
@@ -82,11 +82,14 @@ class CompositeBinaryModel(MulticlassModel):
                     self._extractor._labels = np.array([ 0, 1 ], dtype='B')
                     assert(clf.getFeatures() == features)
                 else:
-                    train_src_idx, train_event_num, \
-                    train_labels, train_weight, train_inputs = self._extractor.extract([ (bkg_class, 0), (sig_class, 1) ], clf.getFeatures(), step=0, split=0, weight_prop='weights_split')
+                    train_src_idx, train_event_num, train_labels, train_weight, train_weight_phys, train_inputs = self._extractor.extract([
+                        (0, bkg_class),
+                        (1, sig_class) ], clf.getFeatures(), step=0, split=0, weight_prop='weights_split')
                     
                     if cache_file is not None:
-                        np.savez_compressed(cache_file, train_labels=train_labels, train_weight=train_weight, train_inputs=train_inputs, features=clf.getFeatures())
+                        np.savez_compressed(cache_file,
+                                            train_labels=train_labels, train_weight=train_weight,
+                                            train_inputs=train_inputs, features=clf.getFeatures())
                 
                 if plot_features:
                     self._extractor.plot(train_inputs, train_weight, train_labels, filename=plot_features_bname.replace('$i', str(i)),
@@ -121,30 +124,23 @@ class CompositeBinaryModel(MulticlassModel):
                     assert(clf.getFeatures() == features)
                 else:
                     # split=1 use second split
-                    test_src_idx, test_event_num, \
-                    test_labels, test_weight, test_inputs = self._extractor.extract([ (bkg_class, 0), (sig_class, 1) ], clf.getFeatures(),
-                                                                                step=0, split=1, weight_prop='weights_split', MOD_WEIGHT=False)
+                    test_src_idx, test_event_num, test_labels, \
+                    test_weight, test_weight_phys, test_inputs = self._extractor.extract([
+                        (0, bkg_class),
+                        (1, sig_class)
+                    ], clf.getFeatures(),
+                                                                                step=0, split=1, weight_prop='weights_split')
                     
                     if cache_file is not None:
                         np.savez_compressed(cache_file, test_labels=test_labels, test_weight=test_weight, test_inputs=test_inputs, features=clf.getFeatures())
                 
                 mva_output = clf.predict(test_inputs)[:, 1]
-                
-                statistics = np.zeros(len(self._threshold_scan), dtype=[('nsig', 'f'), ('nbkg', 'f'), ('threshold', 'f'), ('efficiency', 'f'), ('purity', 'f'), ('significance', 'f')])
-                ntot_sig = test_weight[(test_labels == 1)].sum()
-                
-                for j, thresh in enumerate(self._threshold_scan):
-                    statistics['nsig'][j] = test_weight[(test_labels == 1) & (mva_output >= thresh)].sum()
-                    #statistics['nbkg'][j] = test_weight[(test_labels == 0) & (mva_output >= thresh)].sum()
-                    statistics['nbkg'][j] = test_weight[(test_labels != 1) & (mva_output >= thresh)].sum()
 
-                statistics['efficiency'] = statistics['nsig'] / ntot_sig
-                statistics['purity'] = statistics['nsig'] / (statistics['nsig'] + statistics['nbkg'])
-                statistics['significance'] = statistics['nsig'] / np.sqrt(statistics['nsig'] + statistics['nbkg'])
-                statistics['threshold'] = self._threshold_scan
+                statistics, best_threshold = CompositeBinaryModel.doThresholdScan(mva_output, self._threshold_scan, test_weight,
+                                                                                  test_labels == 1, test_labels != 0) 
                 
                 self._stats[f'{i}.test'] = statistics
-                self._optimal_cuts[i] = self._threshold_scan[np.nanargmax(statistics["significance"])]
+                self._optimal_cuts[i] = best_threshold
                 
     def plot_statistics(self, fname:str='mva_significances.pdf'):
         from phc import export_figures
@@ -160,42 +156,85 @@ class CompositeBinaryModel(MulticlassModel):
 
         for idx, prop in enumerate(stats_data):
             stats = stats_data[f'{idx}.test']
-            
-            for zoomed_in, xlim in [
+            title = f'BDTG {idx+1} ({classes[0][0]} vs {classes[idx+1][0]})'
+
+            for fig in CompositeBinaryModel.plotFn(stats, title=title):
+                figs += [fig]
+
+        export_figures(fname, figs)
+
+    @staticmethod
+    def doThresholdScan(discriminator:np.ndarray, thresholds:np.ndarray, weight:np.ndarray, is_signal:np.ndarray, is_background:np.ndarray):
+        statistics = np.zeros(len(thresholds), dtype=[
+            ('nsig', 'f'),
+            ('nbkg', 'f'),
+            ('threshold', 'f'),
+            ('efficiency', 'f'),
+            ('purity', 'f'),
+            ('significance', 'f')])
+        ntot_sig = weight[is_signal].sum()
+        
+        for j, thresh in enumerate(thresholds):
+            statistics['nsig'][j] = weight[is_signal & (discriminator >= thresh)].sum()
+            statistics['nbkg'][j] = weight[is_background & (discriminator >= thresh)].sum()
+
+        statistics['efficiency'] = statistics['nsig'] / ntot_sig
+        statistics['purity'] = statistics['nsig'] / (statistics['nsig'] + statistics['nbkg'])
+        statistics['significance'] = statistics['nsig'] / np.sqrt(statistics['nsig'] + statistics['nbkg'])
+        statistics['threshold'] = thresholds
+        
+        best_threshold = thresholds[np.nanargmax(statistics["significance"])]
+
+        return statistics, best_threshold
+    
+    @staticmethod
+    def plotFn(statistics:np.ndarray, title:str, to_plot:list[tuple[bool, tuple]]|None=None, xlabel:str='Cut Value'):
+        from zhh.plot.ild_style import legend_kwargs_fn, fig_ild_style
+        import matplotlib.pyplot as plt
+        from matplotlib.figure import Figure
+
+        thresholds = statistics['threshold']
+
+        figs:list[Figure] = []
+
+        if to_plot is None:
+            to_plot = [
                 (False, (0., 1.)),
                 (True, (0.9, 1.))
-            ]:
-                fig, ax1 = plt.subplots()
-                ax1.set_ylabel('Efficiency, Purity')
-                ax1.set_xlim(xlim)
-                
-                ax2 = ax1.twinx()
-                ax2.set_ylabel('Significance')
-                
-                best_sig = np.nanmax(stats['significance'])
-                best_sig_at = self._threshold_scan[np.nanargmax(stats['significance'])]
+            ]
 
-                lns1 = ax1.plot(self._threshold_scan, stats['efficiency'], label='Efficiency')
-                lns2 = ax1.plot(self._threshold_scan, stats['purity'], label='Purity')
-                
-                lns3 = ax2.plot(self._threshold_scan, stats['significance'], label=f'Significance' + (f' [max.: {best_sig:.3f} @ {best_sig_at:.6f}]' if xlim[0] <= best_sig_at <= xlim[1] else ''), color='green')
-                if xlim[0] <= best_sig_at <= xlim[1]:
-                    ax1.axvline(x=best_sig_at, color='red')
-                
-                lns = lns1+lns2+lns3
-                ax1.legend(lns, [str(l.get_label()) for l in lns], loc='lower left', **legend_kwargs_fn())
-                ax1.grid()
-                
-                fig_ild_style(fig, title=f'BDTG {idx+1} ({classes[0][0]} vs {classes[idx+1][0]})', xlabel='Cut Value', xunit=None,
-                                yunit=None, ylabel_prefix='', ild_offset_x=0.65, ild_offset_y=0.12);
-                
-                if zoomed_in:
-                    ax1.set_xscale('function', functions=(MulticlassModel.transform_forward, MulticlassModel.transform_inverse))
-                    
-                    xticks = [0.9, 0.99, 0.999, 0.9999, 0.99999, 0.999999]
-                    ax1.set_xticks(xticks, labels=[str(xt) for xt in xticks], minor=False, fontsize=9)
-                    ax1.minorticks_off()        
-                    
-                figs.append(fig)
+        for zoomed_in, xlim in to_plot:
+            fig, ax1 = plt.subplots()
+            ax1.set_ylabel('Efficiency, Purity')
+            ax1.set_xlim(xlim)
             
-        export_figures(fname, figs)
+            ax2 = ax1.twinx()
+            ax2.set_ylabel('Significance')
+            
+            best_sig = np.nanmax(statistics['significance'])
+            best_sig_at = thresholds[np.nanargmax(statistics['significance'])]
+
+            lns1 = ax1.plot(thresholds, statistics['efficiency'], label='Efficiency')
+            lns2 = ax1.plot(thresholds, statistics['purity'], label='Purity')
+            
+            lns3 = ax2.plot(thresholds, statistics['significance'], label=f'Significance' + (f' [max.: {best_sig:.3f} @ {best_sig_at:.6f}]' if xlim[0] <= best_sig_at <= xlim[1] else ''), color='green')
+            if xlim[0] <= best_sig_at <= xlim[1]:
+                ax1.axvline(x=best_sig_at, color='red')
+            
+            lns = lns1+lns2+lns3
+            ax1.legend(lns, [str(l.get_label()) for l in lns], loc='lower left', **legend_kwargs_fn())
+            ax1.grid()
+            
+            fig_ild_style(fig, title=title, xlabel=xlabel, xunit=None,
+                            yunit=None, ylabel_prefix='', ild_offset_x=0.65, ild_offset_y=0.12);
+            
+            if zoomed_in:
+                ax1.set_xscale('function', functions=(MulticlassModel.transform_forward, MulticlassModel.transform_inverse))
+                
+                xticks = [0.9, 0.99, 0.999, 0.9999, 0.99999, 0.999999]
+                ax1.set_xticks(xticks, labels=[str(xt) for xt in xticks], minor=False, fontsize=9)
+                ax1.minorticks_off()        
+                
+            figs.append(fig)
+        
+        return figs

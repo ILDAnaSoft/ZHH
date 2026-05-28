@@ -23,12 +23,13 @@ class WriteMVADataAction(FileBasedProcessorAction):
         
         from zhh import find_by
 
-        mva_spec = find_by(steer['mvas'], 'name', mva, is_dict=True)
+        mva_spec:dict = find_by(steer['mvas'], 'name', mva, is_dict=True)
 
         self._mva = mva
         self._classes = mva_spec['classes']
         self._features = mva_spec['features']
         self._data_file = mva_spec['data_file']
+        self._ignore_categories:list[str] = mva_spec.get('ignore_categories', [])
 
         self._step = step
         #self._split_column = split_column
@@ -48,7 +49,7 @@ class WriteMVADataAction(FileBasedProcessorAction):
 
         src_idx_train, event_num_train, \
         y_train, w_train, w_train_phys, X_train = extractor.extract(self._classes, step=self._step,
-                                                                    split=self._train_split, weight_prop=self._weight_column)
+                                                                    split=self._train_split, weight_prop=self._weight_column, ignore_categories=self._ignore_categories)
         
         dump['src_idx_train'] = src_idx_train
         dump['event_num_train'] = event_num_train
@@ -59,7 +60,7 @@ class WriteMVADataAction(FileBasedProcessorAction):
 
         src_idx_test, event_num_test, \
         y_test, w_test, w_test_phys, X_test = extractor.extract(self._classes, step=self._step,
-                                                                split=self._test_split, weight_prop=self._weight_column)
+                                                                split=self._test_split, weight_prop=self._weight_column, ignore_categories=self._ignore_categories)
         
         dump['src_idx_test'] = src_idx_test
         dump['event_num_test'] = event_num_test
@@ -71,7 +72,7 @@ class WriteMVADataAction(FileBasedProcessorAction):
         if self._val_split is not None:
             src_idx_val, event_num_val, \
             y_val, w_val, w_val_phys, X_val = extractor.extract(self._classes, step=self._step,
-                                                                split=self._val_split, weight_prop=self._weight_column)
+                                                                split=self._val_split, weight_prop=self._weight_column, ignore_categories=self._ignore_categories)
 
             dump['src_idx_val'] = src_idx_val
             dump['event_num_val'] = event_num_val
