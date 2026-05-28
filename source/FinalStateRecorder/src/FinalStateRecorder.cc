@@ -55,6 +55,12 @@ FinalStateRecorder::FinalStateRecorder() :
 				m_outputRootFile,
 				std::string("")
 				);
+	
+	registerProcessorParameter("forceProcess",
+				"assume the given process for all events instead of reading it from the file. useful mostly for old event samples which do not have a process parameter",
+				m_forceProcess,
+				std::string("")
+				);
 
 	registerProcessorParameter("writeTTree",
 				"whether or not to write event meta information",
@@ -253,8 +259,8 @@ void FinalStateRecorder::init()
 	this->register_process(new e3e3hh());
 	this->register_process(new qqhh());
 	this->register_process(new n1n1hh());
+	this->register_process(new n1n1hh_w());
 	this->register_process(new n23n23hh());
-	//this->register_process(new n1n1hh_w());
 
 	// h4f
 	this->register_process(new e1e1qqh());
@@ -549,6 +555,9 @@ void FinalStateRecorder::processRunHeader( LCRunHeader*  /*run*/) {
 
 void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 {
+	// Extract process meta data
+	std::string process = (m_forceProcess == "") ? pLCEvent->getParameters().getStringVal("processName") : m_forceProcess;
+
 	// Initialize JSON metadata file
 	if (m_n_evt == 0) {
 		if (m_mcParticleCollection == "MCParticlesSkimmed") {
@@ -563,7 +572,7 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 		m_cross_section_err = pLCEvent->getParameters().getFloatVal("crossSectionError");
 		m_event_weight = pLCEvent->getWeight();
 		m_process_id = pLCEvent->getParameters().getIntVal("ProcessID");
-		m_process_name = pLCEvent->getParameters().getStringVal("processName");
+		m_process_name = process;
 
 		if (m_beam_pol1 == -1 && m_beam_pol2 == -1) m_polarization_code = POLARIZATION_CODES::EL_PL; else
 		if (m_beam_pol1 == -1 && m_beam_pol2 ==  1) m_polarization_code = POLARIZATION_CODES::EL_PR; else
@@ -590,9 +599,6 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 	m_n_run = pLCEvent->getRunNumber();
 	m_n_evt = pLCEvent->getEventNumber();
 	m_n_evt_sum++;
-
-	// Extract process meta data
-	std::string process = pLCEvent->getParameters().getStringVal("processName");
 
 	if (!m_multiProcess && process != m_process_name) {
 		std::cerr << "multiProcess is disabled, but found process " << process << " differs from expected process " << m_process_name << " in event " << m_n_evt << ". Aborting..." << std::endl ;
@@ -662,7 +668,7 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 				// Set ZHH event category
 				if (m_process == PROCESS_ID::e1e1hh || m_process == PROCESS_ID::e2e2hh || m_process == PROCESS_ID::e3e3hh) {
 					m_event_category_zhh = EVENT_CATEGORY::LEPTONIC;
-				} else if (m_process == PROCESS_ID::n1n1hh || m_process == PROCESS_ID::n23n23hh) {
+				} else if (m_process == PROCESS_ID::n1n1hh || m_process == PROCESS_ID::n1n1hh_w || m_process == PROCESS_ID::n23n23hh) {
 					m_event_category_zhh = EVENT_CATEGORY::NEUTRINO;
 				} else if (m_process == PROCESS_ID::qqhh) {
 					m_event_category_zhh = EVENT_CATEGORY::HADRONIC;

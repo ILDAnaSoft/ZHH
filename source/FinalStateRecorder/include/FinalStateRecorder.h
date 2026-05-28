@@ -46,7 +46,7 @@ struct ERROR_CODES {
 class FinalStateRecorder : public Processor
 {
 	private:
-		void register_process(FinalStateResolver* resolver) { m_resolvers[resolver->get_process_name()] = resolver;  };
+		void register_process(FinalStateResolver* resolver) { std::cerr << "Registered process " << resolver->get_process_name() << std::endl;  m_resolvers[resolver->get_process_name()] = resolver;  };
 		std::map<std::string, FinalStateResolver*> m_resolvers{};
 
 		float m_beam_pol1{};
@@ -100,6 +100,7 @@ class FinalStateRecorder : public Processor
 		std::string m_mcParticleCollection{};
 		std::string m_outputJsonFile{};
 		std::string m_outputRootFile{};
+		std::string m_forceProcess{};
 		std::vector<std::string> m_eventFilter{};
 		bool m_multiProcess{};
 		bool m_writeAll{};

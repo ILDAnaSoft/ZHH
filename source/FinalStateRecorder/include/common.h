@@ -21,8 +21,8 @@ struct PROCESS_ID {
 		e3e3hh = 1113,
 
 		n1n1hh = 1311,
+		n1n1hh_w = 13110,
 		n23n23hh = 1312,
-		n1n1hh_w = 1313,
 		qqhh = 1511,
 
 		// ffffh

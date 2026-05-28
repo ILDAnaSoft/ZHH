@@ -41,6 +41,8 @@ class ffhh: public p6 {
             MCParticle* h1 = (MCParticle*)mcp_collection->getElementAt(HIGGS_1_IDX);
             MCParticle* h2 = (MCParticle*)mcp_collection->getElementAt(HIGGS_2_IDX);
 
+            assert_true(h1->getPDG() == 25 && h2->getPDG() == 25, RESOLVER_ERRORS::HIGGS_NOT_FOUND);
+
             if (resolve_higgs) {
                 // Get H-decayed fermions
                 fs_particles.push_back(h1->getDaughters()[0]);
@@ -64,8 +66,6 @@ class ffhh: public p6 {
             assert_true(
                 vec_contains(m_z_decay_filter, abs(fs_particles[0]->getPDG())) &&
                 vec_contains(m_z_decay_filter, abs(fs_particles[1]->getPDG())), RESOLVER_ERRORS::UNALLOWED_VALUES);
-
-            assert_true(fs_particles[2]->getPDG() == 25 && fs_particles[3]->getPDG() == 25, RESOLVER_ERRORS::HIGGS_NOT_FOUND);
 
             vector<int> d1 = pdgs_of_daughter_particles(fs_particles[2]);
             vector<int> d2 = pdgs_of_daughter_particles(fs_particles[3]);
@@ -108,6 +108,9 @@ class qqhh : public ffhh {
 
 class n1n1hh : public ffhh {
     public: n1n1hh(): ffhh( "n1n1hh", PROCESS_ID::n1n1hh, EVENT_CATEGORY_TRUE::vvHH, vector{12} ) {}; };
+
+class n1n1hh_w : public ffhh {
+    public: n1n1hh_w(): ffhh( "n1n1hh_w", PROCESS_ID::n1n1hh_w, EVENT_CATEGORY_TRUE::vvHH, vector{12} ) {}; };
 
 class n23n23hh : public ffhh {
     public: n23n23hh(): ffhh( "n23n23hh", PROCESS_ID::n23n23hh, EVENT_CATEGORY_TRUE::vvHH, vector{14, 16} ) {}; };
