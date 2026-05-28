@@ -526,9 +526,9 @@ actions:
     mva: default_mva
     file: $hypothesis_mva_training_distributions.pdf
     plot_kwargs: {
-    bins: 50
+      bins: 50
     }
-    
+
   - type: WriteROOTSnapshot
     file: '$hypothesis_mva.root'
     include_custom_columns: [split, weights_split]

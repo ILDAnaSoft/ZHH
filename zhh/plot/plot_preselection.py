@@ -1,16 +1,17 @@
-from typing import Optional, List, Tuple, Iterable, cast
+from typing import Optional, List, Tuple, Iterable, cast, TYPE_CHECKING
 from collections.abc import Sequence
+import math
+
 from tqdm.auto import tqdm
 from .ild_style import fig_ild_style
 from ..analysis.PreselectionAnalysis import calc_preselection_by_event_categories
 import numpy as np
-import math
-import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
-from matplotlib.axes import Axes
 from ..analysis.Cuts import Cut, EqualCut, WindowCut, GreaterThanEqualCut, LessThanEqualCut
 from ..analysis.ZHHCuts import zhh_cuts
 from ..util.PlotContext import PlotContext
+
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
 
 def plot_preselection_by_calc_dict(*args, **kwargs):
     """TO BE DEPRECATED. USE plot_combined_hist instead 
@@ -21,7 +22,7 @@ def plot_preselection_by_calc_dict(*args, **kwargs):
     from zhh import plot_combined_hist
     return plot_combined_hist(*args, **kwargs)
 
-def annotate_cut(ax:Axes, cut:Cut, spancolor:str='red', alpha:float=0.7):
+def annotate_cut(ax:'Axes', cut:Cut, spancolor:str='red', alpha:float=0.7):
     from zhh import CutTypes
     
     if cut.type == CutTypes.CUT_WINDOW:
@@ -71,6 +72,8 @@ def plot_total_efficiency(counts_first:dict, counts_last:dict, hypothesis:str,
                           colorpalette:Optional[List[str]]=None,
                           color_dict:Optional[dict]=None):
     
+    import matplotlib.pyplot as plt
+    
     if color_dict is not None:
         colorpalette = [color_dict[key] for key in signal_categories]
         
@@ -97,6 +100,8 @@ def plot_cut_efficiencies(counts_all:List[dict], hypothesis:str, signal_categori
                           plot_context:Optional[PlotContext]=None,
                           cuts:Optional[Sequence[Cut]]=None,
                           width:float = 0.6, spacing:float=0.2):
+    
+    import matplotlib.pyplot as plt
     
     if colorpalette is None:
         if plot_context is not None:

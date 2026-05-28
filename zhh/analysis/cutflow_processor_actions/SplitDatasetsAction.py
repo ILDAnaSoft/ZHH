@@ -29,6 +29,7 @@ class SplitDatasetsAction(CutflowProcessorAction):
 
         for source in self._cp.getSources():
             store = source.getStore()
+            store.resetView()
             
             apply_split(*self._fractions, source=source, name=self._split_column)
             store[self._wt_split_column] = mod_weights_from_split(source, split_prop=self._split_column, weight_prop=self._source_weight_column)

@@ -1,14 +1,17 @@
-from matplotlib.colors import ListedColormap, Colormap
-from typing import cast, Any, TYPE_CHECKING
+from typing import cast, Any, TYPE_CHECKING, Union
+if TYPE_CHECKING:
+    from matplotlib.colors import ListedColormap, Colormap
 
-def repeat_colormap(cmap:ListedColormap):
+def repeat_colormap(cmap:'ListedColormap'):
+    from matplotlib.colors import ListedColormap
+
     colors:list = list(cmap.colors) + list(cmap.colors)
     cmap_new = ListedColormap(colors)
     
     return cmap_new
 
 class PlotContext:
-    def __init__(self, cmap:ListedColormap|Any=None, font:str|list[str]|None=None) -> None:
+    def __init__(self, cmap:Union['ListedColormap', Any]=None, font:str|list[str]|None=None) -> None:
         if cmap is None:
             from zhh import colormap_desy
             cmap = colormap_desy

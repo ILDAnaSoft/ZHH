@@ -31,6 +31,7 @@
         <constant name="CMSEnergy" value="550." />
 	    <constant name="ISRPzMax" value="125.6" />
         <constant name="Verbosity" value="SILENT" />
+        <constant name="forceProcess" value="" /><!-- can be supplied optionally  -->
     </constants>
 
     <execute>
@@ -113,6 +114,7 @@
 
         <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
         <parameter name="Verbosity" type="string">${Verbosity}</parameter>
+        <parameter name="forceProcess" type="string">${forceProcess}</parameter>
     </processor>
 
     <processor name="IsolatedTauTagging" type="TaJetClustering">

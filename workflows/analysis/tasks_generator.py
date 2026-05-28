@@ -8,6 +8,8 @@ import os.path as osp
 import subprocess, law, luigi
 
 class WhizardEventGeneration(ShellTask, HTCondorWorkflow, law.LocalWorkflow):    
+    env_script = '$REPO_ROOT/setup.sh'
+
     def create_branch_map(self)->dict[int, dict]:        
         config = zhh_configs.get(str(self.tag))        
         assert(config.whizard_options is not None and len(config.whizard_options))
@@ -84,7 +86,7 @@ class WhizardEventGeneration(ShellTask, HTCondorWorkflow, law.LocalWorkflow):
         with open(osp.join(self.output()[1].path, 'process.sin'), 'w') as f:
             f.write(sindarin)
         
-        cmd =f"""source $REPO_ROOT/setup.sh
+        cmd =f"""source "{self.env_script}"
 rm -f "{output_file.path}"
 rm -f *.mod *.log *.smod *.lo *.f90 default* *.o
 cp -R "{TEMPLATE_DIR}/." .

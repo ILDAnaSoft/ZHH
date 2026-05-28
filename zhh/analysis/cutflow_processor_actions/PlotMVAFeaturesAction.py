@@ -50,6 +50,7 @@ class PlotMVAFeaturesAction(FileBasedProcessorAction):
     
     def run(self):
         from phc import export_figures
+        import matplotlib.pyplot as plt
 
         os.makedirs(self.output().absdirname, exist_ok=True)
 
@@ -60,11 +61,16 @@ class PlotMVAFeaturesAction(FileBasedProcessorAction):
         weight = data[f'w_{self._plot_which}']
         labels = data[f'y_{self._plot_which}']
 
-        export_figures(self.output().abspath, plotFn(
+        figures = plotFn(
             features, inputs, labels, weight,
             self._label_2_category, self._signal_categories,
             plot_kwargs=self._plot_kwargs
-        ))
+        )
+
+        export_figures(self.output().abspath, figures)
+
+        for fig in figures:
+            plt.close(fig)
     
     def output(self):
         return self.localTarget(self._plot_file)
@@ -73,9 +79,9 @@ def plotFn(features, inputs, labels, weight, label_2_category:dict[int, str], si
            plot_context:PlotContext|None=None, plot_options:dict[str, dict]={}, plot_kwargs:dict={}):
     
     from zhh import colormap_desy, plot_weighted_hist, figure_options, deepmerge, PlotContext
-    from phc import export_figures
     from copy import deepcopy
     from tqdm.auto import tqdm
+    from matplotlib.figure import Figure
 
     if plot_context is None:
         plot_context = PlotContext(colormap_desy)
@@ -115,7 +121,7 @@ def plotFn(features, inputs, labels, weight, label_2_category:dict[int, str], si
         }
     }, deepcopy(plot_kwargs))
 
-    figures = []
+    figures:list[Figure] = []
 
     for i, feature in enumerate((pbar := tqdm(features))):
         pbar.set_description(f'Plotting {feature}')
@@ -139,7 +145,7 @@ def plotFn(features, inputs, labels, weight, label_2_category:dict[int, str], si
         
         fig = plot_weighted_hist(plot_dict, title=None, plot_context=plot_context,
                                     plot_hist_kwargs_overwrite=hist_kwargs_overwrite, **plot_kwargs)
-        fig.set_tight_layout(True)
+        fig.set_layout_engine('tight')
         
         figures.append(fig)
     

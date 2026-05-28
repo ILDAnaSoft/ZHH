@@ -61,8 +61,8 @@ sources:
     root_files: /data/dust/user/jtorndal/zhh/AnalysisFinal/550-4flh-$CONF_SUFFIX/*.root
     event_categorization:
       default: EventCategories.F4_OTHER
-      order: null
-      items: [ bbbb ]
+      order: [ llll, qqqq ]
+      items: [ llll, qqqq, bbbb ]
     disabled: false
     reset: false
 
@@ -71,7 +71,7 @@ sources:
     root_files: /data/dust/user/jtorndal/zhh/AnalysisFinal/550-2l4q-$CONF_SUFFIX/*.root
     event_categorization:
       default: EventCategories.F6_OTHER
-      order: null
+      order: [ lvqqqq, lvbbqq, llqqqq, vvqqqq ]
       items: [ lvqqqq, lvbbqq, evbbqq, μvbbqq, τvbbqq, lvbbbb, llqqqq, llbbqq, llbbbb, vvqqqq, vvbbqq ]
     disabled: false
     reset: false
@@ -149,7 +149,7 @@ features:
   - { names: [ jet1_m, jet2_m, jet3_m, jet4_m ], tree: EventObservablesLL, dtype: float32 }
   - { name: mz_pre_pairing, tree: EventObservablesLL, branch: mzll_pre_pairing, dtype: float32 }
   - { name: mhh, tree: EventObservablesLL, branch: m_invjet, dtype: float32 }
-  - { names: [ fit4C_mz, ptmiss, thrust, evis ], tree: EventObservablesLL, dtype: float32 }
+  - { names: [ fit4C_mz, ptmiss, thrust, evis, 2jet1_m, 2jet2_m ], tree: EventObservablesLL, dtype: float32 }
   - { name: fit4C_mh1, tree: EventObservablesLL, dtype: float32, nan_to: -20., clamp_min: -10. }
   - { name: fit4C_mh2, tree: EventObservablesLL, dtype: float32, nan_to: -20., clamp_min: -10. }
   - { names: [ nisomuons, pairedLepType ], tree: EventObservablesLL, dtype: uint8 }
@@ -211,6 +211,8 @@ cutflow_table:
       label: 'other 2l4q'
     - category: bbbb
       label: '\HepProcess{\Pqb\Pqb\Pqb\Pqb}'
+    - category: llll
+      label: '\HepProcess{\Plpm\Plpm\Plpm\Plpm}'
     - remaining_of_source: 4flh
       label: 'other 4fl / 4fh'
     - category: llqqH
@@ -265,6 +267,8 @@ cuts:
   mva_cut:
   - { quantity: SigMVAOutput, operator: gte, value: default_mva.threshold }
 
+  mva_cuts_lazy: None
+
 # MVAs are defined here
 # training, inference and optimization (i.e. assignment which threshold value to use) are
 # done by actions, which reference the MVA (see the actions section).
@@ -286,7 +290,7 @@ mvas:
 
     features: [
       jet1_m, jet2_m, jet3_m, jet4_m,
-      mhh, fit4C_mz, fit4C_mh1, fit4C_mh2,
+      mhh, evis, 2jet1_m, 2jet2_m, fit4C_mz, fit4C_mh1, fit4C_mh2,
       npfos, thrust, costhrust, pjmax2, cosjzmax,
       npfosmin4j, yplus, yminus_mod100, plmin,
       mbmax34, ptmiss, mvalepminus,
@@ -302,6 +306,8 @@ mvas:
     - [3, 'llqqqq']
     - [4, 'μμbb']
     - [5, 'lvbbqq']
+    - [6, 'llll']
+    #- [7, 'ttHZ']
     # note: the output is the sum for all signal categories given in steer['signal_categories'] 
     label_name: SigMVAOutput
 
@@ -328,6 +334,7 @@ actions:
     
   - type: CreateCutflowTable
     file: '$hypothesis_cutflow_preselection_table.pdf'
+    #disabled: false
     # optional:
     # step_start: 0
     # step_end: 0
@@ -339,7 +346,8 @@ actions:
     include_mva_outputs: false
     # optional:
     # tree: cutflow
-    disabled: True
+    #disabled: True
+    disabled: true
 
   # split in train/testing [accross all steps, i.e. regardless of cut group]
   # creates two new columns
@@ -364,6 +372,8 @@ actions:
     mva: default_mva
     # optional:
     # step: 0
+    disabled: true
+    #reset_action: true
 
   - type: PrintSplitWeights
     disabled: true
@@ -383,7 +393,8 @@ actions:
     debug: true
     mva: default_mva
     split: 0
-    disabled: false
+    check_hash: false
+    disabled: true
 
   - type: SklearnMulticlassHyperparamTraining
     hyperparam_bounds: [
@@ -393,32 +404,59 @@ actions:
     ]
     mva: default_mva
     split: 0
-    ntrials: 250
-    disabled: true
+    ntrials: 256
+    #nprocesses: 50 # on NAF, use some lower value (e.g. 8). on Maxwell, 50 should be OK; if not specified, uses 50% of the cores
+    disabled: false
 
   - type: SklearnMulticlassInference
     mva: default_mva
     split: 1 # split 0 = train dataset; split 1 = test dataset
     disabled: false
+    #reset_action: true
 
   - type: WriteROOTSnapshot
     file: '$hypothesis_mva.root'
     include_custom_columns: [split, weights_split]
     include_input_columns: false
     include_mva_outputs: true
+  
+  - type: PlotMVAOutputs
+    mva: default_mva
+    file: $hypothesis_mva_output_distributions.pdf
+    step: 0
+    split: 1
+    weight_column: weights_split
+    signal_categories: [ μμHHbbbb, llHH_llnonbbbb ]
+    N_largest: 3
+    nbins: 25
+    disabled: false
+  
+  - type: OptimizeMVANDimensional
+    mva: default_mva
+    cut_group: mva_cuts_lazy
+    cut_file: $hypothesis_optimized_mva_cuts.txt
+    plot_file: $hypothesis_optimized_mva_cuts.pdf
+    step: 0
+    step_out: 1 # optimized cuts are stored at step_out
+    split: 1
+    weight_column: weights_split
+    signal_categories: [ μμHHbbbb, llHH_llnonbbbb ]
+    ignore_categories: [ llll ]
+    disabled: false
 
   - type: ApplyCuts
-    cuts: mva_cut
+    cuts: mva_cuts_lazy
+    step_in: 0
     step: 1
     split: 1 # use only testing data
     weight_column: weights_split # use the weights after splitting the dataset
   
   - type: CreateCutflowPlots
     file: '$hypothesis_cutflow_mva_plots.pdf'
-    step_start: 1
+    step_start: 0
     step_end: 1
     
   - type: CreateCutflowTable
     file: '$hypothesis_cutflow_mva_table.pdf'
-    step_start: 1
+    step_start: 0
     step_end: 1

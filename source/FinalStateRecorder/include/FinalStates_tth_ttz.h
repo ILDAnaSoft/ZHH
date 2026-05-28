@@ -42,7 +42,7 @@ class ptth_ttz: public FinalStateResolver {
             }
             
             for (MCParticle* mcpart: resolve_fs_particles(mcp_collection, false)) {
-                int idx = find(mcparticles.begin(), mcparticles.end(), mcpart) - mcparticles.begin();
+                size_t idx = find(mcparticles.begin(), mcparticles.end(), mcpart) - mcparticles.begin();
                 assert(idx < mcparticles.size());
 
                 result.push_back(idx);

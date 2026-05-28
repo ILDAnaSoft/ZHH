@@ -1,14 +1,14 @@
-from matplotlib.ticker import AutoMinorLocator, LogLocator, Locator, MultipleLocator
-from matplotlib.patches import Patch
-from matplotlib.figure import Figure
-from matplotlib.axes import Axes
-from matplotlib.legend_handler import HandlerTuple
+from matplotlib.ticker import AutoMinorLocator, LogLocator, Locator
 from collections.abc import Collection
-from typing import Optional, List, Literal
+from typing import Literal, Union, TYPE_CHECKING
 from ..util.get_matplotlib_fonts import resolve_fonts
 from ..util.PlotContext import PlotContext
 from ..util.deepmerge import deepmerge
 from copy import deepcopy
+
+if TYPE_CHECKING:
+    from matplotlib.figure import Figure
+    from matplotlib.axes import Axes
 
 ild_style_defaults = {
     'fontname': ['DejaVu Sans'],
@@ -22,9 +22,9 @@ ild_style_defaults = {
     'polarization_em': -0.8
 }
 
-def fig_ild_style(fig_or_ax:Figure|Axes, xlim:list[float]|tuple[float,float]|None=None, bins:Collection|int|None=None,
+def fig_ild_style(fig_or_ax:Union['Figure', 'Axes'], xlim:list[float]|tuple[float,float]|None=None, bins:Collection|int|None=None,
                   xscale:str='linear', xunit:str|None='GeV', xlabel:str='m',
-                  yscale:str='linear', yunit:str|None='events', ylabel_prefix:str='',
+                  yscale:str='linear', yunit:str|None='events', ylabel_prefix:str='', y_label:str|None=None,
                   xlocator:Locator|None=None, ylocator:Locator|None=None,
                   xminor:int|None=5, yminor:int|None=5,
                   beam_spec:bool=True, beam_energy:int=ild_style_defaults['beam_energy'], ax_index:int=0,
@@ -41,7 +41,10 @@ def fig_ild_style(fig_or_ax:Figure|Axes, xlim:list[float]|tuple[float,float]|Non
                   labelsize:int=12, titlesize:int|None=None,
                   show_binning_on_y_scale:bool|None=None,
                   columns:list[str]|None=None,
-                  return_legend_kwargs:bool=False)->Figure|tuple[Figure,dict]:
+                  return_legend_kwargs:bool=False)->Union['Figure', tuple['Figure',dict]]:
+    
+    from matplotlib.figure import Figure
+    from matplotlib.axes import Axes
     
     if isinstance(fig_or_ax, Axes):
         fig = fig_or_ax.figure
@@ -134,17 +137,18 @@ def fig_ild_style(fig_or_ax:Figure|Axes, xlim:list[float]|tuple[float,float]|Non
     ax.tick_params(axis='both', width=1.5, length=5, which='both', direction='in', labelsize=12)
     ax.tick_params(axis='both', width=2.5, length=8)
     
-    y_label = ylabel_prefix + (rf'{yunit}' if (yunit is not None and yunit != '') else '')
-    if is_hist and show_binning_on_y_scale:
-        assert(xlim is not None and bins is not None)
-        
-        nbins = (len(bins) if isinstance(bins, Collection) else bins) if not int_bins else int(round(xlim[1] - xlim[0]))
-        ylabel_binning_val = (xlim[1]-xlim[0])/nbins
-        ylabel_binning_str = (rf'{ylabel_binning_val:.2f}' if ylabel_binning_val >= 0.1 else rf'{ylabel_binning_val:.2E}') if not int_bins else f'bin'
-        y_label += rf' / {ylabel_binning_str}'
-        
-        if (xunit != '' and xunit is not None):
-            y_label += f' {xunit}'
+    if y_label is None:
+        y_label = ylabel_prefix + (rf'{yunit}' if (yunit is not None and yunit != '') else '')
+        if is_hist and show_binning_on_y_scale:
+            assert(xlim is not None and bins is not None)
+            
+            nbins = (len(bins) if isinstance(bins, Collection) else bins) if not int_bins else int(round(xlim[1] - xlim[0]))
+            ylabel_binning_val = (xlim[1]-xlim[0])/nbins
+            ylabel_binning_str = (rf'{ylabel_binning_val:.2f}' if ylabel_binning_val >= 0.1 else rf'{ylabel_binning_val:.2E}') if not int_bins else f'bin'
+            y_label += rf' / {ylabel_binning_str}'
+            
+            if (xunit != '' and xunit is not None):
+                y_label += f' {xunit}'
             
     x_label = rf'${xlabel}$ [{xunit}]' if (xunit is not None and xunit != '') else xlabel
     
@@ -163,7 +167,7 @@ def fig_ild_style(fig_or_ax:Figure|Axes, xlim:list[float]|tuple[float,float]|Non
     else:
         return fig
 
-def update_plot(ax:Axes, x_label:str|None=None, y_label:str|None=None, title:str|None=None, fontname:str|None=None, context:PlotContext|None=None,
+def update_plot(ax:'Axes', x_label:str|None=None, y_label:str|None=None, title:str|None=None, fontname:str|None=None, context:PlotContext|None=None,
                 labelsize:int=12, titlesize:int|None=None, x_tick_label_size:int|None=None, y_tick_label_size:int|None=None, tick_label_size:int|None=None):
     
     if x_tick_label_size is None and tick_label_size is not None:
