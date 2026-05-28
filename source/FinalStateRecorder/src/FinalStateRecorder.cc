@@ -254,6 +254,7 @@ void FinalStateRecorder::init()
 	this->register_process(new qqhh());
 	this->register_process(new n1n1hh());
 	this->register_process(new n23n23hh());
+	//this->register_process(new n1n1hh_w());
 
 	// h4f
 	this->register_process(new e1e1qqh());

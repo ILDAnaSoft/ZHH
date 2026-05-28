@@ -77,7 +77,9 @@ define_vvHH_nonbbbb:FinalStateDefinition = lambda ac, fsc: ac.getCategoryMask('v
 define_v1v1HHbbbb:FinalStateDefinition   = lambda ac, fsc: ac.getCategoryMask('vvHHbbbb') & (fsc.n_ve == 2) & (fsc.n_vmu == 0) & (fsc.n_vtau == 0) & (fsc.n_b_from_higgs == 4)
 define_v23v23HHbbbb:FinalStateDefinition = lambda ac, fsc: ac.getCategoryMask('vvHHbbbb') & (fsc.n_ve == 0) & ((fsc.n_vmu == 2) | (fsc.n_vtau == 2)) & (fsc.n_b_from_higgs == 4)
 
-define_WBF_vvbbbb:FinalStateDefinition = lambda ac, fsc: ac.getCategoryMask('vvHHbbbb') & ((ac.getStore()['massDiNeutrino'] < 79) | (ac.getStore()['massDiNeutrino'] > 102)) & (fsc.n_ve + fsc.n_vmu + fsc.n_vtau == 2) & (fsc.n_b_from_higgs == 4)
+define_WBF_vvbbbb:FinalStateDefinition   = lambda ac, fsc: ac.getCategoryMask('vvHHbbbb') & ((ac.getStore()['massDiNeutrino'] < 79) | (ac.getStore()['massDiNeutrino'] > 102)) & (fsc.n_ve + fsc.n_vmu + fsc.n_vtau == 2) & (fsc.n_b_from_higgs == 4) #WBF events from splitting
+define_v1v1HH_w:FinalStateDefinition       = lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.n1n1hh_w]) #vvHH_w i.e. pure WBF events
+define_v1v1HHbbbb_w:FinalStateDefinition   = lambda ac, fsc: ac.getCategoryMask('v1v1HH_w') & (fsc.n_charged_lep == 0) & (fsc.n_neutral_lep == 2) & (fsc.n_b_from_higgs == 4) # vvHHbbbb_w i.e. pure WBF events
 
 # categorize qqhh
 define_qqHH:FinalStateDefinition         = lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.qqhh]) # qqHH

@@ -63,6 +63,10 @@ class EVENT_CATEGORY_TRUE:
     vvHHbbbb = 135
     vvHH_nonbbbb = 136
     WBF_vvbbbb = 137
+
+    #pure WBF events
+    v1v1HH_w = 138 
+    v1v1HHbbbb_w = 139 
     
     # END
     
