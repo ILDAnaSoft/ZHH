@@ -384,24 +384,12 @@ void ZHHKinFit::init()
   m_pTTree->Branch("Sigma_E2",&m_Sigma_E2);
 
   m_pTTree->Branch("bTags", &m_bTagValues);
-  m_pTTree->Branch("cosbmax", &m_cosbmax, "cosbmax/F");
   m_pTTree->Branch("bmax1", &m_bmax1, "bmax1/F");
   m_pTTree->Branch("bmax2", &m_bmax2, "bmax2/F");
   m_pTTree->Branch("bmax3", &m_bmax3, "bmax3/F");
   m_pTTree->Branch("bmax4", &m_bmax4, "bmax4/F");
   m_pTTree->Branch("bmax5", &m_bmax5, "bmax5/F");
   m_pTTree->Branch("bmax6", &m_bmax6, "bmax6/F");
-  m_pTTree->Branch("scoreU", &m_scoreU);
-  m_pTTree->Branch("scoreUbar", &m_scoreUbar);
-  m_pTTree->Branch("scoreD", &m_scoreD);
-  m_pTTree->Branch("scoreDbar", &m_scoreDbar);
-  m_pTTree->Branch("scoreS", &m_scoreS);
-  m_pTTree->Branch("scoreSbar", &m_scoreSbar);
-  m_pTTree->Branch("scoreC", &m_scoreC);
-  m_pTTree->Branch("scoreCbar", &m_scoreCbar);
-  m_pTTree->Branch("scoreB", &m_scoreB);
-  m_pTTree->Branch("scoreBbar", &m_scoreBbar);
-  m_pTTree->Branch("scoreG", &m_scoreG);
   
   streamlog_out(DEBUG) << "   init finished  " << std::endl;
 
@@ -472,28 +460,14 @@ void ZHHKinFit::Clear()
   m_Sigma_PyE.clear();
   m_Sigma_PzE.clear();
   m_Sigma_E2.clear();
-  m_cosbmax = 0.;
+
+  m_bTagValues.clear();
   m_bmax1 = 0.;
   m_bmax2 = 0.;
   m_bmax3 = 0.;
   m_bmax4 = 0.;
   m_bmax5 = 0.;
   m_bmax6 = 0.;
-  m_scoreU.clear();
-  m_scoreUbar.clear();
-  m_scoreD.clear();
-  m_scoreDbar.clear();
-  m_scoreS.clear();
-  m_scoreSbar.clear();
-  m_scoreC.clear();
-  m_scoreCbar.clear();
-  m_scoreB.clear();
-  m_scoreBbar.clear();
-  m_scoreG.clear();
-  m_bTagsSorted.clear();
-  m_jetTags.clear();
-
-    
 }
 
 void ZHHKinFit::processRunHeader()
