@@ -215,13 +215,6 @@ ZHHKinFit::ZHHKinFit() :
             std::string("mc_bbar")
             );
 
-  registerProcessorParameter("JetTaggingPIDParameters",
-            "Number of jet should be in the event",
-            m_JetTaggingPIDParameters,
-            std::vector<std::string>{"mc_b mc_bbar mc_c mc_cbar mc_d mc_dbar mc_g mc_s mc_sbar mc_u mc_ubar"}
-            );
-
-  
   // Outputs: Fitted jet and leptons and their prefit counterparts, the neutrino correction, and pulls
   registerOutputCollection(LCIO::RECONSTRUCTEDPARTICLE,
 			   "outputLeptonCollection" ,
@@ -390,6 +383,7 @@ void ZHHKinFit::init()
   m_pTTree->Branch("bmax4", &m_bmax4, "bmax4/F");
   m_pTTree->Branch("bmax5", &m_bmax5, "bmax5/F");
   m_pTTree->Branch("bmax6", &m_bmax6, "bmax6/F");
+  m_pTTree->Branch("btagsum", &m_btagsum, "m_btagsum/F");
   
   streamlog_out(DEBUG) << "   init finished  " << std::endl;
 
@@ -462,12 +456,13 @@ void ZHHKinFit::Clear()
   m_Sigma_E2.clear();
 
   m_bTagValues.clear();
-  m_bmax1 = 0.;
-  m_bmax2 = 0.;
-  m_bmax3 = 0.;
-  m_bmax4 = 0.;
-  m_bmax5 = 0.;
-  m_bmax6 = 0.;
+  m_bmax1 = -1.;
+  m_bmax2 = -1.;
+  m_bmax3 = -1.;
+  m_bmax4 = -1.;
+  m_bmax5 = -1.;
+  m_bmax6 = -1.;
+  m_btagsum = -1.;
 }
 
 void ZHHKinFit::processRunHeader()
@@ -667,6 +662,36 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     return;
   }
 
+
+  // B-TAGGING
+  PIDHandler jetPIDh(originalJetCollection);
+  int BTagID = jetPIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterB);
+  int BbarTagID = jetPIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterBbar);
+  m_bTagValues.assign(jets.size(), -1.0);
+  streamlog_out(MESSAGE) << "--- FLAVOR TAG ---" << std::endl;
+  for (unsigned int i_jet = 0; i_jet < jets.size(); i_jet++) {
+    ReconstructedParticle* origJet = dynamic_cast<ReconstructedParticle*>(originalJetCollection->getElementAt(i_jet));
+    const ParticleIDImpl& FTImpl = dynamic_cast<const ParticleIDImpl&>(jetPIDh.getParticleID(origJet, _FTAlgoID));
+    const FloatVec& FTPara = FTImpl.getParameters();
+    m_bTagValues[i_jet] = FTPara[BTagID] + FTPara[BbarTagID];
+    streamlog_out(MESSAGE) << "Jet " << i_jet << std::endl << " > Algo1 - B [B,Bbar] = " << m_bTagValues[i_jet] << " [" << FTPara[BTagID] << ", " << FTPara[BbarTagID] << "]" << std::endl;
+  }
+  // calculate bmax1,2,3,4,5,6 and sum
+  float btagsum = 0;
+  for (unsigned int i = 0; i < m_bTagValues.size(); i++) {
+    m_bTagsSorted.push_back(std::make_pair(i, m_bTagValues[i]));
+    btagsum += m_bTagValues[i];
+  }
+  std::sort (m_bTagsSorted.begin(), m_bTagsSorted.end(), jetTaggingComparator);
+  m_bmax1 = m_bTagsSorted[0].second;
+  m_bmax2 = m_bTagsSorted[1].second;
+  m_bmax3 = m_bTagsSorted[2].second;
+  m_bmax4 = m_bTagsSorted[3].second;
+  m_bmax5 = m_bTagsSorted[4].second;
+  m_bmax6 = m_bTagsSorted[5].second;
+  m_btagsum = btagsum;
+  streamlog_out(MESSAGE) << "btags = " << m_bmax1 << "+" << m_bmax2 << "+" << m_bmax3 << "+" << m_bmax4 << "+" << m_bmax5 << "+" << m_bmax6 << "=" << m_btagsum << std::endl;
+  
   vector<ReconstructedParticleImpl*> startjets;
   vector<ReconstructedParticleImpl*> startleptons;
   vector<ReconstructedParticleImpl*> fittedjets;
@@ -684,7 +709,7 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     woNuFitResult = performvvbbbbFIT( Jets, traceEvent , inputMCParticleCollection);
   }
   if (m_signature == "qqbbbb") {
-    woNuFitResult = performqqbbbbFIT( Jets, traceEvent );
+    woNuFitResult = performqqbbbbFIT( Jets, traceEvent);
   }
   BaseFitter* woNuFitter = woNuFitResult.fitter.get();
   
@@ -2136,29 +2161,75 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
 
   assert(jets.size()==6);
   vector<vector<unsigned int>> perms;
-  if (m_fithypothesis == "ZZH" || m_fithypothesis == "ZZHsoft" || m_fithypothesis == "MH" || m_fithypothesis == "ZHH" || m_fithypothesis == "EQM") {
-    //TO DO: redo permutations for each hypothesis
-    perms = {
-      {0, 1, 2, 3, 4, 5}, {1, 2, 0, 3, 4, 5}, {2, 4, 0, 1, 3, 5},
-      {0, 1, 2, 4, 3, 5}, {1, 2, 0, 4, 3, 5}, {2, 4, 0, 3, 1, 5},
-      {0, 1, 2, 5, 3, 4}, {1, 2, 0, 5, 3, 4}, {2, 4, 0, 5, 1, 3},
-      {0, 2, 1, 3, 4, 5}, {1, 3, 0, 2, 4, 5}, {2, 5, 0, 1, 3, 4},
-      {0, 2, 1, 4, 3, 5}, {1, 3, 0, 4, 2, 5}, {2, 5, 0, 3, 1, 4},
-      {0, 2, 1, 5, 3, 4}, {1, 3, 0, 5, 2, 4}, {2, 5, 0, 4, 1, 3},
-      {0, 3, 1, 2, 4, 5}, {1, 4, 0, 2, 3, 5}, {3, 4, 0, 1, 2, 5},
-      {0, 3, 1, 4, 2, 5}, {1, 4, 0, 3, 2, 5}, {3, 4, 0, 2, 1, 5},
-      {0, 3, 1, 5, 2, 4}, {1, 4, 0, 5, 2, 3}, {3, 4, 0, 5, 1, 2},
-      {0, 4, 1, 2, 3, 5}, {1, 5, 0, 2, 3, 4}, {3, 5, 0, 1, 2, 4},
-      {0, 4, 1, 3, 2, 5}, {1, 5, 0, 3, 2, 4}, {3, 5, 0, 2, 1, 4},
-      {0, 4, 1, 5, 2, 3}, {1, 5, 0, 4, 2, 3}, {3, 5, 0, 4, 1, 2},
-      {0, 5, 1, 2, 3, 4}, {2, 3, 0, 1, 4, 5}, {4, 5, 0, 1, 2, 3},
-      {0, 5, 1, 3, 2, 4}, {2, 3, 0, 4, 1, 5}, {4, 5, 0, 2, 1, 3},
-      {0, 5, 1, 4, 2, 3}, {2, 3, 0, 5, 1, 4}, {4, 5, 0, 3, 1, 2},
-    };
+  if (m_btagsum > 4) { //assumme bbbbbb i.e. all 45 permutatibs
+    if (m_fithypothesis == "ZZH" || m_fithypothesis == "ZZHsoft") {
+      //TO DO: redo permutations for each hypothesis
+      //Combinatorics reduces by having same two equivalent mass constraints
+      //Perms below though assumes H={0,1}, Z={2,3}, Z={4,5} or just M_{jet[2],jet[3]}=M_{jet[4],jet[5]}
+      perms = {  
+	{0, 1, 2, 3, 4, 5}, {1, 2, 0, 3, 4, 5}, {2, 4, 0, 1, 3, 5},
+	{0, 1, 2, 4, 3, 5}, {1, 2, 0, 4, 3, 5}, {2, 4, 0, 3, 1, 5},
+	{0, 1, 2, 5, 3, 4}, {1, 2, 0, 5, 3, 4}, {2, 4, 0, 5, 1, 3},
+	{0, 2, 1, 3, 4, 5}, {1, 3, 0, 2, 4, 5}, {2, 5, 0, 1, 3, 4},
+	{0, 2, 1, 4, 3, 5}, {1, 3, 0, 4, 2, 5}, {2, 5, 0, 3, 1, 4},
+	{0, 2, 1, 5, 3, 4}, {1, 3, 0, 5, 2, 4}, {2, 5, 0, 4, 1, 3},
+	{0, 3, 1, 2, 4, 5}, {1, 4, 0, 2, 3, 5}, {3, 4, 0, 1, 2, 5},
+	{0, 3, 1, 4, 2, 5}, {1, 4, 0, 3, 2, 5}, {3, 4, 0, 2, 1, 5},
+	{0, 3, 1, 5, 2, 4}, {1, 4, 0, 5, 2, 3}, {3, 4, 0, 5, 1, 2},
+	{0, 4, 1, 2, 3, 5}, {1, 5, 0, 2, 3, 4}, {3, 5, 0, 1, 2, 4},
+	{0, 4, 1, 3, 2, 5}, {1, 5, 0, 3, 2, 4}, {3, 5, 0, 2, 1, 4},
+	{0, 4, 1, 5, 2, 3}, {1, 5, 0, 4, 2, 3}, {3, 5, 0, 4, 1, 2},
+	{0, 5, 1, 2, 3, 4}, {2, 3, 0, 1, 4, 5}, {4, 5, 0, 1, 2, 3},
+	{0, 5, 1, 3, 2, 4}, {2, 3, 0, 4, 1, 5}, {4, 5, 0, 2, 1, 3},
+	{0, 5, 1, 4, 2, 3}, {2, 3, 0, 5, 1, 4}, {4, 5, 0, 3, 1, 2},
+      };
+    } else if (m_fithypothesis == "ZHH" || m_fithypothesis == "ZHHsoft" || m_fithypothesis == "EQM") {
+      //Perms below assumes H={0,1}, H={2,3}, Z={4,5}  or just M_{jet[0],jet[1]}=M_{jet[2],jet[3]}
+      perms = {  
+	{2, 3, 4, 5, 0, 1}, {0, 3, 4, 5, 1, 2}, {0, 1, 3, 5, 2, 4},
+	{2, 4, 3, 5, 0, 1}, {0, 4, 3, 5, 1, 2}, {0, 3, 1, 5, 2, 4},
+	{2, 5, 3, 4, 0, 1}, {0, 5, 3, 4, 1, 2}, {0, 5, 1, 3, 2, 4},
+	{1, 3, 4, 5, 0, 2}, {0, 2, 4, 5, 1, 3}, {0, 1, 3, 4, 2, 5},
+	{1, 4, 3, 5, 0, 2}, {0, 4, 2, 5, 1, 3}, {0, 3, 1, 4, 2, 5},
+	{1, 5, 3, 4, 0, 2}, {0, 5, 2, 4, 1, 3}, {0, 4, 1, 3, 2, 5},
+	{1, 2, 4, 5, 0, 3}, {0, 2, 3, 5, 1, 4}, {0, 1, 2, 5, 3, 4},
+	{1, 4, 2, 5, 0, 3}, {0, 3, 2, 5, 1, 4}, {0, 2, 1, 5, 3, 4},
+	{1, 5, 2, 4, 0, 3}, {0, 5, 2, 3, 1, 4}, {0, 5, 1, 2, 3, 4},
+	{1, 2, 3, 5, 0, 4}, {0, 2, 3, 4, 1, 5}, {0, 1, 2, 4, 3, 5},
+	{1, 3, 2, 5, 0, 4}, {0, 3, 2, 4, 1, 5}, {0, 2, 1, 4, 3, 5},
+	{1, 5, 2, 3, 0, 4}, {0, 4, 2, 3, 1, 5}, {0, 4, 1, 2, 3, 5},
+	{1, 2, 3, 4, 0, 5}, {0, 1, 4, 5, 2, 3}, {0, 1, 2, 3, 4, 5},
+	{1, 3, 2, 4, 0, 5}, {0, 4, 1, 5, 2, 3}, {0, 2, 1, 3, 4, 5},
+	{1, 4, 2, 3, 0, 5}, {0, 5, 1, 4, 2, 3}, {0, 3, 1, 2, 4, 5},
+      };      
+    } else {
+      perms = {{0, 1, 2, 3, 4, 5}};
+    }
   } else {
-    perms = {{0, 1, 2, 3, 4, 5}};
+    if (m_fithypothesis == "ZZH" || m_fithypothesis == "ZZHsoft" || m_fithypothesis == "MH") {
+      //jet[m_bTagsSorted[i].first] i.e. jet of ith highest b-tag score
+      perms = { //H={perm[0],perm[1]}, Z(->bb)={perm[2],perm[3]}, Z(->qq)={perm[4],perm[5]}
+	{m_bTagsSorted[0].first, m_bTagsSorted[1].first, m_bTagsSorted[2].first, m_bTagsSorted[3].first, m_bTagsSorted[4].first, m_bTagsSorted[5].first},
+	{m_bTagsSorted[0].first, m_bTagsSorted[2].first, m_bTagsSorted[1].first, m_bTagsSorted[3].first, m_bTagsSorted[4].first, m_bTagsSorted[5].first},
+	{m_bTagsSorted[0].first, m_bTagsSorted[3].first, m_bTagsSorted[1].first, m_bTagsSorted[2].first, m_bTagsSorted[4].first, m_bTagsSorted[5].first},
+	{m_bTagsSorted[1].first, m_bTagsSorted[2].first, m_bTagsSorted[0].first, m_bTagsSorted[3].first, m_bTagsSorted[4].first, m_bTagsSorted[5].first},
+	{m_bTagsSorted[1].first, m_bTagsSorted[3].first, m_bTagsSorted[0].first, m_bTagsSorted[2].first, m_bTagsSorted[4].first, m_bTagsSorted[5].first},
+	{m_bTagsSorted[2].first, m_bTagsSorted[3].first, m_bTagsSorted[0].first, m_bTagsSorted[1].first, m_bTagsSorted[4].first, m_bTagsSorted[5].first}
+      };
+    } else if (m_fithypothesis == "ZHH" || m_fithypothesis == "EQM"){
+      //jet[m_bTagsSorted[i].first] i.e. jet of ith highest b-tag score
+      perms = { //H={perm[0],perm[1]}, H={perm[2],perm[3]}, Z(->qq)={perm[4],perm[5]}
+	{m_bTagsSorted[0].first, m_bTagsSorted[1].first, m_bTagsSorted[2].first, m_bTagsSorted[3].first, m_bTagsSorted[4].first, m_bTagsSorted[5].first}
+	{m_bTagsSorted[0].first, m_bTagsSorted[2].first, m_bTagsSorted[1].first, m_bTagsSorted[3].first, m_bTagsSorted[4].first, m_bTagsSorted[5].first}
+	{m_bTagsSorted[0].first, m_bTagsSorted[3].first, m_bTagsSorted[1].first, m_bTagsSorted[2].first, m_bTagsSorted[4].first, m_bTagsSorted[5].first}
+      };
+    } else {
+      perms = {{0, 1, 2, 3, 4, 5}};
+    }
   }
 
+
+  
   for (unsigned int iperm = 0; iperm < perms.size(); iperm++) {
     streamlog_out(MESSAGE) << " ================================================= " << std::endl ;
     streamlog_out(MESSAGE) << " iperm = " << iperm << std::endl ;
@@ -2242,14 +2313,22 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
     h2m->addToFOList (*jfo_perm->at(2), 1);
     h2m->addToFOList (*jfo_perm->at(3), 1);
     h2m->setName("higgs2 mass");
-    shared_ptr<SoftGaussMassConstraint> zmsoft = make_shared<SoftGaussMassConstraint>(2.4952/2,91.2); 
-    zmsoft->addToFOList (*jfo_perm->at(2), 1);
-    zmsoft->addToFOList (*jfo_perm->at(3), 1);
-    zmsoft->setName("soft z mass");
-    shared_ptr<MassConstraint> zm = make_shared<MassConstraint>(91.2);
-    zm->addToFOList (*jfo_perm->at(2), 1);
-    zm->addToFOList (*jfo_perm->at(3), 1);
-    zm->setName("hard z mass");
+    shared_ptr<SoftGaussMassConstraint> z1msoft = make_shared<SoftGaussMassConstraint>(2.4952/2,91.2); 
+    z1msoft->addToFOList (*jfo_perm->at(2), 1);
+    z1msoft->addToFOList (*jfo_perm->at(3), 1);
+    z1msoft->setName("soft z1 mass");
+    shared_ptr<MassConstraint> z1m = make_shared<MassConstraint>(91.2);
+    z1m->addToFOList (*jfo_perm->at(2), 1);
+    z1m->addToFOList (*jfo_perm->at(3), 1);
+    z1m->setName("hard z1 mass");
+    shared_ptr<SoftGaussMassConstraint> z2msoft = make_shared<SoftGaussMassConstraint>(2.4952/2,91.2); 
+    z2msoft->addToFOList (*jfo_perm->at(2), 1);
+    z2msoft->addToFOList (*jfo_perm->at(3), 1);
+    z2msoft->setName("soft z2 mass");
+    shared_ptr<MassConstraint> z2m = make_shared<MassConstraint>(91.2);
+    z2m->addToFOList (*jfo_perm->at(2), 1);
+    z2m->addToFOList (*jfo_perm->at(3), 1);
+    z2m->setName("hard z2 mass");
     shared_ptr<MassConstraint> eqm = make_shared<MassConstraint>(0.);
     eqm->addToFOList (*jfo_perm->at(0), 1);
     eqm->addToFOList (*jfo_perm->at(1), 1);
@@ -2317,17 +2396,22 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
     fitter->addConstraint( pyc.get() );
     fitter->addConstraint( pzc.get() );
     fitter->addConstraint( ec.get() );
-    if (m_fithypothesis == "MH") {
-      fitter->addConstraint( h1m.get() );
-    } else if (m_fithypothesis == "ZHH") {
+    if (m_fithypothesis == "ZHH") {
       fitter->addConstraint( h1m.get() );
       fitter->addConstraint( h2m.get() );
+      fitter->addConstraint( z2m.get() );
+    } else ifif (m_fithypothesis == "ZHHsoft") {
+      fitter->addConstraint( h1m.get() );
+      fitter->addConstraint( h2m.get() );
+      fitter->addConstraint( z2msoft.get() );
     } else if (m_fithypothesis == "ZZH") {
       fitter->addConstraint( h1m.get() );
-      fitter->addConstraint( zm.get() );
+      fitter->addConstraint( z1m.get() );
+      fitter->addConstraint( z2m.get() );
     } else if (m_fithypothesis == "ZZHsoft") {
       fitter->addConstraint( h1m.get() );
-      fitter->addConstraint( zmsoft.get() );
+      fitter->addConstraint( z1msoft.get() );
+      fitter->addConstraint( z2msoft.get() );
     } else if (m_fithypothesis == "EQM") {
       fitter->addConstraint( eqm.get() );
     }
@@ -2336,10 +2420,10 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
     auto fitconstraints = fitter->getConstraints();
     auto fitsoftconstraints = fitter->getSoftConstraints();
     for (auto it = fitconstraints->begin(); it != fitconstraints->end(); ++it) {
-      streamlog_out(MESSAGE8) << (*it)->getName() << " constraint value = " << (*it)->getValue() << std::endl; //changed from debug level 
+      streamlog_out(MESSAGE8) << (*it)->getName() << " hard constraint value = " << (*it)->getValue() << std::endl; //changed from debug level 
     }
     for (auto it = fitsoftconstraints->begin(); it != fitsoftconstraints->end(); ++it) {
-      streamlog_out(MESSAGE8) << (*it)->getName() << " constraint value = " << (*it)->getValue() << std::endl; //changed from debug level 
+      streamlog_out(MESSAGE8) << (*it)->getName() << " soft constraint value = " << (*it)->getValue() << std::endl; //changed from debug level 
     }
 
     //perform fit: 
@@ -2616,8 +2700,8 @@ std::pair<std::vector<double>,std::vector<double>> ZHHKinFit::calculateInitialVa
     } else if (m_signature == "vvbbbb") {
       z->addToFOList(*zfo, 1);      
     } else if (m_signature == "qqbbbb") {
-      z->addToFOList(*jfo->at(4), 1);
-      z->addToFOList(*jfo->at(5), 1);
+      z->addToFOList(*jfo_perm->at(4), 1);
+      z->addToFOList(*jfo_perm->at(5), 1);
     }
     z->setName("z mass");  
     shared_ptr<MassConstraint> hh = make_shared<MassConstraint>(250.);
@@ -2633,8 +2717,8 @@ std::pair<std::vector<double>,std::vector<double>> ZHHKinFit::calculateInitialVa
     } else if (m_signature == "vvbbbb") {
       zhh->addToFOList(*zfo, 1);      
     } else if (m_signature == "qqbbbb") {
-      zhh->addToFOList(*jfo->at(4), 1);
-      zhh->addToFOList(*jfo->at(5), 1);
+      zhh->addToFOList(*jfo_perm->at(4), 1);
+      zhh->addToFOList(*jfo_perm->at(5), 1);
     }
     zhh->addToFOList (*jfo_perm->at(0), 1);
     zhh->addToFOList (*jfo_perm->at(1), 1);

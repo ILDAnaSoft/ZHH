@@ -134,6 +134,9 @@ private:
   std::string _OutLeptonPullsCol{};
   std::string _OutJetPullsCol{};
   std::string m_signature{};
+  std::string m_JetTaggingPIDAlgorithm{}; 
+  std::string m_JetTaggingPIDParameterB{};
+  std::string m_JetTaggingPIDParameterBbar{};
   int m_nAskedJets{};
   int m_nAskedLeps{};
   bool m_fitISR = true;
@@ -188,7 +191,7 @@ private:
   float m_ZHHMassBeforeFit{};
   float m_ISREnergyBeforeFit{};
   float	m_p1stBeforeFit{};
-	float m_cos1stBeforeFit{};
+  float m_cos1stBeforeFit{};
   float m_ZMassAfterFit{};
   float m_H1MassAfterFit{};
   float m_H2MassAfterFit{};
@@ -196,7 +199,7 @@ private:
   float m_ZHHMassAfterFit{};
   float m_ISREnergyAfterFit{};
   float	m_p1stAfterFit{};
-	float m_cos1stAfterFit{};
+  float m_cos1stAfterFit{};
   float m_FitProbability{};
   float m_FitChi2{};
   std::vector<int> m_perm{};
@@ -224,6 +227,19 @@ private:
   std::vector<float> m_Sigma_PyE{};
   std::vector<float> m_Sigma_PzE{};
   std::vector<float> m_Sigma_E2{};
+  std::vector<float> m_bTagValues{};
+  float m_bmax1{};
+  float m_bmax2{};
+  float m_bmax3{};
+  float m_bmax4{};
+  float m_bmax5{};
+  float m_bmax6{};
+  float m_btagsum{};
+  
+  
+  typedef std::pair<unsigned int, double> JetTaggingPair;
+  static bool jetTaggingComparator ( const JetTaggingPair& l, const JetTaggingPair& r) { return l.second > r.second || std::isnan(r.second); };
+  std::vector<JetTaggingPair> m_bTagsSorted{}; // (jet index, btag1value) sorted DESC; first highest, last lowest
   
 };
 
