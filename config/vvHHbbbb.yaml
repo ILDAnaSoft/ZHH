@@ -109,6 +109,16 @@ sources:
     disabled: false
     reset: false
 
+  - name: n1n1hhnores
+    path: $DATA_PATH/AnalysisCombine/550-n1n1hhnores-$CONF_SUFFIX
+    root_files: /data/dust/user/jtorndal/zhh/AnalysisFinal/550-n1n1hhnores-$CONF_SUFFIX/*.root
+    event_categorization:
+      default: null
+      order: null
+      items: [ v1v1HH_w, v1v1HHbbbb_w ] 
+    disabled: false
+    reset: false
+
 # feature definition
 # controls how data from ROOT input files of each source should be interpreted and
 # converted to columnar format. assumes that branches are in regular shape, i.e.
@@ -370,7 +380,7 @@ mvas:
     # two-element arrays of structure (label, name of registered EventCategory)
     # see sources/.../event_categorization/items
     - [0, 'v23v23HHbbbb']
-    - [1, 'WBF_vvbbbb']
+    - [1, 'v1v1HHbbbb_w']
     - [2, 'vvqqH']
     - [3, 'vvbbbb']
     - [4, 'vvbb']
@@ -515,9 +525,10 @@ actions:
   - type: PlotMVAFeatures
     mva: default_mva
     file: $hypothesis_mva_training_distributions.pdf
-    plot_kwargs:
-    - bins: 50
-
+    plot_kwargs: {
+    bins: 50
+    }
+    
   - type: WriteROOTSnapshot
     file: '$hypothesis_mva.root'
     include_custom_columns: [split, weights_split]

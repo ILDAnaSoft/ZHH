@@ -78,6 +78,8 @@ define_v1v1HHbbbb:FinalStateDefinition   = lambda ac, fsc: ac.getCategoryMask('v
 define_v23v23HHbbbb:FinalStateDefinition = lambda ac, fsc: ac.getCategoryMask('vvHHbbbb') & (fsc.n_ve == 0) & ((fsc.n_vmu == 2) | (fsc.n_vtau == 2)) & (fsc.n_b_from_higgs == 4)
 
 define_WBF_vvbbbb:FinalStateDefinition = lambda ac, fsc: ac.getCategoryMask('vvHHbbbb') & ((ac.getStore()['massDiNeutrino'] < 79) | (ac.getStore()['massDiNeutrino'] > 102)) & (fsc.n_ve + fsc.n_vmu + fsc.n_vtau == 2) & (fsc.n_b_from_higgs == 4)
+define_v1v1HH_w:FinalStateDefinition       = lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.n1n1hh_w]) #vvHH_w i.e. pure WBF events
+define_v1v1HHbbbb_w:FinalStateDefinition   = lambda ac, fsc: ac.getCategoryMask('v1v1HH_w') & (fsc.n_charged_lep == 0) & (fsc.n_neutral_lep == 2) & (fsc.n_b_from_higgs == 4) # vvHHbbbb_w i.e. pure WBF events
 
 # categorize qqhh
 define_qqHH:FinalStateDefinition         = lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.qqhh]) # qqHH
@@ -131,17 +133,6 @@ def categorize_llHH(ac:DataSource):
     ac.registerEventCategory('llHH_llbbbb', define_llHH_llbbbb, None)
     ac.registerEventCategory('llHH_llnonbbbb', define_llHH_llnonbbbb, None)
     ac.registerEventCategory('llqqh', define_llqqH, EventCategories.llqqH)
-
-def categorize_vvhh(ac:DataSource):
-    from zhh import EventCategories
-    
-    ac.registerEventCategory('vvhh', define_vvHH, EventCategories.vvHH)
-    ac.registerEventCategory('v1v1HHbbbb', define_v1v1HHbbbb, EventCategories.v1v1HHbbbb)
-    ac.registerEventCategory('v23v23HHbbbb', define_v23v23HHbbbb, EventCategories.v23v23HHbbbb)
-    ac.registerEventCategory('vvhh_vvbbbb', define_vvhh_vvbbbb, None)
-    ac.registerEventCategory('vvhh_vvnonbbbb', define_vvhh_vvnonbbbb, None)
-    ac.registerEventCategory('WBF_vvbbbb', define_WBF_vvbbbb, None)
-    ac.registerEventCategory('vvqqh', define_vvqqh, EventCategories.vvqqH)
 
 def categorize_tthz(ac:DataSource):
     from zhh import EventCategories

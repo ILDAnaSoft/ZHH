@@ -18,6 +18,7 @@ if __name__ == "__main__":
     
     # process the steering file -> sources and final state info
     print("----------------------- Processing steering file -----------------------------")
+    breakpoint()
     steer = cutflow_parse_steering_file(args.steer)
     sources_map, final_state_configs, reset_sources = cutflow_process_steering(steer, integrity_check=not args.skip_integrity_check,
                                                                                check_requires_exact_path_match=not args.skip_integrity_check,
