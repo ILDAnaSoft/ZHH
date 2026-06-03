@@ -51,6 +51,13 @@ ZHHKinFit::ZHHKinFit() :
 			  std::string("Durham4Jets")
 			  );
 
+  registerInputCollection( LCIO::RECONSTRUCTEDPARTICLE,
+			   "RecoJetCollection" ,
+			   "Name of the input Reconstructed Jet collection"  ,
+			   m_recoJetCollection ,
+			   std::string("Durham_nJets")
+			   ); //for b-tagging
+  
   registerInputCollection(LCIO::VERTEX,
 			  "SLDVertexCollection" ,
 			  "Name of Semi-Leptonic Decay Vertices Collection"  ,
@@ -99,7 +106,7 @@ ZHHKinFit::ZHHKinFit() :
 			  _recoMCTruthLink,
 			  std::string("RecoMCTruthLink")
 			  );
-  
+
   registerProcessorParameter("whichSignature",
 			     "Which signature; llbbbb, vvbbbb or qqbbbb",
 			     m_signature,
@@ -479,8 +486,9 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
   streamlog_out(WARNING) << "	////////////////////////////////// processing event " << m_nEvt << " in run " << m_nRun << " /////////////////////////////////////////////////" << std::endl;
   streamlog_out(MESSAGE1) << "	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
   
-  LCCollection *inputJetCollection = NULL;
   LCCollection *inputLeptonCollection = NULL;
+  LCCollection *inputJetCollection = NULL;
+  LCCollection *recoJetCollection = NULL;
   LCCollection *inputSLDecayCollection = NULL;
   LCCollection *inputMCParticleCollection = NULL;
   IMPL::LCCollectionVec* outputLeptonCollection = NULL;
@@ -513,6 +521,14 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     inputJetCollection = pLCEvent->getCollection( m_inputJetCollection );
   } catch(DataNotAvailableException &e) {
     streamlog_out(MESSAGE) << "processEvent : Input jet collection not found in event " << m_nEvt << std::endl;
+    m_pTTree->Fill();
+    return;
+  }
+  try {
+    streamlog_out(DEBUG0) << "  getting reco jet collection: " << m_recoJetCollection << std::endl ;
+    recoJetCollection = pLCEvent->getCollection( m_recoJetCollection );
+  } catch(DataNotAvailableException &e) {
+    streamlog_out(MESSAGE) << "processEvent : reco jet collection not found in event " << m_nEvt << std::endl;
     m_pTTree->Fill();
     return;
   }
@@ -664,14 +680,15 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
 
 
   // B-TAGGING
-  PIDHandler jetPIDh(originalJetCollection);
+  PIDHandler jetPIDh(recoJetCollection);
+  int _FTAlgoID = jetPIDh.getAlgorithmID(m_JetTaggingPIDAlgorithm);
   int BTagID = jetPIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterB);
   int BbarTagID = jetPIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterBbar);
-  m_bTagValues.assign(jets.size(), -1.0);
+  m_bTagValues.assign(m_nJets, -1.0);
   streamlog_out(MESSAGE) << "--- FLAVOR TAG ---" << std::endl;
-  for (unsigned int i_jet = 0; i_jet < jets.size(); i_jet++) {
-    ReconstructedParticle* origJet = dynamic_cast<ReconstructedParticle*>(originalJetCollection->getElementAt(i_jet));
-    const ParticleIDImpl& FTImpl = dynamic_cast<const ParticleIDImpl&>(jetPIDh.getParticleID(origJet, _FTAlgoID));
+  for (int i_jet = 0; i_jet < m_nJets; i_jet++) {
+    ReconstructedParticle* recoJet = dynamic_cast<ReconstructedParticle*>(recoJetCollection->getElementAt(i_jet));
+    const ParticleIDImpl& FTImpl = dynamic_cast<const ParticleIDImpl&>(jetPIDh.getParticleID(recoJet, _FTAlgoID));
     const FloatVec& FTPara = FTImpl.getParameters();
     m_bTagValues[i_jet] = FTPara[BTagID] + FTPara[BbarTagID];
     streamlog_out(MESSAGE) << "Jet " << i_jet << std::endl << " > Algo1 - B [B,Bbar] = " << m_bTagValues[i_jet] << " [" << FTPara[BTagID] << ", " << FTPara[BbarTagID] << "]" << std::endl;
@@ -1903,7 +1920,7 @@ ZHHKinFit::FitResult ZHHKinFit::performvvbbbbFIT( pfoVector jets, bool traceEven
     //////												    //////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     
-    float target_p_due_crossing_angle = m_ECM * 0.007; // crossing angle = 14 mrad
+    //float target_p_due_crossing_angle = m_ECM * 0.007; // crossing angle = 14 mrad
     shared_ptr<MomentumConstraint> pxc = make_shared<MomentumConstraint>( 0 , 1 , 0 , 0 , target_p_due_crossing_angle);//Factor for: (energy sum, px sum, py sum,pz sum,target value of sum)    
     pxc->setName("sum(p_x)");
     for (auto j : *jfo_perm) pxc->addToFOList(*j);
@@ -1919,7 +1936,7 @@ ZHHKinFit::FitResult ZHHKinFit::performvvbbbbFIT( pfoVector jets, bool traceEven
     for (auto j : *jfo_perm) pzc->addToFOList(*j);
     for (auto z : *zfo_perm) pzc->addToFOList(*z);
     
-    double E_lab = 2 * sqrt( std::pow( 0.548579909e-3 , 2 ) + std::pow( m_ECM / 2 , 2 ) + std::pow( target_p_due_crossing_angle , 2 ) + 0. + 0.); //TODO: check equation
+    //double E_lab = 2 * sqrt( std::pow( 0.548579909e-3 , 2 ) + std::pow( m_ECM / 2 , 2 ) + std::pow( target_p_due_crossing_angle , 2 ) + 0. + 0.); //TODO: check equation
     shared_ptr<MomentumConstraint> ec = make_shared<MomentumConstraint>(1, 0, 0, 0, E_lab);
     ec->setName("sum(E)");
     for (auto j : *jfo_perm) ec->addToFOList(*j);
@@ -1939,8 +1956,8 @@ ZHHKinFit::FitResult ZHHKinFit::performvvbbbbFIT( pfoVector jets, bool traceEven
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     MCParticle* ISR1 = (MCParticle*) inputMCParticleCollection->getElementAt(6);
     MCParticle* ISR2 = (MCParticle*) inputMCParticleCollection->getElementAt(7);
-    float trueisrpx;
-    if (ISR1->getPDG() == 22 && ISR2->getPDG() == 22) trueisrpx = (ISR1->getEnergy() > ISR2->getEnergy()) ? ISR1->getMomentum()[2] : ISR2->getMomentum()[2];
+    //float trueisrpx;
+    //if (ISR1->getPDG() == 22 && ISR2->getPDG() == 22) trueisrpx = (ISR1->getEnergy() > ISR2->getEnergy()) ? ISR1->getMomentum()[2] : ISR2->getMomentum()[2];
     //shared_ptr<ISRPhotonFitObject> photon = make_shared<ISRPhotonFitObject>(0., 0., trueisrpx, b, ISRPzMaxB);
     shared_ptr<ISRPhotonFitObject> photon = make_shared<ISRPhotonFitObject>(0., 0., -pzc->getValue(), b, ISRPzMaxB);
     photon->setName("photon");
@@ -2219,8 +2236,8 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
     } else if (m_fithypothesis == "ZHH" || m_fithypothesis == "EQM"){
       //jet[m_bTagsSorted[i].first] i.e. jet of ith highest b-tag score
       perms = { //H={perm[0],perm[1]}, H={perm[2],perm[3]}, Z(->qq)={perm[4],perm[5]}
-	{m_bTagsSorted[0].first, m_bTagsSorted[1].first, m_bTagsSorted[2].first, m_bTagsSorted[3].first, m_bTagsSorted[4].first, m_bTagsSorted[5].first}
-	{m_bTagsSorted[0].first, m_bTagsSorted[2].first, m_bTagsSorted[1].first, m_bTagsSorted[3].first, m_bTagsSorted[4].first, m_bTagsSorted[5].first}
+	{m_bTagsSorted[0].first, m_bTagsSorted[1].first, m_bTagsSorted[2].first, m_bTagsSorted[3].first, m_bTagsSorted[4].first, m_bTagsSorted[5].first},
+	{m_bTagsSorted[0].first, m_bTagsSorted[2].first, m_bTagsSorted[1].first, m_bTagsSorted[3].first, m_bTagsSorted[4].first, m_bTagsSorted[5].first},
 	{m_bTagsSorted[0].first, m_bTagsSorted[3].first, m_bTagsSorted[1].first, m_bTagsSorted[2].first, m_bTagsSorted[4].first, m_bTagsSorted[5].first}
       };
     } else {
@@ -2400,7 +2417,7 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
       fitter->addConstraint( h1m.get() );
       fitter->addConstraint( h2m.get() );
       fitter->addConstraint( z2m.get() );
-    } else ifif (m_fithypothesis == "ZHHsoft") {
+    } else if (m_fithypothesis == "ZHHsoft") {
       fitter->addConstraint( h1m.get() );
       fitter->addConstraint( h2m.get() );
       fitter->addConstraint( z2msoft.get() );

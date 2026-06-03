@@ -116,6 +116,7 @@ private:
   
   std::string m_inputleptonCollection{};
   std::string m_inputJetCollection{};
+  std::string m_recoJetCollection{};
   std::string m_inputSLDVertexCollection{};
   std::string m_inputJetSLDLink{};
   std::string m_inputSLDNuLink{};
