@@ -10,7 +10,8 @@
 # FastSimSGV to be all available 4f samples, the 4fsl then
 # depends on 4f and only uses the semileptonic samples.
 
-from analysis.framework import AnalysisConfiguration, zhh_configs
+#from analysis.framework import AnalysisConfiguration, zhh_configs
+from hep_workflows import AnalysisConfiguration, configurations
 from typing import TYPE_CHECKING
 from os import environ, path as osp
 import numpy as np
@@ -18,7 +19,13 @@ from zhh import glob_exp
 
 if TYPE_CHECKING:
     from analysis.tasks import RawIndex, AbstractIndex
-    
+
+# load prod configs
+from .configs.conf_550_fast_perf import *
+from .configs.conf_550_fast_pfl import *
+from .configs.conf_550_full import *
+from .configs.conf_550_fast_perfsmbc import *
+
 # only configurations
 if False:
     # example how to use Whizard before SGV
@@ -308,17 +315,12 @@ class Config_550_n1n1hhnores_fast_perf(AnalysisConfiguration):
     marlin_globals = {  }
     marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
 
-from .configs.conf_550_fast_perf import *
-from .configs.conf_550_fast_pfl import *
-from .configs.conf_550_full import *
-from .configs.conf_550_fast_perfsmbc import *
-
 #print('List of registered configs/tags:')
 #for key, val in zhh_configs.definitions.items():
 #    print(key)
 
-zhh_configs.add(Config_500_zh_tau_fast_perf())
-zhh_configs.add(Config_500_zh10_tau_fast_perf())
-zhh_configs.add(Config_250_ftag_fast_perf())
-zhh_configs.add(Config_550_bbbb_fast_perf())
-zhh_configs.add(Config_550_n1n1hhnores_fast_perf())
+configurations.add(Config_500_zh_tau_fast_perf())
+configurations.add(Config_500_zh10_tau_fast_perf())
+configurations.add(Config_250_ftag_fast_perf())
+configurations.add(Config_550_bbbb_fast_perf())
+configurations.add(Config_550_n1n1hhnores_fast_perf())

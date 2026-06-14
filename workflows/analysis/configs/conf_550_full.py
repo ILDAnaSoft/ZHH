@@ -1,11 +1,11 @@
-from analysis.framework import AnalysisConfiguration, zhh_configs
+from hep_workflows import AnalysisConfiguration, configurations
 from typing import TYPE_CHECKING
 from os import environ, path as osp
 import numpy as np
 from zhh import glob_exp
 
 if TYPE_CHECKING:
-    from analysis.tasks import RawIndex, AbstractIndex
+    from hep_workflows import RawIndex, AbstractIndex
 
 class Config_550_llhh_full(AnalysisConfiguration):
     tag = '550-llhh-full'
