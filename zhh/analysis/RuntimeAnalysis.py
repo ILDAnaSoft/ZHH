@@ -105,7 +105,7 @@ def get_runtime_analysis(DATA_ROOT:str|None=None,
 
 def get_adjusted_time_per_event(runtime_analysis:np.ndarray,
                                  MAX_CAP:float|None=None,
-                                 MIN_CAP:float|None=0.01,
+                                 MIN_CAP:float=0.01,
                                  T0:int=0)->np.ndarray:
     
     """Average for each process (i.e. over each polarization) the processing
