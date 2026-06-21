@@ -266,7 +266,18 @@ class Config_550_bbbb_fast_perf(AnalysisConfiguration):
     tag = '550-bbbb-fast-perf'
     
     whizard_options = [
-        { 'process_name': 'bbbb_sl0', 'process_definition': '', 'template_dir': '$REPO_ROOT/workflows/resources/whizard_template', 'sindarin_file': 'whizard.base550.sin', 'iters_per_polarization': {} }
+        {
+            'process_name': 'bbbb_sl0',
+            'process_definition': '',
+            'template_dir': '$REPO_ROOT/workflows/resources/whizard_template',
+            'sindarin_file': 'whizard.base550.sin',
+            'iters_per_polarization': {
+                'eL.pL': 10,
+                'eL.pR': 10,
+                'eR.pL': 10,
+                'eR.pR': 10
+            }
+        }
     ]
     
     def sgv_inputs(self, fast_sim_task):
