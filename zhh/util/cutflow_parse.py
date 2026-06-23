@@ -200,7 +200,8 @@ class Interpretation(TypedDict):
     nan_to: NotRequired[float|int]
 
 def cutflow_provision_features(interpretations:list[Interpretation],
-                                      root_files_glob:str, path:str, file:str,
+                                      root_files_glob:str, items_path:str, file:str,
+                                      ds_path:str|None=None,
                                       integrity_check:bool=True,
                                       base_tree:str='FinalStates',
                                       check_requires_exact_path_match:bool=True,
@@ -211,9 +212,11 @@ def cutflow_provision_features(interpretations:list[Interpretation],
     Args:
         interpretations (list[Interpretation]): List of features to provision. see Interpretation
         root_files_glob (str): argument to glob() to find input ROOT files
-        path (str): location at which the main HDF5 file should be created. converted ROOT TTree data
-                    will be stored in a sub-directory '{path}/items/{tree_name}.{branch_name}/*.h5'
+        items_path (str): location at which converted ROOT TTree data will be stored
+                          in a sub-directory '{path}/items/{tree_name}.{branch_name}/*.h5'
         file (str): file name of the main HDF5 file
+        ds_path (str, optional): location at which the main HDF5 file should be created. if None, defaults to
+                                 the current working directory. Defaults to None
         integrity_check (bool, optional): whether or not to check whether all requested features and HDF5
             data files exist and they match to the list of actual ROOT files. Must be True the first time
             cutflow is executed. If False, many checks are skipped for maximum speed.  Defaults to True.
@@ -234,7 +237,9 @@ def cutflow_provision_features(interpretations:list[Interpretation],
 
     from zhh import tree_n_rows, AbstractTask
 
-    ds_path = osp.expandvars(f'{path}/{file}')
+    if ds_path is None:
+        ds_path = f'{os.getcwd()}/{file}'
+
     ds_meta_file = f'{osp.splitext(ds_path)[0]}.meta.json'
 
     if integrity_check:
@@ -321,10 +326,9 @@ def cutflow_provision_features(interpretations:list[Interpretation],
             if nrows != np.sum(sizes):
                 print(f'Encountered {nrows} rows in ROOT files, but {np.sum(sizes)} in HDF5 files. Please regenerate the cache.')
     
-        # create HDF5 entries inside here
-        bname = f'{path}/items'
+        # create converted HDF5 files inside items_path/items
+        bname = f'{items_path}/items'
         os.makedirs(osp.dirname(bname), exist_ok=True)
-        #print('bname=', bname)
 
         to_sync = []
 

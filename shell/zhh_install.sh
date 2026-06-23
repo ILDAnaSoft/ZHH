@@ -17,7 +17,7 @@ function zhh_install_venv() {
         unset PYTHONPATH
         cd $REPO_ROOT
 
-        python -m venv $ZHH_VENV_NAME && (
+        python -m venv --system-site-packages $ZHH_VENV_NAME && (
             source $REPO_ROOT/$ZHH_VENV_NAME/bin/activate && pip install -e .
         )
         
@@ -47,7 +47,7 @@ function zhh_install_venv() {
 #!/bin/bash
 
 REPO_ROOT="$REPO_ROOT"
-if [[ $LD_LIBRARY_PATH != *"gcc/14.2.0-yuyjov/lib64"* ]]; then
+if [[ \$LD_LIBRARY_PATH != *"gcc/14.2.0-yuyjov/lib64"* ]]; then
     export LD_LIBRARY_PATH=/cvmfs/sw.hsf.org/contrib/x86_64-almalinux9-gcc11.4.1-opt/gcc/14.2.0-yuyjov/lib64:$LD_LIBRARY_PATH
 fi
 

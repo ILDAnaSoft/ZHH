@@ -166,7 +166,17 @@ or use your favorite IDE for in-container development (VS Code etc).
 
 If you want to use a bind mount, add the flags ```--mount type=bind,src=/ZHH,dst=/cvmfs```. You can do the same if you have a local installation of CVMFS.
 
-# Continuous Integration
+## PyTorch with GPU/CUDA support
+
+If you want to run PyTorch with CUDA support, the torch version bundled with key4hep will not work, as that is not compiled with CUDA support. Hence, `torch.cuda.is_available()` will evaluate to False, even if the machine support CUDA and `nvidia-smi` works.
+
+The solution is to install a PyTorch version with CUDA support
+
+    pip install torch=="$(python -c "import torch; print(torch.__version__)")" --index-url https://download.pytorch.org/whl/cu124 --ignore-installed
+
+This ensures the installed version matches the version included in key4hep. `cu124` may need to be replaced for more recent builds. Have a look [here](https://pytorch.org/get-started/previous-versions/).
+
+## Continuous Integration
 
 TBD
 
