@@ -176,6 +176,13 @@ The solution is to install a PyTorch version with CUDA support
 
 This ensures the installed version matches the version included in key4hep. `cu124` may need to be replaced for more recent builds. Have a look [here](https://pytorch.org/get-started/previous-versions/).
 
+To make pip resolve `torch` to the newly downloaded version, remove all existing paths including `torch`
+
+    import sys
+    sys.path = [p for p in sys.path if 'torch' not in p]
+
+You could also do the same via shell before launching Python. Now `torch.cuda.is_available()` should return `True` (otherwise your machine does not support it or necessary software is not installed). 
+
 ## Continuous Integration
 
 TBD
