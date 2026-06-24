@@ -99,23 +99,24 @@ def cutflow_process_steering(steer:dict, integrity_check:bool=True,
     if beam_pol[0] != -0.8 or beam_pol[1] != 0.3:
         set_polarization(beam_pol)
     
-    def instantiate_source(name)->DataSource:
-        path = osp.expandvars(source_spec['path'])
-        fname = source_spec.get('file', f'{steer["hypothesis"]}.h5')
-        fpath = osp.join(path, fname)
+    def instantiate_source(name, source_spec)->DataSource:
+        items_path = osp.expandvars(source_spec['path'])
+        ds_path = f'{os.getcwd()}/{steer["hypothesis"]}.{name}.h5'
         
         if integrity_check and 'interpret' in steer['features']:
-            print(f'  Reading file from <{fpath}>')
+            print(f'  Reading file from <{ds_path}> and items from <{items_path}>')
             cutflow_provision_features(steer['features']['interpret'],
-                                              source_spec['root_files'], path, fname,
+                                              source_spec['root_files'],
+                                              items_path=items_path,
+                                              ds_path=ds_path,
                                               integrity_check=integrity_check,
                                               check_requires_exact_path_match=check_requires_exact_path_match,
                                               use_vds=use_vds, readonly=readonly)
             
-        source = DataSource(fpath, name, work_root=path, readonly=readonly)
+        source = DataSource(ds_path, name, readonly=readonly)
 
         # make sure beam polarization fits
-        with h5py.File(fpath, 'r' if readonly else 'a') as hf:
+        with h5py.File(ds_path, 'r' if readonly else 'a') as hf:
             if 'beam_polarization' in hf.attrs:
                 beam_pol_read = hf.attrs.get('beam_polarization', None)
                 if beam_pol_read is not None:
@@ -132,7 +133,7 @@ def cutflow_process_steering(steer:dict, integrity_check:bool=True,
                             os.remove(source._npz_file)
             else:
                 if readonly:
-                    raise ReadonlyWriteAttempt(f'Cannot append beam_polarization to HDF5 dataset at {fpath}')
+                    raise ReadonlyWriteAttempt(f'Cannot append beam_polarization to HDF5 dataset at {ds_path}')
 
                 hf.attrs['beam_polarization'] = beam_pol
 
@@ -178,7 +179,7 @@ def cutflow_process_steering(steer:dict, integrity_check:bool=True,
         print(f'Processing source {i+1}/{n_sources} <{name}>')
 
         if not disabled:
-            source_map[name] = instantiate_source(name)
+            source_map[name] = instantiate_source(name, source_spec)
             
             if source_spec.get('reset', False) == True or steer.get('reset', False) == True:
                 reset_sources.append(name)
@@ -200,11 +201,10 @@ class Interpretation(TypedDict):
     nan_to: NotRequired[float|int]
 
 def cutflow_provision_features(interpretations:list[Interpretation],
-                                      root_files_glob:str, items_path:str, file:str,
-                                      ds_path:str|None=None,
+                                      root_files_glob:str, items_path:str, ds_path:str,
                                       integrity_check:bool=True,
                                       base_tree:str='FinalStates',
-                                      check_requires_exact_path_match:bool=True,
+                                      check_requires_exact_path_match:bool=False,
                                       use_vds:bool=True,
                                       readonly:bool=False):
     """_summary_
@@ -214,9 +214,7 @@ def cutflow_provision_features(interpretations:list[Interpretation],
         root_files_glob (str): argument to glob() to find input ROOT files
         items_path (str): location at which converted ROOT TTree data will be stored
                           in a sub-directory '{path}/items/{tree_name}.{branch_name}/*.h5'
-        file (str): file name of the main HDF5 file
-        ds_path (str, optional): location at which the main HDF5 file should be created. if None, defaults to
-                                 the current working directory. Defaults to None
+        ds_path (str, optional): location at which the main HDF5 file should be created.
         integrity_check (bool, optional): whether or not to check whether all requested features and HDF5
             data files exist and they match to the list of actual ROOT files. Must be True the first time
             cutflow is executed. If False, many checks are skipped for maximum speed.  Defaults to True.
@@ -236,9 +234,6 @@ def cutflow_provision_features(interpretations:list[Interpretation],
     """
 
     from zhh import tree_n_rows, AbstractTask
-
-    if ds_path is None:
-        ds_path = f'{os.getcwd()}/{file}'
 
     ds_meta_file = f'{osp.splitext(ds_path)[0]}.meta.json'
 

@@ -7,7 +7,7 @@ import json
 import uproot as ur, h5py, os.path as osp, os, numpy as np
 
 class DataSource:
-    def __init__(self, file:str, name:str, work_root:str|None=None, readonly:bool=False):
+    def __init__(self, file:str, name:str, readonly:bool=False):
         """Helper class to calculate weights and prepare data for MVA.
 
         NEW: if fname ends with .h5, we assume we can read columnar feature data from
@@ -15,8 +15,8 @@ class DataSource:
         workflow. The default argument will remain for backwards compatability.
 
         Args:
-            work_root (str): directory to store Merged.root. must be user writable
-            name (str, optional): _description_.
+            file (str): Path to HDF5 store file
+            name (str): Name of this store.
             readonly (bool, optional): if True, will try to only use only readonly
                                        data IO. may be slower in repeated runs due
                                        to less agressive caching
@@ -30,7 +30,6 @@ class DataSource:
         
         self._npz_file = f'{osp.splitext(file)[0]}.npz'
         self._meta_file = f'{osp.splitext(file)[0]}.meta.json' # created by cutflow_parse.py
-        self._work_root = work_root if work_root is not None else osp.dirname(file)
         
         # fetchData()
         self._store:DataStore|None = None

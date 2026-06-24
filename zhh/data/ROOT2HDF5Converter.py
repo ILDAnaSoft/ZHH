@@ -119,8 +119,8 @@ class ROOT2HDF5Converter:
                             path_checks = input_files == chunk_files
                             path_check = np.all(path_checks)
                         else:
-                            bnames_found = [osp.basename(f) for f in input_files]
-                            bnames_expected = [osp.basename(f) for f in chunk_files]
+                            bnames_found = [osp.basename(osp.normpath(f)) for f in input_files]
+                            bnames_expected = [osp.basename(osp.normpath(f)) for f in chunk_files]
 
                             path_checks = [bnames_found[i] == bnames_expected[i] for i in range(len(bnames_found))]
                             path_check = all(path_checks)
@@ -140,6 +140,7 @@ class ROOT2HDF5Converter:
                             
                             for idx, matches in enumerate(path_checks):
                                 if not matches:
+                                    print(check_requires_exact_path_match)
                                     print(f'<{input_files[i]}>:<{chunk_files[i]}>' if check_requires_exact_path_match else f'<{bnames_found[i]}>:<{bnames_expected[i]}>')
 
                             raise Exception(f'File <{out_file}> for chunk <{chunk_idx}> does not fit to expected '+
@@ -163,7 +164,7 @@ class ROOT2HDF5Converter:
         return (already_done, tot_shape, sizes)
 
     def convertLazy(self, nrows:int|None=None, check_existing:bool=False,
-                    check_requires_exact_path_match:bool=True, use_vds:bool=False, **kwargs)->tuple[AbstractTask, list[AbstractTask]]:
+                    check_requires_exact_path_match:bool=False, use_vds:bool=False, **kwargs)->tuple[AbstractTask, list[AbstractTask]]:
         """Returns one or multiple tasks which represent the ROOT->HDF5 conversion
         See ProcessRunner for a tool to execute them.
 
