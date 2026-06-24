@@ -17,14 +17,15 @@ function zhh_install_venv() {
         unset PYTHONPATH
         cd $REPO_ROOT
 
-        python -m venv $ZHH_VENV_NAME && cd $REPO_ROOT/$ZHH_VENV_NAME && (
-            source ./bin/activate && pip install -r ../requirements.txt
+        python -m venv --system-site-packages $ZHH_VENV_NAME && (
+            source $REPO_ROOT/$ZHH_VENV_NAME/bin/activate && pip install -e .
         )
         
         cd $REPO_ROOT
 
+        # REMOVED: Now handled by setuptools and `pip install -e .` above
         # Add $REPO_ROOT to PYTHONPATH
-        echo "$REPO_ROOT" >> "$(realpath $REPO_ROOT/$ZHH_VENV_NAME/lib/python*/site-packages)/zhh.pth"
+        #echo "$REPO_ROOT" >> "$(realpath $REPO_ROOT/$ZHH_VENV_NAME/lib/python*/site-packages)/zhh.pth"
 
         # Install Jupyter kernel
         get_input_arg "Do you want to make the kernel available for Jupyter Notebook? (y) " yn y
@@ -46,7 +47,7 @@ function zhh_install_venv() {
 #!/bin/bash
 
 REPO_ROOT="$REPO_ROOT"
-if [[ $LD_LIBRARY_PATH != *"gcc/14.2.0-yuyjov/lib64"* ]]; then
+if [[ \$LD_LIBRARY_PATH != *"gcc/14.2.0-yuyjov/lib64"* ]]; then
     export LD_LIBRARY_PATH=/cvmfs/sw.hsf.org/contrib/x86_64-almalinux9-gcc11.4.1-opt/gcc/14.2.0-yuyjov/lib64:$LD_LIBRARY_PATH
 fi
 
@@ -238,6 +239,7 @@ DATA_PATH="$data_dir"
 SGV_DIR="$sgv_dir"
 ONNXRUNTIMEPATH="$ONNXRUNTIMEPATH"
 Physsim="$Physsim"
+CONF_SUFFIX="fast-perf"
 
 EOF
 }

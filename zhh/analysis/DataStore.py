@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from tqdm.auto import tqdm
 from math import ceil
 from typing import Any, cast
-from .TTreeInterface import FinalStateCounts
+from .TTreeInterface import FinalStateCounts, FSC_KEYS, FSC_LABELS
 
 class ReadonlyWriteAttempt(Exception):
     pass
@@ -189,45 +189,50 @@ class NamedHDF5Mapping:
         with h5py.File(self._file, 'r') as hf:
             return cast(h5py.Dataset, hf[self._item])[:]
 
-def parse_final_state_counts(store:DataStore)->FinalStateCounts:    
+def parse_final_state_counts(store:DataStore)->FinalStateCounts:
     store.resetView()
-    n_b_from_higgs = store['n_b_from_higgs']
+
+    if 'fsc_coded' in store.keys():
+        # load fsc from fsc_coded 
+        data = {}
+
+        remaining = np.copy(store['fsc_coded'])
+        for i, key in enumerate(FSC_KEYS):
+            modulo = remaining % 10
+
+            data[key] = np.array(modulo, dtype=np.uint8)
+            remaining = (remaining - modulo) // 10
+
+    else:
+        # load fsc from hdf files
+        data = {
+            'n_d': store['Nd'],
+            'n_u': store['Nu'],
+            'n_s': store['Ns'],
+            'n_c': store['Nc'],
+            'n_b': store['Nb'],
+            'n_t': store['Nt'],
+            'n_ve'  : store['Nv1'],
+            'n_vmu' : store['Nv2'],
+            'n_vtau': store['Nv3'],
+            'n_e'  : store['Ne1'],
+            'n_mu' : store['Ne2'],
+            'n_tau': store['Ne3'],
+            'n_b_from_higgs': store['n_b_from_higgs']
+        }
+
+    data['n_q']           = data['n_d'] + data['n_u'] + data['n_s'] + data['n_c'] + data['n_b'] + data['n_t']
+    data['n_neutral_lep'] = data['n_ve'] + data['n_vmu'] + data['n_vtau']
+    data['n_charged_lep'] = data['n_e'] + data['n_mu'] + data['n_tau']
     
-    n_d = store['Nd']
-    n_u = store['Nu']
-    n_s = store['Ns']
-    n_c = store['Nc']
-    n_b = store['Nb']
-    n_t = store['Nt']
-    n_q = n_d + n_u + n_s + n_c + n_b + n_t
+    fsc = FinalStateCounts(**data)
+
+    #if 'fsc_coded' in store.keys():
+    #    store.removeProperty('fsc_coded')
+
+    if not 'fsc_coded' in store.keys():
+        store['fsc_coded'] = fsc.encode()
+        store.itemsSnapshot(True, ['fsc_coded'])
+
+    return fsc
     
-    n_ve   = store['Nv1']
-    n_vmu  = store['Nv2']
-    n_vtau = store['Nv3']
-    n_neutral_lep = n_ve + n_vmu + n_vtau
-    
-    n_e   = store['Ne1']
-    n_mu  = store['Ne2']
-    n_tau = store['Ne3']
-    n_charged_lep = n_e + n_mu + n_tau
-    
-    return FinalStateCounts(
-        n_d=n_d,
-        n_u=n_u,
-        n_s=n_s,
-        n_c=n_c,
-        n_b=n_b,
-        n_t=n_t,
-        n_q=n_q,
-        
-        n_ve=n_ve,
-        n_vmu=n_vmu,
-        n_vtau=n_vtau,
-        n_neutral_lep=n_neutral_lep,
-        
-        n_e=n_e,
-        n_mu=n_mu,
-        n_tau=n_tau,
-        n_charged_lep=n_charged_lep,
-        n_b_from_higgs=n_b_from_higgs
-    )

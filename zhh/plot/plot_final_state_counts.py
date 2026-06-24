@@ -1,9 +1,9 @@
 import numpy as np
 import uproot as ur
-import matplotlib.pyplot as plt
 from ..util.LazyTablelike import LazilyLoadedObject
 
 def plot_final_state_counts(store:LazilyLoadedObject):
+    import matplotlib.pyplot as plt
     from zhh.analysis.PreselectionAnalysis import fs_columns
 
     count = np.zeros(len(fs_columns))

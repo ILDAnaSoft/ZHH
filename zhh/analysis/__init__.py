@@ -10,9 +10,9 @@ from .Normalization import get_sample_chunk_splits, get_process_normalization, g
 from .Cuts import Cut, EqualCut, WindowCut, GreaterThanEqualCut, LessThanEqualCut, CutTypes, apply_cuts, \
     CUT_TYPES, SemiInvisibleCut, WithinBoundsCut
 from .ZHHCuts import zhh_cuts
-from .TTreeInterface import TTreeInterface, FinalStateCounts, parse_final_state_counts
+from .TTreeInterface import TTreeInterface, FinalStateCounts
 from .AnalysisChannel import AnalysisChannel
-from .DataStore import DataStore, ReadonlyWriteAttempt
+from .DataStore import DataStore, ReadonlyWriteAttempt, parse_final_state_counts
 from .DataSource import DataSource
 from .DataSourceTools import mod_weights_from_split, apply_split
 from .CutflowProcessor import CutflowProcessor, cutflowPlots, evaluate_categories_ordered, invert_dict

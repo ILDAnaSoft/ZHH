@@ -2,17 +2,17 @@ from .DataSource import DataSource
 from .Cuts import Cut, ValueCut
 from ..util.PlotContext import PlotContext
 from typing import Sequence, Any
-from phc import export_figures
 from copy import deepcopy
 from .TTreeInterface import TTreeInterface
 from ..util.deepmerge import deepmerge
-import matplotlib.pyplot as plt
-from matplotlib.colors import Colormap
-from typing import TypedDict, Required, Mapping, cast
+from typing import TypedDict, Required, Mapping, Union, cast, TYPE_CHECKING
 import numpy as np
 import os.path as osp, pickle
 from .CutflowTableEntry import LatexCutflowTableEntry, CutflowTableEntry
 #import blosc2
+
+if TYPE_CHECKING:
+    from matplotlib.colors import Colormap
 
 def flatten(a):
     b = []
@@ -41,7 +41,7 @@ class CutflowProcessor:
                  hypothesis:str,
                  signal_categories:list[int],
                  cuts:Sequence[ValueCut]|None=None,
-                 colormap:Colormap|None=None,
+                 colormap:Union['Colormap', None]=None,
                  plot_options:dict[str, dict[str, dict]]|None=None,
                  plot_context:PlotContext|None=None,
                  work_dir:str|None=None
@@ -224,13 +224,14 @@ class CutflowProcessor:
                     processes = source.getProcesses()
                     
                     mask = cut(subset)
+                    wt = subset[weight_prop]
                     
-                    before = np.sum(subset[weight_prop])
+                    before = wt.sum()
                     max_before = max(max_before, before)
-                    after = np.sum(subset[weight_prop][mask])
+                    after = wt[mask].sum()
                     
                     #categories, counts = weighted_counts_by_categories(subset)
-                    calc_dict = calc_preselection_by_event_categories(subset, processes, quantity=cut.quantity, categories_additional=None, weight_prop=weight_prop)
+                    calc_dict = calc_preselection_by_event_categories(subset, processes, quantity=cut.quantity, categories_additional=None, weights=wt, weight_prop=weight_prop)
                     
                     for name in calc_dict:
                         values, weights = calc_dict[name]
@@ -341,22 +342,85 @@ class CutflowProcessor:
         
         return post_presel_mask
     
-    def writeROOTFiles(self):
-        import uproot as ur
-        
-        with ur.recreate(f'{self._work_dir}/cutflow_dump.root', compression=ur.ZSTD(5)) as rf:
-            for source in self._sources:
-                name = source.getName()
+    def snapshotAt(self, columns:list[str], step:int, weight_column:str, split:int|None=None, split_colum:str='split'):
+        """Extracts data for the M requested columns from all sources at a given step (i.e. after a cut group).
+        A split may be used for selecting events, as well. Assuming the total selection includes N entries, the result
+        will be:
+        - masks: a dictionary of structure source_name => binary mask accross all events
+            (i.e. the sum of all masks will be N),
+        - data: dict of structure (str) column => np.ndarray of length N with extracted column data and their corresponding data type,
+        - weights: float array of length N with weights extracted from the column weight_column,
+        - source_id: uint8 array of length N including the index of the sources the data was extracted from
+        - event_id: uint64 array of length N holding the event ID as assigned by cutflow. may be used to find the
+            source ROOT/LCIO files using DataSource.whichFiles and the event ID within the file by matching with
+            store['event'].
+
+        Args:
+            columns (list[str]): _description_
+            step (int): _description_
+            split (int): _description_
+            weight_column (str): _description_
+            split_colum (str | None, optional): _description_. Defaults to 'split'.
+
+        Returns:
+            tuple[
+                dict[str, np.ndarray],
+                dict[str, np.ndarray],
+                np.ndarray,
+                np.ndarray,
+                np.ndarray
+            ]: masks, data, weights, source_id, event_id
+        """
+
+        masks:dict[str, np.ndarray] = {}
+        masks_all = self._masks[step][-1]
+        tot_size = 0
+
+        sources = self._sources
+
+        for source in sources:
+            found = False
+
+            for name, mask in masks_all:
+                if name == source.getName():
+                    found = True
+                    break
                 
-                source.getStore().resetView()
+            assert(found)
+            masks[name] = (mask & (source.getStore()[split_colum] == split)) if split is not None else mask
+            tot_size += masks[name].sum()
+        
+        data_all = {}
+        source_id = np.zeros((tot_size), dtype=np.uint8)
+        event_id = np.zeros((tot_size), dtype=np.uint64)
+        weights = np.zeros(tot_size, dtype=np.float32)
+
+        counter = 0
+        for i, source in enumerate(sources):
+            src_name = source.getName()
+            store = source.getStore()
+            store.resetView()
+
+            mask = masks[src_name]
+            size = mask.sum()
+
+            for j, quantity in enumerate(columns):
+                subset = store[quantity][mask]
+
+                if i == 0:
+                    # fetch correct data type
+                    data = np.zeros(tot_size, dtype=subset.dtype)
+                    data_all[quantity] = data
+
+                data_all[quantity][counter:counter+size] = subset
             
-                data = {
-                    'passed_preselection': self.getFinalEventMaskByName(name),
-                    'event_weight': source.getStore()['weight'],
-                    'event_category': source.getStore()['event_category'],
-                }
-                    
-                rf[name] = data
+            source_id[counter:counter+size] = i
+            event_id[counter:counter+size] = store['id'][mask]
+            weights[counter:counter+size] = store[weight_column][mask]
+
+            counter += size
+
+        return masks, data_all, weights, source_id, event_id
     
     def cutflowPrint(self, step_start:int=0, step_end:int=0):
         _, cuts, calc_dicts, __ = self._flattenSteps(step_end, step_start)
@@ -557,6 +621,7 @@ def plotCalcDictTopN(context:PlotContext, calc_dict:dict[str, tuple[np.ndarray, 
                      plot_options:dict={}, hist_kwargs:dict={}, hypothesis:str|None=None, bins:int=100, xlim:tuple[float, float]|None=None,
                      nrows:int=3, ncols:int=3, figsize:tuple[int, int]=(18,18)):
     from zhh import plot_combined_hist, deepmerge
+    import matplotlib.pyplot as plt
     
     fig_tot, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=figsize);
     flattened_axes = axes.flatten()
@@ -625,7 +690,10 @@ def cutflowPlotsFn(signal_category_names:list[str],
                  bins,
                  do_annotate_cut):
     
+    import matplotlib.pyplot as plt
+    from phc import export_figures
     from zhh import plot_combined_hist, annotate_cut, EventCategories, deepmerge
+    from ..plot.ild_style import update_plot, legend_kwargs_fn
     
     figs_stacked = []
     figs_sigvbkg = []
@@ -676,7 +744,6 @@ def cutflowPlotsFn(signal_category_names:list[str],
             plt.close(fig2)
     
     # create a plot with the event counts per category after the last cut
-    from zhh.plot.ild_style import update_plot, legend_kwargs_fn
     
     counts_final = []
     counts_start = {}
@@ -762,6 +829,8 @@ def cutflowPrint(cuts:list[ValueCut], calc_dicts:list[dict[str, tuple[np.ndarray
 def cutflowPlotSummaryFn(signal_category_names:list[str], cuts:Sequence[ValueCut], calc_dicts:list[dict[str, tuple[np.ndarray, np.ndarray]]],
                          plot_context:PlotContext, display:bool=True, output_file:str|None=None):
     
+    import matplotlib.pyplot as plt
+    from phc import export_figures
     from zhh.plot.ild_style import update_plot, legend_kwargs_fn
     
     order = order_categories(calc_dicts, signal_category_names)

@@ -103,42 +103,6 @@ def parse_cutflow_table_entries(steer:dict):
     
     return cutflow_table_entries
 
-def match_sources_to_categories(sources:list[DataSource], categories:list[str])->dict[str, list[str]]:
-    """For each category A in event_categories, finds a source in sources in which
-    category A is registered. Throws an exception if no source can be found for A.
-
-    Returns a dict of structure category => source_name.
-
-    Args:
-        sources (list[DataSource]): _description_
-        categories (list[str]): _description_
-
-    Raises:
-        Exception: _description_
-
-    Returns:
-        dict[str, list[str]]: _description_
-    """
-    source_to_category_names:dict[str, list[str]] = {}
-
-    for category in categories:
-        found = False
-
-        for source in sources:
-            if source.containsCategory(category):
-                if source.getName() not in source_to_category_names:
-                    source_to_category_names[source.getName()] = []
-                
-                source_to_category_names[source.getName()] += [category]
-
-                found = True
-                break
-
-        if not found:
-            raise Exception(f'Category <{category}> is unknown in all registered sources')
-
-    return source_to_category_names
-
 def counts_by_category(masks:list[list[dict[str, np.ndarray]]],
                        cuts:Sequence[Sequence[Cut]],
                        source:DataSource,
@@ -263,7 +227,7 @@ def get_sources_2_categories(steer:dict, sources:list[DataSource], all_categorie
         _type_: _description_
     """
 
-    source_2_category_names = match_sources_to_categories(sources, all_categories)
+    source_2_category_names = DataSource.match_sources_to_categories(sources, all_categories)
 
     # sort source_2_category_names[source]
     for source in list(source_2_category_names.keys()):

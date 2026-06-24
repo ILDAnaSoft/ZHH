@@ -7,7 +7,8 @@ class ApplyCutsAction(CutflowProcessorAction):
     interruptible = False # makes sure to delete HDF5 dataset to avoid corrupted datasets on interrupt
 
     def __init__(self, cp:CutflowProcessor, steer:dict, step:int, cuts:str,
-                 weight_column:str, split:int|None, cache:str|None=None, **kwargs):
+                 weight_column:str, split:int|None, cache:str|None=None,
+                 step_in:int|None=None, **kwargs):
         """_summary_
 
         Args:
@@ -21,6 +22,10 @@ class ApplyCutsAction(CutflowProcessorAction):
                               If None, no data split, i.e. all data will be used.
                               If weight_column is the default value (weight), this
                               is set to None.
+            step_in (int|None): Which step to use assume as starting point. If None,
+                                will use the previous step (for the first cut group,
+                                i.e. preselection, this uses all available data).
+                                Defaults to None.
         """
 
         super().__init__(cp, steer)
@@ -30,25 +35,22 @@ class ApplyCutsAction(CutflowProcessorAction):
         self._weight_column = weight_column
         self._split = None if weight_column == 'weight' else split
         self._cache = os.path.expandvars(cache) if isinstance(cache, str) else None
+        self._step_in = step_in
     
     def fetchCuts(self):
         from zhh import cutflow_parse_cuts
-        return cutflow_parse_cuts(self._cuts, mvas=self._cp._mvas)
+        return cutflow_parse_cuts(self._cuts, mvas=self._cp._mvas) if not self._step in self._cp._cuts else self._cp._cuts[self._step]
 
     def run(self):
         self._cp.process(step=self._step, cuts=self.fetchCuts(),
                          weight_prop=self._weight_column, split=self._split,
-                         cache=self._cache)
+                         cache=self._cache, step_start=self._step_in)
 
     def complete(self)->bool:
         # preload from cache
         if self._step in self._cp._calc_dicts:
             return True
         elif self._step == 0 and self._cache is not None and os.path.isfile(self._cache):
-            cuts_steer = self.fetchCuts()
-            self._cp.process(step=self._step, cuts=cuts_steer, cache=self._cache)
-
-            return Cut.hash_cuts(cuts_steer) == self._cp._cuts_hash
             cuts_steer = self.fetchCuts()
             self._cp.process(step=self._step, cuts=cuts_steer, cache=self._cache)
 

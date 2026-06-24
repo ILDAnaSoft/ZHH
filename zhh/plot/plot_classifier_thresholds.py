@@ -1,9 +1,9 @@
-import matplotlib.pyplot as plt
 import numpy as np
 
 def plot_classifier_thresholds(stats:np.ndarray, title:str='MVA Score'):
     from zhh import MulticlassModel, fig_ild_style
     from zhh.plot.ild_style import legend_kwargs_fn
+    import matplotlib.pyplot as plt
     
     figs = []
     

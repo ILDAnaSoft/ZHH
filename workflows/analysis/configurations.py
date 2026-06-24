@@ -10,7 +10,8 @@
 # FastSimSGV to be all available 4f samples, the 4fsl then
 # depends on 4f and only uses the semileptonic samples.
 
-from analysis.framework import AnalysisConfiguration, zhh_configs
+#from analysis.framework import AnalysisConfiguration, zhh_configs
+from hep_workflows import AnalysisConfiguration, configurations
 from typing import TYPE_CHECKING
 from os import environ, path as osp
 import numpy as np
@@ -18,7 +19,13 @@ from zhh import glob_exp
 
 if TYPE_CHECKING:
     from analysis.tasks import RawIndex, AbstractIndex
-    
+
+# load prod configs
+from .configs.conf_550_fast_perf import *
+from .configs.conf_550_fast_pfl import *
+from .configs.conf_550_full import *
+from .configs.conf_550_fast_perfsmbc import *
+
 # only configurations
 if False:
     # example how to use Whizard before SGV
@@ -259,7 +266,18 @@ class Config_550_bbbb_fast_perf(AnalysisConfiguration):
     tag = '550-bbbb-fast-perf'
     
     whizard_options = [
-        { 'process_name': 'bbbb_sl0', 'process_definition': '', 'template_dir': '$REPO_ROOT/workflows/resources/whizard_template', 'sindarin_file': 'whizard.base550.sin', 'iters_per_polarization': {} }
+        {
+            'process_name': 'bbbb_sl0',
+            'process_definition': '',
+            'template_dir': '$REPO_ROOT/workflows/resources/whizard_template',
+            'sindarin_file': 'whizard.base550.sin',
+            'iters_per_polarization': {
+                'eL.pL': 10,
+                'eL.pR': 10,
+                'eR.pL': 10,
+                'eR.pR': 10
+            }
+        }
     ]
     
     def sgv_inputs(self, fast_sim_task):
@@ -288,11 +306,32 @@ class Config_550_bbbb_fast_perf(AnalysisConfiguration):
     marlin_globals = {  }
     marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
 
-from .configs.conf_550_fast_perf import *
-from .configs.conf_550_fast_pfl import *
-from .configs.conf_550_full import *
-from .configs.conf_550_fast_perfsmbc import *
+class Config_550_n1n1hhnores_fast_perf(AnalysisConfiguration):
+    tag = '550-n1n1hhnores-fast-perf'
+    
+    def sgv_inputs(self, fast_sim_task):
+        input_files:list[str] = glob_exp('/data/dust/user/jtorndal/whizard/noresonance/*.slcio')
+        input_files.sort()
+        
+        input_options = [{
+            'global_steering.MAXEV': 999999,
+            'global_generation_steering.CMS_ENE': 550,
+            'external_read_generation_steering.GENERATOR_INPUT_TYPE': 'LCIO',
+            'external_read_generation_steering.INPUT_FILENAMES': 'input.slcio',
+            'analysis_steering.CALO_TREATMENT': 'PERF'
+        }] * len(input_files)
+        
+        return input_files, input_options
+    
+    marlin_globals = {  }
+    marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
 
 #print('List of registered configs/tags:')
 #for key, val in zhh_configs.definitions.items():
 #    print(key)
+
+configurations.add(Config_500_zh_tau_fast_perf())
+configurations.add(Config_500_zh10_tau_fast_perf())
+configurations.add(Config_250_ftag_fast_perf())
+configurations.add(Config_550_bbbb_fast_perf())
+configurations.add(Config_550_n1n1hhnores_fast_perf())

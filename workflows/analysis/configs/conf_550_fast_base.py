@@ -1,11 +1,11 @@
-from analysis.framework import AnalysisConfiguration, zhh_configs
+from hep_workflows import AnalysisConfiguration, configurations 
 from typing import TYPE_CHECKING
 from os import environ, path as osp
 import numpy as np
 from zhh import glob_exp
 
 if TYPE_CHECKING:
-    from analysis.tasks import RawIndex, AbstractIndex
+    from hep_workflows import RawIndex, AbstractIndex
 
 def define_configs_550_fast(suffix:str, sgv_options:dict,
                             sgv_executable_cfg:str='$SGV_DIR/tests/usesgvlcio.exe',
@@ -136,8 +136,8 @@ def define_configs_550_fast(suffix:str, sgv_options:dict,
         def raw_index_requires(self, raw_index_task: 'AbstractIndex'):
             # use the output of 550-4f-{suffix} as input
             
-            from workflows.analysis.tasks_sim import FastSimSGV
-            from analysis.tasks import RawIndex
+            from hep_workflows.tasks_sim import FastSimSGV
+            from hep_workflows.tasks_index import RawIndex
             
             fast_sim_dep = FastSimSGV.req(raw_index_task, tag=f'550-4f-{suffix}')
             raw_index_dep = RawIndex.req(raw_index_task, tag=f'550-4f-{suffix}') 
@@ -336,8 +336,8 @@ def define_configs_550_fast(suffix:str, sgv_options:dict,
         def raw_index_requires(self, raw_index_task: 'AbstractIndex'):
             # use the output of 550-4f-{suffix} as input
             
-            from workflows.analysis.tasks_sim import FastSimSGV
-            from analysis.tasks import RawIndex
+            from hep_workflows.tasks_sim import FastSimSGV
+            from hep_workflows.tasks_index import RawIndex
             
             fast_sim_dep = FastSimSGV.req(raw_index_task, tag=f'550-4f-{suffix}')
             raw_index_dep = RawIndex.req(raw_index_task, tag=f'550-4f-{suffix}') 
@@ -404,14 +404,14 @@ def define_configs_550_fast(suffix:str, sgv_options:dict,
         sgv_executable = sgv_executable_cfg
         sgv_steering_file_src = sgv_steering_file_src_cfg
     
-    zhh_configs.add(Config_550_llhh())
-    zhh_configs.add(Config_550_vvhh())
-    zhh_configs.add(Config_550_qqhh())
-    zhh_configs.add(Config_550_6q())
-    zhh_configs.add(Config_550_4fsl())
-    zhh_configs.add(Config_550_4f())
-    zhh_configs.add(Config_550_tthz())
-    zhh_configs.add(Config_550_2f())
-    zhh_configs.add(Config_550_2l())
-    zhh_configs.add(Config_550_4flh())
-    zhh_configs.add(Config_550_2l4q())
+    configurations.add(Config_550_llhh())
+    configurations.add(Config_550_vvhh())
+    configurations.add(Config_550_qqhh())
+    configurations.add(Config_550_6q())
+    configurations.add(Config_550_4fsl())
+    configurations.add(Config_550_4f())
+    configurations.add(Config_550_tthz())
+    configurations.add(Config_550_2f())
+    configurations.add(Config_550_2l())
+    configurations.add(Config_550_4flh())
+    configurations.add(Config_550_2l4q())

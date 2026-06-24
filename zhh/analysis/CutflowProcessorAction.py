@@ -1,6 +1,6 @@
 from os import getcwd, path as osp
 from .CutflowProcessor import CutflowProcessor
-from law import LocalTarget, LocalFileSystem, LocalFileTarget, LocalDirectoryTarget
+from law.target.local import LocalTarget, LocalFileSystem, LocalFileTarget, LocalDirectoryTarget
 from law.util import flatten
 from collections.abc import Iterable, Sequence
 

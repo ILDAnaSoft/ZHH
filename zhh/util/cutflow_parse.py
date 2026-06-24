@@ -99,23 +99,24 @@ def cutflow_process_steering(steer:dict, integrity_check:bool=True,
     if beam_pol[0] != -0.8 or beam_pol[1] != 0.3:
         set_polarization(beam_pol)
     
-    def per_source(name):
-        path = osp.expandvars(source_spec['path'])
-        fname = source_spec.get('file', f'{steer["hypothesis"]}.h5')
-        fpath = osp.join(path, fname)
+    def instantiate_source(name, source_spec)->DataSource:
+        items_path = osp.expandvars(source_spec['path'])
+        ds_path = f'{os.getcwd()}/{steer["hypothesis"]}.{name}.h5'
         
-        if 'interpret' in steer['features']:
-            print(f'  Reading file from <{fpath}>')
+        if integrity_check and 'interpret' in steer['features']:
+            print(f'  Reading file from <{ds_path}> and items from <{items_path}>')
             cutflow_provision_features(steer['features']['interpret'],
-                                              source_spec['root_files'], path, fname,
+                                              source_spec['root_files'],
+                                              items_path=items_path,
+                                              ds_path=ds_path,
                                               integrity_check=integrity_check,
                                               check_requires_exact_path_match=check_requires_exact_path_match,
                                               use_vds=use_vds, readonly=readonly)
             
-        source = DataSource(fpath, name, work_root=path, readonly=readonly)
+        source = DataSource(ds_path, name, readonly=readonly)
 
         # make sure beam polarization fits
-        with h5py.File(fpath, 'r' if readonly else 'a') as hf:
+        with h5py.File(ds_path, 'r' if readonly else 'a') as hf:
             if 'beam_polarization' in hf.attrs:
                 beam_pol_read = hf.attrs.get('beam_polarization', None)
                 if beam_pol_read is not None:
@@ -132,7 +133,7 @@ def cutflow_process_steering(steer:dict, integrity_check:bool=True,
                             os.remove(source._npz_file)
             else:
                 if readonly:
-                    raise ReadonlyWriteAttempt(f'Cannot append beam_polarization to HDF5 dataset at {fpath}')
+                    raise ReadonlyWriteAttempt(f'Cannot append beam_polarization to HDF5 dataset at {ds_path}')
 
                 hf.attrs['beam_polarization'] = beam_pol
 
@@ -167,8 +168,9 @@ def cutflow_process_steering(steer:dict, integrity_check:bool=True,
             for item in items:
                 ac.registerEventCategory(*item)
         
-        source_map[name] = source
         final_state_configs[name] = (cat_register_fn, cat_default, cat_order)
+
+        return source
 
     for i, source_spec in enumerate(steer['sources']):
         disabled = source_spec.get('disabled', False) == True
@@ -177,7 +179,7 @@ def cutflow_process_steering(steer:dict, integrity_check:bool=True,
         print(f'Processing source {i+1}/{n_sources} <{name}>')
 
         if not disabled:
-            per_source(name)
+            source_map[name] = instantiate_source(name, source_spec)
             
             if source_spec.get('reset', False) == True or steer.get('reset', False) == True:
                 reset_sources.append(name)
@@ -199,10 +201,10 @@ class Interpretation(TypedDict):
     nan_to: NotRequired[float|int]
 
 def cutflow_provision_features(interpretations:list[Interpretation],
-                                      root_files_glob:str, path:str, file:str,
+                                      root_files_glob:str, items_path:str, ds_path:str,
                                       integrity_check:bool=True,
                                       base_tree:str='FinalStates',
-                                      check_requires_exact_path_match:bool=True,
+                                      check_requires_exact_path_match:bool=False,
                                       use_vds:bool=True,
                                       readonly:bool=False):
     """_summary_
@@ -210,10 +212,12 @@ def cutflow_provision_features(interpretations:list[Interpretation],
     Args:
         interpretations (list[Interpretation]): List of features to provision. see Interpretation
         root_files_glob (str): argument to glob() to find input ROOT files
-        path (str): location at which the main HDF5 file should be created. converted ROOT TTree data
-                    will be stored in a sub-directory '{path}/items/{tree_name}.{branch_name}/*.h5'
-        file (str): file name of the main HDF5 file
-        integrity_check (bool, optional): _description_. Defaults to True.
+        items_path (str): location at which converted ROOT TTree data will be stored
+                          in a sub-directory '{path}/items/{tree_name}.{branch_name}/*.h5'
+        ds_path (str, optional): location at which the main HDF5 file should be created.
+        integrity_check (bool, optional): whether or not to check whether all requested features and HDF5
+            data files exist and they match to the list of actual ROOT files. Must be True the first time
+            cutflow is executed. If False, many checks are skipped for maximum speed.  Defaults to True.
         base_tree (str, optional): TTree to use for estimating length. Defaults to 'FinalStates'.
         check_requires_exact_path_match (bool, optional): if True, requires that the HDF5 files found at
             root_files_glob match exactly to those the main HDF5 was created with (if it exists).
@@ -231,12 +235,14 @@ def cutflow_provision_features(interpretations:list[Interpretation],
 
     from zhh import tree_n_rows, AbstractTask
 
-    ds_path = osp.expandvars(f'{path}/{file}')
     ds_meta_file = f'{osp.splitext(ds_path)[0]}.meta.json'
 
-    root_files = sorted(glob(osp.expandvars(root_files_glob)))
-    if not len(root_files):
-        raise Exception(f'No ROOT files found for search mask <{root_files_glob}>')
+    if integrity_check:
+        root_files = sorted(glob(osp.expandvars(root_files_glob)))
+        if not len(root_files):
+            raise Exception(f'No ROOT files found for search mask <{root_files_glob}>')
+    else:
+        root_files = []
 
     nrows = 0
     nrows_found = []
@@ -251,6 +257,9 @@ def cutflow_provision_features(interpretations:list[Interpretation],
         nrows = hf.attrs.get('nrows', 0)
     
     if not osp.isfile(ds_meta_file) or nrows == 0:
+        if not integrity_check:
+            raise Exception('integrity_check must be True as the dataset has not been created yet.')
+
         nrows_found = tree_n_rows(root_files, base_tree, use_uproot=True, aggregate=False)
         
         with h5py.File(ds_path, 'r' if readonly else 'a') as hf:
@@ -292,155 +301,157 @@ def cutflow_provision_features(interpretations:list[Interpretation],
                     del hf[key]
                     break
             
-        # create mapping for quick navigation between ID entries and 
-        
-    
-    if integrity_check and osp.isfile(ds_meta_file):
-        with open(ds_meta_file, 'rt') as jf:
-            meta_content = json.load(jf)
-            expected = [osp.basename(f) for f in meta_content['files']]
-            sizes = meta_content['sizes']
-        
-        bnames = [osp.basename(f) for f in root_files]
+    if integrity_check:
+        # only schedule feature conversion if integrity_check=True
 
-        if len(expected) != len(root_files) or not all([expected[i] == bnames[i] for i in range(len(expected))]):
-            print('Samples expected, but not found: ', set(expected) - set(bnames))
-            print('Samples found, but not expected: ', set(bnames) - set(expected))
-
-            raise Exception('List of input files is different! Please regenerate the cache')
-        
-        if nrows != np.sum(sizes):
-            print(f'Encountered {nrows} rows in ROOT files, but {np.sum(sizes)} in HDF5 files. Please regenerate the cache.')
-    
-    # create HDF5 entries inside here
-    bname = f'{path}/items'
-    os.makedirs(osp.dirname(bname), exist_ok=True)
-    #print('bname=', bname)
-
-    to_sync = []
-
-    def per_interpretation(feature:Interpretation, feature_names:list[str])->tuple[tuple|None, list[str]]:
-        assert('name' in feature)
-        name = feature['name']
-        
-        if name in feature_names:
-            raise Exception(f'Invalid feature definition: Feature {name} appears at least twice')
-
-        feature_names.append(name)
-
-        if 'auto_increment' in feature and feature['auto_increment']:
-            if not name in ds_keys:
-                with h5py.File(ds_path, 'a') as hf:
-                    if readonly:
-                        raise ReadonlyWriteAttempt(f'Cannot add auto_increment column {name} to readonly dataset {ds_path}')
-
-                    hf[name] = np.arange(nrows, dtype=feature['dtype'] if 'dtype' in feature else 'uint32')
+        if osp.isfile(ds_meta_file):
+            with open(ds_meta_file, 'rt') as jf:
+                meta_content = json.load(jf)
+                expected = [osp.basename(f) for f in meta_content['files']]
+                sizes = meta_content['sizes']
             
-        elif 'tree' in feature:
-            tree = feature['tree']
-            branch = feature.get('branch', name)
-            columns:int|list[str]|None = feature.get('columns', None)
-            name = name.replace('/', '.')
+            bnames = [osp.basename(f) for f in root_files]
 
-            if columns is not None:
-                if isinstance(columns, int):
-                    for col in range(columns):
-                        if f'{name}.dim{col}' not in ds_keys:
-                            return ((name, tree, branch, feature.get('dtype', None), feature.get('nan_to', None),
-                                     feature.get('clamp_min', None), feature.get('clamp_max', None)), feature_names)
-                elif isinstance(columns, list) and isinstance(columns[0], str):
-                    for col in columns:
-                        if f'{name}.{col}' not in ds_keys:
-                            #print(f'{name}.{col}', f'{name}.{col}' not in ds_keys)
-                            return ((name, tree, branch, feature.get('dtype', None), feature.get('nan_to', None),
-                                     feature.get('clamp_min', None), feature.get('clamp_max', None)), feature_names)
-                else:
-                    raise Exception(f'Property {name} not defined')
-                
-            elif name not in ds_keys and f'{name}.dim0' not in ds_keys:
-                return ((name, tree, branch, feature.get('dtype', None), feature.get('nan_to', None),
-                         feature.get('clamp_min', None), feature.get('clamp_max', None)), feature_names)
-        else:
-            print(feature)
-            raise Exception('Cannot interpret entry')
-        
-        return (None, feature_names)
+            if len(expected) != len(root_files) or not all([expected[i] == bnames[i] for i in range(len(expected))]):
+                print('Samples expected, but not found: ', set(expected) - set(bnames))
+                print('Samples found, but not expected: ', set(bnames) - set(expected))
 
-    found = []
-    feature_names:list[str] = []
+                raise Exception('List of input files is different! Please regenerate the cache')
+            
+            if nrows != np.sum(sizes):
+                print(f'Encountered {nrows} rows in ROOT files, but {np.sum(sizes)} in HDF5 files. Please regenerate the cache.')
     
-    #print(interpretations)
+        # create converted HDF5 files inside items_path/items
+        bname = f'{items_path}/items'
+        os.makedirs(osp.dirname(bname), exist_ok=True)
 
-    for feature in interpretations:
-        if 'names' not in feature:
+        to_sync = []
+
+        def per_interpretation(feature:Interpretation, feature_names:list[str])->tuple[tuple|None, list[str]]:
             assert('name' in feature)
+            name = feature['name']
             
-            res, feature_names = per_interpretation(feature, feature_names)
-            if res is not None:
-                to_sync.append(res)
-            else:
-                found.append(feature['name'])
-        else:
-            if not len(feature['names']):
-                raise Exception('When using the names property, at least one item must be given')
-            
-            for name in feature['names']:
-                entry = deepcopy(feature)
-                del entry['names']
-                entry['name'] = name
+            if name in feature_names:
+                raise Exception(f'Invalid feature definition: Feature {name} appears at least twice')
 
-                res, feature_names = per_interpretation(entry, feature_names)
+            feature_names.append(name)
+
+            if 'auto_increment' in feature and feature['auto_increment']:
+                if not name in ds_keys:
+                    with h5py.File(ds_path, 'a') as hf:
+                        if readonly:
+                            raise ReadonlyWriteAttempt(f'Cannot add auto_increment column {name} to readonly dataset {ds_path}')
+
+                        hf[name] = np.arange(nrows, dtype=feature['dtype'] if 'dtype' in feature else 'uint32')
+                
+            elif 'tree' in feature:
+                tree = feature['tree']
+                branch = feature.get('branch', name)
+                columns:int|list[str]|None = feature.get('columns', None)
+                name = name.replace('/', '.')
+
+                if columns is not None:
+                    if isinstance(columns, int):
+                        for col in range(columns):
+                            if f'{name}.dim{col}' not in ds_keys:
+                                return ((name, tree, branch, feature.get('dtype', None), feature.get('nan_to', None),
+                                        feature.get('clamp_min', None), feature.get('clamp_max', None)), feature_names)
+                    elif isinstance(columns, list) and isinstance(columns[0], str):
+                        for col in columns:
+                            if f'{name}.{col}' not in ds_keys:
+                                #print(f'{name}.{col}', f'{name}.{col}' not in ds_keys)
+                                return ((name, tree, branch, feature.get('dtype', None), feature.get('nan_to', None),
+                                        feature.get('clamp_min', None), feature.get('clamp_max', None)), feature_names)
+                    else:
+                        raise Exception(f'Property {name} not defined')
+                    
+                elif name not in ds_keys and f'{name}.dim0' not in ds_keys:
+                    return ((name, tree, branch, feature.get('dtype', None), feature.get('nan_to', None),
+                            feature.get('clamp_min', None), feature.get('clamp_max', None)), feature_names)
+            else:
+                print(feature)
+                raise Exception('Cannot interpret entry')
+            
+            return (None, feature_names)
+
+        found = []
+        feature_names:list[str] = []
+        
+        #print(interpretations)
+
+        for feature in interpretations:
+            if 'names' not in feature:
+                assert('name' in feature)
+                
+                res, feature_names = per_interpretation(feature, feature_names)
                 if res is not None:
                     to_sync.append(res)
                 else:
-                    found.append(name)
-    
-    conv_tasks:list[AbstractTask] = []
-    finalization_tasks:list[AbstractTask] = []
-    conv_items = []
-    conv_done = []
-    names = []
+                    found.append(feature['name'])
+            else:
+                if not len(feature['names']):
+                    raise Exception('When using the names property, at least one item must be given')
+                
+                for name in feature['names']:
+                    entry = deepcopy(feature)
+                    del entry['names']
+                    entry['name'] = name
 
-    if readonly and len(to_sync):
-        raise ReadonlyWriteAttempt('Cannot request feature conversion in readonly mode')
-
-    for item in to_sync:
-        name, tree, branch, dtype, nan_to, clamp_min, clamp_max = item
-        names.append(name)
-
-        conv = ROOT2HDF5Converter(root_files, ds_path, tree, branch,
-                                  osp.expandvars(f'{bname}/{tree}.{branch.replace("/", ".")}/item'), name, dtype, clamp=(clamp_min, clamp_max),
-                                  nan_to=nan_to)
-        finalization_task, item_conv_tasks = conv.convertLazy(nrows=nrows, check_existing=True, check_requires_exact_path_match=check_requires_exact_path_match, use_vds=use_vds)
+                    res, feature_names = per_interpretation(entry, feature_names)
+                    if res is not None:
+                        to_sync.append(res)
+                    else:
+                        found.append(name)
         
-        [conv_tasks.append(task) for task in item_conv_tasks]
-        finalization_tasks.append(finalization_task)
-        conv_items.append(f'{tree}.{branch} -> {name} ({dtype})')
+        conv_tasks:list[AbstractTask] = []
+        finalization_tasks:list[AbstractTask] = []
+        conv_items = []
+        conv_done = []
+        names = []
 
-        if len(item_conv_tasks) == 0:
-            conv_done.append(name)
-        #conv.convert(nrows=nrows, check_existing=True)
+        if readonly and len(to_sync):
+            raise ReadonlyWriteAttempt('Cannot request feature conversion in readonly mode')
 
-    if len(conv_items):
-        print('Scheduling conversion of items:')
-        for item in conv_items:
-            print(f' {item}')
+        for item in to_sync:
+            name, tree, branch, dtype, nan_to, clamp_min, clamp_max = item
+            names.append(name)
 
-        runner = ProcessRunner(cores=ceil(cpu_count() * .8))
-        runner.queueTasks(conv_tasks)
-        runner.run()
+            conv = ROOT2HDF5Converter(root_files, ds_path, tree, branch,
+                                    osp.expandvars(f'{bname}/{tree}.{branch.replace("/", ".")}/item'), name, dtype, clamp=(clamp_min, clamp_max),
+                                    nan_to=nan_to)
+            finalization_task, item_conv_tasks = conv.convertLazy(nrows=nrows, check_existing=True, check_requires_exact_path_match=check_requires_exact_path_match, use_vds=use_vds)
+            
+            [conv_tasks.append(task) for task in item_conv_tasks]
+            finalization_tasks.append(finalization_task)
+            conv_items.append(f'{tree}.{branch} -> {name} ({dtype})')
 
-        # after successful conversion, create the VDS'es
-        print('Creating virtual datasets (VDSes)' if use_vds else 'Combining datasets by copying')
+            if len(item_conv_tasks) == 0:
+                conv_done.append(name)
+            #conv.convert(nrows=nrows, check_existing=True)
 
-        for i, task in enumerate(pbar := tqdm(finalization_tasks)):
-            name = names[i]
-            pbar.set_description(conv_items[i])
-            deps = task.getDependencies()['conversion']
-            task.run(conversion=[] if name in conv_done else [dep.getResult() for dep in deps])
+        if len(conv_items):
+            print('Scheduling conversion of items:')
+            for item in conv_items:
+                print(f' {item}')
+
+            runner = ProcessRunner(cores=ceil(cpu_count() * .8))
+            runner.queueTasks(conv_tasks)
+            runner.run()
+
+            # after successful conversion, create the VDS'es
+            print('Creating virtual datasets (VDSes)' if use_vds else 'Combining datasets by copying')
+
+            for i, task in enumerate(pbar := tqdm(finalization_tasks)):
+                name = names[i]
+                pbar.set_description(conv_items[i])
+                deps = task.getDependencies()['conversion']
+                task.run(conversion=[] if name in conv_done else [dep.getResult() for dep in deps])
 
     # meta file exists = everything successful
-    if not osp.isfile(ds_meta_file):            
+    if not osp.isfile(ds_meta_file):
+        if not integrity_check:
+            raise Exception('integrity_check must be True to create the dataset meta file.')
+
         with open(ds_meta_file, 'wt', encoding='utf-8') as jf:
             json.dump({
                 'files': root_files,
@@ -587,8 +598,20 @@ def cutflow_parse_actions(steer:dict, cp:CutflowProcessor):
 
             if 'disabled' in kwargs:
                 del kwargs['disabled']
+
+            reset = 'reset_action' in kwargs and kwargs['reset_action'] == True
+            if 'reset_action' in kwargs:
+                del kwargs['reset_action']
             
-            actions.append(action_map[action['type'] + 'Action'](**kwargs))
+            action_instance = action_map[action['type'] + 'Action'](**kwargs)
+            if reset:
+                print(f'Resetting action <{action["type"]}> requested. Executing...')
+                if action_instance.complete():
+                    action_instance.reset()
+                else:
+                    print('Already reset.')
+
+            actions.append(action_instance)
         except Exception as e:
             print(e)
             raise Exception(f'Could not instantiate action of type <{action["type"]}>')

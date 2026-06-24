@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from .CutflowProcessor import CutflowProcessor
 from .DataSource import DataSource
 from copy import deepcopy
@@ -43,7 +42,8 @@ class DataExtractor:
                 split:int|None=None,
                 weight_prop:str='weight',
                 shuffle:bool=True,
-                dtype=np.float32)->tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+                dtype=np.float32,
+                ignore_categories:list[str]=[])->tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """Extracts numpy arrays containing event weights, feature data and
         labels for the event categories contained in to_process.
 
@@ -84,32 +84,67 @@ class DataExtractor:
         else:
             features = self._features
 
+        assert(features is not None)
+
         sources = self._sources
+        sources_dict:dict[str, DataSource] = {}
         
         events_passed:dict[str, np.ndarray] = {}
-        fs_2_source:dict[str, DataSource] = {}
-        src_2_src_idx:dict[DataSource, int] = {}
+        source_2_fs:dict[str, list[str]] = {}
+        fs_2_source:dict[str, str] = {}
+        src_2_src_idx:dict[str, int] = {}
+        source_ignore_masks:dict[str, np.ndarray] = {}
         
         for src_idx, source in enumerate(sources):
             source.getStore().resetView()
-            src_2_src_idx[source] = src_idx
+            src_2_src_idx[source.getName()] = src_idx
+            sources_dict[source.getName()] = source
             
         for class_label, fs_name in to_process:
             for source in sources:
+                source_name = source.getName()
+
                 if source.containsCategory(fs_name):
-                    fs_2_source[fs_name] = source
+                    fs_2_source[fs_name] = source_name
+                    if not source_name in source_2_fs:
+                        source_2_fs[source_name] = []
+
+                    source_2_fs[source_name] += [fs_name]
                     break
             
             if not fs_name in fs_2_source:
                 raise Exception(f'No source found for final state {fs_name}. Did you register it?')
+            
+        masks_by_source:dict[str, dict[str, np.ndarray]] = {}
+        for src_name, final_states in (pbar := tqdm(source_2_fs.items())):
+            source = sources_dict[src_name]
+
+            final_states_fetch = deepcopy(final_states)
+            src_ignore_categories = list(filter(lambda cat: source.containsCategory(cat), ignore_categories))
+
+            final_states_fetch += src_ignore_categories
+
+            pbar.set_description(f'Fetching data for categories {", ".join(final_states_fetch)} from source {source_name}')
+            masks = source.getCategoryMasks(final_states)
+            
+            if len(src_ignore_categories):
+                ignore_mask = np.logical_or.reduce( [masks[category] for category in src_ignore_categories ] )
+                source_ignore_masks[src_name] = ignore_mask
+
+            masks_by_source[src_name] = masks
 
         nrows_tot = 0
         for class_label, fs_name in to_process:
-            source = fs_2_source[fs_name]
-            category_mask = source.getCategoryMask(fs_name)
-            post_cut_mask = self._cp.getFinalEventMaskByName(source.getName(), step=step)
+            source_name = fs_2_source[fs_name]
+            source = sources_dict[source_name]
+
+            category_mask = masks_by_source[source_name][fs_name]
+            post_cut_mask = self._cp.getFinalEventMaskByName(source_name, step=step)
             
             mask = category_mask & post_cut_mask
+
+            if source_name in source_ignore_masks:
+                mask = mask & (~source_ignore_masks[source_name])
             
             if split is not None:
                 mask = mask & (source.getStore()['split'] == split)
@@ -120,7 +155,7 @@ class DataExtractor:
             nrows_tot += int(mask.sum())
             
             events_passed[fs_name] = mask
-
+        
         src_idx = np.zeros(nrows_tot, dtype='B')
         event_num = np.zeros(nrows_tot, dtype='I')
         
@@ -130,13 +165,14 @@ class DataExtractor:
         labels = np.zeros(nrows_tot, dtype='B')
 
         pointer = 0
-        pbar = tqdm(range(nrows_tot * len(features)))
+        pbar = tqdm(range(len(to_process) * len(features)))
         #print('nrows_tot=', nrows_tot)
         
         labels_unique = []
         
         for i, (class_label, fs_name) in enumerate(to_process):
-            source = fs_2_source[fs_name]
+            source_name = fs_2_source[fs_name]
+            source = sources_dict[source_name]
             store = source.getStore()
             
             mask = events_passed[fs_name]
@@ -144,12 +180,12 @@ class DataExtractor:
             #print('nrows=', nrows)
 
             if nrows:
-                src_idx[pointer:pointer + nrows] = src_2_src_idx[source]
+                src_idx[pointer:pointer + nrows] = src_2_src_idx[source_name]
                 event_num[pointer:pointer + nrows] = store['event'][mask]
 
                 for i, feature in enumerate(features):
-                    pbar.set_description(f'Extracting data for <{source.getName()}.{fs_name}> feature={feature}')
-                    pbar.update(nrows)
+                    pbar.set_description(f'Extracting data for <{source_name}.{fs_name}> feature={feature}')
+                    pbar.update(1)
 
                     inputs[pointer:pointer + nrows, i] = store[feature][mask]
                 
@@ -197,6 +233,7 @@ def plotFn(de:DataExtractor, inputs:np.ndarray, weight:np.ndarray, labels:np.nda
            plot_options:dict[str, dict]={},
            bkg_hist_kwargs:dict={ 'histtype': 'stepfilled' }):
         
+        import matplotlib.pyplot as plt
         assert(de._features is not None and de._labels is not None)
         
         features = de._features

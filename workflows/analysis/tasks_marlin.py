@@ -27,11 +27,11 @@ class MarlinBaseJob(AbstractMarlin):
     # controls how many files are processed in debug mode (e.g. AnalysisRuntime). if None, all files are processed
     debug_n_files_to_process:int|None = 3
     
-    constants = [
-        ('ILDConfigDir', '$ILD_CONFIG_DIR'), # read from environment variable
-        ('ZHH_REPO_ROOT', '$REPO_ROOT'),
-        ('OutputDirectory', '.')
-    ]
+    constants = {
+        'ILDConfigDir': '$ILD_CONFIG_DIR', # read from environment variable
+        'ZHH_REPO_ROOT': '$REPO_ROOT',
+        'OutputDirectory': '.'
+    }
     
     def requires(self):
         """
@@ -50,14 +50,14 @@ class MarlinBaseJob(AbstractMarlin):
  
         mcp_col_name:str = self.get_steering_parameters()['mcp_col_name']
         
-        self.constants.append(('MCParticleCollectionName', mcp_col_name))
+        self.constants['MCParticleCollectionName'] = mcp_col_name
         
         marlin_constants = config.marlin_constants(self.branch, self.branch_data) if isinstance(config.marlin_constants, Callable) else config.marlin_constants
         for key, value in marlin_constants.items():
-            self.constants.append((key, str(value)))
+            self.constants[key] = str(value)
         
         for key, value in config.marlin_globals.items():
-            self.globals.append((key, str(value)))
+            self.globals[key] = str(value)
     
     @law.dynamic_workflow_condition
     def workflow_condition(self):

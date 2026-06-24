@@ -1,5 +1,4 @@
 import functools, os.path as osp
-import awkward as ak
 import numpy as np
 import h5py
 import uproot as ur
@@ -12,6 +11,9 @@ from math import ceil
 from ..task.AbstractTask import AbstractTask
 
 ChunkedConversionResult = tuple[int, tuple[tuple|tuple[int], str]]
+
+if TYPE_CHECKING:
+    import awkward as ak
 
 # for creating ROOT dicts
 # if not TYPE_CHECKING:
@@ -117,8 +119,8 @@ class ROOT2HDF5Converter:
                             path_checks = input_files == chunk_files
                             path_check = np.all(path_checks)
                         else:
-                            bnames_found = [osp.basename(f) for f in input_files]
-                            bnames_expected = [osp.basename(f) for f in chunk_files]
+                            bnames_found = [osp.basename(osp.normpath(f)) for f in input_files]
+                            bnames_expected = [osp.basename(osp.normpath(f)) for f in chunk_files]
 
                             path_checks = [bnames_found[i] == bnames_expected[i] for i in range(len(bnames_found))]
                             path_check = all(path_checks)
@@ -138,6 +140,7 @@ class ROOT2HDF5Converter:
                             
                             for idx, matches in enumerate(path_checks):
                                 if not matches:
+                                    print(check_requires_exact_path_match)
                                     print(f'<{input_files[i]}>:<{chunk_files[i]}>' if check_requires_exact_path_match else f'<{bnames_found[i]}>:<{bnames_expected[i]}>')
 
                             raise Exception(f'File <{out_file}> for chunk <{chunk_idx}> does not fit to expected '+
@@ -161,7 +164,7 @@ class ROOT2HDF5Converter:
         return (already_done, tot_shape, sizes)
 
     def convertLazy(self, nrows:int|None=None, check_existing:bool=False,
-                    check_requires_exact_path_match:bool=True, use_vds:bool=False, **kwargs)->tuple[AbstractTask, list[AbstractTask]]:
+                    check_requires_exact_path_match:bool=False, use_vds:bool=False, **kwargs)->tuple[AbstractTask, list[AbstractTask]]:
         """Returns one or multiple tasks which represent the ROOT->HDF5 conversion
         See ProcessRunner for a tool to execute them.
 
@@ -441,8 +444,10 @@ def tree_n_rows(sources:list[str], tree:str, use_uproot:bool=True, use_mp:bool=T
         
         return (sources, nrows) if return_path else nrows
 
-def translate_item(sources:list[str], tree:str, names:str|list[str], use_uproot:bool=True)->list[ak.Array]:
-    result:list[ak.Array] = []
+def translate_item(sources:list[str], tree:str, names:str|list[str], use_uproot:bool=True)->list['ak.Array']:
+    import awkward as ak
+
+    result = []
 
     if not TYPE_CHECKING:
         if use_uproot:
@@ -518,7 +523,7 @@ def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None,
     nan_to:float|int|None = args[9]
     keep_dim:bool|None = args[10]
 
-    import h5py
+    import awkward as ak
 
     # load from HDF5
     if osp.isfile(output_file) and not overwrite_if_exists:
