@@ -13,6 +13,7 @@ def define_configs_550_fast(suffix:str, sgv_options:dict,
     
     class Config_550_llhh(AnalysisConfiguration):
         tag = f'550-llhh-{suffix}'
+        sqrt_s = 550
         
         def sgv_inputs(self, fast_sim_task):
             input_files:list[str] = sum(map(glob_exp, [
@@ -40,6 +41,7 @@ def define_configs_550_fast(suffix:str, sgv_options:dict,
 
     class Config_550_qqhh(AnalysisConfiguration):
         tag = f'550-qqhh-{suffix}'
+        sqrt_s = 550
         
         def sgv_inputs(self, fast_sim_task):
             input_files:list[str] = sum(map(glob_exp, [
@@ -66,6 +68,7 @@ def define_configs_550_fast(suffix:str, sgv_options:dict,
 
     class Config_550_vvhh(AnalysisConfiguration):
         tag = f'550-vvhh-{suffix}'
+        sqrt_s = 550
         
         def sgv_inputs(self, fast_sim_task):
             input_files:list[str] = sum(map(glob_exp, [
@@ -92,6 +95,7 @@ def define_configs_550_fast(suffix:str, sgv_options:dict,
 
     class Config_550_6q(AnalysisConfiguration):
         tag = f'550-6q-{suffix}'
+        sqrt_s = 550
         
         def sgv_inputs(self, fast_sim_task):
             process_mask_6q = [
@@ -128,6 +132,7 @@ def define_configs_550_fast(suffix:str, sgv_options:dict,
 
     class Config_550_4fsl(AnalysisConfiguration):
         tag = f'550-4fsl-{suffix}'
+        sqrt_s = 550
         
         custom_statistics = [
             (1., 'zz_sl0')
@@ -166,6 +171,7 @@ def define_configs_550_fast(suffix:str, sgv_options:dict,
 
     class Config_550_4f(AnalysisConfiguration):
         tag = f'550-4f-{suffix}'
+        sqrt_s = 550
         
         def sgv_inputs(self, fast_sim_task):
             input_files = glob_exp('$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/*.slcio')
@@ -248,6 +254,7 @@ def define_configs_550_fast(suffix:str, sgv_options:dict,
 
     class Config_550_tthz(AnalysisConfiguration):
         tag = f'550-tthz-{suffix}'
+        sqrt_s = 550
         
         def sgv_inputs(self, fast_sim_task):
             input_files = glob_exp('$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/8f/*.slcio')
@@ -271,6 +278,7 @@ def define_configs_550_fast(suffix:str, sgv_options:dict,
 
     class Config_550_2f(AnalysisConfiguration):
         tag = f'550-2f-{suffix}'
+        sqrt_s = 550
         
         def sgv_inputs(self, fast_sim_task):
             input_files = glob_exp('$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/2f/*.slcio')
@@ -300,6 +308,7 @@ def define_configs_550_fast(suffix:str, sgv_options:dict,
 
     class Config_550_2l(AnalysisConfiguration):
         tag = f'550-2l-{suffix}'
+        sqrt_s = 550
         
         def sgv_inputs(self, fast_sim_task):
             input_files = glob_exp('$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/2f/*P2f_z_l*.slcio')
@@ -332,6 +341,7 @@ def define_configs_550_fast(suffix:str, sgv_options:dict,
         """
 
         tag = f'550-4flh-{suffix}'
+        sqrt_s = 550
         
         def raw_index_requires(self, raw_index_task: 'AbstractIndex'):
             # use the output of 550-4f-{suffix} as input
@@ -363,6 +373,7 @@ def define_configs_550_fast(suffix:str, sgv_options:dict,
 
     class Config_550_2l4q(AnalysisConfiguration):
         tag = f'550-2l4q-{suffix}'
+        sqrt_s = 550
         
         def sgv_inputs(self, fast_sim_task):
             process_mask_2l4q = [

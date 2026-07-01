@@ -5,3 +5,5 @@ def register():
         conf_550_fast_perfsmbc, \
         conf_550_fast_pfl, \
         conf_550_full
+    
+    import workflows.analysis.configurations

@@ -18,7 +18,7 @@ import numpy as np
 from zhh import glob_exp
 
 if TYPE_CHECKING:
-    from analysis.tasks import RawIndex, AbstractIndex
+    from hep_workflows.tasks_index import RawIndex, AbstractIndex
 
 # load prod configs
 from .configs.conf_550_fast_perf import *
@@ -31,6 +31,7 @@ if False:
     # example how to use Whizard before SGV
     class Config_550_llbb_fast_perf(AnalysisConfiguration):
         tag = '550-llbb-fast-perf'
+        sqrt_s = 550
         
         whizard_options = [
             { 'process_name': 'eebb_sl0', 'process_definition': '', 'template_dir': '$REPO_ROOT/workflows/resources/whizard_template', 'sindarin_file': 'whizard.base550.sin' },
@@ -65,6 +66,7 @@ if False:
 
     class Config_550_llbb_fast_pfl(AnalysisConfiguration):
         tag = '550-llbb-fast-pfl'
+        sqrt_s = 550
         
         whizard_options = [
             { 'process_name': 'eebb_sl0', 'process_definition': '', 'template_dir': '$REPO_ROOT/workflows/resources/whizard_template', 'sindarin_file': 'whizard.base550.sin' },
@@ -100,6 +102,7 @@ if False:
 # example how to use Whizard before SGV
 class Config_500_zh_tau_fast_perf(AnalysisConfiguration):
     tag = '500-zh-tau-fast-perf'
+    sqrt_s = 500
     
     whizard_options = [
         { 'process_name': 'zh_e3e3nunu',
@@ -131,11 +134,19 @@ class Config_500_zh_tau_fast_perf(AnalysisConfiguration):
          'process_definition': '',
          'template_dir': '$REPO_ROOT/workflows/resources/whizard_template',
          'sindarin_file': 'whizard.base500.sin',
-         'iters_per_polarization': { 'eL.pL': 10, 'eL.pR': 10, 'eR.pL': 10, 'eR.pR': 10 } }
+         'iters_per_polarization': { 'eL.pL': 10, 'eL.pR': 10, 'eR.pL': 10, 'eR.pR': 10 } },
+    ]
+
+    whizard_options = [
+         { 'process_name': 'ww_sl0_tau_only',
+         'process_definition': '',
+         'template_dir': '$REPO_ROOT/workflows/resources/whizard_template',
+         'sindarin_file': 'whizard.base500.sin',
+         'iters_per_polarization': { 'eL.pR': 1 } } # 'eL.pL': 10, 'eL.pR': 10, 'eR.pL': 10, 'eR.pR': 10 } }
     ]
     
     def sgv_inputs(self, fast_sim_task):
-        from workflows.analysis.tasks_sim import FastSimSGV
+        from hep_workflows.tasks_sim import FastSimSGV
         assert(isinstance(fast_sim_task, FastSimSGV))
         
         sgv_inputs = fast_sim_task.input()
@@ -162,6 +173,8 @@ class Config_500_zh_tau_fast_perf(AnalysisConfiguration):
 
 class Config_500_zh10_tau_fast_perf(AnalysisConfiguration):
     tag = '500-zh10-tau-fast-perf'
+    sqrt_s = 500
+    
     
     whizard_options = [
         { 'process_name': 'zh_e3e3nunu',
@@ -193,11 +206,19 @@ class Config_500_zh10_tau_fast_perf(AnalysisConfiguration):
          'process_definition': '',
          'template_dir': '$REPO_ROOT/workflows/resources/whizard_template',
          'sindarin_file': 'whizard.base500.sin',
-         'iters_per_polarization': { 'eL.pR': 200, 'eR.pL': 200 } }
+         'iters_per_polarization': { 'eL.pR': 200, 'eR.pL': 200 } },
+    ]
+
+    whizard_options = [
+         { 'process_name': 'ww_sl0_tau_only',
+         'process_definition': '',
+         'template_dir': '$REPO_ROOT/workflows/resources/whizard_template',
+         'sindarin_file': 'whizard.base500.sin',
+         'iters_per_polarization': { 'eL.pR': 10, 'eR.pL': 10 } },         
     ]
     
     def sgv_inputs(self, fast_sim_task):
-        from workflows.analysis.tasks_sim import FastSimSGV
+        from hep_workflows.tasks_sim import FastSimSGV
         assert(isinstance(fast_sim_task, FastSimSGV))
         
         sgv_inputs = fast_sim_task.input()
@@ -224,6 +245,7 @@ class Config_500_zh10_tau_fast_perf(AnalysisConfiguration):
 
 class Config_250_ftag_fast_perf(AnalysisConfiguration):
     tag = '250-ftag-fast-perf'
+    sqrt_s = 250
     
     task_kwargs:dict[str, dict] = {
         'MarlinBaseJob': {
@@ -264,6 +286,7 @@ class Config_250_ftag_fast_perf(AnalysisConfiguration):
 
 class Config_550_bbbb_fast_perf(AnalysisConfiguration):
     tag = '550-bbbb-fast-perf'
+    sqrt_s = 550
     
     whizard_options = [
         {
@@ -281,7 +304,7 @@ class Config_550_bbbb_fast_perf(AnalysisConfiguration):
     ]
     
     def sgv_inputs(self, fast_sim_task):
-        from workflows.analysis.tasks_sim import FastSimSGV
+        from hep_workflows.tasks_sim import FastSimSGV
         assert(isinstance(fast_sim_task, FastSimSGV))
         
         sgv_inputs = fast_sim_task.input()
@@ -308,6 +331,7 @@ class Config_550_bbbb_fast_perf(AnalysisConfiguration):
 
 class Config_550_n1n1hhnores_fast_perf(AnalysisConfiguration):
     tag = '550-n1n1hhnores-fast-perf'
+    sqrt_s = 550
     
     def sgv_inputs(self, fast_sim_task):
         input_files:list[str] = glob_exp('/data/dust/user/jtorndal/whizard/noresonance/*.slcio')

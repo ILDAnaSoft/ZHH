@@ -9,6 +9,7 @@ if TYPE_CHECKING:
 
 class Config_550_llhh_full(AnalysisConfiguration):
     tag = '550-llhh-full'
+    sqrt_s = 550
     
     def slcio_files(self, raw_index_task: 'RawIndex'):
         result = []
@@ -30,6 +31,7 @@ class Config_550_llhh_full(AnalysisConfiguration):
 
 class Config_250_ftag_full(AnalysisConfiguration):
     tag = '250-ftag-full'
+    sqrt_s = 250
     
     task_kwargs:dict[str, dict] = {
         'MarlinBaseJob': {

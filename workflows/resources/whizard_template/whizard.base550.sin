@@ -99,8 +99,8 @@ $circe2_design="ILC"
 ! This file is just a hack of 500_TDR_ws_ee021.circe, with 500 replaced by 550 on line 4
 $circe2_file="550_TDR_ws_ee021.circe"
 
-luminosity = 4 / 1 abarn
-!or n_events = 1000
+! luminosity = 4 / 1 abarn
+n_events = $NEVENTS
 
 sqrts = 550 GeV 
 beams_pol_density = @($BEAMPOL1),@($BEAMPOL2)
