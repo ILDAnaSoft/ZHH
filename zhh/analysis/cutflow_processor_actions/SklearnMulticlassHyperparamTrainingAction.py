@@ -99,15 +99,19 @@ class SklearnMulticlassHyperparamTrainingAction(MVAThresholdFinderInterface, Fil
         print(f'Sig categories', self._signal_categories)
         print(f'Bkg categories', self._background_categories)
 
+        if not os.path.isfile(self._data_file):
+            raise Exception(f'Cannot find data file for hyperparameter optimization: {self._data_file}. Did you run WriteMVADataAction before?')
+
         cfg = self._cfg
         n_left = cfg._n_trials - len(self.getStudy(readonly=True).trials)
-        cfg._n_trials = ceil(n_left / NPROCESSES)
+        n_workers = min(NPROCESSES, n_left) if n_left > 0 else 0
+        cfg._n_trials = ceil(n_left / n_workers) if n_workers > 0 else 0
 
         print(f'Using {NPROCESSES} cores to sample and try {n_left} hyperparameter sets')
 
         if n_left > 0:
-            with Pool(processes=NPROCESSES) as pool:
-                pool.map(run_optimization, [cfg] * n_left) #range(self._ntrials * NPROCESSES))
+            with Pool(processes=n_workers) as pool:
+                pool.map(run_optimization, [cfg] * n_workers)
 
         # assign threshold
         if not self.complete():
@@ -124,9 +128,7 @@ class SklearnMulticlassHyperparamTrainingAction(MVAThresholdFinderInterface, Fil
             for i in range(1, 10):
                 needle = f'"study_id":{i}'
                 if needle in text:
-                    confirm = input(f'There was an invalid study_id={i} found in the log of the hyperparameter optimization. This should be replaced with study_id=0. Please confirm to correct this (y/n) ')
-                    if confirm.lower() != 'y':
-                        raise Exception('Operation aborted')
+                    print(f'Warning: There was an invalid study_id={i} found in the log of the hyperparameter optimization. This will be replaced with study_id=0')
 
                     text = text.replace(needle, '"study_id":0')
             

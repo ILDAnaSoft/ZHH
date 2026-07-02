@@ -294,39 +294,91 @@ def objective(config:MVATrainingConfig, hyper_params:dict, trial=None,
     # following works for XGB and LightGBM
     loss_history = list(list(clf.evals_result_.values())[0].values())[0]
 
-    NITEMS = 100
-
-    x = np.linspace(0.5, 0.99, NITEMS, endpoint=False)
-    sig = np.zeros(NITEMS)
-    bkg = np.zeros(NITEMS)
-
     is_signal = np.isin(y_test, signal_classes)
     is_background = np.isin(y_test, background_classes)
 
     y_test_pred = cast(np.ndarray, clf.predict_proba(X_test))
-
-    for i, t in enumerate(np.nditer(x)):
-        thresh = t
-
-        sig[i] = w_test_phys[is_signal     & (y_test_pred[:, signal_classes].sum(axis=1) >= thresh)].sum()
-        bkg[i] = w_test_phys[is_background & (y_test_pred[:, signal_classes].sum(axis=1) >= thresh)].sum()
-    
-    significances = sig/np.sqrt(sig + bkg)
-    significances = np.nan_to_num(significances)
-    best_significance = np.max(significances)
-    
-    max_pos = np.argmax(significances)
-    
-    # show stats in train dataset
     y_train_pred = cast(np.ndarray, clf.predict_proba(X_train))
-    thresh = x[max_pos]
-    sig_train = w_train_phys[np.isin(y_train, signal_classes    ) & (y_train_pred[:, signal_classes].sum(axis=1) >= thresh)].sum()
-    bkg_train = w_train_phys[np.isin(y_train, background_classes) & (y_train_pred[:, signal_classes].sum(axis=1) >= thresh)].sum()
-    significance_train = sig_train/sqrt(sig_train + bkg_train)
 
-    print(f'trial {n_trial}: test dataset : nsig={sig[max_pos]:3f} nbkg={bkg[max_pos]:.3f} (sign={best_significance:.3f})')
-    print(f'trial {n_trial}: train dataset: nsig={sig_train:3f} nbkg={bkg_train:.3f} (sign={significance_train:.3f})')
-    
+    if len(signal_classes) <= 1:
+        NITEMS = 100
+
+        x = np.linspace(0.5, 0.99, NITEMS, endpoint=False)
+        sig = np.zeros(NITEMS)
+        bkg = np.zeros(NITEMS)
+
+        for i, t in enumerate(np.nditer(x)):
+            thresh = t
+
+            sig[i] = w_test_phys[is_signal     & (y_test_pred[:, signal_classes].sum(axis=1) >= thresh)].sum()
+            bkg[i] = w_test_phys[is_background & (y_test_pred[:, signal_classes].sum(axis=1) >= thresh)].sum()
+
+        significances = sig/np.sqrt(sig + bkg)
+        significances = np.nan_to_num(significances)
+        best_significance = np.max(significances)
+
+        max_pos = np.argmax(significances)
+
+        # show stats in train dataset
+        thresh = x[max_pos]
+        sig_train = w_train_phys[np.isin(y_train, signal_classes    ) & (y_train_pred[:, signal_classes].sum(axis=1) >= thresh)].sum()
+        bkg_train = w_train_phys[np.isin(y_train, background_classes) & (y_train_pred[:, signal_classes].sum(axis=1) >= thresh)].sum()
+        significance_train = sig_train/sqrt(sig_train + bkg_train)
+
+        print(f'trial {n_trial}: test dataset : nsig={sig[max_pos]:3f} nbkg={bkg[max_pos]:.3f} (sign={best_significance:.3f})')
+        print(f'trial {n_trial}: train dataset: nsig={sig_train:3f} nbkg={bkg_train:.3f} (sign={significance_train:.3f})')
+    else:
+        # multiple signal classes: rather than cutting on the summed MVA output of all
+        # signal classes with a single threshold, optimize 2 cut parameters per signal
+        # class (a lower bound on its own score, an upper bound on the summed score of
+        # the other signal classes) and combine the per-class significances in quadrature
+        from scipy.optimize import minimize
+
+        def make_selections(probas:np.ndarray, params) -> list[np.ndarray]:
+            selections = []
+
+            for i, cls in enumerate(signal_classes):
+                own = probas[:, cls]
+                others = probas[:, [c for c in signal_classes if c != cls]].sum(axis=1)
+                selections.append((own >= params[2*i]) & (others <= params[2*i + 1]))
+
+            return selections
+
+        def combined_significance(probas:np.ndarray, weights:np.ndarray, params, sig_mask:np.ndarray, bkg_mask:np.ndarray):
+            sigs = np.zeros(len(signal_classes))
+            bkgs = np.zeros(len(signal_classes))
+
+            for i, selection in enumerate(make_selections(probas, params)):
+                sigs[i] = weights[selection & sig_mask].sum()
+                bkgs[i] = weights[selection & bkg_mask].sum()
+
+            significances = np.nan_to_num(sigs/np.sqrt(sigs + bkgs))
+            return sigs, bkgs, sqrt((significances ** 2).sum()), significances
+
+        def objective_multiclass(params):
+            _, _, significance, _ = combined_significance(y_test_pred, w_test_phys, params, is_signal, is_background)
+            return 1./significance if significance > 0 else np.inf
+
+        bounds = [(0.5, 1.), (0., 1.)] * len(signal_classes)
+        x0 = [.9, .1] * len(signal_classes)
+
+        res = minimize(objective_multiclass, x0=x0, bounds=bounds, method='Nelder-Mead')
+
+        thresh = res.x
+        x = None
+        sig, bkg, best_significance, sub_significances = combined_significance(y_test_pred, w_test_phys, thresh, is_signal, is_background)
+
+        is_signal_train = np.isin(y_train, signal_classes)
+        is_background_train = np.isin(y_train, background_classes)
+        sig_train_arr, bkg_train_arr, significance_train, sub_significances_train = combined_significance(y_train_pred, w_train_phys, thresh, is_signal_train, is_background_train)
+        sig_train = sig_train_arr.sum()
+        bkg_train = bkg_train_arr.sum()
+
+        print(f'trial {n_trial}: test dataset : nsig={sig.sum():3f} nbkg={bkg.sum():.3f} (sign: comb={best_significance:.3f}, ' + \
+              ', '.join([ f'cls {label}: {sign:.3f}' for label, sign in zip(signal_classes, sub_significances) ]) + ')' )
+        print(f'trial {n_trial}: train dataset: nsig={sig_train:3f} nbkg={bkg_train:.3f} (sign: comb={significance_train:.3f}, ' + \
+              ', '.join([ f'cls {label}: {sign:.3f}' for label, sign in zip(signal_classes, sub_significances_train) ]) + ')' )
+
     dump = {
         'hyper_params': hyper_params,
         'loss_history': loss_history,
