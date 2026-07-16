@@ -314,6 +314,9 @@ class FinalStateCounts:
     
     n_b_from_higgs: np.ndarray
 
+    def __len__(self):
+        return len(self.n_b)
+
     def encode(self, mask:np.ndarray|None=None):
         return FinalStateCounts.encode_fsc(self, mask)
 
@@ -343,6 +346,25 @@ class FinalStateCounts:
             fsc_encoded += addition
         
         return fsc_encoded
+    
+    @staticmethod
+    def from_encoded(fsc_coded:np.ndarray)->'FinalStateCounts':
+        """Decodes a numpy uint64 array of encoded final state counts to a FinalStateCounts object"""
+
+        data = {}
+        remaining = np.copy(fsc_coded)
+
+        for i, key in enumerate(FSC_KEYS):
+            modulo = remaining % 10
+
+            data[key] = np.array(modulo, dtype=np.uint8)
+            remaining = (remaining - modulo) // 10
+
+        data['n_q']           = data['n_d'] + data['n_u'] + data['n_s'] + data['n_c'] + data['n_b'] + data['n_t']
+        data['n_neutral_lep'] = data['n_ve'] + data['n_vmu'] + data['n_vtau']
+        data['n_charged_lep'] = data['n_e'] + data['n_mu'] + data['n_tau']
+
+        return FinalStateCounts(**data)
     
     @staticmethod
     def decode(fsid:int|np.uint64, fsc_labels:list[str]=FSC_LABELS)->str:

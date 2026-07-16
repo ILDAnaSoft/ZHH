@@ -9,13 +9,6 @@ EventObservablesLL::EventObservablesLL(): EventObservablesBase("EventObservables
     _description = "EventObservablesLL writes relevant observables to root-file " ;
 
     registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
-        "2JetCollectionName" ,
-        "Name of the Jet collection"  ,
-        m_input2JetCollection ,
-        std::string("Refined2Jets")
-        );
-
-    registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
         "ISOElectrons" ,
         "Name of the isolated electron collection"  ,
         m_inputIsoElectrons ,
@@ -48,15 +41,25 @@ void EventObservablesLL::prepareChannelTree() {
     m_2jets4v = std::vector<ROOT::Math::PxPyPzEVector>(2);
     m_fit4C_masses = std::vector<float>(m_nAskedJets());
 
+    m_leps4v_post_4C_kinfit = std::vector<ROOT::Math::PxPyPzEVector>(m_nAskedIsoLeps());
+
+    m_mcpQuarkMomenta = std::vector<ROOT::Math::PxPyPzEVector>(m_nAskedJets());
+    m_mcpQuarkPDGs = std::vector<int>(m_nAskedJets(), 0);
+
+    m_mcpChLeptonMomenta = std::vector<ROOT::Math::PxPyPzEVector>(m_nAskedIsoLeps());
+    m_mcpChLeptonPDGs = std::vector<int>(m_nAskedIsoLeps(), 0);
+
 	if (m_write_ttree) {
         ttree->Branch("npfosmin4j", &m_npfosmin4j, "npfosmin4j/I");
 		ttree->Branch("npfosmax4j", &m_npfosmax4j, "npfosmax4j/I");
 
         ttree->Branch("lep1_4v", &m_leps4v[0]);
         ttree->Branch("typel1", &m_typel1, "typel1/I");
+        ttree->Branch("lep1_4CKF_4v", &m_leps4v_post_4C_kinfit[0]);
 
         ttree->Branch("lep2_4v", &m_leps4v[1]);
         ttree->Branch("typel2", &m_typel2, "typel2/I");
+        ttree->Branch("lep2_4CKF_4v", &m_leps4v_post_4C_kinfit[1]);
 
         ttree->Branch("plmin", &m_plmin, "plmin/F");
         ttree->Branch("plmax", &m_plmax, "plmax/F");
@@ -66,43 +69,12 @@ void EventObservablesLL::prepareChannelTree() {
         ttree->Branch("mzll_pre_pairing", &m_mzll_pre_pairing, "mzll_pre_pairing/F");
         
         // 2 jets
-        ttree->Branch("2jets_m_inv", &m_2jet_m_inv, "2jets_m_inv/F");
-        
-        ttree->Branch("2jet1_4v", &m_jets4v[0]);
-		ttree->Branch("2jet1_m", &m_2jet1_m, "2jet1_m/F");
-
-        ttree->Branch("2jet2_4v", &m_jets4v[0]);
-		ttree->Branch("2jet2_m", &m_2jet2_m, "2jet2_m/F");
-
         ttree->Branch("cosJ1_2Jets", &m_cosJ1_2Jets, "cosJ1_2Jets/F");
         ttree->Branch("cosJ2_2Jets", &m_cosJ2_2Jets, "cosJ2_2Jets/F");
         ttree->Branch("cosJ12_2Jets", &m_cosJ12_2Jets, "cosJ12_2Jets/F");
         ttree->Branch("cosJ1Z_2Jets", &m_cosJ1Z_2Jets, "cosJ1Z_2Jets/F");
         ttree->Branch("cosJ2Z_2Jets", &m_cosJ2Z_2Jets, "cosJ2Z_2Jets/F");
-        ttree->Branch("cosJZMax_2Jets", &m_cosJZMax_2Jets, "cosJZMax_2Jets/F");
-
-        ttree->Branch("ptjmin2", &m_ptjmin2, "ptjmin2/F");
-        ttree->Branch("pjmin2", &m_pjmin2, "pjmin2/F");
-
-        ttree->Branch("ptjmax2", &m_ptjmax2, "ptjmax2/F");
-        ttree->Branch("pjmax2", &m_pjmax2, "pjmax2/F");
-
-        ttree->Branch("yminus2", &m_yMinus2, "yminus2/F");
-        ttree->Branch("yplus2", &m_yPlus2, "yplus2/F");
-
-        ttree->Branch("bmax1_2Jets", &m_bmax1_2Jets, "bmax1_2Jets/F");
-        ttree->Branch("bmax2_2Jets", &m_bmax2_2Jets, "bmax2_2Jets/F");
-
-        ttree->Branch("2jetTags", &m_2jetTags);
-        ttree->Branch("bTagValues_2Jets", &m_bTagValues_2Jets);
-
-        if (m_use_tags2) {
-            ttree->Branch("bmax12_2Jets", &m_bmax12_2Jets, "bmax12_2Jets/F");
-            ttree->Branch("bmax22_2Jets", &m_bmax22_2Jets, "bmax22_2Jets/F");
-
-            ttree->Branch("bTagValues_2Jets2", &m_bTagValues_2Jets2);
-        }
-        
+        ttree->Branch("cosJZMax_2Jets", &m_cosJZMax_2Jets, "cosJZMax_2Jets/F");        
 
         // 4 jets
         ttree->Branch("mbmax12", &m_mbmax12, "mbmax12/F");
@@ -110,6 +82,41 @@ void EventObservablesLL::prepareChannelTree() {
 
         ttree->Branch("mcmax12", &m_mcmax12, "mcmax12/F");
         ttree->Branch("mcmax34", &m_mcmax34, "mcmax34/F");
+
+        // truth information
+        ttree->Branch("mcp_lep_pdgs", &m_mcpChLeptonPDGs);
+        ttree->Branch("mcp_lep1_4v", &m_mcpChLeptonMomenta[0]);
+        ttree->Branch("mcp_lep2_4v", &m_mcpChLeptonMomenta[1]);
+
+        ttree->Branch("mcp_quark_pdgs", &m_mcpQuarkPDGs);
+        ttree->Branch("mcp_quark1_4v", &m_mcpQuarkMomenta[0]);
+		ttree->Branch("mcp_quark2_4v", &m_mcpQuarkMomenta[1]);
+		ttree->Branch("mcp_quark3_4v", &m_mcpQuarkMomenta[2]);
+		ttree->Branch("mcp_quark4_4v", &m_mcpQuarkMomenta[3]);
+
+        ttree->Branch("true_jet_types", &m_trueJetTypes);
+		ttree->Branch("true_jet_pdgs", &m_trueJetPDGs);
+		ttree->Branch("true_dijet_icn_pdgs", &m_trueDijetICNPDGs);
+
+        ttree->Branch("true_jet_pdgs", &m_trueJetPDGs);
+        ttree->Branch("true_jet1_4v", &m_trueJetMomenta[0]);
+		ttree->Branch("true_jet2_4v", &m_trueJetMomenta[1]);
+		ttree->Branch("true_jet3_4v", &m_trueJetMomenta[2]);
+		ttree->Branch("true_jet4_4v", &m_trueJetMomenta[3]);
+
+        ttree->Branch("true_jet_vis1_4v", &m_trueJetVisibleMomenta[0]);
+		ttree->Branch("true_jet_vis2_4v", &m_trueJetVisibleMomenta[1]);
+		ttree->Branch("true_jet_vis3_4v", &m_trueJetVisibleMomenta[2]);
+		ttree->Branch("true_jet_vis4_4v", &m_trueJetVisibleMomenta[3]);        
+
+        ttree->Branch("true_reco_jets_mapped", &m_trueRecoJetsMapped, "true_reco_jets_mapped/I");
+		ttree->Branch("true_isr_momenta", &m_trueISRMomenta);
+
+        // same matching for reco2TrueJets and reco2MCParticles
+        ttree->Branch("reco_to_true_index", &m_reco2TrueJetIndex);
+		ttree->Branch("true_to_reco_index", &m_true2RecoJetIndex);
+
+        ttree->Branch("true_jet_reco_sum_cos", &m_matchingSumCos, "true_jet_reco_sum_cos/F");
     }
 };
 
@@ -122,6 +129,9 @@ void EventObservablesLL::clearChannelValues() {
 
     m_leps4v[1].SetPxPyPzE(0., 0., 0., 0.);
     m_typel2 = 0;
+
+    m_leps4v_post_4C_kinfit[0].SetPxPyPzE(0., 0., 0., 0.);
+    m_leps4v_post_4C_kinfit[1].SetPxPyPzE(0., 0., 0., 0.);
 
     m_plmin = 0;
     m_plmax = 0;
@@ -142,8 +152,6 @@ void EventObservablesLL::clearChannelValues() {
 
     m_ptjmax2 = 0.;
     m_pjmax2 = 0.;
-
-    m_2jet_m_inv = 0.;
 
     m_cosJ1_2Jets = 0.;
 	m_cosJ2_2Jets = 0.;
@@ -167,9 +175,28 @@ void EventObservablesLL::clearChannelValues() {
     m_mcmax12 = 0.;
     m_mcmax34 = 0.;
 
-    m_leps4cKinFit_4v.clear();
-    m_jets4cKinFit_4v.clear();
     m_fit4C_masses.clear();
+
+    // truth information
+    m_matchingSumCos = 0.;
+
+    for (unsigned int i = 0; i < m_nAskedJets(); i++) {
+        m_mcpQuarkMomenta[i].SetPxPyPzE(0., 0., 0., 0.);
+        m_mcpQuarkPDGs[i] = 0;
+
+        m_trueJetTypes[i] = 0;
+		m_trueJetPDGs[i] = 0;
+		m_trueJetMomenta[i].SetPxPyPzE(0., 0., 0., 0.);
+		m_trueJetVisibleMomenta[i].SetPxPyPzE(0., 0., 0., 0.);
+
+		if (i % 2 == 0)
+			m_trueDijetICNPDGs[i / 2] = 0;
+    }
+
+    for (unsigned int i = 0; i < m_nAskedIsoLeps(); i++) {
+        m_mcpChLeptonMomenta[i].SetPxPyPzE(0., 0., 0., 0.);
+        m_mcpChLeptonPDGs[i] = 0;        
+    }
 };
 
 void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
@@ -178,6 +205,13 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
     LCCollection *inputJetCollection = pLCEvent->getCollection( m_inputJetCollection );
     LCCollection *input2JetCollection = pLCEvent->getCollection( m_input2JetCollection );
     LCCollection *inputLepPairCollection = pLCEvent->getCollection( m_inputLepPairCollection );
+
+    if (m_inputLKF_solveNuCollection->getNumberOfElements() == (int)m_nAskedIsoLeps()) {
+        for (int i = 0; i < m_inputLKF_solveNuCollection->getNumberOfElements(); i++) {
+            ReconstructedParticle* lepton = (ReconstructedParticle*) m_inputLKF_solveNuCollection->getElementAt(i);
+            m_leps4v_post_4C_kinfit[i] = v4(lepton);
+        }
+    }
     
     if ( inputLepPairCollection->getNumberOfElements() == (int)m_nAskedIsoLeps() &&
          inputJetCollection->getNumberOfElements() == (int)m_nAskedJets() ) {
@@ -188,7 +222,7 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         //m_m_diff_z = fabs( m_mzll - 91.2 );
         m_mzll_pre_pairing = inputLepPairCollection->parameters().getFloatVal("IsoLepsInvMass");
 
-        LCCollection *inputLeptonCollection;
+        LCCollection *inputLeptonCollection = nullptr;
 
         switch(m_pairedLepType) {
             case 11: inputLeptonCollection = pLCEvent->getCollection( m_inputIsoElectrons ); break;
@@ -216,6 +250,7 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
 
         if (m_pairedLepType == 11 || m_pairedLepType == 13) {
             FloatVec mvaOutputIsoLepTagging;
+            assert(inputLeptonCollection != nullptr);
             inputLeptonCollection->getParameters().getFloatVals("ISOLepTagging", mvaOutputIsoLepTagging);
 
             float mvaOutputIsoLep1 = mvaOutputIsoLepTagging[pairedLeptonIDx[0]];
@@ -240,7 +275,6 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
 
         m_2jet1_m = p4J1_2Jets.M();
         m_2jet2_m = p4J2_2Jets.M();
-        m_2jet_m_inv = (p4J1_2Jets + p4J2_2Jets).M();
 
         double pJ1_2Jets = p4J1_2Jets.P();
         double pJ2_2Jets = p4J2_2Jets.P();
@@ -345,30 +379,11 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
             }
         }
 
-        for (size_t i = 0; i < inputLKF_solveNuCollection->getNumberOfElements(); i++) {
-        ReconstructedParticle* lepton = (ReconstructedParticle*) inputLKF_solveNuCollection->getElementAt(i);
-        m_leps4cKinFit_4v.push_back(v4(lepton));
-        }
-        
-        for (size_t i = 0; i < inputJKF_solveNuCollection->getNumberOfElements(); i++) {
-        ReconstructedParticle* jet = (ReconstructedParticle*) inputJKF_solveNuCollection->getElementAt(i);
-        m_jets4cKinFit_4v.push_back(v4(jet));
-        }        
-
-        if (m_leps4cKinFit_4v.size() == m_nAskedIsoLeps() && (int)m_JMK_best.size() >= m_nAskedJets()) {
-            m_jets4v_post_4C_kinfit[0] = m_jets4cKinFit_4v[0];
-            m_jets4v_post_4C_kinfit[1] = m_jets4cKinFit_4v[1];
-            m_jets4v_post_4C_kinfit[2] = m_jets4cKinFit_4v[2];
-            m_jets4v_post_4C_kinfit[3] = m_jets4cKinFit_4v[3];
-
-            m_jetsMasses_post_4C_kinfit[0] = m_jets4cKinFit_4v[0].M();
-            m_jetsMasses_post_4C_kinfit[1] = m_jets4cKinFit_4v[1].M();
-            m_jetsMasses_post_4C_kinfit[2] = m_jets4cKinFit_4v[2].M();
-            m_jetsMasses_post_4C_kinfit[3] = m_jets4cKinFit_4v[3].M();
-
-            m_fit4C_mz = (m_leps4cKinFit_4v[0]+m_leps4cKinFit_4v[1]).M();
-            m_fit4C_masses.push_back((m_jets4cKinFit_4v[m_JMK_best[0]]+m_jets4cKinFit_4v[m_JMK_best[1]]).M());
-            m_fit4C_masses.push_back((m_jets4cKinFit_4v[m_JMK_best[2]]+m_jets4cKinFit_4v[m_JMK_best[3]]).M());
+        // m_leps4v_post_4C_kinfit filled in EventObservablesBase
+        if (m_inputLKF_solveNuCollection->getNumberOfElements() == (int)m_nAskedIsoLeps() && m_JMK_best.size() >= (size_t)m_nAskedJets()) {
+            m_fit4C_mz = (m_leps4v_post_4C_kinfit[0]+m_leps4v_post_4C_kinfit[1]).M();
+            m_fit4C_masses.push_back(( m_jets4v_post_4C_kinfit[m_JMK_best[0]] + m_jets4v_post_4C_kinfit[m_JMK_best[1]] ).M());
+            m_fit4C_masses.push_back(( m_jets4v_post_4C_kinfit[m_JMK_best[2]] + m_jets4v_post_4C_kinfit[m_JMK_best[3]] ).M());
 
             float mHdelta1 = abs(m_fit4C_masses[0] - 125.0);
             float mHdelta2 = abs(m_fit4C_masses[1] - 125.0);
@@ -376,14 +391,14 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
             m_fit4C_mh1 = mHdelta1 < mHdelta2 ? m_fit4C_masses[0] : m_fit4C_masses[1]; 
             m_fit4C_mh2 = mHdelta1 < mHdelta2 ? m_fit4C_masses[1] : m_fit4C_masses[0]; 
         
-            streamlog_out(MESSAGE) << "lepton energies:" << m_leps4cKinFit_4v[0].E() << ", " << m_leps4cKinFit_4v[1].E() << endl;
+            streamlog_out(MESSAGE) << "lepton energies:" << m_leps4v_post_4C_kinfit[0].E() << ", " << m_leps4v_post_4C_kinfit[1].E() << endl;
             streamlog_out(MESSAGE) << "Fit probs: " << m_fitprob_ZHH << ", " << m_fitprob_ZZH << endl;
             streamlog_out(MESSAGE) << "Fit chi2s: " << m_fitchi2_ZHH << ", " << m_fitchi2_ZZH << endl;
             streamlog_out(MESSAGE) << "ZHH perm: " << m_JMK_ZHH[0] << ", " << m_JMK_ZHH[1] << ", " << m_JMK_ZHH[2] << ", " << m_JMK_ZHH[3] << endl;
             streamlog_out(MESSAGE) << "ZZH perm: " << m_JMK_ZZH[0] << ", " << m_JMK_ZZH[1] << ", " << m_JMK_ZZH[2] << ", " << m_JMK_ZZH[3] << endl;
             streamlog_out(MESSAGE) << "permuation: " << m_JMK_best[0] << ", " << m_JMK_best[1] << ", " << m_JMK_best[2] << ", " << m_JMK_best[3] << endl;
-            streamlog_out(MESSAGE) << "jet energies:" << m_jets4cKinFit_4v[m_JMK_best[0]].E() << ", " << m_jets4cKinFit_4v[m_JMK_best[1]].E() << ", " << m_jets4cKinFit_4v[m_JMK_best[2]].E() << ", " << m_jets4cKinFit_4v[m_JMK_best[3]].E() << endl;
-            streamlog_out(MESSAGE) << "jet energies:" << m_jets4cKinFit_4v[0].E() << ", " << m_jets4cKinFit_4v[1].E() << ", " << m_jets4cKinFit_4v[2].E() << ", " << m_jets4cKinFit_4v[3].E() << endl;
+            streamlog_out(MESSAGE) << "jet energies:" << m_jets4v_post_4C_kinfit[m_JMK_best[0]].E() << ", " << m_jets4v_post_4C_kinfit[m_JMK_best[1]].E() << ", " << m_jets4v_post_4C_kinfit[m_JMK_best[2]].E() << ", " << m_jets4v_post_4C_kinfit[m_JMK_best[3]].E() << endl;
+            streamlog_out(MESSAGE) << "jet energies:" << m_jets4v_post_4C_kinfit[0].E() << ", " << m_jets4v_post_4C_kinfit[1].E() << ", " << m_jets4v_post_4C_kinfit[2].E() << ", " << m_jets4v_post_4C_kinfit[3].E() << endl;
             streamlog_out(MESSAGE) << "dijet masses: " << m_fit4C_mz << ", " << m_fit4C_mh1 << ", " << m_fit4C_mh2 << endl;
         } else {
             streamlog_out(MESSAGE) << "Kinfit failed, will be skipped for EventObservablesLL" << endl;
@@ -446,136 +461,8 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
 
 	const std::string process_name = pLCEvent->getParameters().getStringVal("processName");
 
-	if (m_nJets == m_nAskedJets() && m_useTrueJet) {
-		TrueJet_Parser* trueJet = this;
-		trueJet->getall( pLCEvent );
-		
-		vector<int> trueHadronicJetIndices;
-		vector<int> trueLeptonIndices;
-		vector<int> trueChargedLeptonIndices;
-		vector<int> trueISRIndices;
-		float smallestSumCosAngle = getMatchingByAngularSpace(m_jets, m_reco2TrueJetIndex, m_true2RecoJetIndex, trueHadronicJetIndices, trueLeptonIndices, trueISRIndices);
-
-		// case in which number of hadronic jets == m_nJets
-		m_trueRecoJetsMapped = smallestSumCosAngle < 99;
-
-		// store hadronic true jets
-		m_trueJetN = trueHadronicJetIndices.size();
-
-		// store leptons
-		m_trueLeptonN = trueLeptonIndices.size();
-
-		std::copy_if(trueLeptonIndices.begin(), trueLeptonIndices.end(), std::back_inserter(trueChargedLeptonIndices),
-			[trueJet](int index){
-				int pdg = abs( ( (ReconstructedParticle*)trueJet->jet(index) )->getParticleIDs()[0]->getPDG() );
-				return (pdg == 11 || pdg == 13 || pdg == 15);
-			});
-
-		// sort leptons ASC by energy
-		std::sort(trueChargedLeptonIndices.begin(), trueChargedLeptonIndices.end(), [trueJet]( const int& index1, const int& index2 ) {
-			const ReconstructedParticle* true_lep1 = trueJet->jet(index1);
-			const ReconstructedParticle* true_lep2 = trueJet->jet(index2);
-
-			return true_lep1->getEnergy() > true_lep2->getEnergy();
-		});
-
-		if (trueChargedLeptonIndices.size() >= m_nAskedIsoLeps()) {
-			for (unsigned int i = 0; i < m_nAskedIsoLeps(); i++) {
-				int index = trueChargedLeptonIndices[i];
-				const ReconstructedParticle* tjet = trueJet->jet(index);
-
-				m_trueLeptonMomenta[i] = v4(tjet);
-				m_trueLeptonPDGs[i] = tjet->getParticleIDs()[0]->getPDG();
-			}
-		}
-
-		std::vector<int> icn_pdgs = {23, 25};
-
-		if (m_trueRecoJetsMapped) {
-			std::vector<int> truejetpermICNs;
-
-			//streamlog_out(DEBUG3) << "number of icns = " << nicn << endl;
-			// sort ICNs: any Higgs first; important as this is the order assumed at MEM calculation for the jet matching 
-			std::vector<int> icn_indices_sorted(trueJet->nicn());
-			std::iota(icn_indices_sorted.begin(), icn_indices_sorted.end(), 0);
-
-			std::sort(icn_indices_sorted.begin(), icn_indices_sorted.end(), [trueJet]( const int& icn1_idx, const int& icn2_idx ) {
-				return abs(trueJet->pdg_icn_parent(icn1_idx)) == 25; // && trueJet->E_icn(icn1_idx) > trueJet->E_icn(icn2_idx); // need to have some sorting besides PDG=25
-			});
-
-			std::cerr << "ICN order: "; 
-			for (int &i_icn: icn_indices_sorted)
-				std::cerr << abs(pdg_icn_parent(i_icn)) << " ";
-			std::cerr << std::endl;
-			
-			for (int &i_icn: icn_indices_sorted) {
-				std::cerr << "PDG(icn)=" << abs(pdg_icn_parent(i_icn)) << std::endl;
-				auto jet_ids = jets_of_initial_cn(i_icn);
-
-				for (const int &icn_pdg: icn_pdgs) {
-					if (abs(pdg_icn_parent(i_icn)) == icn_pdg) {
-						IntVec icn_comps_pdgs = pdg_icn_comps(i_icn);
-						bool is_dileptonic = icn_comps_pdgs.size() == 2 && (
-							abs(icn_comps_pdgs[0]) == 11 ||
-							abs(icn_comps_pdgs[0]) == 13 ||
-							abs(icn_comps_pdgs[0]) == 15);
-
-						if (is_dileptonic) {
-							std::cerr << "Found dileptonic decay of boson type" << icn_pdg << " at evt_idx=" << m_nEvt << std::endl;
-						} else {
-							// check if hadronic
-							short n_jets_from_icn = 0;
-
-							for (const int& tj: jet_ids) {
-								auto it = std::find(trueHadronicJetIndices.begin(), trueHadronicJetIndices.end(), tj);
-								
-								if (it != trueHadronicJetIndices.end()) {
-									truejetpermICNs.push_back(std::distance(trueHadronicJetIndices.begin(), it));
-									n_jets_from_icn += 1;
-								}
-							}
-							
-							if (n_jets_from_icn > 0) {
-								//std::cerr << "Adding ICN PDG=" << icn_pdg << " to PermICNs at position " << (truejetpermICNs.size() / 2) << std::endl;
-								if (n_jets_from_icn != 2 || truejetpermICNs.size() % 2 != 0) {
-									//throw EVENT::Exception("Expected H/Z -> q + qbar decay");
-									streamlog_out(ERROR) << "Expected H/Z -> q + qbar decay. Skipping event";
-
-									// setting truejetpermICNs.size() to 0 will skip below loop
-									truejetpermICNs = {};
-								} else {
-									m_trueDijetICNPDGs[truejetpermICNs.size() / 2 - 1] = icn_pdg;
-								}
-							}
-						}
-					}
-				}
-			}
-
-			if (truejetpermICNs.size()) {
-				if (truejetpermICNs.size() % 2 != 0)
-					throw EVENT::Exception("Expected H/Z -> q + qbar decay");
-
-				for (size_t i = 0; i < truejetpermICNs.size(); i++) {
-					int index = trueHadronicJetIndices[truejetpermICNs[i]];
-					const ReconstructedParticle* tjet = trueJet->jet(index);
-
-					//m_trueJetMomenta[i] = v4(tjet);
-					const double* v4_truejet = p4true(index);
-					m_trueJetMomenta[i].SetPxPyPzE(v4_truejet[1], v4_truejet[2], v4_truejet[3], v4_truejet[0]);
-
-					m_trueJetTypes[i] = type_jet(index);
-					m_trueJetPDGs[i] = tjet->getParticleIDs()[0]->getPDG();
-				}
-			}
-		}
-	} else if ((
-		process_name == "e2e2hh" || process_name == "e2e2qqh"
-	) && (m_nAskedIsoLeps() == 2 && m_nAskedJets() == 4) ) {		
-		/*
-		THIS DOES NOT INCLUDE QUARK GLUON SPLITTINGS AND OTHER MORE COMPLICATED
-		CASES. PROCEED WITH CAUTION WHEN USING TRUEJET (ABOVE) OR THIS APPROACH
-		*/
+    if ( (process_name == "e2e2hh" || process_name == "e2e2qqh") && (m_nAskedIsoLeps() == 2 && m_nAskedJets() == 4)) {
+        // Read MCParticle information first; look for quarks and charged leptons from hard interaction/matrix element
 
 		LCCollection *mcParticles = pLCEvent->getCollection( "MCParticlesSkimmed" );
 		
@@ -584,6 +471,8 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
 
 		// show Higgses first
 		std::sort(fsIndices.begin(), fsIndices.end(), [mcParticles]( const int& mcp1_idx, const int& mcp2_idx ) {
+            (void) mcp2_idx;
+
 			return abs( ((MCParticle*)mcParticles->getElementAt(mcp1_idx))->getPDG() ) == 25; // && trueJet->E_icn(icn1_idx) > trueJet->E_icn(icn2_idx); // need to have some sorting besides PDG=25
 		});
 
@@ -627,42 +516,250 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
 			} 
 		}
 
-		m_trueJetN = hadronicMCPs.size();
-		m_trueLeptonN = leptonicMCPs.size();
+		m_mcpQuarkN = hadronicMCPs.size();
+		m_mcpChLeptonN = leptonicMCPs.size();
 
-		std::cerr << "Found nhadronicMCPs=" << m_trueJetN << " | nleptonicMCPs=" << m_trueLeptonN << std::endl;
+		std::cerr << "Found nQuarkMCPs=" << m_mcpQuarkN << " | nChLepMCPs=" << m_mcpChLeptonN << std::endl;
 		// populate four momenta and PDGs of jets and leptons
-		if (m_trueJetN > m_nAskedJets() || m_trueLeptonN > m_nAskedIsoLeps())
+		if (m_mcpQuarkN > m_nAskedJets() || m_mcpChLeptonN > m_nAskedIsoLeps())
 			throw EVENT::Exception("Found more hadronic/leptonic MCPs than expected");
 		
-		
-		for (unsigned short i = 0; i < m_trueJetN; i++) {
-			m_trueJetMomenta[i] = v4(hadronicMCPs[i]);
-			m_trueJetPDGs[i] = hadronicMCPs[i]->getPDG();
+		bool toNQuarks = m_mcpQuarkN == m_nAskedJets();
+		for (unsigned short i = 0; i < m_mcpQuarkN; i++) {
+			m_mcpQuarkMomenta[i] = v4(hadronicMCPs[i]);
+			m_mcpQuarkPDGs[i] = hadronicMCPs[i]->getPDG();
 
 			if (i % 2 != 0) {
-				std::cerr << "M(hadronic system " << ((i-1)/2 + 1) << ") = " << (m_trueJetMomenta[i] + m_trueJetMomenta[i - 1]).M() << std::endl;
+				std::cerr << "M(hadronic system " << ((i-1)/2 + 1) << ") = " << (m_mcpQuarkMomenta[i] + m_mcpQuarkMomenta[i - 1]).M() << std::endl;
 			}
+
+            if (abs(m_mcpQuarkPDGs[i]) > 6)
+                toNQuarks = false;
 		}
 		
-		for (unsigned short i = 0; i < m_trueLeptonN; i++) {
-			m_trueLeptonMomenta[i] = v4(leptonicMCPs[i]);
-			m_trueLeptonPDGs[i] = leptonicMCPs[i]->getPDG();
+		for (unsigned short i = 0; i < m_mcpChLeptonN; i++) {
+			m_mcpChLeptonMomenta[i] = v4(leptonicMCPs[i]);
+			m_mcpChLeptonPDGs[i] = leptonicMCPs[i]->getPDG();
 
 			if (i % 2 != 0) {
-				std::cerr << "M(leptonic system " << ((i-1)/2 + 1) << ") = " << (m_trueLeptonMomenta[i] + m_trueLeptonMomenta[i - 1]).M() << std::endl;
+				std::cerr << "M(leptonic system " << ((i-1)/2 + 1) << ") = " << (m_mcpChLeptonMomenta[i] + m_mcpChLeptonMomenta[i - 1]).M() << std::endl;
 			}
 		}
 
-		/*
-		
-		float smallestSumCosAngle = getMatchingByAngularSpace(m_jets, hadronicMCPs, m_reco2TrueJetIndex, m_true2RecoJetIndex);
+        // find true jets associated to the MCParticles
+        if (m_useTrueJet && toNQuarks) {
+            TrueJet_Parser* trueJet = this;
+            trueJet->getall( pLCEvent );
+            
+            vector<int> trueJetCandidates;
+            for (unsigned short i = 0; i < m_mcpQuarkN; i++) {
+                int ijet = mcpjet(hadronicMCPs[i]);
 
-		// case in which number of hadronic jets == m_nJets
-		m_trueRecoJetsMapped = smallestSumCosAngle < 99; */
+                if (ijet != -1000) {
+                    trueJetCandidates.push_back(ijet);
+                }
+
+                std::cerr << "TrueJet of MCP quark [" << i << "] -> IDX=" << ijet << " [Type=" << type_jet(ijet) << ", PDG=" << initial_elementon(ijet)->getPDG() << "] " << std::endl;
+            }
+
+            vector<int> trueHadronicJetIndices;
+            vector<int> trueLeptonIndices;
+            //vector<int> trueChargedLeptonIndices;
+            vector<int> trueISRIndices;
+
+            int njets = this->njets();
+
+            std::cerr << "TrueJet IDX: Type | Energy [GeV]" << endl;   
+            for (int i_jet = 0 ; i_jet < njets ; i_jet++ ) {
+                int truejet_type = abs(type_jet(i_jet)); // careful: abs(type_jet) also considers TrueJets which are "unseen", i.e. could not be connected to any hard interaction. in TrueJet, this specifically targets H -> g g
+                //int truejet_type = type_jet(i_jet);
+                std::cerr << "TJ " << i_jet << ": " << truejet_type << " | " << jet(i_jet)->getEnergy() << endl;   
+
+                switch (truejet_type) {
+                    case 2: trueLeptonIndices.push_back( i_jet ); break;
+                    case 4: trueISRIndices.push_back( i_jet ); break;
+                    default:
+                        if (truejet_type == 1 || truejet_type == 3 || truejet_type > 100) {
+                            trueHadronicJetIndices.push_back( i_jet );
+                        }
+                        break;
+                }
+            }
+
+            // Handle leptons
+            // since 15.7.2026: handled above by checking MCParticles directly
+            /*
+            m_trueLeptonN = trueLeptonIndices.size();
+
+            std::copy_if(trueLeptonIndices.begin(), trueLeptonIndices.end(), std::back_inserter(trueChargedLeptonIndices),
+                [trueJet](int index){
+                    int pdg = abs( ( (ReconstructedParticle*)trueJet->jet(index) )->getParticleIDs()[0]->getPDG() );
+                    return (pdg == 11 || pdg == 13 || pdg == 15);
+                });
+
+            // sort leptons DESC by energy
+            std::sort(trueChargedLeptonIndices.begin(), trueChargedLeptonIndices.end(), [trueJet]( const int& index1, const int& index2 ) {
+                const ReconstructedParticle* true_lep1 = trueJet->jet(index1);
+                const ReconstructedParticle* true_lep2 = trueJet->jet(index2);
+
+                return true_lep1->getEnergy() > true_lep2->getEnergy();
+            });
+
+            if (trueChargedLeptonIndices.size() >= m_nAskedIsoLeps()) {
+                for (unsigned int i = 0; i < m_nAskedIsoLeps(); i++) {
+                    int index = trueChargedLeptonIndices[i];
+                    const ReconstructedParticle* tjet = trueJet->jet(index);
+
+                    m_trueLeptonMomenta[i] = v4(tjet);
+                    m_trueLeptonPDGs[i] = tjet->getParticleIDs()[0]->getPDG();
+                }
+            }
+            */
+
+            // make sure trueHadronicJetIndices contains same elements as trueJetCandidates
+            // does not consider q -> q + g etc.
+            m_trueJetN = trueHadronicJetIndices.size();
+
+            bool truthMatches = (trueHadronicJetIndices.size() >= trueJetCandidates.size()) && containSameElements(trueHadronicJetIndices, trueJetCandidates); 
+
+            if (truthMatches) {
+                // use trueJetCandidates as they are already sorted by ICN
+                trueHadronicJetIndices = trueJetCandidates;
+
+                std::cerr << "N true hadronic = " << trueHadronicJetIndices.size() << "; N reco = " << m_jets.size() << std::endl;
+
+                vector<TVector3> trueMomenta(m_nJets);
+                vector<TVector3> recoMomenta(m_nJets);
+
+                for (unsigned int i = 0; i < m_nJets; i++) {
+                    const double* trueJetMomentum = ptrueseen(trueHadronicJetIndices[i]);
+
+                    trueMomenta[i] = TVector3(trueJetMomentum[0], trueJetMomentum[1], trueJetMomentum[2]);
+                    recoMomenta[i] = m_jets.at(i)->getMomentum();
+                }
+
+                m_matchingSumCos = getMatchingByAngularSpace(recoMomenta, trueMomenta, m_reco2TrueJetIndex, m_true2RecoJetIndex);
+                m_trueRecoJetsMapped = m_matchingSumCos < 99.;
+
+                if (m_trueRecoJetsMapped) {
+                    std::vector<int> truejetpermICNs;
+
+                    //streamlog_out(DEBUG3) << "number of icns = " << nicn << endl;
+                    // sort ICNs: any Higgs first; important as this is the order assumed at MEM calculation for the jet matching 
+                    std::vector<int> icn_indices_sorted(trueJet->nicn());
+                    std::iota(icn_indices_sorted.begin(), icn_indices_sorted.end(), 0);
+
+                    std::sort(icn_indices_sorted.begin(), icn_indices_sorted.end(), [trueJet]( const int& icn1_idx, const int& icn2_idx ) {
+                        (void) icn2_idx;
+
+                        return abs(trueJet->pdg_icn_parent(icn1_idx)) == 25; // && trueJet->E_icn(icn1_idx) > trueJet->E_icn(icn2_idx); // need to have some sorting besides PDG=25
+                    });
+
+                    std::cerr << "Matching successful. ICN order: "; 
+                    for (int &i_icn: icn_indices_sorted)
+                        std::cerr << abs(pdg_icn_parent(i_icn)) << " ";
+                    std::cerr << std::endl;
+                    
+                    for (int &i_icn: icn_indices_sorted) {
+                        std::cerr << "PDG(icn)=" << abs(pdg_icn_parent(i_icn)) << std::endl;
+                        auto jet_ids = jets_of_initial_cn(i_icn);
+
+                        for (const int &icn_pdg: { 23, 25 }) {
+                            // find all ICNs for which abs(PDG) in [23, 25]
+
+                            if (abs(pdg_icn_parent(i_icn)) == icn_pdg) {
+                                IntVec icn_comps_pdgs = pdg_icn_comps(i_icn);
+                                bool is_dileptonic = icn_comps_pdgs.size() == 2 && (
+                                    abs(icn_comps_pdgs[0]) == 11 ||
+                                    abs(icn_comps_pdgs[0]) == 13 ||
+                                    abs(icn_comps_pdgs[0]) == 15);
+
+                                if (is_dileptonic) {
+                                    std::cerr << "Found dileptonic decay of boson type " << icn_pdg << " at evt_idx=" << m_nEvt << std::endl;
+                                } else {
+                                    // check if hadronic
+                                    short n_jets_from_icn = 0;
+
+                                    for (const int& tj: jet_ids) {
+                                        auto it = std::find(trueHadronicJetIndices.begin(), trueHadronicJetIndices.end(), tj);
+                                        
+                                        if (it != trueHadronicJetIndices.end()) {
+                                            truejetpermICNs.push_back(std::distance(trueHadronicJetIndices.begin(), it));
+                                            n_jets_from_icn += 1;
+                                        }
+                                    }
+                                    
+                                    if (n_jets_from_icn > 0) {
+                                        //std::cerr << "Adding ICN PDG=" << icn_pdg << " to PermICNs at position " << (truejetpermICNs.size() / 2) << std::endl;
+                                        if (n_jets_from_icn != 2 || truejetpermICNs.size() % 2 != 0) {
+                                            //throw EVENT::Exception("Expected H/Z -> q + qbar decay");
+                                            streamlog_out(ERROR) << "Expected H/Z -> q + qbar decay. Skipping event";
+
+                                            // setting truejetpermICNs.size() to 0 will skip below loop
+                                            truejetpermICNs = {};
+                                        } else {
+                                            m_trueDijetICNPDGs[truejetpermICNs.size() / 2 - 1] = icn_pdg;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (truejetpermICNs.size()) {
+                        if (truejetpermICNs.size() % 2 != 0)
+                            throw EVENT::Exception("Expected H/Z -> q + qbar decay");
+
+                        for (size_t i = 0; i < truejetpermICNs.size(); i++) {
+                            int index = trueHadronicJetIndices[truejetpermICNs[i]];
+
+                            const EVENT::IntVec others = initial_siblings(index);
+                            std::cerr << "Siblings of jet [" << index << "]: ";
+                            for (auto elem: others) {
+                                std::cerr << elem << " ";
+                            }
+                            std::cerr << std::endl;
+
+                            const ReconstructedParticle* tjet = trueJet->jet(index);
+
+                            //m_trueJetMomenta[i] = v4(tjet);
+                            const double* v4_truejet = p4true(index);
+                            m_trueJetMomenta[i].SetPxPyPzE(v4_truejet[1], v4_truejet[2], v4_truejet[3], v4_truejet[0]);
+
+                            const double* v4_truejet_visible = p4trueseen(index);
+                            m_trueJetVisibleMomenta[i].SetPxPyPzE(v4_truejet_visible[1], v4_truejet_visible[2], v4_truejet_visible[3], v4_truejet_visible[0]);
+
+                            m_trueJetTypes[i] = type_jet(index);
+                            m_trueJetPDGs[i] = tjet->getParticleIDs()[0]->getPDG();
+
+                            std::cerr << "TrueJet [" << index << "] PDG=" << m_trueJetPDGs[i] << " | Parent[ICN=" << std::floor(i / 2) << "]PDG = " << m_trueDijetICNPDGs[std::floor(i / 2)] << " | type=" << m_trueJetTypes[i] << " | E=" << m_trueJetMomenta[i].E() << std::endl;
+
+                            if (i % 2 != 0) {
+                                std::cerr << "M(hadronic system " << ((i-1)/2 + 1) << ") = " << (m_trueJetMomenta[i] + m_trueJetMomenta[i - 1]).M() << std::endl;
+                            }
+                        }
+                    }
+                } else {
+                    std::cerr << "True-Reco matching failed" << std::endl;
+                }
+            } else {
+                std::cerr << "TrueJet-MCP matching failed" << std::endl;
+                std::cerr << "N_hadronic_TrueJets = " << trueHadronicJetIndices.size() << " | N_MCP_candidates =" << trueJetCandidates.size() << std::endl;
+
+                std::cerr << "trueHadronicJetIndices: ";
+                for (auto i: trueHadronicJetIndices)
+                    std::cerr << i << " ";
+
+                std::cerr << std::endl << "trueJetCandidates: ";
+                for (auto i: trueJetCandidates)
+                    std::cerr << i << " ";
+                
+                std::cerr << std::endl;
+            }
+        
+            delall2();
+        }
 	}
-
-	delall2();
 };
 
 void EventObservablesLL::calculateSimpleZHHChi2() {

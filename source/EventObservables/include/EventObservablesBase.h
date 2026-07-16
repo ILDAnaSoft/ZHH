@@ -30,6 +30,15 @@
 #include "EventObservablesFromZZ.h"
 #include <TrueJet_Parser.h>
 
+template<typename T>
+inline bool containSameElements(std::vector<T>& v1, std::vector<T>& v2)
+{
+    std::sort(v1.begin(), v1.end());
+    std::sort(v2.begin(), v2.end());
+
+	return std::includes(v1.begin(), v1.end(), v2.begin(), v2.end());
+}
+
 using namespace lcio ;
 using namespace marlin ;
 using jsonf = nlohmann::json;
@@ -37,16 +46,6 @@ using namespace lcme ;
 
 TLorentzVector v4old(ReconstructedParticle* p);
 TLorentzVector v4old(LCObject* lcobj);
-
-// If the final state is a ZHH (with H -> bbar), the channel is given by the decay channel of the Z boson (else OTHER)
-// NONE is for initialization only and should not occur in practice
-// TODO: implement, using EventCategory
-
-struct DelMe {
-  DelMe( std::function<void()> func ) : _func(func) {}
-  ~DelMe() { _func(); }
-  std::function<void()>  _func;
-};
 
 class EventObservablesBase: public Processor, public TrueJet_Parser {
 	public:
@@ -148,6 +147,7 @@ class EventObservablesBase: public Processor, public TrueJet_Parser {
 		std::string m_inputIsolatedleptonCollection{};
 		std::string m_inputLepPairCollection{};
 		std::string m_inputJetCollection{};
+		std::string m_input2JetCollection{};
 		std::string m_inputPfoCollection{};
 		std::string m_inputJetKinFitZHHCollection{};
 		std::string m_inputJetKinFitZZHCollection{};
@@ -170,8 +170,8 @@ class EventObservablesBase: public Processor, public TrueJet_Parser {
 		std::string m_JetTaggingPIDParameterC2{};
 
 		// collections
-		LCCollection *inputLKF_solveNuCollection{};
-    	LCCollection *inputJKF_solveNuCollection{};
+		LCCollection *m_inputLKF_solveNuCollection{};
+    	LCCollection *m_inputJKF_solveNuCollection{};
 
 		// outputs
 		bool m_write_ttree{};
@@ -244,9 +244,7 @@ class EventObservablesBase: public Processor, public TrueJet_Parser {
 		// four momenta of leptons + jets and all flavor tags
 		std::vector<ReconstructedParticle*> m_jets{};
 		std::vector<ROOT::Math::PxPyPzEVector> m_jets4v{};
-		std::vector<ROOT::Math::PxPyPzEVector> m_jets4v_post_4C_kinfit{};
 		std::vector<float> m_jetsMasses{}; 
-		std::vector<float> m_jetsMasses_post_4C_kinfit{}; 
 		std::vector<std::vector<float>> m_jetTags{};
 
 		// pure mass chi2
@@ -315,6 +313,38 @@ class EventObservablesBase: public Processor, public TrueJet_Parser {
 
 		void setJetCharges();
 
+		// 2 jet
+		std::vector<ROOT::Math::PxPyPzEVector> m_2jets4v{};
+		std::vector<std::vector<float>> m_2jetTags{};
+
+		float m_2jet1_m{};
+		float m_2jet2_m{};
+
+		float m_ptjmin2{};
+		float m_pjmin2{};
+
+		float m_ptjmax2{};
+		float m_pjmax2{};
+
+		float m_cosJ1_2Jets{};
+		float m_cosJ2_2Jets{};
+        float m_cosJ12_2Jets{};
+        float m_cosJ1Z_2Jets{};
+        float m_cosJ2Z_2Jets{};
+		float m_cosJZMax_2Jets{};
+
+		float m_yMinus2{};
+		float m_yPlus2{};
+
+		std::vector<double> m_bTagValues_2Jets{};
+		std::vector<double> m_bTagValues_2Jets2{};
+
+		float m_bmax1_2Jets{};
+		float m_bmax2_2Jets{};
+
+		float m_bmax12_2Jets{};
+		float m_bmax22_2Jets{};
+
 		// jet matching from kinfit
 		std::vector<int> m_JMK_ZHH{};
 		std::vector<int> m_JMK_ZZH{};
@@ -326,8 +356,8 @@ class EventObservablesBase: public Processor, public TrueJet_Parser {
 		float m_fitchi2_ZHH{};
         float m_fitchi2_ZZH{};
 
-		std::vector<ROOT::Math::PxPyPzEVector> m_jets4cKinFit_4v{};
-		std::vector<ROOT::Math::PxPyPzEVector> m_leps4cKinFit_4v{};
+		std::vector<ROOT::Math::PxPyPzEVector> m_jets4v_post_4C_kinfit{};
+		std::vector<float> m_jetsMasses_post_4C_kinfit{}; 
 
 		std::vector<float> m_fit4C_masses{};
 		float m_fit4C_mz{};
@@ -394,18 +424,27 @@ class EventObservablesBase: public Processor, public TrueJet_Parser {
 			);
 		#endif
 
+		// Truth information filled only for e2e2hh and e2e2qqh
+
+		// MCParticle information
+		unsigned short m_mcpQuarkN{};
+		unsigned short m_mcpChLeptonN{};
+
+		std::vector<ROOT::Math::PxPyPzEVector> m_mcpQuarkMomenta{};
+		std::vector<int> m_mcpQuarkPDGs{};
+
+		std::vector<ROOT::Math::PxPyPzEVector> m_mcpChLeptonMomenta{};
+		std::vector<int> m_mcpChLeptonPDGs{};
+
 		// TrueJet information
 		short m_useTrueJet{};
 		unsigned short m_trueJetN{};
 		std::vector<ROOT::Math::PxPyPzEVector> m_trueJetMomenta{};
+		std::vector<ROOT::Math::PxPyPzEVector> m_trueJetVisibleMomenta{};
 		std::vector<ROOT::Math::PxPyPzEVector> m_trueISRMomenta{};
 		std::vector<int> m_trueJetTypes{};
 		std::vector<int> m_trueJetPDGs{};
 		std::vector<int> m_trueDijetICNPDGs{};
-
-		unsigned short m_trueLeptonN{};
-		std::vector<ROOT::Math::PxPyPzEVector> m_trueLeptonMomenta{};
-		std::vector<int> m_trueLeptonPDGs{};
 
 		std::vector<int> m_trueJetICNTypes{};
 		std::vector<int> m_trueJetICNPDGs{};
@@ -425,6 +464,12 @@ class EventObservablesBase: public Processor, public TrueJet_Parser {
 		float getMatchingByAngularSpace(
 			vector<EVENT::ReconstructedParticle*> recoJets,
 			vector<EVENT::MCParticle*> quarkMCParticles,
+			vector<int> &reco2MCPindex,
+			vector<int> &true2MCPindex );
+
+		float getMatchingByAngularSpace(
+			vector<TVector3> recoMomenta,
+			vector<TVector3> truthMomenta,
 			vector<int> &reco2MCPindex,
 			vector<int> &true2MCPindex );
 

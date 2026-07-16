@@ -160,7 +160,6 @@ if [ "$ZHH_COMMAND" = "install" ]; then
         get_input_arg "Where do you wish to install all the dependencies? ($( realpath "$REPO_ROOT/dependencies" )) " ZHH_INSTALL_DIR $( realpath "$REPO_ROOT/dependencies" )
     fi
 
-    zhh_echo "Attempting to install dependencies to <$ZHH_INSTALL_DIR>..."
     zhh_install_deps $ZHH_INSTALL_DIR
 fi
 
@@ -170,8 +169,12 @@ if [ ! -f "$REPO_ROOT/setup.sh" ] || [ $ZHH_WRITE_SETUP = "1" ]; then
 
     rm -f $REPO_ROOT/setup.sh
     cp $REPO_ROOT/shell/setup.sh.template $REPO_ROOT/setup.sh
-    sed -i -e "s|<REPO_ROOT>|$REPO_ROOT|g" $REPO_ROOT/setup.sh
-    sed -i -e "s|<ZHH_K4H_RELEASE>|$ZHH_K4H_RELEASE|g" $REPO_ROOT/setup.sh
+    sed -i -e "s|<REPO_ROOT>|$REPO_ROOT|g" "$REPO_ROOT/setup.sh"
+    sed -i -e "s|<ZHH_K4H_RELEASE>|$ZHH_K4H_RELEASE|g" "$REPO_ROOT/setup.sh"
+
+    # insert HEP_WORKFLOWS path into setup.sh
+    HEP_WORKFLOWS=$(dirname $(source "$REPO_ROOT/$ZHH_VENV_NAME/bin/activate" && python -c "import hep_workflows; print(hep_workflows.__file__)"))
+    sed -i -e "s|\$HEP_WORKFLOWS|$HEP_WORKFLOWS|g" "$REPO_ROOT/setup.sh"
 
     zhh_echo "Done. Attempting to load environment..."
 

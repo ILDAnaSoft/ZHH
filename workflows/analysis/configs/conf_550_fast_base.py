@@ -11,9 +11,54 @@ def define_configs_550_fast(suffix:str, sgv_options:dict,
                             sgv_executable_cfg:str='$SGV_DIR/tests/usesgvlcio.exe',
                             sgv_steering_file_src_cfg:str='$SGV_DIR/tests/sgv.steer'):
     
-    class Config_550_llhh(AnalysisConfiguration):
-        tag = f'550-llhh-{suffix}'
+    def marlin_task_kwargs_factory(task):
+        """Used to set task parameters by overwriting properties of the
+        MarlinBaseJob task class. All Reco* and Analysis* tasks inherit
+        from this.
+
+        Args:
+            task (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+
+        is_reco = task.__class__.__name__.lower().startswith('reco')
+
+        return {
+            # 'debug_n_files_to_process': 0,
+            # 'n_events_max': 0, # process all events
+            'check_output_root_ttrees': None if is_reco else  [
+                ('zhh_AIDA.root', 'EventObservablesLL'),
+                ('zhh_AIDA.root', 'EventObservablesVV'),
+                ('zhh_AIDA.root', 'FinalStates'),
+                ('zhh_AIDA.root', 'KinFitLL_ZHH'),
+                ('zhh_AIDA.root', 'KinFitLL_ZZH'),
+                ('zhh_AIDA.root', 'KinFitVV_ZHH'),
+                ('zhh_AIDA.root', 'KinFitVV_ZZH'),
+            ],
+            'check_output_files_exist': ['zhh_reco_FinalStateMeta.json'] if is_reco else [],
+            'check_output_lcio_files': ['zhh_reco.slcio'] if is_reco else None,
+            'output_file': 'zhh_reco.slcio' if is_reco else 'zhh_AIDA.root',
+
+            'steering_file': f'{environ["REPO_ROOT"]}/scripts/prod_reco_run.xml' if is_reco else f'{environ["REPO_ROOT"]}/scripts/prod_analysis_run.xml'
+        }
+
+    class Config_550_base(AnalysisConfiguration):
         sqrt_s = 550
+
+        marlin_globals = {  }
+        marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False', 'ZHH_REPO_ROOT': environ['REPO_ROOT'] }
+
+        sgv_executable = sgv_executable_cfg
+        sgv_steering_file_src = sgv_steering_file_src_cfg
+
+        task_kwargs = {
+            'MarlinBaseJob': marlin_task_kwargs_factory # used to overwrite properties/defaults of all Marlin tasks
+        }
+    
+    class Config_550_llhh(Config_550_base):
+        tag = f'550-llhh-{suffix}'
         
         def sgv_inputs(self, fast_sim_task):
             input_files:list[str] = sum(map(glob_exp, [
@@ -32,16 +77,9 @@ def define_configs_550_fast(suffix:str, sgv_options:dict,
             }] * len(input_files)
             
             return input_files, input_options
-        
-        marlin_globals = {  }
-        marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
 
-        sgv_executable = sgv_executable_cfg
-        sgv_steering_file_src = sgv_steering_file_src_cfg
-
-    class Config_550_qqhh(AnalysisConfiguration):
+    class Config_550_qqhh(Config_550_base):
         tag = f'550-qqhh-{suffix}'
-        sqrt_s = 550
         
         def sgv_inputs(self, fast_sim_task):
             input_files:list[str] = sum(map(glob_exp, [
@@ -59,16 +97,9 @@ def define_configs_550_fast(suffix:str, sgv_options:dict,
             }] * len(input_files)
             
             return input_files, input_options
-        
-        marlin_globals = {  }
-        marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
 
-        sgv_executable = sgv_executable_cfg
-        sgv_steering_file_src = sgv_steering_file_src_cfg
-
-    class Config_550_vvhh(AnalysisConfiguration):
+    class Config_550_vvhh(Config_550_base):
         tag = f'550-vvhh-{suffix}'
-        sqrt_s = 550
         
         def sgv_inputs(self, fast_sim_task):
             input_files:list[str] = sum(map(glob_exp, [
@@ -86,16 +117,9 @@ def define_configs_550_fast(suffix:str, sgv_options:dict,
             }] * len(input_files)
             
             return input_files, input_options
-        
-        marlin_globals = {  }
-        marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
 
-        sgv_executable = sgv_executable_cfg
-        sgv_steering_file_src = sgv_steering_file_src_cfg
-
-    class Config_550_6q(AnalysisConfiguration):
+    class Config_550_6q(Config_550_base):
         tag = f'550-6q-{suffix}'
-        sqrt_s = 550
         
         def sgv_inputs(self, fast_sim_task):
             process_mask_6q = [
@@ -123,16 +147,9 @@ def define_configs_550_fast(suffix:str, sgv_options:dict,
             }] * len(input_files)
             
             return input_files, input_options
-        
-        marlin_globals = {  }
-        marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
 
-        sgv_executable = sgv_executable_cfg
-        sgv_steering_file_src = sgv_steering_file_src_cfg
-
-    class Config_550_4fsl(AnalysisConfiguration):
+    class Config_550_4fsl(Config_550_base):
         tag = f'550-4fsl-{suffix}'
-        sqrt_s = 550
         
         custom_statistics = [
             (1., 'zz_sl0')
@@ -162,16 +179,9 @@ def define_configs_550_fast(suffix:str, sgv_options:dict,
             input_files.sort()
 
             return input_files
-        
-        marlin_globals = {  }
-        marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
 
-        sgv_executable = sgv_executable_cfg
-        sgv_steering_file_src = sgv_steering_file_src_cfg
-
-    class Config_550_4f(AnalysisConfiguration):
+    class Config_550_4f(Config_550_base):
         tag = f'550-4f-{suffix}'
-        sqrt_s = 550
         
         def sgv_inputs(self, fast_sim_task):
             input_files = glob_exp('$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/4f/Nov2025/*.slcio')
@@ -245,16 +255,9 @@ def define_configs_550_fast(suffix:str, sgv_options:dict,
             }] * len(input_files)
             
             return input_files, input_options
-        
-        marlin_globals = {  }
-        marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
 
-        sgv_executable = sgv_executable_cfg
-        sgv_steering_file_src = sgv_steering_file_src_cfg
-
-    class Config_550_tthz(AnalysisConfiguration):
+    class Config_550_tthz(Config_550_base):
         tag = f'550-tthz-{suffix}'
-        sqrt_s = 550
         
         def sgv_inputs(self, fast_sim_task):
             input_files = glob_exp('$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/8f/*.slcio')
@@ -269,16 +272,9 @@ def define_configs_550_fast(suffix:str, sgv_options:dict,
             }] * len(input_files)
             
             return input_files, input_options
-        
-        marlin_globals = {  }
-        marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
 
-        sgv_executable = sgv_executable_cfg
-        sgv_steering_file_src = sgv_steering_file_src_cfg
-
-    class Config_550_2f(AnalysisConfiguration):
+    class Config_550_2f(Config_550_base):
         tag = f'550-2f-{suffix}'
-        sqrt_s = 550
         
         def sgv_inputs(self, fast_sim_task):
             input_files = glob_exp('$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/2f/*.slcio')
@@ -299,16 +295,9 @@ def define_configs_550_fast(suffix:str, sgv_options:dict,
             }] * len(input_files)
             
             return input_files, input_options
-        
-        marlin_globals = {  }
-        marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
 
-        sgv_executable = sgv_executable_cfg
-        sgv_steering_file_src = sgv_steering_file_src_cfg
-
-    class Config_550_2l(AnalysisConfiguration):
+    class Config_550_2l(Config_550_base):
         tag = f'550-2l-{suffix}'
-        sqrt_s = 550
         
         def sgv_inputs(self, fast_sim_task):
             input_files = glob_exp('$ILC_PROD_PATH/mc-2025/generated/550-TDR_ws/2f/*P2f_z_l*.slcio')
@@ -323,25 +312,12 @@ def define_configs_550_fast(suffix:str, sgv_options:dict,
             }] * len(input_files)
             
             return input_files, input_options
-        
-        marlin_globals = {  }
-        marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
 
-        sgv_executable = sgv_executable_cfg
-        sgv_steering_file_src = sgv_steering_file_src_cfg
-
-    class Config_550_4flh(AnalysisConfiguration):
+    class Config_550_4flh(Config_550_base):
         """Configuration for all 4f fully leptonic and fully hadronic samples
-
-        Args:
-            AnalysisConfiguration (_type_): _description_
-
-        Returns:
-            _type_: _description_
         """
 
         tag = f'550-4flh-{suffix}'
-        sqrt_s = 550
         
         def raw_index_requires(self, raw_index_task: 'AbstractIndex'):
             # use the output of 550-4f-{suffix} as input
@@ -367,13 +343,9 @@ def define_configs_550_fast(suffix:str, sgv_options:dict,
             input_files.sort()
 
             return input_files
-        
-        marlin_globals = {  }
-        marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
 
-    class Config_550_2l4q(AnalysisConfiguration):
+    class Config_550_2l4q(Config_550_base):
         tag = f'550-2l4q-{suffix}'
-        sqrt_s = 550
         
         def sgv_inputs(self, fast_sim_task):
             process_mask_2l4q = [
@@ -408,12 +380,6 @@ def define_configs_550_fast(suffix:str, sgv_options:dict,
             }] * len(input_files)
             
             return input_files, input_options
-        
-        marlin_globals = {  }
-        marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
-
-        sgv_executable = sgv_executable_cfg
-        sgv_steering_file_src = sgv_steering_file_src_cfg
     
     configurations.add(Config_550_llhh())
     configurations.add(Config_550_vvhh())

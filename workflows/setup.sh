@@ -16,9 +16,6 @@ action() {
     export LAW_CONFIG_FILE="${this_dir}/law.cfg"
     export SH_ENVIRONMENT_FILE="$this_file"
 
-    export MARLIN_RECO_STEERING_FILE="$REPO_ROOT/scripts/prod_reco_run.xml"
-    export MARLIN_ANALYSIS_STEERING_FILE="$REPO_ROOT/scripts/prod_analysis_run.xml"
-
     source "$( law completion )" ""
 }
 action
