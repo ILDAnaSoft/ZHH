@@ -16,7 +16,7 @@
         -->
         <constant name="Runllbbbb" value="true" />
         <constant name="Runvvbbbb" value="true" />
-        <constant name="Runqqbbbb" value="false" />
+        <constant name="Runqqbbbb" value="true" />
         <constant name="RunTruthRecoComparison" value="false" />
         <constant name="WriteLCIO" value="false" />
 

@@ -282,7 +282,7 @@ ZHHKinFit::ZHHKinFit() :
 void ZHHKinFit::init()
 {
   //	usually a good idea to
-  streamlog_out(DEBUG) << "   init called  " << std::endl;
+  streamlog_out(MESSAGE) << "   init called  " << std::endl;
   this->Clear();
   m_nRun = 0;
   m_nEvt = 0;
@@ -291,7 +291,7 @@ void ZHHKinFit::init()
   DDMarlinCED::init(this);
   
   m_Bfield = MarlinUtil::getBzAtOrigin();
-  streamlog_out(DEBUG0) << " BField =  "<< m_Bfield << " Tesla" << std::endl ;
+  streamlog_out(MESSAGE0) << " BField =  "<< m_Bfield << " Tesla" << std::endl ;
   c = 2.99792458e8;
   mm2m = 1e-3;
   eV2GeV = 1e-9;
@@ -392,13 +392,13 @@ void ZHHKinFit::init()
   m_pTTree->Branch("bmax6", &m_bmax6, "bmax6/F");
   m_pTTree->Branch("btagsum", &m_btagsum, "m_btagsum/F");
   
-  streamlog_out(DEBUG) << "   init finished  " << std::endl;
+  streamlog_out(MESSAGE) << "   init finished  " << std::endl;
 
 }
 
 void ZHHKinFit::Clear()
 {
-  streamlog_out(DEBUG) << "   Clear called  " << std::endl;
+  streamlog_out(MESSAGE) << "   Clear called  " << std::endl;
   
   m_nJets = 0;
   m_nLeps = 0;
@@ -509,15 +509,17 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
   LCRelationNavigator* SLDNuNav = NULL;
   LCRelationNavigator* NuMCNav = NULL;
   try {
-    streamlog_out(DEBUG0) << "  getting lepton collection: " << m_inputleptonCollection << std::endl ;
+    streamlog_out(MESSAGE0) << "  getting lepton collection: " << m_inputleptonCollection << std::endl ;
     inputLeptonCollection = pLCEvent->getCollection( m_inputleptonCollection );
   } catch(DataNotAvailableException &e) {
     streamlog_out(MESSAGE) << "processEvent : Input lepton collection not found in event " << m_nEvt << std::endl;
     m_pTTree->Fill();
     return;
   }
+  streamlog_out(MESSAGE0) << "  ladida  " << std::endl ;
+  streamlog_out(MESSAGE0) << "  ladida: " << m_inputJetCollection << std::endl ;
   try {
-    streamlog_out(DEBUG0) << "  getting jet collection: " << m_inputJetCollection << std::endl ;
+    streamlog_out(MESSAGE0) << "  getting jet collection: " << m_inputJetCollection << std::endl ;
     inputJetCollection = pLCEvent->getCollection( m_inputJetCollection );
   } catch(DataNotAvailableException &e) {
     streamlog_out(MESSAGE) << "processEvent : Input jet collection not found in event " << m_nEvt << std::endl;
@@ -525,10 +527,8 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     return;
   }
   try {
-    if (m_recoJetCollection.size() == 0)
-      m_recoJetCollection = m_inputJetCollection;
-
-    streamlog_out(DEBUG0) << "  getting reco jet collection: " << m_recoJetCollection << std::endl ;
+    if (m_recoJetCollection.size() == 0) m_recoJetCollection = m_inputJetCollection;
+    streamlog_out(MESSAGE0) << "  getting reco jet collection: " << m_recoJetCollection << std::endl ;
     recoJetCollection = pLCEvent->getCollection( m_recoJetCollection );
   } catch(DataNotAvailableException &e) {
     streamlog_out(MESSAGE) << "processEvent : reco jet collection not found in event " << m_nEvt << std::endl;
@@ -536,7 +536,7 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     return;
   }
   try {
-    streamlog_out(DEBUG0) << "  getting semi-leptonic vertex collection: " << m_inputSLDVertexCollection << std::endl ;
+    streamlog_out(MESSAGE0) << "  getting semi-leptonic vertex collection: " << m_inputSLDVertexCollection << std::endl ;
     inputSLDecayCollection = pLCEvent->getCollection( m_inputSLDVertexCollection );
   } catch(DataNotAvailableException &e) {
     streamlog_out(MESSAGE) << "processEvent : Input semi-leptonic vertex collection collection not found in event " << m_nEvt << std::endl;
@@ -544,7 +544,7 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     return;
   }
   try {
-    streamlog_out(DEBUG0) << "  getting mc particle collection: " << _MCParticleColllectionName << std::endl ;
+    streamlog_out(MESSAGE0) << "  getting mc particle collection: " << _MCParticleColllectionName << std::endl ;
     inputMCParticleCollection = pLCEvent->getCollection( _MCParticleColllectionName );
   } catch(DataNotAvailableException &e) {
     streamlog_out(MESSAGE) << "processEvent : Input mc particle collection not found in event " << m_nEvt << std::endl;
@@ -928,7 +928,7 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
 	    streamlog_out(MESSAGE) << "pull = " << (fitted - start)/sigma << std::endl ;
 	    pulls.push_back((fitted - start)/sigma);
 	  } else {
-	    streamlog_out(DEBUG3) << "NOT GOOD...................." << std::endl ;
+	    streamlog_out(MESSAGE3) << "NOT GOOD...................." << std::endl ;
 	    pulls.push_back(-999.);
 	  }	  
 	}
@@ -1301,7 +1301,7 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
 	    sigma = sqrt(sigma);
 	    pulls.push_back((fitted - start)/sigma);
 	  } else {
-	    streamlog_out(DEBUG3) << "NOT GOOD...................." << std::endl ;
+	    streamlog_out(MESSAGE3) << "NOT GOOD...................." << std::endl ;
 	    pulls.push_back(-999.);
 	  }
 	}
@@ -1368,15 +1368,15 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
   outputJetCollection->parameters().setValue("fitchi2", m_FitChi2);
   
   pLCEvent->addCollection( outputJetCollection , m_outputJetCollection.c_str() );
-  streamlog_out(DEBUG0) << " Output Jet collection added to event" << std::endl;
+  streamlog_out(MESSAGE0) << " Output Jet collection added to event" << std::endl;
   pLCEvent->addCollection( outputLeptonCollection , m_outputLeptonCollection.c_str() );
-  streamlog_out(DEBUG0) << " Output Lepton collection added to event" << std::endl;
+  streamlog_out(MESSAGE0) << " Output Lepton collection added to event" << std::endl;
   pLCEvent->addCollection( outputStartJetCollection , m_outputStartJetCollection.c_str() );
-  streamlog_out(DEBUG0) << " Output Start Jet collection added to event" << std::endl;
+  streamlog_out(MESSAGE0) << " Output Start Jet collection added to event" << std::endl;
   pLCEvent->addCollection( outputStartLeptonCollection , m_outputStartLeptonCollection.c_str() );
-  streamlog_out(DEBUG0) << " Output Start Lepton collection added to event" << std::endl;
+  streamlog_out(MESSAGE0) << " Output Start Lepton collection added to event" << std::endl;
   //pLCEvent->addCollection( outputNuEnergyCollection, m_outputNuEnergyCollection.c_str() );
-  //streamlog_out(DEBUG0) << " Output true and reco Nu collection added to event" << std::endl;
+  //streamlog_out(MESSAGE0) << " Output true and reco Nu collection added to event" << std::endl;
   m_pTTree->Fill();
 }
 
@@ -1557,7 +1557,7 @@ ZHHKinFit::FitResult ZHHKinFit::performllbbbbFIT( pfoVector jets, pfoVector lept
 
     for (auto j : *jfo_perm) 
       streamlog_out(MESSAGE)  << "start four-vector of jet " << j->getName() << ": " << *j  << std::endl ;  //changed from debug level 
-    //for (int i = 0; i < NJETS; ++i) streamlog_out(DEBUG)  << "original four-vector of jet " << i << ": " << fitjets[i]  << std::endl ;
+    //for (int i = 0; i < NJETS; ++i) streamlog_out(MESSAGE)  << "original four-vector of jet " << i << ": " << fitjets[i]  << std::endl ;
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////												    //////
@@ -1915,7 +1915,7 @@ ZHHKinFit::FitResult ZHHKinFit::performvvbbbbFIT( pfoVector jets, bool traceEven
 
     for (auto j : *jfo_perm) 
       streamlog_out(MESSAGE)  << "start four-vector of jet " << j->getName() << ": " << *j  << std::endl ;  //changed from debug level 
-    //for (int i = 0; i < NJETS; ++i) streamlog_out(DEBUG)  << "original four-vector of jet " << i << ": " << fitjets[i]  << std::endl ;
+    //for (int i = 0; i < NJETS; ++i) streamlog_out(MESSAGE)  << "original four-vector of jet " << i << ": " << fitjets[i]  << std::endl ;
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////												    //////
@@ -2267,7 +2267,7 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
     for(auto j : *jfo_perm) fos->push_back(j);
     for (auto j : *jfo_perm) 
       streamlog_out(MESSAGE)  << "start four-vector of jet " << j->getName() << ": " << *j  << std::endl ;  //changed from debug level 
-    //for (int i = 0; i < NJETS; ++i) streamlog_out(DEBUG)  << "original four-vector of jet " << i << ": " << fitjets[i]  << std::endl ;
+    //for (int i = 0; i < NJETS; ++i) streamlog_out(MESSAGE)  << "original four-vector of jet " << i << ": " << fitjets[i]  << std::endl ;
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////												    //////
@@ -2556,12 +2556,12 @@ void ZHHKinFit::getJetParameters(ReconstructedParticle* jet, float (&parameters)
   errors[2] = m_SigmaAnglesScaleFactor*sigmaPhi;
 
 
-  streamlog_out(DEBUG6) << "			E       	= " << parameters[ 0 ] << std::endl ;
-  streamlog_out(DEBUG6) << "			Theta		= " << parameters[ 1 ] << std::endl ;
-  streamlog_out(DEBUG6) << "			Phi		= " << parameters[ 2 ] << std::endl ;
-  streamlog_out(DEBUG6) << "			SigmaE  	= " << errors[ 0 ] << std::endl ;
-  streamlog_out(DEBUG6) << "			SigmaTheta	= " << errors[ 1 ] << std::endl ;
-  streamlog_out(DEBUG6) << "			SigmaPhi	= " << errors[ 2 ] << std::endl ;
+  streamlog_out(MESSAGE6) << "			E       	= " << parameters[ 0 ] << std::endl ;
+  streamlog_out(MESSAGE6) << "			Theta		= " << parameters[ 1 ] << std::endl ;
+  streamlog_out(MESSAGE6) << "			Phi		= " << parameters[ 2 ] << std::endl ;
+  streamlog_out(MESSAGE6) << "			SigmaE  	= " << errors[ 0 ] << std::endl ;
+  streamlog_out(MESSAGE6) << "			SigmaTheta	= " << errors[ 1 ] << std::endl ;
+  streamlog_out(MESSAGE6) << "			SigmaPhi	= " << errors[ 2 ] << std::endl ;
 }
 
 void ZHHKinFit::getLeptonParameters( ReconstructedParticle* lepton , float (&parameters)[ 3 ] , float (&errors)[ 3 ] )
@@ -2569,8 +2569,8 @@ void ZHHKinFit::getLeptonParameters( ReconstructedParticle* lepton , float (&par
   TrackVec trackVec = lepton->getTracks();
   if ( trackVec.size() != 1 )
     {
-      streamlog_out(DEBUG4)  << "Number of tracks for lepton is not exactly ONE!!! (nTracks = " << trackVec.size() << " ) " << std::endl ;
-      streamlog_out(DEBUG4) << *lepton << std::endl;
+      streamlog_out(MESSAGE4)  << "Number of tracks for lepton is not exactly ONE!!! (nTracks = " << trackVec.size() << " ) " << std::endl ;
+      streamlog_out(MESSAGE4) << *lepton << std::endl;
       TLorentzVector leptonFourMomentum( lepton->getMomentum() , lepton->getEnergy() );
       float Px		= leptonFourMomentum.Px();
       float Py		= leptonFourMomentum.Py();
@@ -2604,9 +2604,9 @@ void ZHHKinFit::getLeptonParameters( ReconstructedParticle* lepton , float (&par
     }
   else
     {
-      streamlog_out(DEBUG4)  << "	Lepton has exactly ONE track:" << std::endl ;
-      streamlog_out(DEBUG4) << *lepton << std::endl;
-      streamlog_out(DEBUG4) << *trackVec[ 0 ] << std::endl;
+      streamlog_out(MESSAGE4)  << "	Lepton has exactly ONE track:" << std::endl ;
+      streamlog_out(MESSAGE4) << *lepton << std::endl;
+      streamlog_out(MESSAGE4) << *trackVec[ 0 ] << std::endl;
       float Omega		= trackVec[ 0 ]->getOmega();
       float tanLambda		= trackVec[ 0 ]->getTanLambda();
       float Theta		= 2.0 * atan( 1.0 ) - atan( tanLambda );//atan( 1.0 / tanLambda );
@@ -2625,12 +2625,12 @@ void ZHHKinFit::getLeptonParameters( ReconstructedParticle* lepton , float (&par
       errors[ 1 ]	= std::fabs( dTheta_dTanLambda ) * sigmaTanLambda;
       errors[ 2 ]	= sigmaPhi;
     }
-  streamlog_out(DEBUG6) << "			Inverse pT	= " << parameters[ 0 ] << std::endl ;
-  streamlog_out(DEBUG6) << "			Theta		= " << parameters[ 1 ] << std::endl ;
-  streamlog_out(DEBUG6) << "			Phi		= " << parameters[ 2 ] << std::endl ;
-  streamlog_out(DEBUG6) << "			SigmaInverse pT	= " << errors[ 0 ] << std::endl ;
-  streamlog_out(DEBUG6) << "			SigmaTheta	= " << errors[ 1 ] << std::endl ;
-  streamlog_out(DEBUG6) << "			SigmaPhi	= " << errors[ 2 ] << std::endl ;
+  streamlog_out(MESSAGE6) << "			Inverse pT	= " << parameters[ 0 ] << std::endl ;
+  streamlog_out(MESSAGE6) << "			Theta		= " << parameters[ 1 ] << std::endl ;
+  streamlog_out(MESSAGE6) << "			Phi		= " << parameters[ 2 ] << std::endl ;
+  streamlog_out(MESSAGE6) << "			SigmaInverse pT	= " << errors[ 0 ] << std::endl ;
+  streamlog_out(MESSAGE6) << "			SigmaTheta	= " << errors[ 1 ] << std::endl ;
+  streamlog_out(MESSAGE6) << "			SigmaPhi	= " << errors[ 2 ] << std::endl ;
 }
 
 std::pair<std::vector<double>,std::vector<double>> ZHHKinFit::calculateInitialValues(pfoVector jets, pfoVector leptons, vector<int> perm)
@@ -2878,7 +2878,7 @@ std::vector<double> ZHHKinFit::calculatePulls(std::shared_ptr<ParticleFitObject>
       pulls.push_back((fitted - start)/sigma);
     }
     else {
-      streamlog_out(DEBUG3) << "NOT GOOD...................." << std::endl ;
+      streamlog_out(MESSAGE3) << "NOT GOOD...................." << std::endl ;
       pulls.push_back(-999.);
     }
   }
