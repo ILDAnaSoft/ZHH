@@ -94,7 +94,6 @@ void EventObservablesVV::clearChannelValues() {
   
   m_diNeutrinoMass = 0.;
   
-  m_jets4cKinFit_4v.clear();
   m_fit4C_masses.clear();
   
   // 4 jets
@@ -135,19 +134,19 @@ void EventObservablesVV::updateChannelValues(EVENT::LCEvent *pLCEvent) {
     }
   }
   
-  for (int i = 0; i < inputJKF_solveNuCollection->getNumberOfElements(); i++) {
-    ReconstructedParticle* jet = (ReconstructedParticle*) inputJKF_solveNuCollection->getElementAt(i);
-    m_jets4cKinFit_4v.push_back(v4(jet));
+  for (int i = 0; i < m_inputJKF_solveNuCollection->getNumberOfElements(); i++) {
+    ReconstructedParticle* jet = (ReconstructedParticle*) m_inputJKF_solveNuCollection->getElementAt(i);
+    m_jets4v_post_4C_kinfit[i] = v4(jet);
   }
   
   m_JMK_best = (m_fitchi2_ZHH <= m_fitchi2_ZZH ? m_JMK_ZHH : m_JMK_ZZH);
   
-  streamlog_out(MESSAGE) << m_leps4cKinFit_4v.size() << " vs " << m_nAskedIsoLeps() << endl;
+  streamlog_out(MESSAGE) << m_leps4v_post_4C_kinfit.size() << " vs " << m_nAskedIsoLeps() << endl;
   streamlog_out(MESSAGE) << m_JMK_best.size() << " vs " << m_nAskedJets() << endl;
   
-  if (m_leps4cKinFit_4v.size() == m_nAskedIsoLeps() && m_JMK_best.size() >= m_nAskedJets()) {
-    m_fit4C_masses.push_back((m_jets4cKinFit_4v[m_JMK_best[0]]+m_jets4cKinFit_4v[m_JMK_best[1]]).M());
-    m_fit4C_masses.push_back((m_jets4cKinFit_4v[m_JMK_best[2]]+m_jets4cKinFit_4v[m_JMK_best[3]]).M());
+  if (m_leps4v_post_4C_kinfit.size() == m_nAskedIsoLeps() && m_JMK_best.size() >= m_nAskedJets()) {
+    m_fit4C_masses.push_back((m_jets4v_post_4C_kinfit[m_JMK_best[0]] + m_jets4v_post_4C_kinfit[m_JMK_best[1]]).M());
+    m_fit4C_masses.push_back((m_jets4v_post_4C_kinfit[m_JMK_best[2]] + m_jets4v_post_4C_kinfit[m_JMK_best[3]]).M());
     if (abs(m_fit4C_masses[0]-125.) < abs(m_fit4C_masses[1]-125.)) {
       m_fit4C_mh1 = m_fit4C_masses[0];
       m_fit4C_mh2 = m_fit4C_masses[1];
@@ -156,7 +155,7 @@ void EventObservablesVV::updateChannelValues(EVENT::LCEvent *pLCEvent) {
       m_fit4C_mh2 = m_fit4C_masses[0];
     }
     ROOT::Math::PxPyPzEVector Total_4v;
-    for (ROOT::Math::PxPyPzEVector jet_4v : m_jets4cKinFit_4v) {
+    for (ROOT::Math::PxPyPzEVector jet_4v : m_jets4v_post_4C_kinfit) {
       Total_4v += jet_4v;
     }
     m_fit4C_mhh = Total_4v.M();

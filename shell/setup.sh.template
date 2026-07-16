@@ -98,8 +98,13 @@ function zhhvenv() {
 }
 
 # Helpful for running batch jobs
-source $REPO_ROOT/shell/is_json_readable.sh
-source $REPO_ROOT/shell/is_root_readable.sh
+#source $REPO_ROOT/shell/is_json_readable.sh
+#source $REPO_ROOT/shell/is_root_readable.sh
+
+# BB 8.7.2026: Changed to use scripts in hep_workflows 
+if [ -d "$HEP_WORKFLOWS" ]; then
+    export PATH="$HEP_WORKFLOWS/bin:${PATH}"
+fi
 
 # Define a zhh_post_setup function in .env.sh to finalize the environment
 # This is useful e.g. if you need to link to a custom version of MarlinReco etc 

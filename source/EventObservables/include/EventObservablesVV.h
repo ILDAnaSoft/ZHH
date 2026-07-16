@@ -43,6 +43,7 @@ class EventObservablesVV : public EventObservablesBase, public EventObservablesF
 		// data members
 		std::vector<ReconstructedParticle*> m_5jets{};
 		//std::vector<ReconstructedParticle*> m_6jets;
+		std::vector<ROOT::Math::PxPyPzEVector> m_leps4v_post_4C_kinfit{};
 		
 		float m_ptjmax6{};
 		float m_pjmax6{};

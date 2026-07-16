@@ -72,6 +72,13 @@ EventObservablesBase::EventObservablesBase(const std::string &name) : Processor(
             m_inputJetCollection ,
             std::string("Durham4Jets")
             );
+	
+	registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
+			"2JetCollectionName" ,
+			"Name of the 2 Jet collection"  ,
+			m_input2JetCollection ,
+			std::string("Refined2Jets")
+			);
 
 	registerInputCollection(LCIO::RECONSTRUCTEDPARTICLE,
             "inputPfoCollection",
@@ -470,6 +477,35 @@ void EventObservablesBase::prepareBaseTree()
 		ttree->Branch("jet4_q", &m_jet4_q, "jet4_q/F");
         ttree->Branch("jet4_qdyn", &m_jet4_qdyn, "jet4_qdyn/F");
 
+		// 2 jet
+		ttree->Branch("2jet1_4v", &m_2jets4v[0]);
+		ttree->Branch("2jet1_m", &m_2jet1_m, "2jet1_m/F");
+
+        ttree->Branch("2jet2_4v", &m_2jets4v[1]);
+		ttree->Branch("2jet2_m", &m_2jet2_m, "2jet2_m/F");
+
+        ttree->Branch("ptjmin2", &m_ptjmin2, "ptjmin2/F");
+        ttree->Branch("pjmin2", &m_pjmin2, "pjmin2/F");
+
+        ttree->Branch("ptjmax2", &m_ptjmax2, "ptjmax2/F");
+        ttree->Branch("pjmax2", &m_pjmax2, "pjmax2/F");
+
+        ttree->Branch("yminus2", &m_yMinus2, "yminus2/F");
+        ttree->Branch("yplus2", &m_yPlus2, "yplus2/F");
+
+        ttree->Branch("bmax1_2Jets", &m_bmax1_2Jets, "bmax1_2Jets/F");
+        ttree->Branch("bmax2_2Jets", &m_bmax2_2Jets, "bmax2_2Jets/F");
+
+        ttree->Branch("2jet_tags", &m_2jetTags);
+        ttree->Branch("bTagValues_2Jets", &m_bTagValues_2Jets);
+
+        if (m_use_tags2) {
+            ttree->Branch("bmax12_2Jets", &m_bmax12_2Jets, "bmax12_2Jets/F");
+            ttree->Branch("bmax22_2Jets", &m_bmax22_2Jets, "bmax22_2Jets/F");
+
+            ttree->Branch("bTagValues_2Jets2", &m_bTagValues_2Jets2);
+        }
+
 		// jet matching
 		//ttree->Branch("jet_matching", &m_jet_matching);
 		//ttree->Branch("jet_matching_source", &m_jet_matching_source, "jet_matching_source/I");
@@ -491,35 +527,9 @@ void EventObservablesBase::prepareBaseTree()
 		#endif
 
 		// MC truth info
-		ttree->Branch("true_lep_n", &m_trueLeptonN);
-		ttree->Branch("true_lep_pdgs", &m_trueLeptonPDGs);
-
-		if (m_nAskedIsoLeps() == 2) {
-			ttree->Branch("true_lep1_4v", &m_trueLeptonMomenta[0]);
-			ttree->Branch("true_lep2_4v", &m_trueLeptonMomenta[1]);
-		}
-
-		// this info is actually not about TrueJets, but about the MC truth quarks from the hard interaction! 
+		ttree->Branch("mcp_quark_n", &m_mcpQuarkN);
+		ttree->Branch("mcp_lep_n", &m_mcpChLeptonN);
 		ttree->Branch("true_jet_n", &m_trueJetN);
-		ttree->Branch("true_jet_types", &m_trueJetTypes);
-		ttree->Branch("true_jet_pdgs", &m_trueJetPDGs);
-		ttree->Branch("true_dijet_icn_pdgs", &m_trueDijetICNPDGs);
-
-		ttree->Branch("true_jet1_4v", &m_trueJetMomenta[0]);
-		ttree->Branch("true_jet2_4v", &m_trueJetMomenta[1]);
-		ttree->Branch("true_jet3_4v", &m_trueJetMomenta[2]);
-		ttree->Branch("true_jet4_4v", &m_trueJetMomenta[3]);
-
-		if (m_nAskedJets() == 6) {
-			ttree->Branch("true_jet5_4v", &m_trueJetMomenta[4]);
-			ttree->Branch("true_jet6_4v", &m_trueJetMomenta[5]);
-		}
-
-		ttree->Branch("true_reco_jets_mapped", &m_trueRecoJetsMapped, "true_reco_jets_mapped/I");
-		ttree->Branch("true_isr_momenta", &m_trueISRMomenta);
-
-		ttree->Branch("reco_to_true_index", &m_reco2TrueJetIndex);
-		ttree->Branch("true_to_reco_index", &m_true2RecoJetIndex);
 
 		// ttree->Branch("true_jet_higgs_icn_pairs", &m_trueJetHiggsICNPairs);
 
@@ -610,8 +620,8 @@ void EventObservablesBase::clearBaseValues()
 
 	// collections
 	m_useTrueJet = false;
-	inputLKF_solveNuCollection = NULL;
-	inputJKF_solveNuCollection = NULL;
+	m_inputLKF_solveNuCollection = NULL;
+	m_inputJKF_solveNuCollection = NULL;
 
 	m_statusCode = 0;
 	m_errorCodes.clear();
@@ -685,6 +695,27 @@ void EventObservablesBase::clearBaseValues()
 
 	m_jets.clear();
 
+	// 2 jets
+	m_2jetTags[0].clear();
+    m_2jetTags[1].clear();
+    m_bTagValues_2Jets.clear();
+    m_bTagValues_2Jets2.clear();
+
+	m_2jets4v[0].SetPxPyPzE(0., 0., 0., 0.);
+    m_2jet1_m = 0.;
+
+    m_2jets4v[1].SetPxPyPzE(0., 0., 0., 0.);
+    m_2jet2_m = 0.;
+
+    m_ptjmin2 = 0.;
+    m_pjmin2 = 0.;
+
+    m_ptjmax2 = 0.;
+    m_pjmax2 = 0.;
+
+    m_yMinus2 = 0.;
+    m_yPlus2 = 0.;
+
 	// ZHH
 	m_zhh_jet_matching.clear();
     m_zhh_mz = 0.;
@@ -728,6 +759,7 @@ void EventObservablesBase::clearBaseValues()
 		m_jets4v[i].SetPxPyPzE(0., 0., 0., 0.);
 		m_jetsMasses[i] = 0.;
 		m_jetsMasses_post_4C_kinfit[i] = 0.;
+		m_jets4v_post_4C_kinfit[i].SetPxPyPzE(0., 0., 0., 0.);
 	}
 
 	for (size_t i = 0; i < m_jetTags.size(); i++)
@@ -765,22 +797,12 @@ void EventObservablesBase::clearBaseValues()
 	//m_JMK_ZHH_perm_idx = -1;
 	//m_JMK_ZZH_perm_idx = -1;
 
+	// MCParticles
+	m_mcpQuarkN = 0;
+	m_mcpChLeptonN = 0;
+
 	// TrueJet
-	m_trueLeptonN = 0;
 	m_trueJetN = 0;
-	for (size_t i = 0; i < m_trueLeptonMomenta.size(); i++) {
-		m_trueLeptonMomenta[i].SetPxPyPzE(0., 0., 0., 0.);
-		m_trueLeptonPDGs[i] = 0;
-	}
-
-	for (size_t i = 0; i < m_trueJetMomenta.size(); i++) {
-		m_trueJetTypes[i] = 0;
-		m_trueJetPDGs[i] = 0;
-		m_trueJetMomenta[i].SetPxPyPzE(0., 0., 0., 0.);
-
-		if (i % 2 == 0)
-			m_trueDijetICNPDGs[i / 2] = 0;
-	}
 
 	m_trueISRMomenta[0].SetPxPyPzE(0., 0., 0., 0.);
 	m_trueISRMomenta[1].SetPxPyPzE(0., 0., 0., 0.);
@@ -803,6 +825,7 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 
 	try {
 		LCCollection *inputJetCollection = pLCEvent->getCollection( m_inputJetCollection ); // main jet collection
+		LCCollection *input2JetCollection = pLCEvent->getCollection( m_input2JetCollection );
 		LCCollection *inputLeptonCollection = pLCEvent->getCollection( m_inputIsolatedleptonCollection );
 		LCCollection *inputLepPairCollection = pLCEvent->getCollection( m_inputLepPairCollection );
 		LCCollection *inputPfoCollection = pLCEvent->getCollection( m_inputPfoCollection );
@@ -814,9 +837,9 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 		}
 
 		// Handle kinfit
-		try {
-			inputLKF_solveNuCollection = pLCEvent->getCollection( m_inputLeptonKinFit_solveNuCollection );
-			inputJKF_solveNuCollection = pLCEvent->getCollection( m_inputJetKinFit_solveNuCollection );
+		try {			
+			m_inputLKF_solveNuCollection = pLCEvent->getCollection( m_inputLeptonKinFit_solveNuCollection );
+			m_inputJKF_solveNuCollection = pLCEvent->getCollection( m_inputJetKinFit_solveNuCollection );
 
 			LCCollection *inputJKF_ZHHCollection = pLCEvent->getCollection( m_inputJetKinFitZHHCollection );
 			LCCollection *inputJKF_ZZHCollection = pLCEvent->getCollection( m_inputJetKinFitZZHCollection );
@@ -844,6 +867,12 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 			if (JMK_ZHH.size() >= m_nAskedJets() || JMK_ZZH.size() >= m_nAskedJets()) {
 				m_JMK_best = (m_fitchi2_ZHH <= m_fitchi2_ZZH ? m_JMK_ZHH : m_JMK_ZZH);
 				m_JMK_best_which = (m_fitchi2_ZHH <= m_fitchi2_ZZH ? 1: 0);
+			}
+			
+			for (unsigned int i = 0; i < m_nAskedJets(); i++) {
+				ReconstructedParticle* jet = (ReconstructedParticle*) m_inputJKF_solveNuCollection->getElementAt(i);
+				m_jets4v_post_4C_kinfit[i] = v4(jet);
+				m_jetsMasses_post_4C_kinfit[i] = m_jets4v_post_4C_kinfit[i].M();
 			}
 
 		} catch(DataNotAvailableException &e) {
@@ -918,6 +947,84 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 			m_lep_types.push_back( iso_lepton->getType() );
 		}
 
+		// START EVALUATE 2 JET COLLECTION
+		ReconstructedParticle* jets_2Jets[2] = {
+			dynamic_cast<ReconstructedParticle*>(input2JetCollection->getElementAt(0)),
+            dynamic_cast<ReconstructedParticle*>(input2JetCollection->getElementAt(1))}; 
+		
+        ROOT::Math::PxPyPzEVector p4J1_2Jets = v4(jets_2Jets[0]);
+        ROOT::Math::PxPyPzEVector p4J2_2Jets = v4(jets_2Jets[1]);
+
+        m_2jets4v[0] = p4J1_2Jets;
+        m_2jets4v[1] = p4J2_2Jets;
+
+        m_2jet1_m = p4J1_2Jets.M();
+        m_2jet2_m = p4J2_2Jets.M();
+
+        double pJ1_2Jets = p4J1_2Jets.P();
+        double pJ2_2Jets = p4J2_2Jets.P();
+
+        m_ptjmin2 = std::min(p4J1_2Jets.Pt(), p4J2_2Jets.Pt());
+        m_pjmin2 = std::min(pJ1_2Jets, pJ2_2Jets);
+
+        m_ptjmax2 = std::max(p4J1_2Jets.Pt(), p4J2_2Jets.Pt());
+        m_pjmax2 = std::max(pJ1_2Jets, pJ2_2Jets);
+
+        PIDHandler jet2PIDh(input2JetCollection);
+
+        int algo_y = jet2PIDh.getAlgorithmID("yth");
+        const ParticleID & ythID2 = jet2PIDh.getParticleID(jets_2Jets[0], algo_y); // same arguments for all jets
+
+        FloatVec params_y = ythID2.getParameters();
+        m_yMinus2 = params_y[jet2PIDh.getParameterIndex(algo_y, "y12")];
+        m_yPlus2 = params_y[jet2PIDh.getParameterIndex(algo_y, "y23")];
+
+        // flavor tagging
+        int _FTAlgoID = jet2PIDh.getAlgorithmID(m_JetTaggingPIDAlgorithm);
+		int _FTAlgoID2 = m_use_tags2 ? jet2PIDh.getAlgorithmID(m_JetTaggingPIDAlgorithm2) : -1;
+
+        int BTagID = jet2PIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterB);
+        int BbarTagID = jet2PIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterBbar);
+        int BTagID2 = m_use_tags2 ? jet2PIDh.getParameterIndex(_FTAlgoID2, m_JetTaggingPIDParameterB2) : -1;
+
+        // extract flavor tag values
+        for (int i=0; i < 2; ++i) {
+            const ParticleIDImpl& FTImpl = dynamic_cast<const ParticleIDImpl&>(jet2PIDh.getParticleID(jets_2Jets[i], _FTAlgoID));
+            const FloatVec& FTPara = FTImpl.getParameters();
+
+            m_bTagValues_2Jets[i] = FTPara[BTagID] + FTPara[BbarTagID];
+
+            // write all requested parameters
+            for (size_t j = 0; j < m_JetTaggingPIDParameters.size(); j++) {
+                int param_id = jet2PIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameters[j]);
+                if (param_id + 1 > (int)FTPara.size()) {
+                    std::cerr << "Parameter error: Param " << j << ", value=" << m_JetTaggingPIDParameters[j] << std::endl;
+                    throw EVENT::Exception("No flavor tagging value for parameter");
+                }
+                
+                m_2jetTags[i].push_back(FTPara[param_id]);
+            }
+
+            if (m_use_tags2) {
+                const ParticleIDImpl& FTImpl2 = dynamic_cast<const ParticleIDImpl&>(jet2PIDh.getParticleID(jets_2Jets[i], _FTAlgoID2));
+                const FloatVec& FTPara2 = FTImpl2.getParameters();
+
+                m_bTagValues_2Jets2[i] = FTPara2[BTagID2];
+
+                if (std::isnan(m_bTagValues_2Jets[i]) && !std::isnan(m_bTagValues_2Jets2[i]))
+                    m_bTagValues_2Jets[i] = m_bTagValues_2Jets2[i];
+            }
+        }
+
+        m_bmax1_2Jets = std::max(m_bTagValues_2Jets[0], m_bTagValues_2Jets[1]);
+        m_bmax2_2Jets = std::min(m_bTagValues_2Jets[0], m_bTagValues_2Jets[1]);
+
+        if (m_use_tags2) {
+            m_bmax12_2Jets = std::max(m_bTagValues_2Jets2[0], m_bTagValues_2Jets2[1]);
+            m_bmax22_2Jets = std::min(m_bTagValues_2Jets2[0], m_bTagValues_2Jets2[1]);
+        }
+		// END EVALUATE 2 JET COLLECTION
+
 		// continue only if the number of jets and isolated leptons match the preselection
 		// and the numbers in the Kinfit processors
 		
@@ -946,15 +1053,15 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 			m_invJetMass = jetsum.M();
 
 			PIDHandler jetPIDh(inputJetCollection);
-			int _FTAlgoID = jetPIDh.getAlgorithmID(m_JetTaggingPIDAlgorithm);
-			int _FTAlgoID2 = m_use_tags2 ? jetPIDh.getAlgorithmID(m_JetTaggingPIDAlgorithm2) : -1;
+			_FTAlgoID = jetPIDh.getAlgorithmID(m_JetTaggingPIDAlgorithm);
+			_FTAlgoID2 = m_use_tags2 ? jetPIDh.getAlgorithmID(m_JetTaggingPIDAlgorithm2) : -1;
 
-			int BTagID = jetPIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterB);
-			int BbarTagID = jetPIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterBbar);
+			BTagID = jetPIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterB);
+			BbarTagID = jetPIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterBbar);
 			int CTagID = jetPIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterC);
 			int CbarTagID = jetPIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterCbar);
 
-			int BTagID2 = m_use_tags2 ? jetPIDh.getParameterIndex(_FTAlgoID2, m_JetTaggingPIDParameterB2) : -1;
+			BTagID2 = m_use_tags2 ? jetPIDh.getParameterIndex(_FTAlgoID2, m_JetTaggingPIDParameterB2) : -1;
 			int CTagID2 = m_use_tags2 ? jetPIDh.getParameterIndex(_FTAlgoID2, m_JetTaggingPIDParameterC2) : -1;
 			//int OTagID = jetPIDh.getParameterIndex(_FTAlgoID, "OTag");
 
@@ -1043,10 +1150,10 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 			}
 
 			// ---------- YMINUS, YPLUS ----------        
-			int algo_y = jetPIDh.getAlgorithmID("yth");
+			algo_y = jetPIDh.getAlgorithmID("yth");
 			const ParticleID & ythID = jetPIDh.getParticleID(m_jets[0], algo_y); // same arguments for all jets
 	
-			FloatVec params_y = ythID.getParameters();
+			params_y = ythID.getParameters();
 			m_yMinus = params_y[jetPIDh.getParameterIndex(algo_y, m_yMinusParameter())];
 			m_yPlus = params_y[jetPIDh.getParameterIndex(algo_y, m_yPlusParameter())];
 
@@ -1145,8 +1252,8 @@ void EventObservablesBase::init(){
   	m_cTagValues2 = std::vector<double>(m_nAskedJets(), -1.);
 
 	m_jets4v = std::vector<ROOT::Math::PxPyPzEVector>(m_nAskedJets());
-	m_jets4v_post_4C_kinfit = std::vector<ROOT::Math::PxPyPzEVector>(m_nAskedJets());
 	m_jetsMasses = std::vector<float>(m_nAskedJets());
+	m_jets4v_post_4C_kinfit = std::vector<ROOT::Math::PxPyPzEVector>(m_nAskedJets());
 	m_jetsMasses_post_4C_kinfit = std::vector<float>(m_nAskedJets());
 	m_jetTags = std::vector<std::vector<float>>(m_nAskedJets(), std::vector<float>(m_JetTaggingPIDParameters.size(), 0));
 
@@ -1154,18 +1261,22 @@ void EventObservablesBase::init(){
 	m_JMK_ZZH = std::vector<int>(m_nAskedJets(), 0);
 	m_JMK_best = std::vector<int>(m_nAskedJets(), 0);
 
+	// 2 jet
+	m_2jets4v = std::vector<ROOT::Math::PxPyPzEVector>(2);
+	m_2jetTags = std::vector<std::vector<float>>(2);
+    m_bTagValues_2Jets  = std::vector<double>(2, -1.);
+    m_bTagValues_2Jets2 = std::vector<double>(2, -1.);
+
 	// TrueJet
 	m_reco2TrueJetIndex = std::vector<int>(m_nAskedJets(), -1);
 	m_true2RecoJetIndex = std::vector<int>(m_nAskedJets(), -1);
-
-	m_trueLeptonMomenta = std::vector<ROOT::Math::PxPyPzEVector>(m_nAskedIsoLeps());
-	m_trueLeptonPDGs = std::vector<int>(m_nAskedIsoLeps(), 0);
 
 	m_trueJetMomenta = std::vector<ROOT::Math::PxPyPzEVector>(m_nAskedJets());
 	m_trueJetTypes = std::vector<int>(m_nAskedJets(), 0);
 	m_trueJetPDGs = std::vector<int>(m_nAskedJets(), 0);
 	m_trueDijetICNPDGs = std::vector<int>(m_nAskedJets() / 2, 0);
 
+	m_trueJetVisibleMomenta = std::vector<ROOT::Math::PxPyPzEVector>(m_nAskedJets());
 	m_trueISRMomenta = std::vector<ROOT::Math::PxPyPzEVector>(2);
 
 	prepareBaseTree();
@@ -1546,44 +1657,17 @@ float EventObservablesBase::getMatchingByAngularSpace(
 	if (trueHadronicJetIndices.size() != m_nJets)
 		return 999;
 
-	vector<int> arr(m_nJets);
-	vector<TVector3> trueJetUnitVectors(m_nJets);
-	vector<TVector3> recoJetUnitVectors(m_nJets);
+	vector<TVector3> trueMomenta(m_nJets);
+	vector<TVector3> recoMomenta(m_nJets);
 
-	for (unsigned int i_array = 0; i_array < m_nJets; i_array++) {
-		arr[i_array] = i_array;
+	for (unsigned int i = 0; i < m_nJets; i++) {
+		const double* trueJetMomentum = ptrueseen(trueHadronicJetIndices[i]);
 
-		TVector3 trueJetMomentumUnit(ptrueseen(trueHadronicJetIndices[i_array])[0], ptrueseen(trueHadronicJetIndices[i_array])[1], ptrueseen(trueHadronicJetIndices[i_array])[2]);
-		trueJetMomentumUnit.SetMag(1.0);
-		trueJetUnitVectors[i_array] = trueJetMomentumUnit;
-
-		TVector3 recoJetMomentumUnit(recoJets.at(arr[i_array])->getMomentum());
-		recoJetMomentumUnit.SetMag(1.0);
-		recoJetUnitVectors[i_array] = recoJetMomentumUnit;
+		trueMomenta[i] = TVector3(trueJetMomentum[0], trueJetMomentum[1], trueJetMomentum[2]);
+		recoMomenta[i] = recoJets.at(i)->getMomentum();
 	}
 
-	float SmallestSumCosAngle = 99999.0;
-	vector<int> matchedRecoJetIndices(m_nJets);
-	do {
-		float sumcosangle = 0.0;
-
-		for (unsigned int i_Jet = 0 ; i_Jet < m_nJets; i_Jet++ )
-			sumcosangle += acos(trueJetUnitVectors[i_Jet].Dot( recoJetUnitVectors[arr[i_Jet]] ));
-
-		if (sumcosangle < SmallestSumCosAngle) {
-			SmallestSumCosAngle = sumcosangle;
-
-			for (unsigned int i_array = 0; i_array < m_nJets; i_array++)
-				matchedRecoJetIndices[i_array] = arr[i_array];
-		}
-	} while (next_permutation(arr.begin(), arr.begin() + m_nJets));
-
-	reco2truejetindex = matchedRecoJetIndices;
-
-	for (unsigned int i_jet = 0; i_jet < m_nJets; i_jet++)
-		true2recojetindex[reco2truejetindex[i_jet]] = i_jet;
-	
-	return SmallestSumCosAngle;
+	return getMatchingByAngularSpace(recoMomenta, trueMomenta, reco2truejetindex, true2recojetindex);
 }
 
 float EventObservablesBase::getMatchingByAngularSpace(
@@ -1596,20 +1680,40 @@ float EventObservablesBase::getMatchingByAngularSpace(
 	if (quarkMCParticles.size() != m_nJets)
 		return 999;
 
-	vector<int> arr(m_nJets);
-	vector<TVector3> trueUnitVectors(m_nJets);
-	vector<TVector3> recoUnitVectors(m_nJets);
+	vector<TVector3> truthMomenta(m_nJets);
+	vector<TVector3> recoMomenta(m_nJets);
 
-	for (unsigned int i_array = 0; i_array < m_nJets; i_array++) {
-		arr[i_array] = i_array;
+	for (unsigned int i = 0; i < m_nJets; i++) {
+		truthMomenta[i] = quarkMCParticles[i]->getMomentum();
+		recoMomenta[i]  = recoJets.at(i)->getMomentum();
+	}
 
-		TVector3 trueMomentumUnit = quarkMCParticles[i_array]->getMomentum();
+	return getMatchingByAngularSpace(recoMomenta, truthMomenta, reco2MCPindex, true2MCPindex);
+}
+
+float EventObservablesBase::getMatchingByAngularSpace(
+	vector<TVector3> recoMomenta,
+	vector<TVector3> truthMomenta,
+	vector<int> &reco2MCPindex,
+	vector<int> &true2MCPindex)
+{
+	if (recoMomenta.size() != truthMomenta.size())
+		return 999;
+
+	vector<int> arr(recoMomenta.size());
+	vector<TVector3> trueUnitVectors(recoMomenta.size());
+	vector<TVector3> recoUnitVectors(recoMomenta.size());
+
+	for (unsigned int i = 0; i < m_nJets; i++) {
+		arr[i] = i;
+
+		TVector3 trueMomentumUnit = truthMomenta[i];
 		trueMomentumUnit.SetMag(1.0);
-		trueUnitVectors[i_array] = trueMomentumUnit;
+		trueUnitVectors[i] = trueMomentumUnit;
 
-		TVector3 recoMomentumUnit(recoJets.at(i_array)->getMomentum());
+		TVector3 recoMomentumUnit = recoMomenta[i];
 		recoMomentumUnit.SetMag(1.0);
-		recoUnitVectors[i_array] = recoMomentumUnit;
+		recoUnitVectors[i] = recoMomentumUnit;
 	}
 
 	float SmallestSumCosAngle = 99999.0;

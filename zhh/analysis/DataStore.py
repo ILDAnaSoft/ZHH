@@ -194,15 +194,7 @@ def parse_final_state_counts(store:DataStore)->FinalStateCounts:
 
     if 'fsc_coded' in store.keys():
         # load fsc from fsc_coded 
-        data = {}
-
-        remaining = np.copy(store['fsc_coded'])
-        for i, key in enumerate(FSC_KEYS):
-            modulo = remaining % 10
-
-            data[key] = np.array(modulo, dtype=np.uint8)
-            remaining = (remaining - modulo) // 10
-
+        fsc = FinalStateCounts.from_encoded(store['fsc_coded'])
     else:
         # load fsc from hdf files
         data = {
@@ -221,18 +213,35 @@ def parse_final_state_counts(store:DataStore)->FinalStateCounts:
             'n_b_from_higgs': store['n_b_from_higgs']
         }
 
-    data['n_q']           = data['n_d'] + data['n_u'] + data['n_s'] + data['n_c'] + data['n_b'] + data['n_t']
-    data['n_neutral_lep'] = data['n_ve'] + data['n_vmu'] + data['n_vtau']
-    data['n_charged_lep'] = data['n_e'] + data['n_mu'] + data['n_tau']
-    
-    fsc = FinalStateCounts(**data)
-
-    #if 'fsc_coded' in store.keys():
-    #    store.removeProperty('fsc_coded')
+        data['n_q']           = data['n_d'] + data['n_u'] + data['n_s'] + data['n_c'] + data['n_b'] + data['n_t']
+        data['n_neutral_lep'] = data['n_ve'] + data['n_vmu'] + data['n_vtau']
+        data['n_charged_lep'] = data['n_e'] + data['n_mu'] + data['n_tau']
+        
+        fsc = FinalStateCounts(**data)
 
     if not 'fsc_coded' in store.keys():
         store['fsc_coded'] = fsc.encode()
         store.itemsSnapshot(True, ['fsc_coded'])
 
     return fsc
+
+class StoreLike:
+    def __init__(self, tree):
+        """Provides a shim for DataStore-like access on uproot TTrees
+
+        Args:
+            tree (_type_): _description_
+        """
+        self.tree = tree
+
+    def keys(self):
+        return self.tree.keys()
     
+    def __getitem__(self, prop):
+        name = prop[0] if isinstance(prop, tuple) else prop
+        dtype = prop[1] if isinstance(prop, tuple) else None
+
+        return np.array(self.tree[name].array(), dtype=dtype)
+    
+    def __len__(self):
+        return self.tree.num_entries

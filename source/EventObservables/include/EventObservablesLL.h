@@ -37,7 +37,6 @@ class EventObservablesLL : public EventObservablesBase {
 
 	protected:
 		// meta parameters
-		std::string m_input2JetCollection{};
 		std::string m_inputIsoElectrons{};
 		std::string m_inputIsoMuons{};
 		std::string m_inputIsoTaus{};
@@ -49,6 +48,7 @@ class EventObservablesLL : public EventObservablesBase {
 
 		// isolated lepton momenta and energies
 		std::vector<ROOT::Math::PxPyPzEVector> m_leps4v{};
+		std::vector<ROOT::Math::PxPyPzEVector> m_leps4v_post_4C_kinfit{};
 		int m_typel1{};
 		int m_typel2{};
 
@@ -61,18 +61,6 @@ class EventObservablesLL : public EventObservablesBase {
 		float m_mzll_pre_pairing{};
 
 		// 2 jet
-		std::vector<std::vector<float>> m_2jetTags{};
-		std::vector<ROOT::Math::PxPyPzEVector> m_2jets4v{};
-		float m_2jet1_m{};
-		float m_2jet2_m{};
-		float m_2jet_m_inv{};
-
-		float m_ptjmin2{};
-		float m_pjmin2{};
-
-		float m_ptjmax2{};
-		float m_pjmax2{};
-
 		float m_cosJ1_2Jets{};
 		float m_cosJ2_2Jets{};
         float m_cosJ12_2Jets{};
@@ -80,24 +68,15 @@ class EventObservablesLL : public EventObservablesBase {
         float m_cosJ2Z_2Jets{};
 		float m_cosJZMax_2Jets{};
 
-		float m_yMinus2{};
-		float m_yPlus2{};
-
-		std::vector<double> m_bTagValues_2Jets{};
-		std::vector<double> m_bTagValues_2Jets2{};
-
-		float m_bmax1_2Jets{};
-		float m_bmax2_2Jets{};
-
-		float m_bmax12_2Jets{};
-		float m_bmax22_2Jets{};
-
 		// 4 jet
 		float m_mbmax12{};
 		float m_mbmax34{};
 
 		float m_mcmax12{};
 		float m_mcmax34{};
+
+		// MC truth matching
+		float m_matchingSumCos{};
 
 };
 

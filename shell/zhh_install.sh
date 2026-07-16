@@ -96,7 +96,7 @@ function zhh_install_deps() {
        [ ! -d "$MarlinKinfit" ] ||
        [ ! -d "$LCFIPlusConfig" ] ||
        [ ! -d "$LCFIPlus" ] ||
-       [ ! -d "$Physsim"]; then
+       [ ! -d "$Physsim" ]; then
        
         zhh_echo "At least one of the dependencies could not be found. Retrieving them..."
 
@@ -115,7 +115,7 @@ function zhh_install_deps() {
         local branchnames=(main main master master master master onnx master)
         local cwd=$(pwd)
 
-        mkdir -p $INSTALL_DIR
+        mkdir -p "$INSTALL_DIR"
 
         for ((i=0; i<${#varnames[@]}; i+=1));
         do
@@ -127,7 +127,7 @@ function zhh_install_deps() {
                 local ypath="y"
                 get_input_arg "Dependency $dependency not found. Install it to default location (y) or supply a path to it: " ypath y
 
-                if [ $ypath = "y" ] || [ -z $ypath ]; then
+                if [ "$ypath" = "y" ] || [ -z "$ypath" ]; then
                     local dirnamecur="${dirnames[$i]}"
                     local commitcur="${commits[$i]}"
                     install_dir="$INSTALL_DIR/$dirnamecur"
@@ -136,7 +136,7 @@ function zhh_install_deps() {
                         zhh_echo "Cloning to $INSTALL_DIR/$dirnamecur"
                         git clone -b ${branchnames[$i]} --recurse-submodules ${repositories[$i]} "$install_dir"
 
-                        if [ $commitcur != "latest" ]; then
+                        if [ "$commitcur" != "latest" ]; then
                             zhh_echo "Checking out commit $commitcur"
                             ( cd "$install_dir" && git checkout $commitcur && cd $cwd )
                         fi
@@ -155,7 +155,7 @@ function zhh_install_deps() {
 
                 zhh_echo "Setting variable $dependency to <$install_dir>"
                 export $dependency="$install_dir"
-                echo "$dependency=$install_dir" >> $REPO_ROOT/.env
+                echo "$dependency=$install_dir" >> "$REPO_ROOT/.env"
 
             else
                 zhh_echo "Dependency $dependency already found."
@@ -180,7 +180,7 @@ function zhh_install_deps() {
     local default_data_dir="$REPO_ROOT/data"
     local ZHH_INSTALL_USE_DEFAULT_PRE=$ZHH_INSTALL_USE_DEFAULT
 
-    if [ -d /data/dust/user ]; then
+    if [ -d "/data/dust/user" ]; then
         local default_data_dir="/data/dust/user/$(whoami)/zhh"
         if [ ! -z "$DATA_PATH" ]; then
             default_data_dir="$DATA_PATH"
@@ -211,7 +211,7 @@ function zhh_install_deps() {
     # default ilc prod path
     local ilc_prod_dir="/pnfs/desy.de/ilc/prod/ilc"
 
-    if [ ! -d $ilc_prod_dir ]; then  
+    if [ ! -d "$ilc_prod_dir" ]; then  
         get_input_arg "What's the base path to the ILCProd dir? ($ilc_prod_dir) " ilc_prod_dir "$ilc_prod_dir"
     fi
 

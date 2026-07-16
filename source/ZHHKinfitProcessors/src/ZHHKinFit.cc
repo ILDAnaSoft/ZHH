@@ -53,9 +53,9 @@ ZHHKinFit::ZHHKinFit() :
 
   registerInputCollection( LCIO::RECONSTRUCTEDPARTICLE,
 			   "RecoJetCollection" ,
-			   "Name of the input Reconstructed Jet collection"  ,
+			   "Name of the input Reconstructed Jet collection used to extract flavor tag values from. if empty, will be replaced with JetCollectionName"  ,
 			   m_recoJetCollection ,
-			   std::string("Durham_nJets")
+			   std::string("")
 			   ); //for b-tagging
   
   registerInputCollection(LCIO::VERTEX,
@@ -525,6 +525,9 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     return;
   }
   try {
+    if (m_recoJetCollection.size() == 0)
+      m_recoJetCollection = m_inputJetCollection;
+
     streamlog_out(DEBUG0) << "  getting reco jet collection: " << m_recoJetCollection << std::endl ;
     recoJetCollection = pLCEvent->getCollection( m_recoJetCollection );
   } catch(DataNotAvailableException &e) {
