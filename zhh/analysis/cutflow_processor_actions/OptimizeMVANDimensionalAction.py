@@ -7,10 +7,10 @@ from .CutGroupProviderInterface import CutGroupProviderInterface
 from .mva_tools import get_signal_categories
 from tqdm.auto import tqdm
 from ..DataSource import DataSource
-from ..Cuts import ValueCut, GreaterThanEqualCut
+from ..Cuts import ValueCut, GreaterThanEqualCut, NDimensionalBinnedCut
 import numpy as np
 
-OptimizeMVANDimensionalMode = Literal['AGGREGATED_SUM', 'LINEAR_FIT', 'N_DIMENSIONAL_OR', 'N_DIMENSIONAL_AND']
+OptimizeMVANDimensionalMode = Literal['AGGREGATED_SUM', 'LINEAR_FIT', 'N_DIMENSIONAL_OR', 'N_DIMENSIONAL_AND', 'N_DIMENSIONAL_BINNED']
 
 class OptimizeMVANDimensionalAction(CutGroupProviderInterface, FileBasedProcessorAction):
     cuts:list[ValueCut] = []
@@ -72,7 +72,7 @@ class OptimizeMVANDimensionalAction(CutGroupProviderInterface, FileBasedProcesso
         best_mode = ''
         best_parameters:np.ndarray
 
-        for mode in ['AGGREGATED_SUM']:# get_args(OptimizeMVANDimensionalMode): 
+        for mode in ['AGGREGATED_SUM', 'N_DIMENSIONAL_BINNED']:# get_args(OptimizeMVANDimensionalMode):
             probas = list(data.values())
             objective, guess, bounds = optimization_objective_factory(probas[:-1], weights, is_signal, is_background, mode=mode)
             
@@ -91,19 +91,24 @@ class OptimizeMVANDimensionalAction(CutGroupProviderInterface, FileBasedProcesso
         # cutting on a transformation of a variable is not implemented; would need a FunctionalCut that takes in multiple columns associated with the cut
         
         self.saveCuts(mode=best_mode, parameters=np.round(best_parameters, decimals=4).tolist(),
-                      columns=[ self._aggregated_signal_column ] if best_mode == 'AGGREGATED_SUM' else score_columns)
-    
+                      columns=[ self._aggregated_signal_column ] if best_mode == 'AGGREGATED_SUM' else score_columns[:-1])
+
         # plot
-        # TODO: needs revamp for mode != 'AGGREGATED_SUM'
-        thresholds = CompositeBinaryModel.threshold_scan()
+        if best_mode == 'AGGREGATED_SUM':
+            thresholds = CompositeBinaryModel.threshold_scan()
+            discriminator = self._aggregated_signal_column
 
-        discriminator = self._aggregated_signal_column if best_mode == 'AGGREGATED_SUM' else None
-        if discriminator is None:
-            raise NotImplementedError('best_mode != AGGREGATED_SUM')
+            statistics, best_threshold = CompositeBinaryModel.doThresholdScan(data[discriminator], thresholds, weights, is_signal, is_background)
+            figures = CompositeBinaryModel.plotFn(statistics, f'{self._mva_name} Signal vs Background',
+                                                  to_plot=[ (False, (0., 1.)) ], xlabel=self._aggregated_signal_column)
+        elif best_mode == 'N_DIMENSIONAL_BINNED':
+            own_thresholds = best_parameters[0::2]
+            others_thresholds = best_parameters[1::2]
 
-        statistics, best_threshold = CompositeBinaryModel.doThresholdScan(data[discriminator], thresholds, weights, is_signal, is_background)
-        figures = CompositeBinaryModel.plotFn(statistics, f'{self._mva_name} Signal vs Background',
-                                              to_plot=[ (False, (0., 1.)) ], xlabel=self._aggregated_signal_column)
+            figures = plot_binned_boxes(probas[:-1], weights, is_signal, is_background,
+                                        own_thresholds, others_thresholds, labels=self._signal_categories_found)
+        else:
+            raise NotImplementedError(f'Plotting not implemented for mode <{best_mode}>')
 
         export_figures(self.output()[1].abspath, figures)
 
@@ -122,6 +127,11 @@ class OptimizeMVANDimensionalAction(CutGroupProviderInterface, FileBasedProcesso
 
         if mode == 'AGGREGATED_SUM':
             cuts += [ GreaterThanEqualCut(dump['columns'][0], dump['parameters'][0]) ]
+        elif mode == 'N_DIMENSIONAL_BINNED':
+            columns = dump['columns']
+            parameters = dump['parameters']
+
+            cuts += [ NDimensionalBinnedCut(columns, own_thresholds=parameters[0::2], others_thresholds=parameters[1::2]) ]
         elif mode == 'N_DIMENSIONAL_OR':
             raise Exception('WIP')
 
@@ -206,6 +216,82 @@ def collect_mva_probabilities(cp:CutflowProcessor, mva_classes:list[str], step:i
 
     return masks, probas, weights
 
+def binned_box_selections(probas:list[np.ndarray], own_thresholds, others_thresholds)->list[np.ndarray]:
+    """For each score column i in probas, builds the signal-enriched 'box' selection
+    (own score high, summed score of all other columns low). See NDimensionalBinnedCut.
+
+    Args:
+        probas (list[np.ndarray]): one array per signal category, in the same order
+            as own_thresholds/others_thresholds
+        own_thresholds: per-category lower bound on the category's own score
+        others_thresholds: per-category upper bound on the summed score of all other categories
+
+    Returns:
+        list[np.ndarray]: one boolean selection mask per category
+    """
+    total = np.sum(probas, axis=0)
+
+    selections = []
+    for i in range(len(probas)):
+        own = probas[i]
+        others = total - own
+        selections.append((own >= own_thresholds[i]) & (others <= others_thresholds[i]))
+
+    return selections
+
+def plot_binned_boxes(probas:list[np.ndarray], weights:np.ndarray, is_signal:np.ndarray, is_background:np.ndarray,
+                      own_thresholds, others_thresholds, labels:list[str], bins:int=40):
+    """Plots, for each signal category, its own score vs. the summed score of all other
+    categories, overlaid with the fitted signal-enriched box (own >= own_thresholds[i],
+    others <= others_thresholds[i]).
+
+    Args:
+        probas (list[np.ndarray]): one array per signal category
+        weights (np.ndarray): event weights
+        is_signal (np.ndarray): mask selecting signal events (any category)
+        is_background (np.ndarray): mask selecting background events
+        own_thresholds: per-category lower bound on the category's own score
+        others_thresholds: per-category upper bound on the summed score of all other categories
+        labels (list[str]): per-category names, used for axis/title labels
+        bins (int, optional): number of bins per axis for the background density. Defaults to 40.
+
+    Returns:
+        list[Figure]: one figure per signal category
+    """
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import Rectangle
+    from matplotlib.figure import Figure
+
+    total = np.sum(probas, axis=0)
+    figures:list[Figure] = []
+
+    for i, label in enumerate(labels):
+        own = probas[i]
+        others = total - own
+
+        fig, ax = plt.subplots(figsize=(5, 5))
+
+        if is_background.sum():
+            ax.hist2d(own[is_background], others[is_background], bins=bins, range=[[0, 1], [0, 1]],
+                      weights=weights[is_background], cmap='Greys', norm='log')
+
+        if is_signal.sum():
+            ax.scatter(own[is_signal], others[is_signal], s=2, color='crimson', alpha=0.3, label='Signal', rasterized=True)
+
+        ax.add_patch(Rectangle((own_thresholds[i], 0.), 1. - own_thresholds[i], others_thresholds[i],
+                               fill=False, edgecolor='green', linewidth=2, label='Fitted box'))
+
+        ax.set_xlim(0., 1.)
+        ax.set_ylim(0., 1.)
+        ax.set_xlabel(f'{label} score')
+        ax.set_ylabel('Sum of other categories\' scores')
+        ax.set_title(f'Signal-enriched box: {label}')
+        ax.legend(loc='upper left')
+
+        figures.append(fig)
+
+    return figures
+
 def optimization_objective_factory(probas:list[np.ndarray], weights:np.ndarray, is_signal:np.ndarray, is_background:np.ndarray, mode:str):
 
     n_unknowns = 0
@@ -216,9 +302,15 @@ def optimization_objective_factory(probas:list[np.ndarray], weights:np.ndarray, 
     use_linear_fit = mode == 'LINEAR_FIT'
     use_and = mode == 'N_DIMENSIONAL_AND'
     use_or = mode == 'N_DIMENSIONAL_OR'
+    use_binned = mode == 'N_DIMENSIONAL_BINNED'
 
     if use_aggregated_sum:
         n_unknowns = 1
+    elif use_binned:
+        # per category: (lower bound on own score, upper bound on summed score of other categories)
+        n_unknowns = 2 * len(probas)
+        bounds = [(0.5, 1.), (0., 1.)] * len(probas)
+        guess = [0.9, 0.1] * len(probas)
     else:
         if use_linear_fit:
             n_unknowns = len(probas)
@@ -226,7 +318,7 @@ def optimization_objective_factory(probas:list[np.ndarray], weights:np.ndarray, 
             n_unknowns = len(probas)
         else:
             raise Exception('No mode selected. Please set either use_aggregated_sum, use_linear_fit, use_or or use_and')
-        
+
         bounds = bounds * n_unknowns
         guess = guess * n_unknowns
 
@@ -234,21 +326,36 @@ def optimization_objective_factory(probas:list[np.ndarray], weights:np.ndarray, 
     print('[Selected unweighted events] [Parameter values] [nSignal, nBackground -> Significance]')
 
     def objective(x, *args):
-        selection = np.logical_and.reduce([ probas[i] >= x[i] for i in range(len(x)) ])
+        if use_binned:
+            # one box per signal category; keep events that fall into any of them
+            box_selections = binned_box_selections(probas, x[0::2], x[1::2])
+            selection = np.logical_or.reduce(box_selections)
 
-        if use_aggregated_sum:
-            selection = np.sum(probas, axis=0) >= x[0]
-        elif use_linear_fit:
-            selection = probas[0] + ( np.sum([ [x[i] * probas[i+1]] for i in range(len(x) - 1)], axis=0) ) >= x[-1]
-        elif use_and or use_or:
-            # n-dimensional, and/or
-            selection = (np.logical_and if use_and else np.logical_or).reduce([ probas[i] >= x[i] for i in range(len(x)) ])
+            sig = np.array([ weights[box_selection & is_signal].sum() for box_selection in box_selections ])
+            bkg = np.array([ weights[box_selection & is_background].sum() for box_selection in box_selections ])
 
-        wt_sig = weights[selection & is_signal].sum()
-        wt_bkg = weights[selection & is_background].sum()
-        significance = wt_sig/(wt_sig + wt_bkg)**0.5
+            # combine the per-box significances in quadrature, as in SklearnMulticlassTrainingAction
+            significances = np.nan_to_num(sig / np.sqrt(sig + bkg))
+            significance = (significances ** 2).sum() ** 0.5
+        else:
+            selection = np.logical_and.reduce([ probas[i] >= x[i] for i in range(len(x)) ])
 
-        print(f'[{selection.sum()}] [' + ', '.join([ f'{xi:.3g}' for xi in x ]) + f'] [{wt_sig:.3g}, {wt_bkg:.3g} -> {significance:.4g}]')
-        return 1/significance
+            if use_aggregated_sum:
+                selection = np.sum(probas, axis=0) >= x[0]
+            elif use_linear_fit:
+                selection = probas[0] + ( np.sum([ [x[i] * probas[i+1]] for i in range(len(x) - 1)], axis=0) ) >= x[-1]
+            elif use_and or use_or:
+                # n-dimensional, and/or
+                selection = (np.logical_and if use_and else np.logical_or).reduce([ probas[i] >= x[i] for i in range(len(x)) ])
+
+            wt_sig = weights[selection & is_signal].sum()
+            wt_bkg = weights[selection & is_background].sum()
+            significance = wt_sig/(wt_sig + wt_bkg)**0.5
+
+        wt_sig_total = weights[selection & is_signal].sum()
+        wt_bkg_total = weights[selection & is_background].sum()
+
+        print(f'[{selection.sum()}] [' + ', '.join([ f'{xi:.3g}' for xi in x ]) + f'] [{wt_sig_total:.3g}, {wt_bkg_total:.3g} -> {significance:.4g}]')
+        return 1/significance if significance > 0 else np.inf
 
     return objective, guess, bounds

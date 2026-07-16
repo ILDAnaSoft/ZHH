@@ -4,6 +4,7 @@ from .CreateCutflowPlotsAction import CreateCutflowPlotsAction
 from .CreateCutflowTableAction import CreateCutflowTableAction
 from .CutGroupProviderInterface import CutGroupProviderInterface
 from .MVAThresholdFinderInterface import MVAThresholdFinderInterface
+from .ModelDistributionAsFlowAction import ModelDistributionAsFlowAction
 from .OptimizeMVANDimensionalAction import OptimizeMVANDimensionalAction
 from .PlotObservableAction import PlotObservableAction
 from .PlotMVAFeaturesAction import PlotMVAFeaturesAction
