@@ -59,6 +59,59 @@ TODO
 
 TODO
 
+### ModelDistributionAsFlow
+
+Trains a Conditional Flow Matching (CFM) generative model to reproduce the joint distribution of a configurable list of feature dimensions (`properties`), conditioned on the hard process and final-state topology of each event. Writes out the best (lowest training loss) model to `model_file` (torch format) and, once training is done, per-feature control plots (source vs. learned distribution and their residual) to `plots_file` (PDF).
+
+Data can be sourced either from a `DataStore` registered with the `CutflowProcessor` (the default), or from one or multiple pickle dumps (e.g. produced on a machine without access to the underlying ROOT/HDF5 data), see [Alternate initialization from pickle dumps](#alternate-initialization-from-pickle-dumps) below.
+
+Required arguments:
+
+- (list[dict]) `properties`: feature dimensions to train on. See [Format of `properties`](#format-of-properties) below.
+- (str) `model_file`: output file the best model is written to.
+- (str) `plots_file`: output PDF file with control plots.
+
+Optional arguments:
+
+- (str|int|None) `source`: name or index of the `DataSource` (within `cp.getSources()`) to train on. If `None` and `cp` has exactly one registered source, that source is used. Required otherwise.
+- (bool) `conditioned`: whether to condition the flow on the process/final-state-topology conditioning vector. Defaults to `True`.
+- (int) `epochs`, (float) `lr`, (int) `batch_size`, (int) `hidden`, (int) `embed_dim`, (int) `time_dim`, (float) `max_norm`: CFM training hyperparameters. Default to values used during development (64, 9e-5, 16384, 1024, 32, 32, 100.0 respectively).
+- (str|None) `device`: torch device, e.g. `cuda` or `cpu`. Autodetected if `None`.
+- (int) `ode_steps`: number of RK4 integration steps used for sampling. Defaults to 50.
+- (int) `n_control_samples`: number of samples drawn for the control plots. Defaults to 100000.
+- (int|None) `control_plot_class`: `fsc_coded` value to condition sampling on for the control plots. If `None`, the most frequent value in the dataset is used. Ignored if `conditioned=False`.
+- (int) `nbins`, (str) `yscale`: histogram plotting options for the control plots. Default to 64, 'log'.
+- (int|None) `seed`: if given, seeds the numpy/torch RNGs before training.
+
+#### Format of `properties`
+
+Each item transforms one feature dimension to an (approximately) unbounded real value before it is fed into the flow, and back again when interpreting generated samples:
+
+```yaml
+properties:
+  - name: jet1_m       # required; column name in the DataStore / pickle dump
+    type: bounded        # optional, default: identity. one of: identity, bounded, int, probability
+    lower: 0               # required for type: bounded, int
+    upper: 650               # required for type: bounded, int
+    eps: 1.0e-8                # optional (default: 1e-8); bounded/int/probability only
+  - name: npfos
+    type: int
+    lower: 0
+    upper: 250
+  - name: bmax1
+    type: probability
+  - name: costhrust
+    type: bounded
+    lower: -1
+    upper: 1
+```
+
+#### Alternate initialization from pickle dumps
+
+`ModelDistributionAsFlowAction.from_pickle_files(pickle_files, properties, model_file, plots_file, **kwargs)` is a staticmethod that builds an action instance without a `CutflowProcessor`, loading pre-extracted data from one or multiple pickle files instead (concatenated along the event axis). Each file must hold a dict with keys `data` (dict[str, np.ndarray], already forward-transformed, keyed by property name), `fsc_coded` (np.ndarray) and `conditioning_vector` (np.ndarray).
+
+Such a dump can be created from an already-configured, DataStore-backed action instance via `action.dumpStoreData(file)`, e.g. to move training onto a machine without access to the underlying ROOT/HDF5 data (a GPU node).
+
 ### OptimizeMVANDimensional
 
 TODO
