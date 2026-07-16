@@ -206,6 +206,58 @@ class LessThanEqualCut(ValueCut):
     def __hash__(self)->str:
         return f'{self.quantity} <= {self.upper}'
 
+class NDimensionalBinnedCut(Cut):
+    """Union of per-category signal-enriched 'boxes' over a set of N score columns
+    (e.g. one MVA output per signal category). For column i, the box requires its
+    own score to exceed own_thresholds[i] while the summed score of all other
+    columns stays at or below others_thresholds[i]. The final selection is the
+    logical OR of all boxes, i.e. an event is kept if it falls into any category's
+    box.
+    """
+
+    def __init__(self, quantities:List[str], own_thresholds:List[float], others_thresholds:List[float],
+                 labels:List[str]|None=None, **cut_kwargs):
+        assert(len(quantities) == len(own_thresholds) == len(others_thresholds))
+        assert(len(quantities) > 0)
+
+        super().__init__(quantities[0], **cut_kwargs)
+
+        self.quantities = list(quantities)
+        self.own_thresholds = [float(v) for v in own_thresholds]
+        self.others_thresholds = [float(v) for v in others_thresholds]
+        self.labels = list(labels) if labels is not None else self.quantities
+
+    def __call__(self, arg):
+        return self.raw({ quantity: arg[quantity] for quantity in self.quantities })
+
+    def raw(self, values:dict):
+        stacked = np.stack([ values[quantity] for quantity in self.quantities ], axis=0)
+        total = stacked.sum(axis=0)
+
+        selection = np.zeros(stacked.shape[1], dtype=bool)
+
+        for i in range(len(self.quantities)):
+            own = stacked[i]
+            others = total - own
+            selection |= (own >= self.own_thresholds[i]) & (others <= self.others_thresholds[i])
+
+        return selection
+
+    def formula(self, unit:str|None=None):
+        return ' | '.join([
+            f"({label} >= {own:.4g} & other scores sum <= {others:.4g})"
+            for label, own, others in zip(self.labels, self.own_thresholds, self.others_thresholds)
+        ])
+
+    def latex(self, *args, **kwargs)->str:
+        return self.formula(*args, **kwargs)
+
+    def __hash__(self)->str:
+        return ' | '.join([
+            f'{quantity} >= {own} & (sum(*) - {quantity}) <= {others}'
+            for quantity, own, others in zip(self.quantities, self.own_thresholds, self.others_thresholds)
+        ])
+
 def apply_cuts(data:np.ndarray, cuts:List[Cut], consecutive:bool=True)->Generator:
     for i, cut in enumerate(cuts):
         if consecutive:
