@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <numeric>
+#include <map>
 #include <EVENT/LCCollection.h>
 #include <EVENT/MCParticle.h>
 #include <EVENT/ReconstructedParticle.h>
@@ -1736,6 +1737,56 @@ float EventObservablesBase::getMatchingByAngularSpace(
 
 	for (unsigned int i_jet = 0; i_jet < m_nJets; i_jet++)
 		true2MCPindex[reco2MCPindex[i_jet]] = i_jet;
-	
+
 	return SmallestSumCosAngle;
+}
+
+std::vector<TrueJetMapping> EventObservablesBase::combineSplitTrueJets(
+	const std::vector<int> &rawIndices,
+	const std::vector<int> &candidateIndices)
+{
+	// group all TrueJets sharing the same initial_elementon, i.e. the same originating
+	// parton of the hard process (e.g. a quark and any TrueJet(s) split off it by a
+	// subsequent quark -> quark + gluon splitting)
+	std::map<MCParticle*, std::vector<int>> elementonToTrueJets;
+	for (const int &idx: rawIndices) {
+		MCParticle* initial = initial_elementon(idx);
+		elementonToTrueJets[initial].push_back(idx);
+	}
+
+	std::vector<TrueJetMapping> mappings;
+	for (const int &idx: candidateIndices) {
+		MCParticle* initial = initial_elementon(idx);
+		const std::vector<int> &group = elementonToTrueJets[initial];
+
+		TVector3 momentum(0., 0., 0.);
+		double energy = 0.;
+		for (const int &gidx: group) {
+			momentum += ptrueseen(gidx);
+			energy += Etrueseen(gidx);
+		}
+
+		mappings.push_back(TrueJetMapping(group, momentum, energy, initial));
+	}
+
+	return mappings;
+}
+
+ROOT::Math::PxPyPzEVector EventObservablesBase::sumTrueJetFourMomentum(const TrueJetMapping &mapping, bool seen)
+{
+	ROOT::Math::PxPyPzEVector total(0., 0., 0., 0.);
+
+	for (const int &idx: mapping.getIndex()) {
+		if (seen) {
+			const double* v4_truejet = seen ? p4trueseen(idx) : p4true(idx);
+			total += ROOT::Math::PxPyPzEVector(v4_truejet[1], v4_truejet[2], v4_truejet[3], v4_truejet[0]);
+		} else {
+			const ReconstructedParticle * true_jet = jet(idx);
+			const double* momentum = true_jet->getMomentum();
+
+			total += ROOT::Math::PxPyPzEVector(momentum[0], momentum[1], momentum[2], true_jet->getEnergy());
+		}
+	}
+
+	return total;
 }
