@@ -29,6 +29,7 @@
 #include "v4.h"
 #include "EventObservablesFromZZ.h"
 #include <TrueJet_Parser.h>
+#include "TrueJetMapping.h"
 
 template<typename T>
 inline bool containSameElements(std::vector<T>& v1, std::vector<T>& v2)
@@ -473,7 +474,16 @@ class EventObservablesBase: public Processor, public TrueJet_Parser {
 			vector<int> &reco2MCPindex,
 			vector<int> &true2MCPindex );
 
-		bool m_trueRecoJetsMapped{}; // only true if number of true jets is equal to reco jets and they could be mapped by angular overlap 
+		// Recombine TrueJets that originate from the same initial elementon (e.g. the
+		// TrueJets created by a quark -> quark + gluon splitting)
+		std::vector<TrueJetMapping> combineSplitTrueJets(
+			const std::vector<int> &rawIndices,
+			const std::vector<int> &candidateIndices );
+
+		// Sums p4true() (seen=false) or p4trueseen() (seen=true) over all TrueJet indices in mapping
+		ROOT::Math::PxPyPzEVector sumTrueJetFourMomentum( const TrueJetMapping &mapping, bool seen );
+
+		bool m_trueRecoJetsMapped{}; // only true if number of true jets is equal to reco jets and they could be mapped by angular overlap
 
 };
 
