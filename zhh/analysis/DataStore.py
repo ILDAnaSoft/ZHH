@@ -57,10 +57,6 @@ class DataStore(MixedLazyTablelike):
             for i in range(len(fs_columns)):
                 self[fs_columns[i]] = NamedHDF5Mapping(self._h5_file, f'final_state_counts.dim{i}')
         
-        # NEW: explicit definition of properties inside TTrees that are of type float are no more necessary
-        #self['zhh_mh1'] = lambda intf: fetch('zhh_mh1', f'{prop_prefix}zhh_mh1')
-        #self['zhh_mh2'] = lambda intf: fetch('zhh_mh2', f'{prop_prefix}zhh_mh2')
-        
         self['sumBTags'] = lambda intf: ( self['bmax1'] + self['bmax2'] + self['bmax3'] + self['bmax4'] )
 
         self['yminus_mod100'] = lambda intf: np.mod(intf['yminus2'], 100)

@@ -571,7 +571,7 @@ def cutflow_register_mvas(steer:dict, cp:CutflowProcessor)->list[str]:
 
     return registered_mvas
 
-def cutflow_parse_actions(steer:dict, cp:CutflowProcessor):
+def cutflow_parse_actions(steer:dict, cp:CutflowProcessor, any_source_reset:bool=False):
     action_map = {}
 
     def per_subclass(cls):
@@ -615,7 +615,16 @@ def cutflow_parse_actions(steer:dict, cp:CutflowProcessor):
         except Exception as e:
             print(e)
             raise Exception(f'Could not instantiate action of type <{action["type"]}>')
-    
+
+    # if any source was reset, also delete the preselection pickle file
+    # to correctly trigger the re-classification
+    if any_source_reset:
+        from zhh.analysis.cutflow_processor_actions.ApplyCutsAction import ApplyCutsAction
+
+        for action in actions:
+            if isinstance(action, ApplyCutsAction):
+                action.reset()
+
     return actions
 
 def cutflow_execute_actions(actions:list[CutflowProcessorAction], check_only:bool=False,

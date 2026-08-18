@@ -38,7 +38,8 @@ if __name__ == "__main__":
     print(f'Registered {len(registered_mvas)} MVAs:', ', '.join(registered_mvas))
 
     print("----------------------- Preparing actions -----------------------------")
-    actions:list[CutflowProcessorAction] = cutflow_parse_actions(steer, cp)
+    actions:list[CutflowProcessorAction] = cutflow_parse_actions(steer, cp, any_source_reset=any(
+        [ source.getName() in reset_sources for source in sources ]))
 
     if args.reset: # delete outputs if reset requested
         for action in (pbar := tqdm(actions)):

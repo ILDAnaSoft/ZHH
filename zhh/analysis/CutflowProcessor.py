@@ -40,9 +40,9 @@ class CutflowProcessor:
                  sources:list[DataSource],
                  hypothesis:str,
                  signal_categories:list[int],
-                 cuts:Sequence[ValueCut]|None=None,
+                 cuts:Sequence[ValueCut],
                  colormap:Union['Colormap', None]=None,
-                 plot_options:dict[str, dict[str, dict]]|None=None,
+                 plot_options:dict[str, dict[str, dict]]={},
                  plot_context:PlotContext|None=None,
                  work_dir:str|None=None
     ):
@@ -55,16 +55,16 @@ class CutflowProcessor:
             sources (list[DataSource]): _description_
             hypothesis (str): _description_
             signal_categories (list[int]): list of process categories, see ProcessCategories. Used for plotting later. 
-            cuts (Sequence[ValueCut] | None, optional): Cuts to apply. May also be supplied to process(). Defaults to None.
+            cuts (Sequence[ValueCut]): Cuts to apply. May also be supplied to process().
             colormap (_type_, optional): Cuts used for preselection. Defaults to None.
-            plot_options (dict[str, dict[str, dict]] | None, optional): _description_. Defaults to None.
+            plot_options (dict[str, dict[str, dict]]): _description_. Defaults to {}.
             work_dir (str | None, optional): _description_. Defaults to None.
 
         Raises:
             ValueError: _description_
         """
-        
-        from zhh import zhh_cuts, figure_options
+
+        from zhh.analysis.figure_options import figure_options as figure_options_zhh
         
         assert(len(sources) > 0)
         self._sources = sources
@@ -84,7 +84,9 @@ class CutflowProcessor:
         self._cuts:dict[int, Sequence[ValueCut]] = { 0: zhh_cuts(hypothesis) if cuts is None else cuts }
         self._cuts_hash:str|None = None if self._cuts is None else Cut.hash_cuts(flatten(self._cuts.values()))
 
-        self._plot_options:dict[str, dict[str, dict]] = plot_options if plot_options is not None else figure_options
+        self._plot_options:dict[str, dict[str, dict]] = deepmerge(
+            deepmerge({}, deepcopy(figure_options_zhh)), plot_options)
+        
         self._hypothesis = hypothesis
         
         if colormap is None:
@@ -222,7 +224,7 @@ class CutflowProcessor:
                         subset = subsets[source_name]
                     
                     processes = source.getProcesses()
-                    
+
                     mask = cut(subset)
                     wt = subset[weight_prop]
                     
@@ -712,7 +714,7 @@ def cutflowPlotsFn(signal_category_names:list[str],
         
         plot_kwargs = {
             'bins': bins,
-            'xlabel': cut.label, #rf'${cut.quantity}$',
+            #'xlabel': cut.label, #rf'${cut.quantity}$',
             'yscale': 'log',
             'ild_style_kwargs': {},
             'plot_hist_kwargs': {}, # hist_kwargs
@@ -724,7 +726,10 @@ def cutflowPlotsFn(signal_category_names:list[str],
         
         if cut.xlim_view is not None:
             plot_kwargs['xlim'] = cut.xlim_view
-        
+
+        if not 'xlabel' in plot_kwargs:
+            plot_kwargs['xlabel'] = rf'${cut.label}$'
+
         # stacked plot
         fig1 = plot_combined_hist(calc_dict, plot_context=plot_context, **deepcopy(plot_kwargs));
         if do_annotate_cut:
@@ -733,7 +738,7 @@ def cutflowPlotsFn(signal_category_names:list[str],
         figs_stacked.append(fig1)
         
         # non-stacked plot
-        fig2 = plotCalcDictTopN(plot_context, calc_dict, cut.label, signal_category_names, plot_options_quantity,
+        fig2 = plotCalcDictTopN(plot_context, calc_dict, rf'${cut.label}$', signal_category_names, plot_options_quantity,
                                 hist_kwargs=hist_kwargs, hypothesis=hypothesis, bins=bins,
                                 xlim=plot_kwargs['xlim'] if 'xlim' in plot_kwargs else None);
         

@@ -4,7 +4,6 @@ from zhh.util import *
 from zhh.processes import *
 from zhh.data import *
 from zhh.analysis import *
-from zhh.util import *
 from zhh.figures import *
 from zhh.mem import *
 from zhh.mva import *

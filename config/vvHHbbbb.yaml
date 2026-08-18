@@ -14,7 +14,7 @@ signal_categories:
 - EventCategories.v23v23HHbbbb
 - EventCategories.vvHH_nonbbbb
 - EventCategories.vvHHbbbb # includes v1v1HHbbbb and v23v23HHbbbb (needed for the MVA)
-- EventCategories.WBF_vvbbbb
+#- EventCategories.WBF_vvbbbb
 
 # used to calculate event weights and absolute event counts
 # polarization of [ electronBeam, positronBeam ]
@@ -85,7 +85,8 @@ sources:
     event_categorization:
       default: null
       order: null
-      items: [ vvHH, vvHHbbbb, v1v1HHbbbb, v23v23HHbbbb, WBF_vvbbbb, vvHH_nonbbbb, vvqqH ]
+      items: [ vvHH, vvHHbbbb, v1v1HHbbbb, v23v23HHbbbb, vvHH_nonbbbb, vvqqH ]
+      # before: items: [ vvHH, vvHHbbbb, v1v1HHbbbb, v23v23HHbbbb, WBF_vvbbbb, vvHH_nonbbbb, vvqqH ]
     disabled: false
     reset: false
 
@@ -116,7 +117,7 @@ sources:
       default: null
       order: null
       items: [ v1v1HH_w, v1v1HHbbbb_w ] 
-    disabled: false
+    disabled: true
     reset: false
 
 # feature definition
@@ -242,9 +243,9 @@ cutflow_table:
     - category: v1v1HHbbbb
       label: (v1v1bbbb)
       is_signal: true
-    - category: WBF_vvbbbb
-      label: (WBF)
-      is_signal: true
+    #- category: WBF_vvbbbb
+    #  label: (WBF)
+    #  is_signal: true
     #- category: vvHHbbbb
     #  label: '\HepProcess{\Pgn\Pgn\PH\PH\Pqb\Pqb}'
     #  is_signal: true
