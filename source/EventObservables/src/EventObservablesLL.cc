@@ -470,10 +470,8 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
 		mcParticles->parameters().getIntVals("FINAL_STATE_PARTICLE_INDICES", fsIndices);
 
 		// show Higgses first
-		std::sort(fsIndices.begin(), fsIndices.end(), [mcParticles]( const int& mcp1_idx, const int& mcp2_idx ) {
-            (void) mcp2_idx;
-
-			return abs( ((MCParticle*)mcParticles->getElementAt(mcp1_idx))->getPDG() ) == 25; // && trueJet->E_icn(icn1_idx) > trueJet->E_icn(icn2_idx); // need to have some sorting besides PDG=25
+		std::stable_partition(fsIndices.begin(), fsIndices.end(), [mcParticles]( const int& mcp_idx ) {
+			return abs( ((MCParticle*)mcParticles->getElementAt(mcp_idx))->getPDG() ) == 25;
 		});
 
 		vector<MCParticle*> hadronicMCPs; // should be analogous to all TrueJet initial_elementon()'s with PDG in [1...6]
@@ -642,20 +640,18 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
                 }
 
                 m_matchingSumCos = getMatchingByAngularSpace(recoMomenta, trueMomenta, m_reco2TrueJetIndex, m_true2RecoJetIndex);
-                m_trueRecoJetsMapped = m_matchingSumCos < 99.;
+                bool matching_successful = m_matchingSumCos < 99.;
 
-                if (m_trueRecoJetsMapped) {
+                if (matching_successful) {
                     std::vector<int> truejetpermICNs;
 
                     //streamlog_out(DEBUG3) << "number of icns = " << nicn << endl;
-                    // sort ICNs: any Higgs first; important as this is the order assumed at MEM calculation for the jet matching 
+                    // sort ICNs: any Higgs first; important as this is the order assumed at MEM calculation for the jet matching
                     std::vector<int> icn_indices_sorted(trueJet->nicn());
                     std::iota(icn_indices_sorted.begin(), icn_indices_sorted.end(), 0);
 
-                    std::sort(icn_indices_sorted.begin(), icn_indices_sorted.end(), [trueJet]( const int& icn1_idx, const int& icn2_idx ) {
-                        (void) icn2_idx;
-
-                        return abs(trueJet->pdg_icn_parent(icn1_idx)) == 25; // && trueJet->E_icn(icn1_idx) > trueJet->E_icn(icn2_idx); // need to have some sorting besides PDG=25
+                    std::stable_partition(icn_indices_sorted.begin(), icn_indices_sorted.end(), [trueJet]( const int& icn_idx ) {
+                        return abs(trueJet->pdg_icn_parent(icn_idx)) == 25;
                     });
 
                     std::cerr << "Matching successful. ICN order: "; 
@@ -748,7 +744,21 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
                                 std::cerr << "M(hadronic system " << ((i-1)/2 + 1) << ") = " << (m_trueJetMomenta[i] + m_trueJetMomenta[i - 1]).M() << std::endl;
                             }
                         }
+
+                        if (truejetpermICNs.size() == m_nJets) {
+                            // make sure the ordering in m_true2RecoJetIndex and m_reco2TrueJetIndex
+                            // matches that of the ICNs
+                            std::vector<int> true2RecoJetIndexICN(m_nJets);
+                            for (unsigned int i = 0; i < m_nJets; i++)
+                                true2RecoJetIndexICN[i] = m_true2RecoJetIndex[truejetpermICNs[i]];
+                            m_true2RecoJetIndex = true2RecoJetIndexICN;
+
+                            for (unsigned int i = 0; i < m_nJets; i++)
+                                m_reco2TrueJetIndex[m_true2RecoJetIndex[i]] = i;
+                        }
                     }
+
+                    m_trueRecoJetsMapped = truejetpermICNs.size() == 2;
                 } else {
                     std::cerr << "True-Reco matching failed" << std::endl;
                 }
