@@ -1733,10 +1733,10 @@ float EventObservablesBase::getMatchingByAngularSpace(
 		}
 	} while (next_permutation(arr.begin(), arr.begin() + m_nJets));
 
-	reco2MCPindex = matchedRecoJetIndices;
+	true2MCPindex = matchedRecoJetIndices;
 
 	for (unsigned int i_jet = 0; i_jet < m_nJets; i_jet++)
-		true2MCPindex[reco2MCPindex[i_jet]] = i_jet;
+		reco2MCPindex[true2MCPindex[i_jet]] = i_jet;
 
 	return SmallestSumCosAngle;
 }
