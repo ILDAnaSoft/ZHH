@@ -463,6 +463,7 @@ void ZHHKinFit::Clear()
   m_Sigma_E2.clear();
 
   m_bTagValues.clear();
+  m_bTagsSorted.clear();
   m_bmax1 = -1.;
   m_bmax2 = -1.;
   m_bmax3 = -1.;
@@ -701,8 +702,20 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
   for (unsigned int i = 0; i < m_bTagValues.size(); i++) {
     m_bTagsSorted.push_back(std::make_pair(i, m_bTagValues[i]));
     btagsum += m_bTagValues[i];
+    streamlog_out(MESSAGE) <<m_bTagValues[i];
   }
+  streamlog_out(MESSAGE) << endl;
+  streamlog_out(MESSAGE) << "Before sorting: ";
+  for (unsigned int i = 0; i < m_bTagValues.size(); i++) {
+    streamlog_out(MESSAGE) << m_bTagsSorted[i].second << ", ";
+  }
+  streamlog_out(MESSAGE) << endl;  
   std::sort (m_bTagsSorted.begin(), m_bTagsSorted.end(), jetTaggingComparator);
+  streamlog_out(MESSAGE) << "After sorting:  ";
+  for (unsigned int i = 0; i < m_bTagValues.size(); i++) {
+    streamlog_out(MESSAGE) << m_bTagsSorted[i].second << ", ";
+  }
+  streamlog_out(MESSAGE) << endl;  
   m_bmax1 = m_bTagsSorted[0].second;
   m_bmax2 = m_bTagsSorted[1].second;
   m_bmax3 = m_bTagsSorted[2].second;
@@ -2206,21 +2219,21 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
     } else if (m_fithypothesis == "ZHH" || m_fithypothesis == "ZHHsoft" || m_fithypothesis == "EQM") {
       //Perms below assumes H={0,1}, H={2,3}, Z={4,5}  or just M_{jet[0],jet[1]}=M_{jet[2],jet[3]}
       perms = {  
-	{2, 3, 4, 5, 0, 1}, {0, 3, 4, 5, 1, 2}, {0, 1, 3, 5, 2, 4},
-	{2, 4, 3, 5, 0, 1}, {0, 4, 3, 5, 1, 2}, {0, 3, 1, 5, 2, 4},
-	{2, 5, 3, 4, 0, 1}, {0, 5, 3, 4, 1, 2}, {0, 5, 1, 3, 2, 4},
-	{1, 3, 4, 5, 0, 2}, {0, 2, 4, 5, 1, 3}, {0, 1, 3, 4, 2, 5},
-	{1, 4, 3, 5, 0, 2}, {0, 4, 2, 5, 1, 3}, {0, 3, 1, 4, 2, 5},
-	{1, 5, 3, 4, 0, 2}, {0, 5, 2, 4, 1, 3}, {0, 4, 1, 3, 2, 5},
-	{1, 2, 4, 5, 0, 3}, {0, 2, 3, 5, 1, 4}, {0, 1, 2, 5, 3, 4},
-	{1, 4, 2, 5, 0, 3}, {0, 3, 2, 5, 1, 4}, {0, 2, 1, 5, 3, 4},
-	{1, 5, 2, 4, 0, 3}, {0, 5, 2, 3, 1, 4}, {0, 5, 1, 2, 3, 4},
-	{1, 2, 3, 5, 0, 4}, {0, 2, 3, 4, 1, 5}, {0, 1, 2, 4, 3, 5},
-	{1, 3, 2, 5, 0, 4}, {0, 3, 2, 4, 1, 5}, {0, 2, 1, 4, 3, 5},
-	{1, 5, 2, 3, 0, 4}, {0, 4, 2, 3, 1, 5}, {0, 4, 1, 2, 3, 5},
-	{1, 2, 3, 4, 0, 5}, {0, 1, 4, 5, 2, 3}, {0, 1, 2, 3, 4, 5},
-	{1, 3, 2, 4, 0, 5}, {0, 4, 1, 5, 2, 3}, {0, 2, 1, 3, 4, 5},
-	{1, 4, 2, 3, 0, 5}, {0, 5, 1, 4, 2, 3}, {0, 3, 1, 2, 4, 5},
+    	{2, 3, 4, 5, 0, 1}, {0, 3, 4, 5, 1, 2}, {0, 1, 3, 5, 2, 4},
+    	{2, 4, 3, 5, 0, 1}, {0, 4, 3, 5, 1, 2}, {0, 3, 1, 5, 2, 4},
+    	{2, 5, 3, 4, 0, 1}, {0, 5, 3, 4, 1, 2}, {0, 5, 1, 3, 2, 4},
+    	{1, 3, 4, 5, 0, 2}, {0, 2, 4, 5, 1, 3}, {0, 1, 3, 4, 2, 5},
+    	{1, 4, 3, 5, 0, 2}, {0, 4, 2, 5, 1, 3}, {0, 3, 1, 4, 2, 5},
+    	{1, 5, 3, 4, 0, 2}, {0, 5, 2, 4, 1, 3}, {0, 4, 1, 3, 2, 5},
+    	{1, 2, 4, 5, 0, 3}, {0, 2, 3, 5, 1, 4}, {0, 1, 2, 5, 3, 4},
+    	{1, 4, 2, 5, 0, 3}, {0, 3, 2, 5, 1, 4}, {0, 2, 1, 5, 3, 4},
+    	{1, 5, 2, 4, 0, 3}, {0, 5, 2, 3, 1, 4}, {0, 5, 1, 2, 3, 4},
+    	{1, 2, 3, 5, 0, 4}, {0, 2, 3, 4, 1, 5}, {0, 1, 2, 4, 3, 5},
+    	{1, 3, 2, 5, 0, 4}, {0, 3, 2, 4, 1, 5}, {0, 2, 1, 4, 3, 5},
+    	{1, 5, 2, 3, 0, 4}, {0, 4, 2, 3, 1, 5}, {0, 4, 1, 2, 3, 5},
+    	{1, 2, 3, 4, 0, 5}, {0, 1, 4, 5, 2, 3}, {0, 1, 2, 3, 4, 5},
+    	{1, 3, 2, 4, 0, 5}, {0, 4, 1, 5, 2, 3}, {0, 2, 1, 3, 4, 5},
+    	{1, 4, 2, 3, 0, 5}, {0, 5, 1, 4, 2, 3}, {0, 3, 1, 2, 4, 5},
       };      
     } else {
       perms = {{0, 1, 2, 3, 4, 5}};
@@ -2239,9 +2252,9 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
     } else if (m_fithypothesis == "ZHH" || m_fithypothesis == "EQM"){
       //jet[m_bTagsSorted[i].first] i.e. jet of ith highest b-tag score
       perms = { //H={perm[0],perm[1]}, H={perm[2],perm[3]}, Z(->qq)={perm[4],perm[5]}
-	{m_bTagsSorted[0].first, m_bTagsSorted[1].first, m_bTagsSorted[2].first, m_bTagsSorted[3].first, m_bTagsSorted[4].first, m_bTagsSorted[5].first},
-	{m_bTagsSorted[0].first, m_bTagsSorted[2].first, m_bTagsSorted[1].first, m_bTagsSorted[3].first, m_bTagsSorted[4].first, m_bTagsSorted[5].first},
-	{m_bTagsSorted[0].first, m_bTagsSorted[3].first, m_bTagsSorted[1].first, m_bTagsSorted[2].first, m_bTagsSorted[4].first, m_bTagsSorted[5].first}
+    	{m_bTagsSorted[0].first, m_bTagsSorted[1].first, m_bTagsSorted[2].first, m_bTagsSorted[3].first, m_bTagsSorted[4].first, m_bTagsSorted[5].first},
+    	{m_bTagsSorted[0].first, m_bTagsSorted[2].first, m_bTagsSorted[1].first, m_bTagsSorted[3].first, m_bTagsSorted[4].first, m_bTagsSorted[5].first},
+    	{m_bTagsSorted[0].first, m_bTagsSorted[3].first, m_bTagsSorted[1].first, m_bTagsSorted[2].first, m_bTagsSorted[4].first, m_bTagsSorted[5].first}
       };
     } else {
       perms = {{0, 1, 2, 3, 4, 5}};
@@ -2342,12 +2355,12 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
     z1m->addToFOList (*jfo_perm->at(3), 1);
     z1m->setName("hard z1 mass");
     shared_ptr<SoftGaussMassConstraint> z2msoft = make_shared<SoftGaussMassConstraint>(2.4952/2,91.2); 
-    z2msoft->addToFOList (*jfo_perm->at(2), 1);
-    z2msoft->addToFOList (*jfo_perm->at(3), 1);
+    z2msoft->addToFOList (*jfo_perm->at(4), 1);
+    z2msoft->addToFOList (*jfo_perm->at(5), 1);
     z2msoft->setName("soft z2 mass");
     shared_ptr<MassConstraint> z2m = make_shared<MassConstraint>(91.2);
-    z2m->addToFOList (*jfo_perm->at(2), 1);
-    z2m->addToFOList (*jfo_perm->at(3), 1);
+    z2m->addToFOList (*jfo_perm->at(4), 1);
+    z2m->addToFOList (*jfo_perm->at(5), 1);
     z2m->setName("hard z2 mass");
     shared_ptr<MassConstraint> eqm = make_shared<MassConstraint>(0.);
     eqm->addToFOList (*jfo_perm->at(0), 1);

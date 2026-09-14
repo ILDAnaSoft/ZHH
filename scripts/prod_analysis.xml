@@ -672,7 +672,8 @@
         <parameter name="JetPullsOutputCollection" type="string" lcioOutType="LCFloatVec">JetPulls_ZHH</parameter> --> 
         
         <!-- verbosity level - DEBUG only works if compiled in debug mode! --> 
-        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT">${Verbosity}</parameter> 
+        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT">${Verbosity}</parameter>
+        <!--parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT">DEBUG</parameter-->	
     </processor> 
 
     <processor name="MyZHHKinFitQQ_ZHH" type="ZHHKinFit"> 
@@ -723,59 +724,61 @@
         <parameter name="JetPullsOutputCollection" type="string" lcioOutType="LCFloatVec">JetPulls_ZHH</parameter> --> 
         
         <!-- verbosity level - DEBUG only works if compiled in debug mode! --> 
-        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT">DEBUG</parameter> 
+        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT">${Verbosity}</parameter>
+        <!--parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT">DEBUG</parameter-->	
     </processor> 
 
-    <!--<processor name="MyZHHKinFitQQ_ZZH" type="ZHHKinFit">                                                                                               -->
-    <!--    <!--ZHHKinFit does a 5C fit on 4 jet events and 2 leptons (Px, Py, Pz, E, M12 = M34 (for all three permutations)) --> 			    -->
-    <!--    <!--Name of the input collections: isolated leptons, jets, SLD vertices, Jet-SLDvertex relations, and SLDvertex-neutrino relations --> 	    -->
-    <!--    <parameter name="LeptonsCollectionName" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter> 				    -->
-    <!--    <parameter name="JetCollectionName" type="string" lcioInType="ReconstructedParticle">JetsPreFitQQ_solveNu</parameter> 			    -->
-    <!--    <parameter name="RecoJetCollection" type="string" lcioInType="ReconstructedParticle">RefinedJets6</parameter> 				    -->
-    <!--    <parameter name="SLDVertexCollection" type="string" lcioInType="Vertex">SemiLeptonicDecayVertex6</parameter> 				    -->
-    <!--    <parameter name="JetSLDRelationCollection" type="string" lcioInType="LCRelation">JetSLDLink6</parameter> 					    -->
-    <!--    <parameter name="SLDNeutrinoRelationCollection" type="string" lcioInType="LCRelation">SLDNuLink6</parameter> 				    -->
-    <!--    <parameter name="recoNumcNuLinkName" type="string" lcioInType="LCRelation">recoNumcNuLink6</parameter> 					    -->
-    <!--    <parameter name="whichSignature" type="string">qqbbbb</parameter> 										    -->
-    <!--    <parameter name="treeName" type="string">KinFitQQ_ZZH</parameter> 										    -->
-    <!--																		    -->
-    <!--    <!-- center-of-mass energy (default: 500.) --> 												    -->
-    <!--    <parameter name="ECM" type="float">${CMSEnergy}</parameter> 										    -->
-    <!--    <!-- maximum energy (=|p_z|) for a single ISR photon  (default: 125.6) --> 									    -->
-    <!--    <parameter name="ISRPzMax" type="float">${ISRPzMax}</parameter> 										    -->
-    <!--    <!-- include ISR in fit hypothesis?    0: false >0: true (default) --> 									    -->
-    <!--    <parameter name="includeISR" type="bool">true</parameter> 											    -->
-    <!--    <!-- 0 = OPALFitter, 1 = NewFitter, 2 = NewtonFitter (default: 0) --> 									    -->
-    <!--    <parameter name="solveNuCorrection" type="bool">false</parameter> 										    -->
-    <!--    <!-- 0 = OPALFitter, 1 = NewFitter, 2 = NewtonFitter (default: 0) --> 									    -->
-    <!--    <parameter name="fitter" type="int">1</parameter> 												    -->
-    <!--    <!-- name of fit hypothesis: MH, ZHH, ZZH, equal mass (default), NMC (no mass constraint) --> 						    -->
-    <!--    <parameter name="fithypothesis">ZZH</parameter> 												    -->
-    <!--     <!-- name of Output root file --> 														    -->
-    <!--    <parameter name="outputFilename"></parameter> 												    -->
-    <!--																		    -->
-    <!--    <!-- Factor for scaling up inverse pT error for leptons (default: 1)--> 									    -->
-    <!--    <parameter name="SigmaInvPtScaleFactor" type="float">1.1</parameter> 									    -->
-    <!--    <!-- Factor for scaling up energy error for jets (default: 1)--> 										    -->
-    <!--    <parameter name="SigmaEnergyScaleFactor" type="float">1.4</parameter> 									    -->
-    <!--    <!-- Factor for scaling up angular errors jets (default: 1)--> 										    -->
-    <!--    <parameter name="SigmaAnglesScaleFactor" type="float">1.4</parameter> 									    -->
-    <!--    <!-- set true if every event should be traced in DEBUG mode (default: false) --> 								    -->
-    <!--    <parameter name="traceall" type="bool">false</parameter> 											    -->
-    <!--    <!-- number of individual event to be traced (default: -1) --> 										    -->
-    <!--    <parameter name="ievttrace" type="int">-1</parameter> 											    -->
-    <!--    <!-- Matching true jet with reco jet: TRUE = jets with closest angle are matched , FALSE = jets containing same leading particle are matched--> -->
-    <!--    <!-- Name of output collection--> 														    -->
-    <!--    <parameter name="outputLeptonCollection" type="string" lcioOutType="ReconstructedParticle">LeptonsKinFitQQ_ZZH</parameter> 			    -->
-    <!--    <parameter name="outputJetCollection" type="string" lcioOutType="ReconstructedParticle">JetsKinFitQQ_ZZH</parameter> 			    -->
-    <!--    <parameter name="outputStartLeptonCollection" type="string" lcioOutType="ReconstructedParticle">LeptonsPreFitQQ_ZZH</parameter> 		    -->
-    <!--    <parameter name="outputStartJetCollection" type="string" lcioOutType="ReconstructedParticle">JetsPreFitQQ_ZZH</parameter> 			    -->
-    <!--    <!-- <parameter name="LeptonPullsOutputCollection" type="string" lcioOutType="LCFloatVec">LeptonPulls_ZHH</parameter> 			    -->
-    <!--    <parameter name="JetPullsOutputCollection" type="string" lcioOutType="LCFloatVec">JetPulls_ZHH</parameter> --> 				    -->
-    <!--    																		    -->
-    <!--    <!-- verbosity level - DEBUG only works if compiled in debug mode! --> 									    -->
-    <!--    <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT">${Verbosity}</parameter> 				    -->
-    <!--</processor>                                                                                                                                        -->       
+    <processor name="MyZHHKinFitQQ_ZZH" type="ZHHKinFit">                                                                                               
+        <!--ZHHKinFit does a 5C fit on 4 jet events and 2 leptons (Px, Py, Pz, E, M12 = M34 (for all three permutations)) --> 			    	
+        <!--Name of the input collections: isolated leptons, jets, SLD vertices, Jet-SLDvertex relations, and SLDvertex-neutrino relations --> 	    	
+        <parameter name="LeptonsCollectionName" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter> 				    
+        <parameter name="JetCollectionName" type="string" lcioInType="ReconstructedParticle">JetsPreFitQQ_solveNu</parameter> 			    	
+        <parameter name="RecoJetCollection" type="string" lcioInType="ReconstructedParticle">RefinedJets6</parameter> 				    	
+        <parameter name="SLDVertexCollection" type="string" lcioInType="Vertex">SemiLeptonicDecayVertex6</parameter> 				    	
+        <parameter name="JetSLDRelationCollection" type="string" lcioInType="LCRelation">JetSLDLink6</parameter> 					    
+        <parameter name="SLDNeutrinoRelationCollection" type="string" lcioInType="LCRelation">SLDNuLink6</parameter> 				    	
+        <parameter name="recoNumcNuLinkName" type="string" lcioInType="LCRelation">recoNumcNuLink6</parameter> 					    	
+        <parameter name="whichSignature" type="string">qqbbbb</parameter> 										    
+        <parameter name="treeName" type="string">KinFitQQ_ZZH</parameter> 										    
+    																		    	
+        <!-- center-of-mass energy (default: 500.) --> 												    	
+        <parameter name="ECM" type="float">${CMSEnergy}</parameter> 										    	
+        <!-- maximum energy (=|p_z|) for a single ISR photon  (default: 125.6) --> 									    
+        <parameter name="ISRPzMax" type="float">${ISRPzMax}</parameter> 										    
+        <!-- include ISR in fit hypothesis?    0: false >0: true (default) --> 									    	
+        <parameter name="includeISR" type="bool">true</parameter> 											    
+        <!-- 0 = OPALFitter, 1 = NewFitter, 2 = NewtonFitter (default: 0) --> 									    	
+        <parameter name="solveNuCorrection" type="bool">false</parameter> 										    
+        <!-- 0 = OPALFitter, 1 = NewFitter, 2 = NewtonFitter (default: 0) --> 									    	
+        <parameter name="fitter" type="int">1</parameter> 												    
+        <!-- name of fit hypothesis: MH, ZHH, ZZH, equal mass (default), NMC (no mass constraint) --> 						    	
+        <parameter name="fithypothesis">ZZH</parameter> 												    
+         <!-- name of Output root file --> 														    
+        <parameter name="outputFilename"></parameter> 												    	
+    																		    	
+        <!-- Factor for scaling up inverse pT error for leptons (default: 1)--> 									    
+        <parameter name="SigmaInvPtScaleFactor" type="float">1.1</parameter> 									    	
+        <!-- Factor for scaling up energy error for jets (default: 1)--> 										    
+        <parameter name="SigmaEnergyScaleFactor" type="float">1.4</parameter> 									    	
+        <!-- Factor for scaling up angular errors jets (default: 1)--> 										    	
+        <parameter name="SigmaAnglesScaleFactor" type="float">1.4</parameter> 									    	
+        <!-- set true if every event should be traced in DEBUG mode (default: false) --> 								    
+        <parameter name="traceall" type="bool">false</parameter> 											    
+        <!-- number of individual event to be traced (default: -1) --> 										    	
+        <parameter name="ievttrace" type="int">-1</parameter> 											    	
+        <!-- Matching true jet with reco jet: TRUE = jets with closest angle are matched , FALSE = jets containing same leading particle are matched--> 
+        <!-- Name of output collection--> 														    
+        <parameter name="outputLeptonCollection" type="string" lcioOutType="ReconstructedParticle">LeptonsKinFitQQ_ZZH</parameter> 			    
+        <parameter name="outputJetCollection" type="string" lcioOutType="ReconstructedParticle">JetsKinFitQQ_ZZH</parameter> 			    	
+        <parameter name="outputStartLeptonCollection" type="string" lcioOutType="ReconstructedParticle">LeptonsPreFitQQ_ZZH</parameter> 		    
+        <parameter name="outputStartJetCollection" type="string" lcioOutType="ReconstructedParticle">JetsPreFitQQ_ZZH</parameter> 			    
+        <!-- <parameter name="LeptonPullsOutputCollection" type="string" lcioOutType="LCFloatVec">LeptonPulls_ZHH</parameter> 			    	
+        <parameter name="JetPullsOutputCollection" type="string" lcioOutType="LCFloatVec">JetPulls_ZHH</parameter> --> 				    	
+        																		    
+        <!-- verbosity level - DEBUG only works if compiled in debug mode! --> 									    	
+        <!--parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT">DEBUG</parameter-->	
+        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT">${Verbosity}</parameter> 				    	
+    </processor>                                                                                                                                               
 
     <processor name="MyEventObservablesQQ" type="EventObservablesQQ">
         <parameter name="isolatedleptonCollection" type="string" lcioInType="ReconstructedParticle">ISOLeptons</parameter>
