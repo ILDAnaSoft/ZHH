@@ -710,7 +710,7 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     streamlog_out(MESSAGE) << m_bTagsSorted[i].second << ", ";
   }
   streamlog_out(MESSAGE) << endl;  
-  std::sort (m_bTagsSorted.begin(), m_bTagsSorted.end(), jetTaggingComparator);
+  std::stable_sort (m_bTagsSorted.begin(), m_bTagsSorted.end(), jetTaggingComparator);
   streamlog_out(MESSAGE) << "After sorting:  ";
   for (unsigned int i = 0; i < m_bTagValues.size(); i++) {
     streamlog_out(MESSAGE) << m_bTagsSorted[i].second << ", ";

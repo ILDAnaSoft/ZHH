@@ -247,6 +247,8 @@ class EventObservablesBase: public Processor, public TrueJet_Parser {
 		std::vector<ROOT::Math::PxPyPzEVector> m_jets4v{};
 		std::vector<float> m_jetsMasses{}; 
 		std::vector<std::vector<float>> m_jetTags{};
+		std::vector<float> m_jetCharges{};
+		std::vector<float> m_jetChargesDyn{};
 
 		// pure mass chi2
 		std::vector<unsigned short> m_zhh_jet_matching{};
@@ -266,7 +268,12 @@ class EventObservablesBase: public Processor, public TrueJet_Parser {
 		// returns a vector of pairs (jet idx, tag value) sorted ASCENDING by btags
 		static std::vector<std::pair<int, float>> sortedTagging(std::vector<float> tags_by_jet_order);
 
-		static bool jetTaggingComparator ( const JetTaggingPair& l, const JetTaggingPair& r) { return l.second > r.second || std::isnan(r.second); };
+		// strict weak ordering: descending by value, NaN values are placed last and compare equal to each other
+	static bool jetTaggingComparator ( const JetTaggingPair& l, const JetTaggingPair& r) {
+		if (std::isnan(l.second)) return false;
+		if (std::isnan(r.second)) return true;
+		return l.second > r.second;
+	};
 		std::vector<JetTaggingPair> m_bTagsSorted{}; // (jet index, btag1value) sorted DESC; first highest, last lowest
 		std::vector<JetTaggingPair> m_bTagsSorted2{}; // (jet index, btag2value) sorted DESC; first highest, last lowest
 		std::vector<JetTaggingPair> m_cTagsSorted{}; // (jet index, ctag1value) sorted DESC; first highest, last lowest
@@ -300,17 +307,7 @@ class EventObservablesBase: public Processor, public TrueJet_Parser {
 		float m_cmax42{};
 
 		// jet momenta and energies
-		float m_jet1_q{};
-		float m_jet1_qdyn{}; // dynamic jet charge, see https://arxiv.org/pdf/2101.04304
-
-		float m_jet2_q{};
-		float m_jet2_qdyn{};
-
-		float m_jet3_q{};
-		float m_jet3_qdyn{};
-
-		float m_jet4_q{};
-		float m_jet4_qdyn{};
+		// dynamic jet charge, see https://arxiv.org/pdf/2101.04304
 
 		void setJetCharges();
 

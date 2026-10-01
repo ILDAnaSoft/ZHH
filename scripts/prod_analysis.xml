@@ -11,16 +11,6 @@
         <parameter name="Verbosity" type="string">${Verbosity}</parameter>
     </processor>
 
-    <processor name="MyFinalStateRecorder" type="FinalStateRecorder">
-        <!--MyFinalStateRecorder identified events that have passed the EventObservables-->
-        <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
-        <parameter name="outputJsonFilename" type="string">${OutputDirectory}/${OutputBaseName}_FinalStateMeta.json</parameter>
-
-        <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
-        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
-        <parameter name="forceProcess" type="string">${forceProcess}</parameter>
-    </processor>
-
     <processor name="MyThrust" type="ThrustReconstruction">
         <!--Calculates thrust axis and thrust value of event using different algorithms-->  <!--Name of collection of reconstructed particles used for thrust reconstruction-->
         <parameter name="inputCollectionName" type="string" lcioInType="ReconstructedParticle"> ${PFOsWithoutOverlayCollection} </parameter>
@@ -801,6 +791,6 @@
         <parameter name="polarizations" type="FloatVec"> 1 0 </parameter>
         <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
 
-        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
+        <parameter name="Verbosity" type="string">DEBUG</parameter>
     </processor>
 </group>

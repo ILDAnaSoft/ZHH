@@ -110,6 +110,12 @@ class FinalStateRecorder : public Processor
 		int m_n_evt = 0;
 		int m_n_evt_sum = 0;
 		int m_error_code;
+
+		// control flow
+		bool m_throwOnBadEvent{};
+		bool m_isGoodEvent{};
+
+		// data structures
 		
 		std::vector<int> m_final_states{};
 		std::map<int, int> m_final_state_counts {

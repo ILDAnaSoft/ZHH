@@ -38,6 +38,7 @@
 	    <constant name="ISRPzMax" value="158" />
         <constant name="Verbosity" value="SILENT" />
         <constant name="forceProcess" value="" /><!-- can be supplied optionally  -->
+        <constant name="throwOnBadEvent" value="true" />
     </constants>
 
     <execute>
@@ -45,21 +46,26 @@
         <processor name="InitDD4hep" />
         <processor name="MyStatusmonitor" />
 
-        <!-- Analysis -->
-        <group name="prodAnalysisAll" />
+        <!-- Runtime+Process information in FinalStatesMeta.json -->
+        <processor name="MyFinalStateRecorder" />
 
-        <if condition="${Runllbbbb}">
-            <group name="prodAnalysisLL" />
-        </if>
-        <if condition="${Runvvbbbb}">
-            <group name="prodAnalysisVV" />
-        </if>
-        <if condition="${Runqqbbbb}">
-            <group name="prodAnalysisQQ" />
-        </if>
+        <if condition="MyFinalStateRecorder.GoodEvent">
+            <!-- Analysis -->
+            <group name="prodAnalysisAll" />
 
-        <if condition="${WriteLCIO}">
-            <processor name="MyLCIOOutputProcessor" />
+            <if condition="${Runllbbbb}">
+                <group name="prodAnalysisLL" />
+            </if>
+            <if condition="${Runvvbbbb}">
+                <group name="prodAnalysisVV" />
+            </if>
+            <if condition="${Runqqbbbb}">
+                <group name="prodAnalysisQQ" />
+            </if>
+
+            <if condition="${WriteLCIO}">
+                <processor name="MyLCIOOutputProcessor" />
+            </if>
         </if>
     </execute>
 
@@ -110,6 +116,17 @@
         <!--Name of the DD4hep compact xml file to load-->
         <parameter name="DD4hepXMLFile" type="string">${CompactFile}</parameter>
         <parameter name="Verbosity" type="string">SILENT</parameter>
+    </processor>
+
+    <processor name="MyFinalStateRecorder" type="FinalStateRecorder">
+        <!--MyFinalStateRecorder identified events that have passed the EventObservables-->
+        <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
+        <parameter name="outputJsonFilename" type="string">${OutputDirectory}/${OutputBaseName}_FinalStateMeta.json</parameter>
+
+        <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
+        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
+        <parameter name="forceProcess" type="string">${forceProcess}</parameter>
+        <parameter name="throwOnBadEvent" type="string">${throwOnBadEvent}</parameter>
     </processor>
 
     <include ref="${ZHH_REPO_ROOT}/scripts/prod_analysis.xml" />

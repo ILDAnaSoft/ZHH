@@ -392,6 +392,8 @@ void EventObservablesBase::prepareBaseTree()
 		ttree->Branch("zhh_mh2", &m_zhh_mh2, "zhh_mh2/F");
 		ttree->Branch("zhh_mhh", &m_zhh_mhh, "zhh_mhh/F");
 		ttree->Branch("zhh_chi2", &m_zhh_chi2, "zhh_chi2/F");
+		ttree->Branch("zhh_p1st", &m_zhh_p1st, "zhh_p1st/F");
+		ttree->Branch("zhh_cosTh1st", &m_zhh_cosTh1st, "zhh_cosTh1st/F");
 
 		// jet matching from KinFit
 		ttree->Branch("jet_matching_kinfit_zhh", &m_JMK_ZHH);
@@ -446,37 +448,17 @@ void EventObservablesBase::prepareBaseTree()
 
 		// pxij:pyij:pzij:eij for all dijets i=(1,2) and associated jets (1,2)
 		// that all hypotheses have in common
-		ttree->Branch("jet1_4v", &m_jets4v[0]);
-		ttree->Branch("jet1_4CKF_4v", &m_jets4v_post_4C_kinfit[0]);
-		ttree->Branch("jet1_m", &m_jetsMasses[0]);
-		ttree->Branch("jet1_m_4CKF_4v", &m_jetsMasses_post_4C_kinfit[0]);
-		ttree->Branch("jet1_tags", &m_jetTags[0]);
-		ttree->Branch("jet1_q", &m_jet1_q, "jet1_q/F");
-        ttree->Branch("jet1_qdyn", &m_jet1_qdyn, "jet1_qdyn/F");
+		for (unsigned int i = 0; i < m_nAskedJets(); i++) {
+			std::string jet_prefix = "jet" + std::to_string(i+1);
 
-		ttree->Branch("jet2_4v", &m_jets4v[1]);
-		ttree->Branch("jet2_4CKF_4v", &m_jets4v_post_4C_kinfit[1]);
-		ttree->Branch("jet2_m", &m_jetsMasses[1]);
-		ttree->Branch("jet2_m_4CKF_4v", &m_jetsMasses_post_4C_kinfit[1]);
-		ttree->Branch("jet2_tags", &m_jetTags[1]);
-		ttree->Branch("jet2_q", &m_jet2_q, "jet2_q/F");
-        ttree->Branch("jet2_qdyn", &m_jet2_qdyn, "jet2_qdyn/F");
-
-		ttree->Branch("jet3_4v", &m_jets4v[2]);
-		ttree->Branch("jet3_4CKF_4v", &m_jets4v_post_4C_kinfit[2]);
-		ttree->Branch("jet3_m", &m_jetsMasses[2]);
-		ttree->Branch("jet3_m_4CKF_4v", &m_jetsMasses_post_4C_kinfit[2]);
-		ttree->Branch("jet3_tags", &m_jetTags[2]);
-		ttree->Branch("jet3_q", &m_jet3_q, "jet3_q/F");
-        ttree->Branch("jet3_qdyn", &m_jet3_qdyn, "jet3_qdyn/F");
-
-		ttree->Branch("jet4_4v", &m_jets4v[3]);
-		ttree->Branch("jet4_4CKF_4v", &m_jets4v_post_4C_kinfit[3]);
-		ttree->Branch("jet4_m", &m_jetsMasses[3]);
-		ttree->Branch("jet4_m_4CKF_4v", &m_jetsMasses_post_4C_kinfit[3]);
-		ttree->Branch("jet4_tags", &m_jetTags[3]);
-		ttree->Branch("jet4_q", &m_jet4_q, "jet4_q/F");
-        ttree->Branch("jet4_qdyn", &m_jet4_qdyn, "jet4_qdyn/F");
+			ttree->Branch((jet_prefix + "_4v").c_str(), &m_jets4v[i]);
+			ttree->Branch((jet_prefix + "_4CKF_4v").c_str(), &m_jets4v_post_4C_kinfit[i]);
+			ttree->Branch((jet_prefix + "_m").c_str(), &m_jetsMasses[i]);
+			ttree->Branch((jet_prefix + "_m_4CKF_4v").c_str(), &m_jetsMasses_post_4C_kinfit[i]);
+			ttree->Branch((jet_prefix + "_tags").c_str(), &m_jetTags[i]);
+			ttree->Branch((jet_prefix + "_q").c_str(), &m_jetCharges[i], (jet_prefix + "_q/F").c_str());
+			ttree->Branch((jet_prefix + "_qdyn").c_str(), &m_jetChargesDyn[i], (jet_prefix + "_qdyn/F").c_str());
+		}
 
 		// 2 jet
 		ttree->Branch("2jet1_4v", &m_2jets4v[0]);
@@ -756,27 +738,17 @@ void EventObservablesBase::clearBaseValues()
 	*/
 
 	// jet quantities
-	for (size_t i = 0; i < m_jets4v.size(); i++) {
+	for (unsigned int i = 0; i < m_jets4v.size(); i++) {
 		m_jets4v[i].SetPxPyPzE(0., 0., 0., 0.);
 		m_jetsMasses[i] = 0.;
 		m_jetsMasses_post_4C_kinfit[i] = 0.;
 		m_jets4v_post_4C_kinfit[i].SetPxPyPzE(0., 0., 0., 0.);
-	}
 
-	for (size_t i = 0; i < m_jetTags.size(); i++)
 		std::fill(m_jetTags[i].begin(), m_jetTags[i].end(), 0.);
 
-	m_jet1_q  = 0.;
-	m_jet1_qdyn = 0.;
-
-	m_jet2_q  = 0.;
-	m_jet2_qdyn = 0.;
-
-	m_jet3_q  = 0.;
-	m_jet3_qdyn = 0.;
-
-	m_jet4_q  = 0.;
-	m_jet4_qdyn = 0.;
+		m_jetCharges[i] = 0.;
+		m_jetChargesDyn[i] = 0.;
+	}
 
 	// jet matching
 	std::fill(m_JMK_ZHH.begin(), m_JMK_ZHH.end(), -1);
@@ -1107,7 +1079,7 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 			for (size_t i = 0; i < m_bTagValues.size(); i++)
 				m_bTagsSorted.push_back(std::make_pair(i, m_bTagValues[i]));
 
-			std::sort (m_bTagsSorted.begin(), m_bTagsSorted.end(), jetTaggingComparator);
+			std::stable_sort (m_bTagsSorted.begin(), m_bTagsSorted.end(), jetTaggingComparator);
 
 			TVector3 pjbmaxA1 (m_jets[m_bTagsSorted[0].first]->getMomentum());
 			TVector3 pjbmaxA2 (m_jets[m_bTagsSorted[1].first]->getMomentum());
@@ -1121,7 +1093,7 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 			for (size_t i = 0; i < m_cTagValues.size(); i++)
 				m_cTagsSorted.push_back(std::make_pair(i, m_cTagValues[i]));
 
-			std::sort (m_cTagsSorted.begin(), m_cTagsSorted.end(), jetTaggingComparator);
+			std::stable_sort (m_cTagsSorted.begin(), m_cTagsSorted.end(), jetTaggingComparator);
 
 			m_cmax1 = m_cTagsSorted[0].second;
 			m_cmax2 = m_cTagsSorted[1].second;
@@ -1132,7 +1104,7 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 				for (size_t i = 0; i < m_bTagValues2.size(); i++)
 					m_bTagsSorted2.push_back(std::make_pair(i, m_bTagValues2[i]));
 
-				std::sort (m_bTagsSorted2.begin(), m_bTagsSorted2.end(), jetTaggingComparator);
+				std::stable_sort (m_bTagsSorted2.begin(), m_bTagsSorted2.end(), jetTaggingComparator);
 
 				m_bmax12 = m_bTagsSorted2[0].second;
 				m_bmax22 = m_bTagsSorted2[1].second;
@@ -1142,7 +1114,7 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 				for (size_t i = 0; i < m_cTagValues2.size(); i++)
 					m_cTagsSorted2.push_back(std::make_pair(i, m_cTagValues2[i]));
 
-				std::sort (m_cTagsSorted2.begin(), m_cTagsSorted2.end(), jetTaggingComparator);
+				std::stable_sort (m_cTagsSorted2.begin(), m_cTagsSorted2.end(), jetTaggingComparator);
 
 				m_cmax12 = m_cTagsSorted2[0].second;
 				m_cmax22 = m_cTagsSorted2[1].second;
@@ -1254,6 +1226,8 @@ void EventObservablesBase::init(){
 
 	m_jets4v = std::vector<ROOT::Math::PxPyPzEVector>(m_nAskedJets());
 	m_jetsMasses = std::vector<float>(m_nAskedJets());
+	m_jetCharges = std::vector<float>(m_nAskedJets(), 0.);
+	m_jetChargesDyn = std::vector<float>(m_nAskedJets(), 0.);
 	m_jets4v_post_4C_kinfit = std::vector<ROOT::Math::PxPyPzEVector>(m_nAskedJets());
 	m_jetsMasses_post_4C_kinfit = std::vector<float>(m_nAskedJets());
 	m_jetTags = std::vector<std::vector<float>>(m_nAskedJets(), std::vector<float>(m_JetTaggingPIDParameters.size(), 0));
@@ -1293,7 +1267,8 @@ void EventObservablesBase::processEvent( LCEvent* evt ){
 	streamlog_out(DEBUG) << "END updateBaseValues -> status code " << m_statusCode << std::endl;
 
 	// all channel specific processors require that at least acquiring the base values succeeds
-	if (m_statusCode == 0) {
+	// status 100 only flags missing kinfit collections (not produced in the QQ channel), which channel processors do not require
+	if (m_statusCode == 0 || m_statusCode == 100) {
 		streamlog_out(DEBUG) << "START updateChannelValues" << std::endl;
 		calculateSimpleZHHChi2();
 		updateChannelValues(evt);
@@ -1587,10 +1562,12 @@ std::tuple<float, float> EventObservablesBase::jetCharge(ReconstructedParticle* 
 }
 
 void EventObservablesBase::setJetCharges() {
-	std::tie(m_jet1_q, m_jet1_qdyn) = jetCharge(m_jets[0]);
-	std::tie(m_jet2_q, m_jet2_qdyn) = jetCharge(m_jets[1]);
-	std::tie(m_jet3_q, m_jet3_qdyn) = jetCharge(m_jets[2]);
-	std::tie(m_jet4_q, m_jet4_qdyn) = jetCharge(m_jets[3]);
+	for (unsigned int i = 0; i < m_nAskedJets(); i++) {
+		std::tuple<float, float> jet_charges = jetCharge(m_jets[i]);
+		
+		m_jetCharges[i] = std::get<0>(jet_charges);
+		m_jetChargesDyn[i] = std::get<1>(jet_charges); 
+	}
 };
 
 float EventObservablesBase::leadingMomentum(ReconstructedParticleVec jets) {
@@ -1610,7 +1587,7 @@ std::vector<std::pair<int, float>> EventObservablesBase::sortedTagging(std::vect
 		result.push_back(std::make_pair(i, tags_by_jet_order[i]));
 	}
 
-	std::sort(result.begin(), result.end(), jetTaggingComparator);
+	std::stable_sort(result.begin(), result.end(), jetTaggingComparator);
 
 	return result;
 };
