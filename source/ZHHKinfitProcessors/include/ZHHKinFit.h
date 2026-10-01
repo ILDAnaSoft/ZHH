@@ -239,7 +239,11 @@ private:
   
   
   typedef std::pair<unsigned int, double> JetTaggingPair;
-  static bool jetTaggingComparator ( const JetTaggingPair& l, const JetTaggingPair& r) { return l.second > r.second || std::isnan(r.second); };
+  static bool jetTaggingComparator ( const JetTaggingPair& l, const JetTaggingPair& r) {
+    if (std::isnan(l.second)) return false;
+    if (std::isnan(r.second)) return true;
+    return l.second > r.second;
+  };
   std::vector<JetTaggingPair> m_bTagsSorted{}; // (jet index, btag1value) sorted DESC; first highest, last lowest
   
 };

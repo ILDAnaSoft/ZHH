@@ -702,7 +702,7 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     m_bTagsSorted.push_back(std::make_pair(i, m_bTagValues[i]));
     btagsum += m_bTagValues[i];
   }
-  std::sort (m_bTagsSorted.begin(), m_bTagsSorted.end(), jetTaggingComparator);
+  std::stable_sort (m_bTagsSorted.begin(), m_bTagsSorted.end(), jetTaggingComparator);
   m_bmax1 = m_bTagsSorted[0].second;
   m_bmax2 = m_bTagsSorted[1].second;
   m_bmax3 = m_bTagsSorted[2].second;
