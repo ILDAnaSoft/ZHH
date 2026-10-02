@@ -704,18 +704,7 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
     btagsum += m_bTagValues[i];
     streamlog_out(MESSAGE) <<m_bTagValues[i];
   }
-  streamlog_out(MESSAGE) << endl;
-  streamlog_out(MESSAGE) << "Before sorting: ";
-  for (unsigned int i = 0; i < m_bTagValues.size(); i++) {
-    streamlog_out(MESSAGE) << m_bTagsSorted[i].second << ", ";
-  }
-  streamlog_out(MESSAGE) << endl;  
   std::stable_sort (m_bTagsSorted.begin(), m_bTagsSorted.end(), jetTaggingComparator);
-  streamlog_out(MESSAGE) << "After sorting:  ";
-  for (unsigned int i = 0; i < m_bTagValues.size(); i++) {
-    streamlog_out(MESSAGE) << m_bTagsSorted[i].second << ", ";
-  }
-  streamlog_out(MESSAGE) << endl;  
   m_bmax1 = m_bTagsSorted[0].second;
   m_bmax2 = m_bTagsSorted[1].second;
   m_bmax3 = m_bTagsSorted[2].second;
