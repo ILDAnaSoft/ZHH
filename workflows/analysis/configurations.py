@@ -329,6 +329,44 @@ class Config_550_bbbb_fast_perf(AnalysisConfiguration):
     marlin_globals = {  }
     marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
 
+class Config_550_m125_fast_perf(AnalysisConfiguration):
+    tag = '550-m125-fast-perf'
+    sqrt_s = 550
+    
+    def sgv_inputs(self, fast_sim_task):
+        from hep_workflows.tasks_sim import FastSimSGV
+        assert(isinstance(fast_sim_task, FastSimSGV))
+        
+        input_files:list[str] = [
+            '/pnfs/desy.de/ilc/user/t/tjunping/ilcprod/generated/550-Test/Scalar/E550-Test.Pe1e1S_m125.Gwhizard-3_1_5.eL.pL.I408503.0.slcio',
+            '/pnfs/desy.de/ilc/user/t/tjunping/ilcprod/generated/550-Test/Scalar/E550-Test.Pe1e1S_m125.Gwhizard-3_1_5.eL.pR.I408501.0.slcio',
+            '/pnfs/desy.de/ilc/user/t/tjunping/ilcprod/generated/550-Test/Scalar/E550-Test.Pe1e1S_m125.Gwhizard-3_1_5.eR.pL.I408502.0.slcio',
+            '/pnfs/desy.de/ilc/user/t/tjunping/ilcprod/generated/550-Test/Scalar/E550-Test.Pe1e1S_m125.Gwhizard-3_1_5.eR.pR.I408504.0.slcio',
+            '/pnfs/desy.de/ilc/user/t/tjunping/ilcprod/generated/550-Test/Scalar/E550-Test.Pe2e2S_m125.Gwhizard-3_1_5.eL.pR.I408505.0.slcio',
+            '/pnfs/desy.de/ilc/user/t/tjunping/ilcprod/generated/550-Test/Scalar/E550-Test.Pe2e2S_m125.Gwhizard-3_1_5.eR.pL.I408506.0.slcio',
+            '/pnfs/desy.de/ilc/user/t/tjunping/ilcprod/generated/550-Test/Scalar/E550-Test.Pe3e3S_m125.Gwhizard-3_1_5.eL.pR.I408507.0.slcio',
+            '/pnfs/desy.de/ilc/user/t/tjunping/ilcprod/generated/550-Test/Scalar/E550-Test.Pe3e3S_m125.Gwhizard-3_1_5.eR.pL.I408508.0.slcio',
+            '/pnfs/desy.de/ilc/user/t/tjunping/ilcprod/generated/550-Test/Scalar/E550-Test.Pn1n1S_m125.Gwhizard-3_1_5.eL.pR.I408511.0.slcio',
+            '/pnfs/desy.de/ilc/user/t/tjunping/ilcprod/generated/550-Test/Scalar/E550-Test.Pn1n1S_m125.Gwhizard-3_1_5.eR.pL.I408512.0.slcio',
+            '/pnfs/desy.de/ilc/user/t/tjunping/ilcprod/generated/550-Test/Scalar/E550-Test.Pn23n23S_m125.Gwhizard-3_1_5.eL.pR.I408513.0.slcio',
+            '/pnfs/desy.de/ilc/user/t/tjunping/ilcprod/generated/550-Test/Scalar/E550-Test.Pn23n23S_m125.Gwhizard-3_1_5.eR.pL.I408514.0.slcio',
+            '/pnfs/desy.de/ilc/user/t/tjunping/ilcprod/generated/550-Test/Scalar/E550-Test.PqqS_m125.Gwhizard-3_1_5.eL.pR.I408509.0.slcio',
+            '/pnfs/desy.de/ilc/user/t/tjunping/ilcprod/generated/550-Test/Scalar/E550-Test.PqqS_m125.Gwhizard-3_1_5.eR.pL.I408510.0.slcio' 
+        ]
+        
+        input_options = [{
+            'global_steering.MAXEV': 999999,
+            'global_generation_steering.CMS_ENE': 550,
+            'external_read_generation_steering.GENERATOR_INPUT_TYPE': 'LCIO',
+            'external_read_generation_steering.INPUT_FILENAMES': 'input.slcio',
+            'analysis_steering.CALO_TREATMENT': 'PERF'
+        }] * len(input_files)
+        
+        return input_files, input_options
+    
+    marlin_globals = {  }
+    marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
+
 class Config_550_n1n1hhnores_fast_perf(AnalysisConfiguration):
     tag = '550-n1n1hhnores-fast-perf'
     sqrt_s = 550
@@ -359,3 +397,4 @@ configurations.add(Config_500_zh10_tau_fast_perf())
 configurations.add(Config_250_ftag_fast_perf())
 configurations.add(Config_550_bbbb_fast_perf())
 configurations.add(Config_550_n1n1hhnores_fast_perf())
+configurations.add(Config_550_m125_fast_perf())
