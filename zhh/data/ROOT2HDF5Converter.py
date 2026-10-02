@@ -12,6 +12,10 @@ from ..task.AbstractTask import AbstractTask
 
 ChunkedConversionResult = tuple[int, tuple[tuple|tuple[int], str]]
 
+# (tree, branch, output_file, overwrite_if_exists, dtype, clamp, nan_to, keep_dim)
+GroupedItemSpec = tuple[str, str, str, bool, str|None, tuple[float|int|None, float|int|None], float|int|None, bool]
+GroupedChunkResult = tuple[int, dict[int, tuple[tuple, str]]]
+
 if TYPE_CHECKING:
     import awkward as ak
 
@@ -30,6 +34,53 @@ def create_chunks(tree:str, branch:str, root_files:list[str], out_bname:str, cla
         chunk_idx += 1
     
     return chunks
+
+def detect_existing_chunk_size(out_bname:str)->int|None:
+    """Returns the number of ROOT files that went into the first chunk of an item which
+    has been converted in a previous run, or None if no (readable) chunk exists yet.
+
+    The chunk layout of an existing item must not change between runs, as checkExisting()
+    compares the list of input files of each chunk file against the expected one.
+
+    Args:
+        out_bname (str): basename of the chunk files, i.e. chunk i is at f'{out_bname}.{i}.h5'
+
+    Returns:
+        int|None: number of ROOT files per chunk, if it could be determined
+    """
+
+    first_chunk = f'{out_bname}.0.h5'
+
+    if not osp.isfile(first_chunk):
+        return None
+
+    try:
+        with h5py.File(first_chunk, 'r') as hf:
+            input_files = hf.attrs.get('input_files')
+
+            return None if input_files is None else len(input_files)
+    except OSError:
+        return None
+
+def auto_chunk_size(n_files:int, ncores:int|None=None, tasks_per_core:int=2,
+                    min_chunk_size:int=8, max_chunk_size:int=256)->int:
+    """Number of ROOT files to convert within a single task. Chosen such that enough tasks
+    exist to keep all cores busy, while avoiding an excessive amount of small HDF5 files.
+
+    Args:
+        n_files (int): total number of ROOT files to convert
+        ncores (int | None, optional): number of workers. Defaults to cpu_count().
+        tasks_per_core (int, optional): tasks to aim for per core. Defaults to 2.
+        min_chunk_size (int, optional): lower bound. Defaults to 8.
+        max_chunk_size (int, optional): upper bound. Defaults to 256.
+
+    Returns:
+        int: files per chunk
+    """
+
+    ncores = cpu_count() if ncores is None else ncores
+
+    return int(min(max_chunk_size, max(min_chunk_size, ceil(n_files / max(1, ncores * tasks_per_core)))))
 
 class ROOT2HDF5Converter:
     def __init__(self, root_files:list[str], output_file:str, tree:str, branch:str,
@@ -75,6 +126,27 @@ class ROOT2HDF5Converter:
     
     def getChunks(self, **kwargs):
         return create_chunks(self._tree, self._branch, self._root_files, self._output_bname, self._clamp, self._nan_to, **kwargs)
+
+    def getRootFiles(self)->list[str]:
+        return self._root_files
+
+    def getOutputBasename(self)->str:
+        return self._output_bname
+
+    def getItemSpec(self, chunk_idx:int, overwrite_if_exists:bool=True, keep_dim:bool=False)->GroupedItemSpec:
+        """Description of this item as expected by per_chunk_grouped().
+
+        Args:
+            chunk_idx (int): index of the chunk to describe
+            overwrite_if_exists (bool, optional): Defaults to True.
+            keep_dim (bool, optional): Defaults to False.
+
+        Returns:
+            GroupedItemSpec: (tree, branch, output_file, overwrite_if_exists, dtype, clamp, nan_to, keep_dim)
+        """
+
+        return (self._tree, self._branch, f'{self._output_bname}.{chunk_idx}.h5',
+                overwrite_if_exists, self._dtype, self._clamp, self._nan_to, keep_dim)
     
     def checkExisting(self, chunks:list, check_requires_exact_path_match:bool)->tuple[bool, list[int], list[int]]:
         already_done = False
@@ -380,6 +452,164 @@ class CreateVDSTask(AbstractTask):
         #return True
         return createVDS(h5_files, vds_file, output_name, ncols=ncols, dtype=dtype, sizes=sizes)
 
+class GroupedConversionPlan:
+    """Plans the ROOT->HDF5 conversion of multiple items (i.e. TTree branches) which share
+    the same list of input ROOT files.
+
+    ROOT2HDF5Converter.convertLazy() schedules one task per item and chunk of ROOT files, so
+    every ROOT file is opened and the metadata of its TTrees is parsed once per item. As this
+    dominates the runtime, this class instead schedules one task per chunk of ROOT files which
+    converts all pending items in a single pass over these files (see per_chunk_grouped).
+
+    The on-disk layout is unchanged, so items converted by earlier versions are still detected
+    as done and are re-used. Items which already exist keep their original chunking; the chunk
+    size of the pending ones is chosen such that all cores are kept busy (see auto_chunk_size).
+
+    Usage:
+        plan = GroupedConversionPlan(converters)
+        runner.queueTasks(plan.conversion_tasks); runner.run()
+        for i in range(len(converters)):
+            plan.finalization_tasks[i].run(conversion=plan.getConversionResults(i))
+    """
+
+    def __init__(self, converters:list[ROOT2HDF5Converter], check_existing:bool=True,
+                 check_requires_exact_path_match:bool=False, use_vds:bool=True,
+                 chunk_size:int|None=None, read_size:int|None=None, ncores:int|None=None,
+                 keep_dim:bool=False):
+        """
+        Args:
+            converters (list[ROOT2HDF5Converter]): items to convert. All of them must have been
+                created with the same list of ROOT files
+            check_existing (bool, optional): whether to skip items which have been converted in
+                a previous run. Defaults to True.
+            check_requires_exact_path_match (bool, optional): see ROOT2HDF5Converter.checkExisting.
+                Defaults to False.
+            use_vds (bool, optional): link the converted data using virtual datasets instead of
+                copying it. Defaults to True.
+            chunk_size (int | None, optional): ROOT files per task. If None, chosen automatically.
+                Defaults to None.
+            read_size (int | None, optional): ROOT files to hold in memory at a time. If None,
+                chosen from the number of items to convert. Defaults to None.
+            ncores (int | None, optional): number of workers the tasks will be executed with.
+                Defaults to cpu_count().
+            keep_dim (bool, optional): keep the shape of >= 2D branches. Defaults to False.
+        """
+
+        self._converters = converters
+        self._done:list[bool] = []
+        self.finalization_tasks:list[AbstractTask] = []
+        self.conversion_tasks:list[AbstractTask] = []
+
+        # chunk size => one task per chunk, for each group of items sharing that chunking
+        self._group_tasks:dict[int, list[AbstractTask]] = {}
+
+        # (chunk size, index within the group) per item, for extracting its conversion results
+        self._item_position:list[tuple[int, int]] = []
+
+        if not len(converters):
+            return
+
+        root_files = converters[0].getRootFiles()
+        assert(all([conv.getRootFiles() == root_files for conv in converters]))
+
+        default_chunk_size = auto_chunk_size(len(root_files), ncores) if chunk_size is None else chunk_size
+
+        if read_size is None:
+            # bounds the memory used per worker: all pending items of read_size files are
+            # held in memory at a time
+            read_size = max(1, min(16, ceil(96 / max(1, len(converters)))))
+
+        # group items which are not converted yet by their chunk size; items converted in a
+        # previous run must keep the chunking they were created with
+        groups:dict[int, list[tuple[int, ROOT2HDF5Converter]]] = {}
+        chunk_files:dict[int, list[list[str]]] = {}
+
+        for i, conv in enumerate(converters):
+            item_chunk_size = detect_existing_chunk_size(conv.getOutputBasename())
+            if item_chunk_size is None:
+                item_chunk_size = default_chunk_size
+
+            chunks = conv.getChunks(chunk_size=item_chunk_size, read_size=read_size, keep_dim=keep_dim)
+
+            done = False
+            ncols = 1
+            sizes:list[int] = []
+
+            if check_existing:
+                done, shape, sizes = conv.checkExisting(chunks, check_requires_exact_path_match=check_requires_exact_path_match)
+                ncols = shape[1] if len(shape) == 2 else 1
+            else:
+                print(f'No existing (first) chunk found for Tree:Branch <{conv._tree}:{conv._branch}>. '+
+                      'Proceeding with conversion...')
+
+            h5_files = [chunk[4] for chunk in chunks]
+
+            finalization_task = (CreateVDSTask if use_vds else CombineDatasetsTask)(
+                ('CreateVDS' if use_vds else 'CombineDatasets')+f':{conv._tree}.{conv._branch}',
+                args=(h5_files, conv._vds_file, conv._output_name, conv._dtype, done, sizes, ncols))
+
+            self.finalization_tasks.append(finalization_task)
+            self._done.append(done)
+
+            if done:
+                self._item_position.append((-1, -1))
+            else:
+                group = groups.setdefault(item_chunk_size, [])
+                chunk_files[item_chunk_size] = [chunk[3] for chunk in chunks]
+
+                self._item_position.append((item_chunk_size, len(group)))
+                group.append((i, conv))
+
+        # one task per group and chunk of ROOT files, converting all items of the group
+        for group_key, group in groups.items():
+            tasks:list[AbstractTask] = []
+
+            for chunk_idx, files in enumerate(chunk_files[group_key]):
+                item_specs = [conv.getItemSpec(chunk_idx, keep_dim=keep_dim) for _, conv in group]
+
+                tasks.append(AbstractTask(f'ROOT2HDF5Task:chunk {chunk_idx} ({len(item_specs)} items)',
+                                          per_chunk_grouped, ((chunk_idx, files, read_size, item_specs), )))
+
+            self._group_tasks[group_key] = tasks
+            self.conversion_tasks += tasks
+
+    def isDone(self, item_index:int)->bool:
+        """Whether the item had already been converted in a previous run.
+
+        Args:
+            item_index (int): index of the item in the converters passed to the constructor
+
+        Returns:
+            bool: True if no conversion was scheduled for this item
+        """
+
+        return self._done[item_index]
+
+    def getConversionResults(self, item_index:int)->list[ChunkedConversionResult]:
+        """Conversion results of one item, in the format expected by CreateVDSTask. Must be
+        called after all conversion_tasks have been executed.
+
+        Args:
+            item_index (int): index of the item in the converters passed to the constructor
+
+        Returns:
+            list[ChunkedConversionResult]: (chunk_idx, (shape, dtype)) per chunk, ordered by chunk
+        """
+
+        if self._done[item_index]:
+            return []
+
+        group_key, position = self._item_position[item_index]
+
+        results:list[ChunkedConversionResult] = []
+        for task in self._group_tasks[group_key]:
+            chunk_idx, per_item = cast(GroupedChunkResult, task.getResult())
+            results.append((chunk_idx, per_item[position]))
+
+        results.sort(key=lambda x: x[0])
+
+        return results
+
 def tree_n_rows(sources:list[str], tree:str, use_uproot:bool=True, use_mp:bool=True, aggregate:bool=True, return_path:bool=False)->int|tuple[list[str],int]|list[int]:
     """Returns the number of entries in a TTree tree in the files sources
     If aggregate=True, the sum is returned, otherwise a list of sizes in
@@ -397,30 +627,30 @@ def tree_n_rows(sources:list[str], tree:str, use_uproot:bool=True, use_mp:bool=T
         int|tuple[list[str],int]|list[int]: _description_
     """
 
-    if use_mp and len(sources) > 4 * cpu_count():
-        nrows = 0 if aggregate else {}
+    if use_mp and len(sources) > cpu_count():
+        # one chunk per core when aggregating, a few more otherwise to balance the load
+        chunk_size = ceil(len(sources) / (cpu_count() * (1 if aggregate else 4)))
+        chunks = [sources[i:i + chunk_size] for i in range(0, len(sources), chunk_size)]
+
+        outputs:dict[str, int|list[int]] = {}
 
         with Pool() as pool:
-            chunks = []
-            chunk_size = ceil(len(sources) / cpu_count()) if aggregate else 1
-            for i in range(0, len(sources), chunk_size):
-                chunks.append(sources[i:i + chunk_size])
-
             progress = tqdm(range(len(chunks)))
             progress.set_description(f'Fetching size of TTree <{tree}> in <{len(sources)}> files using <{cpu_count()}> cores and <{len(chunks)}> chunks...')
-        
-            for chunk, output in pool.imap_unordered(functools.partial(tree_n_rows, tree=tree, use_uproot=use_uproot, use_mp=False, return_path=True, aggregate=True), chunks):
-                if aggregate:
-                    nrows += output
-                else:
-                    nrows[chunk[0]] = output
-                    
+
+            for chunk, output in pool.imap_unordered(functools.partial(tree_n_rows, tree=tree, use_uproot=use_uproot,
+                                                                       use_mp=False, return_path=True, aggregate=aggregate), chunks):
+                outputs[chunk[0]] = output
                 progress.update(1)
-                
+
         if aggregate:
-            return nrows
+            return int(np.sum([cast(int, output) for output in outputs.values()]))
         else:
-            return [nrows[name] for name in sources]
+            nrows:list[int] = []
+            for chunk in chunks:
+                nrows += cast(list, outputs[chunk[0]])
+
+            return nrows
     else:
         nrows = 0 if aggregate else []
 
@@ -470,7 +700,7 @@ def translate_item(sources:list[str], tree:str, names:str|list[str], use_uproot:
 
 def translate_item_lazy(sources:list[str], tree:str, names:str|list[str], n_per_iter:int, use_uproot:bool=True):
     from math import ceil
-    
+
     maxiter = ceil(len(sources) / n_per_iter)
     counter = 0
 
@@ -479,16 +709,284 @@ def translate_item_lazy(sources:list[str], tree:str, names:str|list[str], n_per_
         yield translate_item(sources[counter:counter+size], tree, names, use_uproot)
         counter += size
 
+def translate_items(sources:list[str], tree_branches:dict[str, list[str]])->dict[tuple[str, str], list['ak.Array']]:
+    """Reads multiple branches, possibly spread over multiple TTrees, from all ROOT files
+    in sources. Every file is opened and the metadata of every requested TTree is parsed
+    only once, which is what makes this much faster than calling translate_item() per
+    branch: parsing the TTree metadata (i.e. constructing the objects for all of its
+    branches) dominates the runtime of reading a handful of branches per file.
+
+    Args:
+        sources (list[str]): paths to the ROOT files to read
+        tree_branches (dict[str, list[str]]): TTree name => list of branches to read from it
+
+    Returns:
+        dict[tuple[str, str], list[ak.Array]]: (tree, branch) => one array per entry in sources
+    """
+
+    result:dict[tuple[str, str], list['ak.Array']] = {
+        (tree, branch): [] for tree, branches in tree_branches.items() for branch in branches }
+
+    for path in sources:
+        with ur.open(path) as rf:
+            for tree, branches in tree_branches.items():
+                ttree = rf[tree]
+
+                for branch in branches:
+                    result[(tree, branch)].append(ttree[branch].array())
+
+    return result
+
+def translate_items_lazy(sources:list[str], tree_branches:dict[str, list[str]], n_per_iter:int|None):
+    """Batch-wise version of translate_items(); yields the arrays of at most n_per_iter
+    ROOT files at a time to keep the memory consumption bounded.
+
+    Args:
+        sources (list[str]): paths to the ROOT files to read
+        tree_branches (dict[str, list[str]]): TTree name => list of branches to read from it
+        n_per_iter (int|None): number of files per batch. If None, all files are read at once
+
+    Yields:
+        tuple[list[str], dict[tuple[str, str], list[ak.Array]]]: files of the batch and their data
+    """
+
+    n_per_iter = len(sources) if n_per_iter is None else n_per_iter
+
+    for i in range(0, len(sources), n_per_iter):
+        batch = sources[i:i+n_per_iter]
+        yield batch, translate_items(batch, tree_branches)
+
+class ItemChunkWriter:
+    """Writes the data of a single (tree, branch) item belonging to one chunk of ROOT files
+    into the HDF5 file of that chunk. The data is handed over batch-wise via write(), so
+    that the arrays of several items can be read from the same ROOT files in one pass.
+
+    Supports 1D branches (vectors of primitives), named branches (compound objects such as
+    PxPyPzEVectors, saved as one dataset per field) and >= 2D branches (saved either column-
+    wise or, with keep_dim=True, keeping their shape).
+    """
+
+    def __init__(self, chunk_idx:int, tree:str, branch:str, output_file:str, file_paths:list[str],
+                 dtype:str|None=None, clamp:tuple[float|int|None, float|int|None]=(None, None),
+                 nan_to:float|int|None=None, keep_dim:bool=False):
+        """
+        Args:
+            chunk_idx (int): index of the chunk this writer belongs to
+            tree (str): name of the TTree the data originates from
+            branch (str): name of the branch the data originates from
+            output_file (str): HDF5 file to create
+            file_paths (list[str]): ROOT files of this chunk; saved for the integrity check
+            dtype (str | None, optional): if None, inferred from the first batch. Defaults to None.
+            clamp (tuple, optional): (min, max) to clamp the values to. Defaults to (None, None).
+            nan_to (float | int | None, optional): value to replace NaNs with. Defaults to None.
+            keep_dim (bool, optional): keep the shape of >= 2D branches. Defaults to False.
+        """
+
+        self._chunk_idx = chunk_idx
+        self._tree = tree
+        self._branch = branch
+        self._dtype = dtype
+        self._clamp = clamp
+        self._nan_to = nan_to
+        self._keep_dim = keep_dim
+
+        self._nrows = 0
+        self._n_batches = 0
+        self._col_names:list[str] = []
+        self._total_shape:list[int] = []
+        self._is_named = False
+        self._is_1d = False
+        self._is_multidim = False
+
+        self._hf = h5py.File(output_file, 'w')
+        self._hf.attrs['chunk_idx'] = chunk_idx
+        self._hf.attrs['tree'] = tree
+        self._hf.attrs['branch'] = branch
+        self._hf.attrs['input_files'] = file_paths
+
+    def write(self, result:list['ak.Array'], file_paths:list[str]|None=None):
+        """Appends the arrays of one batch of ROOT files to the datasets of this item.
+
+        Args:
+            result (list[ak.Array]): one array per ROOT file of the batch
+            file_paths (list[str] | None, optional): files the arrays originate from; only
+                used to give a helpful error message. Defaults to None.
+        """
+
+        import awkward as ak
+
+        hf = cast(h5py.File, self._hf)
+        keep_dim = self._keep_dim
+
+        ndims = result[0].ndim
+        columns = result[0].fields
+
+        # the case if tree/branch is a compound object like a PxPyPzEVector
+        is_named = self._is_named = len(columns) > 0
+
+        # the case if tree/branch refers to a vector of primitives/scalars (float, int)
+        is_1d = self._is_1d = ndims == 1
+
+        # the case if tree/branch refers to a >= 2 dim. object (matrix, tensor).
+        # first dimension will be interpreted as batch dimension
+        is_multidim = self._is_multidim = ndims > 1
+
+        assert(is_named or is_1d or is_multidim)
+
+        # regularize
+        if is_multidim:
+            for i in range(len(result)):
+                try:
+                    result[i] = ak.to_regular(result[i])
+                except Exception as e:
+                    origin = f'file {file_paths[i]}: with' if file_paths is not None else 'item'
+                    print(f'Error converting {origin} tree={self._tree} branch={self._branch}'+
+                          f' columns={", ".join(columns)}')
+                    raise e
+
+        size = sum([len(result[i]) for i in range(len(result))])
+
+        if self._n_batches == 0:
+            # infer ncols+dtype from the first entry
+            if is_named:
+                self._col_names = columns
+            elif is_1d:
+                self._col_names = ['dim0']
+            elif is_multidim:
+                self._col_names = ['dim0'] if keep_dim else [f'dim{col}' for col in range(result[0].type.content.size)]
+
+            if is_multidim and keep_dim:
+                # get type of multidim object
+                first_as_np = np.array(result[0])
+                self._total_shape = list(first_as_np.shape)
+                self._total_shape[0] = size
+                self._dtype = str(first_as_np.dtype)
+
+            if self._dtype is None:
+                if is_named:
+                    # get type of primitivies saved in compound object
+                    self._dtype = str(result[0].type.content.content(result[0].fields[0]))
+                else:
+                    # get type of 1d and column-wise 2d obejcts
+                    self._dtype = str(result[0].type.content) if is_1d else str(result[0].type.content.content)
+
+            for col in self._col_names:
+                # chunk-size 16MB
+                # using size for per-column storage
+                # using total_shape for keep_dim in case of multidimensional object
+                ds_shape = size
+                ds_maxshape = (None, )
+
+                if is_multidim and keep_dim:
+                    ds_shape = tuple(self._total_shape)
+                    ds_maxshape = [*self._total_shape]
+                    ds_maxshape[0] = None
+
+                hf.create_dataset(col, shape=ds_shape, maxshape=ds_maxshape, dtype=self._dtype,
+                                  chunks=True, rdcc_nbytes=16*1024**2, fillvalue=np.nan)
+
+        for i_col, col in enumerate(self._col_names):
+            if self._n_batches and not (is_multidim and keep_dim):
+                cast(h5py.Dataset, hf[col]).resize((self._nrows+size, ))
+
+            counter = 0
+            for arr in result:
+                arr_size = len(arr)
+                dataset:h5py.Dataset = cast(h5py.Dataset, hf[col])
+
+                if is_named:
+                    target_data = arr[col][:]
+                else:
+                    if is_multidim and not keep_dim:
+                        target_data = arr[:, i_col]
+                    else:
+                        target_data = arr
+
+                if self._clamp[0] is not None or self._clamp[1] is not None:
+                    target_data = np.clip(target_data, a_min=self._clamp[0], a_max=self._clamp[1], dtype=self._dtype)
+
+                if self._nan_to is not None:
+                    if not isinstance(target_data, np.ndarray):
+                        target_data = np.array(target_data)
+
+                    target_data[np.isnan(target_data)] = self._nan_to
+
+                dataset[(self._nrows+counter):(self._nrows+counter+arr_size)] = target_data
+                counter += arr_size
+
+            assert(counter == size)
+
+        self._nrows += size
+        self._n_batches += 1
+
+    def close(self)->tuple[tuple, str]:
+        """Writes the shape and metadata of this item and closes the HDF5 file.
+
+        Returns:
+            tuple[tuple, str]: total shape and dtype of the converted data
+        """
+
+        hf = cast(h5py.File, self._hf)
+
+        total_shape = self._total_shape
+
+        if len(total_shape) == 0:
+            # note: the column count is intentionally left at 0 here (as it always was);
+            # the code reading this back only evaluates len(shape) and shape[0], while
+            # createVDS() derives the column layout from the col_names attribute. changing
+            # it would rename the datasets createVDS() creates in the main HDF5 file
+            total_shape = (self._nrows, ) if self._is_1d else (self._nrows, 0)
+
+        hf['shape'] = np.array(total_shape, dtype=int)
+        hf.attrs['col_names'] = self._col_names
+        hf.attrs['save_columnwise'] = self._is_1d or self._is_named or not (self._is_multidim and self._keep_dim)
+        hf.attrs['dtype'] = self._dtype
+
+        hf.close()
+        self._hf = None
+
+        assert(isinstance(self._dtype, str))
+
+        return (total_shape if isinstance(total_shape, tuple) else tuple(total_shape), self._dtype)
+
+    def abort(self):
+        """Closes the HDF5 file without finalizing it. Does nothing after close()."""
+
+        if self._hf is not None:
+            self._hf.close()
+            self._hf = None
+
+def read_existing_chunk(output_file:str, dtype:str|None)->tuple[tuple, str]:
+    """Reads shape and dtype of a chunk file that has been converted previously.
+
+    Args:
+        output_file (str): HDF5 file of the chunk
+        dtype (str | None): expected dtype; checked against the stored one if not None
+
+    Raises:
+        Exception: if the stored dtype does not match the expected one
+
+    Returns:
+        tuple[tuple, str]: shape and dtype of the converted data
+    """
+
+    with h5py.File(output_file, 'r') as hf:
+        shape = tuple(cast(h5py.Dataset, hf['shape'])[:])
+        dtype_read = str(hf.attrs.get('dtype'))
+
+    if dtype is not None and dtype != dtype_read:
+        raise Exception(f'dtype mismatch: expected <{dtype}> but found <{dtype_read}>')
+
+    return (shape, dtype_read)
+
 def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None,
                          str|None, tuple[float|int|None, float|int|None], float|int|None, bool])->ChunkedConversionResult:
-    """Attempts to read tree/branch from all ROOT files in file_paths.
-    Depending on the value of outp_or_None:
-    1. None -> (chunk_idx, result=list[ak.array]) will be returned
-    2. str -> the value will be interpreted as path for a HDF5 file
-        that will be written with the concatenated value of result
-        under the dataset named data. return value: (chunk_idx,
-        total_shape:tuple[int,int])
+    """Attempts to read tree/branch from all ROOT files in file_paths and writes the result
+    to the HDF5 file outp under one dataset per column (see ItemChunkWriter).
     Values must be of regular shape. Supports 1D and 2D TTree branches.
+
+    Consider per_chunk_grouped() when more than one branch should be converted: it reads all
+    of them in a single pass over the ROOT files.
 
     Args:
         args[0] = chunk_idx (int): _description_
@@ -506,9 +1004,9 @@ def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None,
         args[8] = clamp (tuple[float|int|None, float|int|None])
         args[9] = nan_to (float|int|None)
         args[10] = keep_dim (bool)
-            
+
     Returns:
-        _type_: _description_
+        ChunkedConversionResult: (chunk_idx, (total_shape, dtype))
     """
 
     chunk_idx:int = args[0]
@@ -521,157 +1019,99 @@ def per_chunk(args:tuple[int, str, str, list[str], str, bool, int|None,
     dtype:str|None = args[7]
     clamp:tuple[float|int|None, float|int|None] = args[8]
     nan_to:float|int|None = args[9]
-    keep_dim:bool|None = args[10]
+    keep_dim:bool = bool(args[10])
 
-    import awkward as ak
+    result = per_chunk_grouped((chunk_idx, file_paths, read_size,
+                                [(tree, branch, output_file, overwrite_if_exists, dtype, clamp, nan_to, keep_dim)]))
 
-    # load from HDF5
-    if osp.isfile(output_file) and not overwrite_if_exists:
-        with h5py.File(output_file, 'r') as hf:
-            shape = tuple(cast(h5py.Dataset, hf['shape'])[:])
-            dtype_read = str(hf.attrs.get('dtype'))
+    return (chunk_idx, result[1][0])
 
-            if dtype is not None and dtype != dtype_read:
-                raise Exception(f'dtype mismatch: expected <{dtype}> but found <{dtype_read}>')
+def per_chunk_grouped(args:tuple[int, list[str], int|None, list[GroupedItemSpec]])->GroupedChunkResult:
+    """Converts multiple items (i.e. TTree branches) of one chunk of ROOT files at once.
+    Every ROOT file is opened once and the metadata of every involved TTree is parsed once,
+    no matter how many branches are requested from it. As this is what dominates the runtime
+    of the conversion, this is much faster than calling per_chunk() per item.
 
-        return (chunk_idx, (shape, dtype_read))
-    
-    # convert from ROOT files
-    translated = translate_item_lazy(file_paths, tree, branch, n_per_iter=read_size) if read_size is not None else [translate_item(file_paths, tree, branch)]
-    total_shape = []
-    nrows = 0
-    ncols = 0
-    ndims = 0
-    is_named = False
-    is_1d = False
-    is_multidim = False
-    col_names:list[str] = []
+    Each item is written to its own HDF5 file, exactly as per_chunk() does, so the output is
+    compatible with data converted by previous versions.
 
-    with h5py.File(output_file, 'w') as hf:
-        hf.attrs['chunk_idx'] = chunk_idx
-        hf.attrs['tree'] = tree
-        hf.attrs['branch'] = branch
-        hf.attrs['input_files'] = file_paths
+    Args:
+        args[0] = chunk_idx (int): index of the chunk of ROOT files
+        args[1] = file_paths (list[str]): ROOT files of this chunk
+        args[2] = read_size (int|None): how many files should be loaded into memory at a
+            time. If None, all files of the chunk are read at once
+        args[3] = items (list[GroupedItemSpec]): items to convert, given as
+            (tree, branch, output_file, overwrite_if_exists, dtype, clamp, nan_to, keep_dim)
 
-        for i_result, result in enumerate(translated):
-            columns = result[0].fields
+    Returns:
+        GroupedChunkResult: (chunk_idx, { index of the item in args[3]: (total_shape, dtype) })
+    """
 
-            ndims = result[0].ndim
-            is_named = len(columns) > 0 # the case if tree/branch is a compound object like a PxPyPzEVector
-            is_1d = result[0].ndim == 1 # the case if tree/branch refers to a vector of primitives/scalars (float, int)
-            is_multidim = ndims > 1 # the case if tree/branch refers to a >= 2 dim. object (matrix, tensor).
-                                             # first dimension will be interpreted as batch dimension
+    chunk_idx:int = args[0]
+    file_paths:list[str] = args[1]
+    read_size:int|None = args[2]
+    items:list[GroupedItemSpec] = args[3]
 
-            assert(is_named or is_1d or is_multidim)
+    results:dict[int, tuple[tuple, str]] = {}
+    pending:list[tuple[int, GroupedItemSpec]] = []
 
-            # regularize
-            if is_multidim:
-                for i in range(len(result)):
-                    try:
-                        result[i] = ak.to_regular(result[i])
-                    except Exception as e:
-                        print(f'Error converting file {file_paths[i_result]}: with tree={tree} branch={branch} columns={", ".join(columns)}')
-                        raise e
+    # load already converted items from HDF5
+    for i, item in enumerate(items):
+        output_file, overwrite_if_exists, dtype = item[2], item[3], item[4]
 
-            size = sum([len(result[i]) for i in range(len(result))])
+        if osp.isfile(output_file) and not overwrite_if_exists:
+            results[i] = read_existing_chunk(output_file, dtype)
+        else:
+            pending.append((i, item))
 
-            if i_result == 0:
-                # infer nrows, and ncols+dtype from first entry
-                if is_named:
-                    col_names = columns
-                elif is_1d:
-                    col_names = ['dim0']
-                elif is_multidim:
-                    if keep_dim:
-                        col_names = ['dim0']
-                    else:
-                        col_names = [f'dim{col}' for col in range(result[0].type.content.size)]
+    if len(pending):
+        # several items may write to the same file, e.g. when the same branch is exposed under
+        # two names; these are converted once and share the result
+        items_of_output:dict[str, list[int]] = {}
+        spec_of_output:dict[str, GroupedItemSpec] = {}
 
-                if is_multidim and keep_dim:
-                    # get type of multidim object
-                    first_as_np = np.array(result[0])
-                    total_shape = list(first_as_np.shape)
-                    total_shape[0] = size
-                    dtype = str(first_as_np.dtype)
+        for i, item in pending:
+            output_file = item[2]
 
-                if dtype is None:
-                    if is_named:
-                        # get type of primitivies saved in compound object
-                        dtype = str(result[0].type.content.content(result[0].fields[0]))
-                    else:
-                        # get type of 1d and column-wise 2d obejcts
-                        dtype = str(result[0].type.content) if is_1d else str(result[0].type.content.content)
+            if output_file in spec_of_output:
+                if spec_of_output[output_file][4:] != item[4:]:
+                    raise Exception(f'Items <{spec_of_output[output_file][0]}:{spec_of_output[output_file][1]}> and '+
+                                    f'<{item[0]}:{item[1]}> are both converted to <{output_file}> but request a '+
+                                    'different dtype, clamp, nan_to or keep_dim')
+            else:
+                spec_of_output[output_file] = item
 
-                #print(f'Found dtype={dtype} total_shape={total_shape}')
+            items_of_output.setdefault(output_file, []).append(i)
 
-                for col in col_names:
-                    # chunk-size 16MB
-                    # using size for per-column storage
-                    # using total_shape for keep_dim in case of multidimensional object
-                    ds_shape = size
-                    ds_maxshape = (None, )
+        # collect the branches to read per TTree
+        tree_branches:dict[str, list[str]] = {}
+        for tree, branch, *_rest in spec_of_output.values():
+            branches = tree_branches.setdefault(tree, [])
+            if branch not in branches:
+                branches.append(branch)
 
-                    if is_multidim and keep_dim:
-                        ds_shape = tuple(total_shape)
-                        ds_maxshape = [*total_shape]
-                        ds_maxshape[0] = None
+        writers:dict[str, ItemChunkWriter] = {}
 
-                    #print(f'Creating ds <{col}> with shape {ds_shape} and maxshape {ds_maxshape}')
+        try:
+            for output_file, (tree, branch, _, _, dtype, clamp, nan_to, keep_dim) in spec_of_output.items():
+                writers[output_file] = ItemChunkWriter(chunk_idx, tree, branch, output_file, file_paths,
+                                                       dtype=dtype, clamp=clamp, nan_to=nan_to, keep_dim=keep_dim)
 
-                    hf.create_dataset(col, shape=ds_shape, maxshape=ds_maxshape, dtype=dtype,
-                                      chunks=True, rdcc_nbytes=16*1024**2, fillvalue=np.nan)
+            for batch_files, batch in translate_items_lazy(file_paths, tree_branches, read_size):
+                for output_file, (tree, branch, *_rest) in spec_of_output.items():
+                    # copy the list as ItemChunkWriter.write() may regularize its entries
+                    writers[output_file].write(list(batch[(tree, branch)]), file_paths=batch_files)
 
-            for i_col, col in enumerate(col_names):
-                if i_result and not (is_multidim and keep_dim):
-                    #print(f'Resizing ds to ({nrows+size}, )')
-                    cast(h5py.Dataset, hf[col]).resize((nrows+size, ))
-                
-                counter = 0
-                for arr in result:
-                    arr_size = len(arr)
-                    dataset:h5py.Dataset = cast(h5py.Dataset, hf[col])
-                    
-                    if is_named:
-                        target_data = arr[col][:]
-                    else:
-                        if is_multidim and not keep_dim:
-                            target_data = arr[:, i_col]
-                        else:
-                            target_data = arr
+            for output_file, writer in writers.items():
+                result = writer.close()
 
-                    #print(f'target_data.shape = {np.array(target_data).shape}')
-                    #print(f'dataset.shape = {hf[col].shape}')
-                    
-                    if clamp[0] is not None or clamp[1] is not None:
-                        target_data = np.clip(target_data, a_min=clamp[0], a_max=clamp[1], dtype=dtype)
-                    
-                    if nan_to is not None:
-                        if not isinstance(target_data, np.ndarray):
-                            target_data = np.array(target_data)
-                        
-                        target_data[np.isnan(target_data)] = nan_to
+                for i in items_of_output[output_file]:
+                    results[i] = result
+        finally:
+            for writer in writers.values():
+                writer.abort()
 
-                    #print(f'Appending to {(nrows+counter)}:{(nrows+counter+arr_size)}')
-                            
-                    dataset[(nrows+counter):(nrows+counter+arr_size)] = target_data
-                    counter += arr_size
-
-                assert(counter == size)
-
-            nrows += size
-        
-        if len(total_shape) == 0:
-            total_shape = (nrows, ) if is_1d else (nrows, ncols)
-
-        ncols = len(col_names)
-        hf['shape'] = np.array(total_shape, dtype=int)
-        hf.attrs['col_names'] = col_names
-        hf.attrs['save_columnwise'] = is_1d or is_named or not (is_multidim and keep_dim)
-        hf.attrs['dtype'] = dtype
-    
-    assert(isinstance(dtype, str))
-
-    return (chunk_idx, (total_shape if isinstance(total_shape, tuple) else tuple(total_shape), dtype))
+    return (chunk_idx, results)
 
 def process_chunks(chunks, n_files:int|None=None, ncores:int|None=None)->list[ChunkedConversionResult]:
     chunk_outputs = []
