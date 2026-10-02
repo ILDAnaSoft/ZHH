@@ -29,15 +29,17 @@ py::array_t<double> calc_me_zhh_jm(
     double pol_p,
     int zDecayMode,
     py::array_t<double> input_kinematics,
-    py::array_t<int8_t> jet_matching) {
-     
+    py::array_t<int8_t> jet_matching,
+    int propagator_type = 1,
+    double higgs_width = 0.0043) {
+
     auto kref = input_kinematics.unchecked<2>();
     auto jmref = jet_matching.unchecked<2>();
     size_t nrows = (size_t)kref.shape(0);
 
     if (kref.shape(1) != 24)
         throw std::runtime_error("Invalid number of kinematic inputs; need array of size (n x 24) in order (px,py,pz,E) for (zdecay1particle, zdecay2particle, higgs1decay1particle, higgs1decay2particle, higgs2decay1particle, higgs2decay2particle) where zdecay1particle is positive, 2 is negative");
-    
+
     double *arr = new double[nrows];
 
     // load jet matching
@@ -47,7 +49,17 @@ py::array_t<double> calc_me_zhh_jm(
     // matrix element initialization
     lcme::LCMEZHH* calcme = new lcme::LCMEZHH("LCMEZHH", "ZHH", 125., pol_e, pol_p);
     calcme->SetZDecayMode(zDecayMode);
-    calcme->SetPropagator(1);
+    // propagator_type: 0 = disabled (no Higgs-mass-shell weighting at all),
+    // 1 = relativistic Breit-Wigner (Physsim default, higgs_width defaults to the
+    // true SM width 4.3 MeV -- an essentially unmeasurable, needle-narrow scale
+    // given measured jet momenta), 2 = the Physsim-native "effective Gaussian with
+    // detector resolution" option -- pass higgs_width = the actual reconstructed
+    // dijet-mass resolution (GeV) to use that sensibly.
+    calcme->SetPropagator(propagator_type != 0);
+    if (propagator_type != 0) {
+        calcme->SetPropagatorType(propagator_type);
+        calcme->SetHiggsWidth(higgs_width);
+    }
     //calcme->SetMEType(2);
 
     // jet matching indidces and input kinematics
@@ -104,7 +116,9 @@ py::array_t<double> calc_me_zzh_jm(
     int z1DecayMode,
     int z2DecayMode,
     py::array_t<double> input_kinematics,
-    py::array_t<int8_t> jet_matching) {
+    py::array_t<int8_t> jet_matching,
+    int propagator_type = 1,
+    double higgs_width = 0.0043) {
 
     auto kref = input_kinematics.unchecked<2>();
     auto jmref = jet_matching.unchecked<2>();
@@ -112,7 +126,7 @@ py::array_t<double> calc_me_zzh_jm(
 
     if (kref.shape(1) != 24)
         throw std::runtime_error("Invalid number of kinematic inputs; need array of size (n x 24) in order (px,py,pz,E) for (zdecay1particle, zdecay2particle, higgs1decay1particle, higgs1decay2particle, higgs2decay1particle, higgs2decay2particle) where zdecay1particle is positive, 2 is negative");
-    
+
     double *arr = new double[nrows];
 
     if (jmref.shape(1) != 4)
@@ -121,7 +135,12 @@ py::array_t<double> calc_me_zzh_jm(
     // matrix element initialization
     lcme::LCMEZZH* calcme = new lcme::LCMEZZH("LCMEZZH", "ZZH", 125., pol_e, pol_p);
     calcme->SetZDecayMode(z1DecayMode, z2DecayMode);
-    calcme->SetPropagator(1);
+    // see calc_me_zhh_jm for propagator_type/higgs_width semantics
+    calcme->SetPropagator(propagator_type != 0);
+    if (propagator_type != 0) {
+        calcme->SetPropagatorType(propagator_type);
+        calcme->SetHiggsWidth(higgs_width);
+    }
     //calcme->SetMEType(2);
 
     // jet matching indidces and input kinematics
@@ -305,8 +324,14 @@ PYBIND11_MODULE(PhyssimWrapper, m) {
     m.doc() = "PhyssimWrapper using pybind11";
 
     //m.def("calc_me_zhh", &calc_me_zhh, "Calculate e+e- -> ZHH matrix element");
-    m.def("calc_me_zhh_jm", &calc_me_zhh_jm, "Calculate e+e- -> ZHH matrix element with a given jet matching"); // , py::call_guard<py::gil_scoped_release>());
-    m.def("calc_me_zzh_jm", &calc_me_zzh_jm, "Calculate e+e- -> ZZH matrix element with a given jet matching"); // , py::call_guard<py::gil_scoped_release>());
+    m.def("calc_me_zhh_jm", &calc_me_zhh_jm, "Calculate e+e- -> ZHH matrix element with a given jet matching",
+        py::arg("pol_e"), py::arg("pol_p"), py::arg("zDecayMode"),
+        py::arg("input_kinematics"), py::arg("jet_matching"),
+        py::arg("propagator_type") = 1, py::arg("higgs_width") = 0.0043);
+    m.def("calc_me_zzh_jm", &calc_me_zzh_jm, "Calculate e+e- -> ZZH matrix element with a given jet matching",
+        py::arg("pol_e"), py::arg("pol_p"), py::arg("z1DecayMode"), py::arg("z2DecayMode"),
+        py::arg("input_kinematics"), py::arg("jet_matching"),
+        py::arg("propagator_type") = 1, py::arg("higgs_width") = 0.0043);
     //m.def("calc_me_zzh", &calc_me_zzh, "Calculate e+e- -> ZZH matrix element");
     /*
     m.def("calc_me_zz", &calc_me_zz, "Calculate e+e- -> ZZ matrix element",
