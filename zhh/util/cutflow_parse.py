@@ -10,7 +10,7 @@ from ..analysis.Cuts import EqualCut, GreaterThanEqualCut, LessThanEqualCut, Wit
 from ..analysis.DataSource import DataSource
 from .replace_properties import replace_properties
 from .replace_references import replace_references
-from ..data.ROOT2HDF5Converter import ROOT2HDF5Converter
+from ..data.ROOT2HDF5Converter import ROOT2HDF5Converter, GroupedConversionPlan
 from ..task.ConcurrentFuturesRunner import ProcessRunner
 from ..analysis import CutflowProcessor, CutflowProcessorAction, CreateCutflowPlotsAction, ReadonlyWriteAttempt
 from typing import TypedDict, NotRequired, cast
@@ -233,7 +233,7 @@ def cutflow_provision_features(interpretations:list[Interpretation],
         _type_: _description_
     """
 
-    from zhh import tree_n_rows, AbstractTask
+    from zhh import tree_n_rows
 
     ds_meta_file = f'{osp.splitext(ds_path)[0]}.meta.json'
 
@@ -403,49 +403,44 @@ def cutflow_provision_features(interpretations:list[Interpretation],
                     else:
                         found.append(name)
         
-        conv_tasks:list[AbstractTask] = []
-        finalization_tasks:list[AbstractTask] = []
+        converters:list[ROOT2HDF5Converter] = []
         conv_items = []
-        conv_done = []
-        names = []
 
         if readonly and len(to_sync):
             raise ReadonlyWriteAttempt('Cannot request feature conversion in readonly mode')
 
         for item in to_sync:
             name, tree, branch, dtype, nan_to, clamp_min, clamp_max = item
-            names.append(name)
 
-            conv = ROOT2HDF5Converter(root_files, ds_path, tree, branch,
+            converters.append(ROOT2HDF5Converter(root_files, ds_path, tree, branch,
                                     osp.expandvars(f'{bname}/{tree}.{branch.replace("/", ".")}/item'), name, dtype, clamp=(clamp_min, clamp_max),
-                                    nan_to=nan_to)
-            finalization_task, item_conv_tasks = conv.convertLazy(nrows=nrows, check_existing=True, check_requires_exact_path_match=check_requires_exact_path_match, use_vds=use_vds)
-            
-            [conv_tasks.append(task) for task in item_conv_tasks]
-            finalization_tasks.append(finalization_task)
+                                    nan_to=nan_to))
             conv_items.append(f'{tree}.{branch} -> {name} ({dtype})')
-
-            if len(item_conv_tasks) == 0:
-                conv_done.append(name)
-            #conv.convert(nrows=nrows, check_existing=True)
 
         if len(conv_items):
             print('Scheduling conversion of items:')
             for item in conv_items:
                 print(f' {item}')
 
-            runner = ProcessRunner(cores=ceil(cpu_count() * .8))
-            runner.queueTasks(conv_tasks)
+            cores = ceil(cpu_count() * .8)
+
+            # all items are converted in a single pass over the ROOT files: each file is
+            # opened, and the metadata of each of its TTrees parsed, only once
+            plan = GroupedConversionPlan(converters, check_existing=True,
+                                         check_requires_exact_path_match=check_requires_exact_path_match,
+                                         use_vds=use_vds, ncores=cores)
+
+            # the conversion tasks are short, so poll for finished ones more often than the default
+            runner = ProcessRunner(cores=cores, polling_freq=20)
+            runner.queueTasks(plan.conversion_tasks)
             runner.run()
 
             # after successful conversion, create the VDS'es
             print('Creating virtual datasets (VDSes)' if use_vds else 'Combining datasets by copying')
 
-            for i, task in enumerate(pbar := tqdm(finalization_tasks)):
-                name = names[i]
+            for i, task in enumerate(pbar := tqdm(plan.finalization_tasks)):
                 pbar.set_description(conv_items[i])
-                deps = task.getDependencies()['conversion']
-                task.run(conversion=[] if name in conv_done else [dep.getResult() for dep in deps])
+                task.run(conversion=plan.getConversionResults(i))
 
     # meta file exists = everything successful
     if not osp.isfile(ds_meta_file):
