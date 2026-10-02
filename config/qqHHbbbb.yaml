@@ -11,7 +11,7 @@ hypothesis: qqbbbb
 
 signal_categories:
 - EventCategories.qqHHbbbb
-- EventCategories.qqHH_nonbbbb
+- EventCategories.bbHHbbbb
 
 # used to calculate event weights and absolute event counts
 # polarization of [ electronBeam, positronBeam ]
@@ -83,7 +83,17 @@ sources:
       default: null
       order: null
       items: [ llhh, eeHHbbbb, μμHHbbbb, ττHHbbbb, llhh_llbbbb, llhh_llnonbbbb, llqqh ]
-    disabled: false
+    disabled: true
+    reset: false
+
+  - name: qqhh
+    path: $DATA_PATH/AnalysisCombine/550-qqhh-$CONF_SUFFIX
+    root_files: $DATA_PATH/AnalysisFinal/550-qqhh-$CONF_SUFFIX/*.root
+    event_categorization:
+      default: null
+      order: null
+      items: [ qqhh, qqHHbbbb, bbHHbbbb, qqHH_nonbbbb, qqqqH ]
+    disabled: true
     reset: false
 
   - name: 6q
@@ -145,8 +155,8 @@ features:
   - { name: cosjzmax, tree: EventObservablesLL, branch: cosJZMax_2Jets, dtype: float32 }
 
   # physics quantities
-  - { names: [ bmax1, bmax2, bmax3, bmax4 ], tree: EventObservablesLL, dtype: float32 }
-  - { names: [ jet1_m, jet2_m, jet3_m, jet4_m ], tree: EventObservablesLL, dtype: float32 }
+  - { names: [ bmax1, bmax2, bmax3, bmax4, bmax5, bmax6 ], tree: EventObservablesLL, dtype: float32 }
+  - { names: [ jet1_m, jet2_m, jet3_m, jet4_m, jet5_m, jet6_m ], tree: EventObservablesLL, dtype: float32 }
   - { name: mz_pre_pairing, tree: EventObservablesLL, branch: mzll_pre_pairing, dtype: float32 }
   - { name: mhh, tree: EventObservablesLL, branch: m_invjet, dtype: float32 }
   - { names: [ fit4C_mz, ptmiss, thrust, evis ], tree: EventObservablesLL, dtype: float32 }
@@ -277,8 +287,8 @@ mvas:
     classes:
     # two-element arrays of structure (label, name of registered EventCategory)
     # see sources/.../event_categorization/items
-    - [0, 'μμHHbbbb']
-    - [1, 'llhh_llnonbbbb']
+    - [0, 'qqHHbbbb']
+    - [1, 'bbHHbbbb']
     - [2, 'llqqh']
     - [3, 'llqqqq']
     - [4, 'μμbb']
