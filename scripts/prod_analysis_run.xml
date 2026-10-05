@@ -18,6 +18,7 @@
         <constant name="Runvvbbbb" value="true" />
         <constant name="Runqqbbbb" value="true" />
         <constant name="RunTruthRecoComparison" value="false" />
+        <constant name="RunTrueJet" value="false" />
         <constant name="WriteLCIO" value="false" />
 
         <!-- These must be chosen depending on fast/full simulation options -->
@@ -52,6 +53,9 @@
         <if condition="MyFinalStateRecorder.GoodEvent">
             <!-- Analysis -->
             <group name="prodAnalysisAll" />
+            <if condition="${RunTrueJet}">
+                <group name="prodAnalysisTrueJet" />
+            </if>
 
             <if condition="${Runllbbbb}">
                 <group name="prodAnalysisLL" />

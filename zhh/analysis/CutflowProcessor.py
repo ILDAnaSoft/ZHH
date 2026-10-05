@@ -8,8 +8,6 @@ from ..util.deepmerge import deepmerge
 from typing import TypedDict, Required, Mapping, Union, cast, TYPE_CHECKING
 import numpy as np
 import os.path as osp, pickle
-from .CutflowTableEntry import LatexCutflowTableEntry, CutflowTableEntry
-#import blosc2
 
 if TYPE_CHECKING:
     from matplotlib.colors import Colormap
@@ -110,7 +108,7 @@ class CutflowProcessor:
         # cutflowPlots()
         plot_context = plot_context if plot_context is not None else PlotContext(colormap)
         for sig_cat in signal_categories:
-            from zhh import EventCategories
+            from zhh.processes.EventCategories import EventCategories
             plot_context.getColorByKey(EventCategories.inverted[sig_cat])
         
         self._plot_context:PlotContext = plot_context
@@ -169,7 +167,9 @@ class CutflowProcessor:
             _type_: _description_
         """
         
-        from zhh import EventCategories, calc_preselection_by_event_categories, DataStore
+        from zhh import calc_preselection_by_event_categories
+        from zhh.analysis.DataStore import DataStore
+        from zhh.processes.EventCategories import EventCategories
                 
         # apply cuts
         masks = []
@@ -562,7 +562,8 @@ class CutflowProcessor:
     def plotAt(self, quantity:str, step:int|None=None, split:int|None=None, plotTop9:bool=False,
                signal_category_names:list[str]|None=None, weight_prop:str='weight', **plot_kwargs):
         
-        from zhh import plot_combined_hist, EventCategories
+        from zhh import plot_combined_hist
+        from zhh.processes.EventCategories import EventCategories
 
         signal_category_names = [EventCategories.inverted[cat] for cat in self._signal_categories] if signal_category_names is None else signal_category_names
 
@@ -600,7 +601,7 @@ def cutflowPlots(cp:CutflowProcessor, output_file:str|None, display:bool=True, s
     
     assert(cp._signal_categories is not None and step_start in cp._masks and step_end in cp._calc_dicts and step_start in cp._max_before)
     
-    from zhh import EventCategories
+    from zhh.processes.EventCategories import EventCategories
     
     signal_category_names = [EventCategories.inverted[cat] for cat in cp._signal_categories] if signal_categories is None else signal_categories
     
@@ -622,7 +623,7 @@ def cutflowPlots(cp:CutflowProcessor, output_file:str|None, display:bool=True, s
 def plotCalcDictTopN(context:PlotContext, calc_dict:dict[str, tuple[np.ndarray, np.ndarray]], quantity:str, signal_category_names:list[str],
                      plot_options:dict={}, hist_kwargs:dict={}, hypothesis:str|None=None, bins:int=100, xlim:tuple[float, float]|None=None,
                      nrows:int=3, ncols:int=3, figsize:tuple[int, int]=(18,18)):
-    from zhh import plot_combined_hist, deepmerge
+    from zhh import plot_combined_hist
     import matplotlib.pyplot as plt
     
     fig_tot, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=figsize);
@@ -694,7 +695,7 @@ def cutflowPlotsFn(signal_category_names:list[str],
     
     import matplotlib.pyplot as plt
     from phc import export_figures
-    from zhh import plot_combined_hist, annotate_cut, EventCategories, deepmerge
+    from zhh import plot_combined_hist, annotate_cut, EventCategories
     from ..plot.ild_style import update_plot, legend_kwargs_fn
     
     figs_stacked = []
@@ -776,7 +777,7 @@ def cutflowPlotsFn(signal_category_names:list[str],
         bar_labels.append(name)
         bar_counts.append(count)
         #print(counts_start)
-        bar_descriptions.append(f'{format_counts(count)} ({(count / counts_start[name]):.1%})' if name in counts_start else 'No data') # TODO: 'No data' should not appear, why does it?
+        bar_descriptions.append(f'{format_ndigits(count)} ({(count / counts_start[name]):.1%})' if name in counts_start else 'No data') # TODO: 'No data' should not appear, why does it?
         
     bar_container = ax.bar(bar_labels, bar_counts, label=bar_labels, color=bar_colors)
     ax.bar_label(bar_container, labels=bar_descriptions, label_type='edge', fontname=plot_context.getFont(), fontsize=9)
@@ -887,164 +888,24 @@ def cutflowPlotSummaryFn(signal_category_names:list[str], cuts:Sequence[ValueCut
     
     return fig
 
-def cutflowTableFn(source_2_counts:dict[str, dict[str, np.ndarray]],
-                   source_2_category_names:dict[str, list[str]],
-                   signal_categories:list[str],
-                   luminosity:float,
-                   cutflow_table_entries:Sequence[CutflowTableEntry|LatexCutflowTableEntry],
-                   cuts:Sequence[Sequence[Cut]],
-                   path:str):
-    
-    from zhh import combined_cross_section, render_table, render_latex, EventCategories, \
-        SumCutflowTableEntry, CategorizedCutflowTableEntry, UncategorizedCutflowTableEntry, \
-        LatexRenderContext
-    from tqdm.auto import tqdm
-
-    category_names_2_source = invert_dict(source_2_category_names)
-    
-    first_item = source_2_counts[list(source_2_counts.keys())[0]]
-    first_item = first_item[list(first_item.keys())[0]]
-
-    entry_counts = np.zeros((len(cutflow_table_entries), len(first_item)))
-    entry_efficiencies = np.zeros((len(cutflow_table_entries), len(first_item) - 1))
-    entry_passing_frac = np.zeros((len(cutflow_table_entries), len(first_item) - 1))
-    category_counts:dict[str, np.ndarray] = {}
-
-    csv_out = f'{osp.splitext(path)[0]}_counts.csv'
-
-    render_context = LatexRenderContext(work_dir=f'{osp.dirname(csv_out)}/latex-build-{osp.splitext(osp.basename(path))[0]}', packages=[ 'ydoc', 'standalone', 'upgreek' ])
-
-    for n_run in range(3):
-        render_abs_table = n_run == 0
-        render_eff_table = n_run == 1
-        render_frac_table = n_run == 2
-
-        if render_eff_table:
-            for i in range(entry_counts.shape[1] - 1):
-                entry_efficiencies[:, i] = entry_counts[:, i+1] / entry_counts[:, i]
-                entry_passing_frac[:, i] = entry_counts[:, i+1] / entry_counts[:, 0]
-
-        entries = (entry_counts if render_abs_table else (entry_efficiencies if render_eff_table else entry_passing_frac))
-        out_name = osp.splitext(path)[0] +('.pdf' if render_abs_table else ('_efficiency.pdf' if render_eff_table else '_frac.pdf'))
-
-        table = []
-        header = ['']
-
-        if render_abs_table:
-            header.append('expected')
-
-        for cut_group in cuts:
-            for cut in cut_group:
-                header += [f'${cut.latex()}$']
-
-        table.append(r'\hline') # line separating header and body
-
-        # each entry in row must either be a str or a list of n strings (where n equal for all lists)
-
-        for i, entry in enumerate(cutflow_table_entries):
-            category_out:str|None = None
-
-            if isinstance(entry, CategorizedCutflowTableEntry):
-                category = entry.category
-                source_name = category_names_2_source[category]
-
-                if render_abs_table:
-                    #print(source_name, category, source_2_counts[source_name].keys())
-                    entry_counts[i, :] = source_2_counts[source_name][category]
-                    category_out = f'{source_name}.{category}'
-
-                    table += [[ entry.label, *[format_counts(a) for a in entries[i, :] ] ]]
-                else:
-                    table += [[ entry.label, *[f'{a:.2%}'.replace('%', r'\%') for a in entries[i, :] ] ]]
-            elif isinstance(entry, UncategorizedCutflowTableEntry):
-                source_name = entry.source
-                
-                if render_abs_table:
-                    entry_counts[i, :] = source_2_counts[source_name]['other']
-                    category_out = f'{source_name}.other'
-
-                    table += [[ entry.label, *[format_counts(a) for a in entries[i, :] ] ]]
-                else:
-                    table += [[ entry.label, *[f'{a:.2%}'.replace('%', r'\%') for a in entries[i, :] ] ]]
-            elif isinstance(entry, LatexCutflowTableEntry):
-                table += [entry.latex]
-            elif isinstance(entry, SumCutflowTableEntry):
-                cats = entry.sum
-                counts = np.zeros(entry_counts.shape[1])
-
-                if isinstance(cats, str):
-                    if cats.lower() in ['signal', 'background']:
-                        count_signal = cats.lower() == 'signal'
-                        
-                        for source, source_counts in source_2_counts.items():
-                            for category, count in source_counts.items():
-                                if (count_signal and category in signal_categories) or (
-                                    not count_signal and category not in signal_categories):
-                                    counts += count
-                    else:
-                        raise Exception(f'Cannot parse <{cats}>')
-                    
-                    category_out = f'total_{cats}'
-                else:
-                    for category in cats:
-                        if '.' in category:
-                            split_items = '.'.split(category)
-                            source, cat = split_items[0], split_items[1]
-                            counts += source_2_counts[source][cat]
-                        else:
-                            source = category_names_2_source[category]
-                            counts += source_2_counts[source][category]
-
-                    category_out = '_and_'.join(cats)
-
-                if render_abs_table:
-                    entry_counts[i, :] = counts
-                    
-                    table += [[ entry.label, *[format_counts(a) for a in counts ]]]
-                else:
-                    table += [[ entry.label, *[f'{a:.2%}'.replace('%', r'\%') for a in entries[i, :] ]]]
-            else:
-                print(entry)
-                raise Exception(f'Received non-parseable item <{entry.__class__.__name__}>')
-            
-            if render_abs_table and category_out is not None and entry_counts[i, :].sum():
-                category_counts[category_out] = entry_counts[i, :]
-
-        table.insert(0, header)
-
-        latex_out = render_table(table)
-        
-        print(out_name, latex_out)
-
-        render_context.render(latex_out, out_name)
-    
-    # write out CSV file with counts
-    with open(csv_out, 'tw') as cf:
-        cf.write(','.join(header))
-        for cat, counts in category_counts.items():
-            cf.write(f'\n{cat}')
-            for count in counts:
-                cf.write(f',{count}')
-                #cf.write(f',{count:.6g}') # round to 6 significant digits
-
 # for table
-def format_counts(x:float):
+def format_ndigits(x:float, ndigits:int=3):
     if x > 999:
         return rf'${x:.2E}$'.replace('E+0', r'\cdot 10^')
     elif x > 99:
         return rf'${x:.3g}$'
     else:
-        return significant_digits(x) #f'{x:.3g}'
-            
+        return significant_digits(x, ndigits) #f'{x:.3g}'
+
+def significant_digits(num:float|int, ndigits=3):
+    return f'${num:.{ndigits}}$'
+
 def transpose(columns)->list:
     return list(map(list, zip(*columns)))
 
 def calc_cross_section(analysis:DataSource, process:str):
     from zhh import combined_cross_section
     return combined_cross_section(analysis.getProcesses(), process)
-
-def significant_digits(num:float|int, ndigits=3):
-    return f'${num:.{ndigits}}$'
 
 def evaluate_categories(source:DataSource, categories:list[str], category_column:str)->dict[str, np.ndarray]:
     """For a given DataSource, returns binary event masks for each of the supplied categories
@@ -1058,7 +919,7 @@ def evaluate_categories(source:DataSource, categories:list[str], category_column
     Returns:
         dict[str, np.ndarray]: _description_
     """
-    from zhh import EventCategories
+    from zhh.processes.EventCategories import EventCategories
 
     store = source.getStore()
     eval_category = store[category_column]

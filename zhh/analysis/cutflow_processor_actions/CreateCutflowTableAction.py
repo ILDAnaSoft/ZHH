@@ -5,9 +5,12 @@ import numpy as np
 from ..CutflowProcessorAction import FileBasedProcessorAction, CutflowProcessor
 from ..Cuts import Cut
 from ..DataSource import DataSource
+from ..CutflowTableEntry import CutflowTableEntry, LatexCutflowTableEntry, SumCutflowTableEntry, \
+    UncategorizedCutflowTableEntry, CategorizedCutflowTableEntry
 
 class CreateCutflowTableAction(FileBasedProcessorAction):
-    def __init__(self, cp:CutflowProcessor, steer:dict, file:str, weight_columns:list[str]|None=None, **kwargs):
+    def __init__(self, cp:CutflowProcessor, steer:dict, file:str, weight_columns:list[str]|None=None,
+                 show_cross_sections:bool=True, **kwargs):
         """_summary_
 
         Args:
@@ -15,9 +18,9 @@ class CreateCutflowTableAction(FileBasedProcessorAction):
             steer (dict): _description_
             file (str): _description_
             weight_columns (list[str]): _description_
+            show_cross_sections (bool): if True (default), the table of absolute counts gets a column with the
+                cross section in fb (expected events before cuts / integrated luminosity)
         """
-
-        from zhh import CategorizedCutflowTableEntry
 
         assert('cutflow_table' in steer)
 
@@ -28,6 +31,7 @@ class CreateCutflowTableAction(FileBasedProcessorAction):
         self._step_end = kwargs.get('step_end', 0)
         self._weight_columns = weight_columns
         self._steer = steer
+        self._show_cross_sections = show_cross_sections
 
         self._cutflow_table_entries = parse_cutflow_table_entries(steer)
         self._all_categories:list[str] = [cast(CategorizedCutflowTableEntry, a).category for a in list(
@@ -47,8 +51,6 @@ class CreateCutflowTableAction(FileBasedProcessorAction):
     def run(self):
         weight_columns:list[str] = [self._cp._weight_columns[step] for step in range(self._step_start, self._step_end+1)] if self._weight_columns is None else self._weight_columns
 
-        from zhh.analysis.CutflowProcessor import cutflowTableFn
-
         masks = []
         cuts = []
 
@@ -65,7 +67,8 @@ class CreateCutflowTableAction(FileBasedProcessorAction):
                        luminosity=self._steer['luminosity'],
                        cutflow_table_entries=self._cutflow_table_entries,
                        cuts=cuts,
-                       path=str(self.output()[0].abspath))
+                       path=str(self.output()[0].abspath),
+                       show_cross_sections=self._show_cross_sections)
     
     def output(self):
         return [
@@ -76,8 +79,6 @@ class CreateCutflowTableAction(FileBasedProcessorAction):
         ]
     
 def parse_cutflow_table_entries(steer:dict):
-    from zhh import CutflowTableEntry, LatexCutflowTableEntry, SumCutflowTableEntry, \
-        CategorizedCutflowTableEntry, UncategorizedCutflowTableEntry
     from copy import deepcopy
 
     cutflow_table_entries:Sequence[CutflowTableEntry|LatexCutflowTableEntry] = []
@@ -272,3 +273,168 @@ def calculate_counts_by_category(
         source_2_counts[source.getName()] = counts_by_category(masks, cuts, source, source_2_category_names[source.getName()], weight_columns=weight_columns)
     
     return source_2_counts, source_2_category_names
+
+def cutflowTableFn(source_2_counts:dict[str, dict[str, np.ndarray]],
+                   source_2_category_names:dict[str, list[str]],
+                   signal_categories:list[str],
+                   luminosity:float,
+                   cutflow_table_entries:Sequence[CutflowTableEntry|LatexCutflowTableEntry],
+                   cuts:Sequence[Sequence[Cut]],
+                   path:str,
+                   show_cross_sections:bool=True):
+    """Renders the cutflow tables (absolute counts, efficiencies, fraction passing).
+
+    Args:
+        luminosity (float): integrated luminosity in ab^-1
+        show_cross_sections (bool): if True, the table of absolute counts gets an additional
+            column with the (effective, i.e. polarization weighted) cross section in fb, calculated
+            as the expected number of events before any cut divided by the luminosity
+    """
+    
+    from zhh import combined_cross_section, renderTableFn, renderLatexFn, EventCategories, \
+        LatexRenderContext
+    from ..CutflowProcessor import invert_dict, format_ndigits
+    from tqdm.auto import tqdm
+
+    category_names_2_source = invert_dict(source_2_category_names)
+    
+    first_item = source_2_counts[list(source_2_counts.keys())[0]]
+    first_item = first_item[list(first_item.keys())[0]]
+
+    entry_counts = np.zeros((len(cutflow_table_entries), len(first_item)))
+    entry_efficiencies = np.zeros((len(cutflow_table_entries), len(first_item) - 1))
+    entry_passing_frac = np.zeros((len(cutflow_table_entries), len(first_item) - 1))
+    category_counts:dict[str, np.ndarray] = {}
+
+    def xsec_from_counts(n_events:int|float)->list[str]:
+        """Returns a list with either one (the formatted cross-section)
+        or no item for convenient printing.
+
+        Args:
+            n_events (int | float): _description_
+
+        Returns:
+            list[str]: _description_
+        """
+        return [ format_ndigits(n_events / (luminosity * 1000.)) ] if show_cross_sections else []
+
+    csv_out = f'{osp.splitext(path)[0]}_counts.csv'
+
+    render_context = LatexRenderContext(work_dir=f'{osp.dirname(csv_out)}/latex-build-{osp.splitext(osp.basename(path))[0]}', packages=[ 'ydoc', 'standalone', 'upgreek' ])
+
+    for n_run in range(3):
+        render_abs_table = n_run == 0
+        render_eff_table = n_run == 1
+        render_frac_table = n_run == 2
+
+        if render_eff_table:
+            for i in range(entry_counts.shape[1] - 1):
+                entry_efficiencies[:, i] = entry_counts[:, i+1] / entry_counts[:, i]
+                entry_passing_frac[:, i] = entry_counts[:, i+1] / entry_counts[:, 0]
+
+        entries = (entry_counts if render_abs_table else (entry_efficiencies if render_eff_table else entry_passing_frac))
+        out_name = osp.splitext(path)[0] +('.pdf' if render_abs_table else ('_efficiency.pdf' if render_eff_table else '_frac.pdf'))
+
+        table = []
+        header = ['']
+
+        if render_abs_table:
+            if show_cross_sections:
+                header.append(r'$\sigma$ [fb]')
+
+            header.append('expected')
+
+        for cut_group in cuts:
+            for cut in cut_group:
+                header += [f'${cut.latex()}$']
+
+        table.append(r'\hline') # line separating header and body
+
+        # each entry in row must either be a str or a list of n strings (where n equal for all lists)
+
+        for i, entry in enumerate(cutflow_table_entries):
+            category_out:str|None = None
+
+            if isinstance(entry, CategorizedCutflowTableEntry):
+                category = entry.category
+                source_name = category_names_2_source[category]
+
+                if render_abs_table:
+                    #print(source_name, category, source_2_counts[source_name].keys())
+                    entry_counts[i, :] = source_2_counts[source_name][category]
+                    category_out = f'{source_name}.{category}'
+
+                    table += [[ entry.label, *xsec_from_counts(entries[i, 0]), *[format_ndigits(a) for a in entries[i, :] ] ]]
+                else:
+                    table += [[ entry.label, *[f'{a:.2%}'.replace('%', r'\%') for a in entries[i, :] ] ]]
+            elif isinstance(entry, UncategorizedCutflowTableEntry):
+                source_name = entry.source
+                
+                if render_abs_table:
+                    entry_counts[i, :] = source_2_counts[source_name]['other']
+                    category_out = f'{source_name}.other'
+
+                    table += [[ entry.label, *xsec_from_counts(entries[i, 0]), *[format_ndigits(a) for a in entries[i, :] ] ]]
+                else:
+                    table += [[ entry.label, *[f'{a:.2%}'.replace('%', r'\%') for a in entries[i, :] ] ]]
+            elif isinstance(entry, LatexCutflowTableEntry):
+                table += [entry.latex]
+            elif isinstance(entry, SumCutflowTableEntry):
+                cats = entry.sum
+                counts = np.zeros(entry_counts.shape[1])
+
+                if isinstance(cats, str):
+                    if cats.lower() in ['signal', 'background']:
+                        count_signal = cats.lower() == 'signal'
+                        
+                        for source, source_counts in source_2_counts.items():
+                            for category, count in source_counts.items():
+                                if (count_signal and category in signal_categories) or (
+                                    not count_signal and category not in signal_categories):
+                                    counts += count
+                    else:
+                        raise Exception(f'Cannot parse <{cats}>')
+                    
+                    category_out = f'total_{cats}'
+                else:
+                    for category in cats:
+                        if '.' in category:
+                            split_items = '.'.split(category)
+                            source, cat = split_items[0], split_items[1]
+                            counts += source_2_counts[source][cat]
+                        else:
+                            source = category_names_2_source[category]
+                            counts += source_2_counts[source][category]
+
+                    category_out = '_and_'.join(cats)
+
+                if render_abs_table:
+                    entry_counts[i, :] = counts
+                    
+                    table += [[ entry.label, *xsec_from_counts(counts[0]), *[format_ndigits(a) for a in counts ]]]
+                else:
+                    table += [[ entry.label, *[f'{a:.2%}'.replace('%', r'\%') for a in entries[i, :] ]]]
+            else:
+                print(entry)
+                raise Exception(f'Received non-parseable item <{entry.__class__.__name__}>')
+            
+            if render_abs_table and category_out is not None and entry_counts[i, :].sum():
+                category_counts[category_out] = entry_counts[i, :]
+
+        table.insert(0, header)
+        #lable = transpose(table)
+
+        latex_out = renderTableFn(table)
+        
+        print(out_name, latex_out)
+
+        render_context.render(latex_out, out_name)
+    
+    # write out CSV file with counts
+    with open(csv_out, 'tw') as cf:
+        cf.write(','.join(header))
+        for cat, counts in category_counts.items():
+            cf.write(f'\n{cat}')
+            for count in counts:
+                cf.write(f',{count}')
+                #cf.write(f',{count:.6g}') # round to 6 significant digits

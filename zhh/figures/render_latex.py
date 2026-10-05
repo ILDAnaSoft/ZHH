@@ -166,7 +166,7 @@ class LatexRenderContext:
 
             raise Exception(f'Timeout after {timeout} seconds. Please check that the latex input is valid.')
 
-def render_latex(latex:str, location:str, overwrite:bool=True, preamble:str|None=None, documentclass:str='[9pt]{standalone}', packages:list[str]=[]):
+def renderLatexFn(latex:str, location:str, overwrite:bool=True, preamble:str|None=None, documentclass:str='[9pt]{standalone}', packages:list[str]=[]):
     drn = osp.dirname(location)
     bname = osp.splitext(osp.basename(location))[0]
     

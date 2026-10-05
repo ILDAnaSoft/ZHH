@@ -29,7 +29,10 @@
         
         <parameter name="Verbosity" type="string">${Verbosity}</parameter>
     </processor>
+</group>
 
+<!-- TrueJet is run separately (RunTrueJet) as it can hang or crash on rare events; its output is not used by the EventObservables processors -->
+<group name="prodAnalysisTrueJet">
     <processor name="MyTrueJet" type="TrueJet">
         <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
         <parameter name="RecoParticleCollection" type="string" lcioInType="ReconstructedParticle">PandoraPFOs</parameter>
@@ -612,7 +615,7 @@
     </processor>
     
     <processor name="MyZHHKinFitQQ_solveNu" type="ZHHKinFit"> 
-        <!--ZHHKinFit does a 5C fit on 4 jet events and 2 leptons (Px, Py, Pz, E, M12 = M34 (for all three permutations)) > 
+        <!--ZHHKinFit does a 5C fit on 4 jet events and 2 leptons (Px, Py, Pz, E, M12 = M34 (for all three permutations)) -->
         <!--Name of the input collections: isolated leptons, jets, SLD vertices, Jet-SLDvertex relations, and SLDvertex-neutrino relations --> 
         <parameter name="LeptonsCollectionName" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter> 
         <parameter name="JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets6</parameter> 
@@ -634,7 +637,7 @@
         <parameter name="solveNuCorrection" type="bool">true</parameter> 
         <!-- 0 = OPALFitter, 1 = NewFitter, 2 = NewtonFitter (default: 0) --> 
         <parameter name="fitter" type="int">1</parameter> 
-        <!-- name of fit hypothesis: MH, ZHH, ZZH, equal mass (default), NMC (no mass constraint) >-- 
+        <!-- name of fit hypothesis: MH, ZHH, ZZH, equal mass (default), NMC (no mass constraint) -->
         <parameter name="fithypothesis">NMC</parameter> 
          <!-- name of Output root file --> 
         <parameter name="outputFilename"></parameter> 
@@ -768,6 +771,12 @@
     </processor>                                                                                                                                               
 
     <processor name="MyEventObservablesQQ" type="EventObservablesQQ">
+        <parameter name="LeptonsKinFit_solveNu" type="string" lcioInType="ReconstructedParticle">LeptonsKinFitQQ_solveNu</parameter>
+        <parameter name="JetsKinFit_solveNu" type="string" lcioInType="ReconstructedParticle">JetsKinFitQQ_solveNu</parameter>
+
+        <parameter name="JetsKinFitZHH" type="string" lcioInType="ReconstructedParticle">JetsKinFitQQ_ZHH</parameter>
+        <parameter name="JetsKinFitZZH" type="string" lcioInType="ReconstructedParticle">JetsKinFitQQ_ZZH</parameter>
+
         <parameter name="isolatedleptonCollection" type="string" lcioInType="ReconstructedParticle">ISOLeptons</parameter>
         <parameter name="LepPairCollection" type="string" lcioInType="ReconstructedParticle">LeptonPair</parameter>
         <parameter name="JetCollectionName" type="string" lcioInType="ReconstructedParticle">RefinedJets6</parameter>
@@ -791,6 +800,6 @@
         <parameter name="polarizations" type="FloatVec"> 1 0 </parameter>
         <parameter name="ECM" type="float"> ${CMSEnergy} </parameter>
 
-        <parameter name="Verbosity" type="string">DEBUG</parameter>
+        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
     </processor>
 </group>

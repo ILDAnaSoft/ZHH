@@ -18,6 +18,7 @@
         <constant name="Runvvbbbb" value="true" />
         <constant name="Runqqbbbb" value="false" />
         <constant name="RunTruthRecoComparison" value="false" />
+        <constant name="RunTrueJet" value="true" />
         <constant name="WriteLCIO" value="false" />
 
         <!-- These must be chosen depending on fast/full simulation options -->
@@ -65,6 +66,9 @@
 
             <!-- Analysis -->
             <group name="prodAnalysisAll" />
+            <if condition="${RunTrueJet}">
+                <group name="prodAnalysisTrueJet" />
+            </if>
 
             <if condition="${Runllbbbb}">
                 <group name="prodAnalysisLL" />
