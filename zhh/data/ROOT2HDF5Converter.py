@@ -212,8 +212,7 @@ class ROOT2HDF5Converter:
                             
                             for idx, matches in enumerate(path_checks):
                                 if not matches:
-                                    print(check_requires_exact_path_match)
-                                    print(f'<{input_files[i]}>:<{chunk_files[i]}>' if check_requires_exact_path_match else f'<{bnames_found[i]}>:<{bnames_expected[i]}>')
+                                    print(f'<{input_files[idx]}>:<{chunk_files[idx]}>' if check_requires_exact_path_match else f'<{bnames_found[idx]}>:<{bnames_expected[idx]}>')
 
                             raise Exception(f'File <{out_file}> for chunk <{chunk_idx}> does not fit to expected '+
                                             'data structure. See above print for property=<found> <expected>')

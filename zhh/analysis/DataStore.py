@@ -24,7 +24,7 @@ class DataStore(MixedLazyTablelike):
     def __init__(self, h5_file:str, final_states:bool=True,
                  in_memory:list[str]=[],
                  in_memory_writable:list[str]=[],
-                 n_jets:int=4,
+                 n_jets:int|None=None,
                  h5_readonly:bool=False,
                  with_default_handler:bool=False):
 
@@ -33,6 +33,12 @@ class DataStore(MixedLazyTablelike):
             hf_keys = hf.keys()
 
             init_done = all([ item in hf_keys for item in ['event_category', 'pid', 'weight'] ])
+
+            # 4 for lepton+neutrino channel, 6 for hadron channel
+            if n_jets is None:
+                n_jets = 0
+                while f'jet{n_jets+1}_m' in hf_keys:
+                    n_jets += 1
         
         assert(r_size)
         super().__init__(r_size)
@@ -57,7 +63,7 @@ class DataStore(MixedLazyTablelike):
             for i in range(len(fs_columns)):
                 self[fs_columns[i]] = NamedHDF5Mapping(self._h5_file, f'final_state_counts.dim{i}')
         
-        self['sumBTags'] = lambda intf: ( self['bmax1'] + self['bmax2'] + self['bmax3'] + self['bmax4'] )
+        self['sumBTags'] = lambda intf: ( np.sum( [ getattr(self, f'bmax{i}') for i in range(n_jets) ], axis=0 ) )
 
         self['yminus_mod100'] = lambda intf: np.mod(intf['yminus2'], 100)
         self.propsFromFile()

@@ -1,5 +1,5 @@
 from .DataSource import DataSource
-from .Cuts import Cut, ValueCut
+from .Cuts import Cut, ValueCut, NDimensionalBinnedCut
 from ..util.PlotContext import PlotContext
 from typing import Sequence, Any
 from copy import deepcopy
@@ -234,6 +234,14 @@ class CutflowProcessor:
                     
                     #categories, counts = weighted_counts_by_categories(subset)
                     calc_dict = calc_preselection_by_event_categories(subset, processes, quantity=cut.quantity, categories_additional=None, weights=wt, weight_prop=weight_prop)
+
+                    # cuts on multiple quantities: store the values of all quantities as array of shape (n_events, n_quantities)
+                    if isinstance(cut, NDimensionalBinnedCut):
+                        calc_dicts_quantities = [ calc_dict ] + [
+                            calc_preselection_by_event_categories(subset, processes, quantity=quantity, categories_additional=None, weights=wt, weight_prop=weight_prop)
+                            for quantity in cut.quantities[1:] ]
+                        
+                        calc_dict = { name: (np.stack([ cd[name][0] for cd in calc_dicts_quantities ], axis=1), calc_dict[name][1]) for name in calc_dict }
                     
                     for name in calc_dict:
                         values, weights = calc_dict[name]
@@ -703,6 +711,10 @@ def cutflowPlotsFn(signal_category_names:list[str],
     
     for i, cut in enumerate(cuts):
         calc_dict = calc_dicts[i]
+
+        # cuts on multiple quantities: plot the distribution of the first one
+        if isinstance(cut, NDimensionalBinnedCut):
+            calc_dict = { name: (values[:, 0], weights) for name, (values, weights) in calc_dict.items() }
         
         plot_options_quantity = {}
         if hypothesis in plot_options and cut.quantity in plot_options[hypothesis]:
@@ -758,7 +770,10 @@ def cutflowPlotsFn(signal_category_names:list[str],
 
     for cat in calc_dict_final:    
         last_cut_value = calc_dict_final[cat][0]
-        mask = last_cut.raw(last_cut_value)
+        try:
+            mask = last_cut.raw(last_cut_value)
+        except ValueError as e:
+            raise ValueError(f'Evaluating the last cut {type(last_cut).__name__} for category {cat} failed: {e}') from e
         counts_final.append((cat, calc_dict_final[cat][1][mask].sum()))
     
     calc_dict_first = calc_dicts[0]
@@ -899,9 +914,6 @@ def format_ndigits(x:float, ndigits:int=3):
 
 def significant_digits(num:float|int, ndigits=3):
     return f'${num:.{ndigits}}$'
-
-def transpose(columns)->list:
-    return list(map(list, zip(*columns)))
 
 def calc_cross_section(analysis:DataSource, process:str):
     from zhh import combined_cross_section

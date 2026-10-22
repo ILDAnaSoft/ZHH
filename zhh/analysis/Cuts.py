@@ -220,6 +220,10 @@ class NDimensionalBinnedCut(Cut):
         assert(len(quantities) == len(own_thresholds) == len(others_thresholds))
         assert(len(quantities) > 0)
 
+        # the label is used in plots of the distribution of the first quantity and must be valid in math mode
+        if cut_kwargs.get('label') is None:
+            cut_kwargs['label'] = r'P_{\mathrm{' + quantities[0].split('#')[-1].replace('_', r'\_') + '}}'
+
         super().__init__(quantities[0], **cut_kwargs)
 
         self.quantities = list(quantities)
@@ -230,8 +234,17 @@ class NDimensionalBinnedCut(Cut):
     def __call__(self, arg):
         return self.raw({ quantity: arg[quantity] for quantity in self.quantities })
 
-    def raw(self, values:dict):
-        stacked = np.stack([ values[quantity] for quantity in self.quantities ], axis=0)
+    def raw(self, values:dict|np.ndarray):
+        # either a dict quantity -> values or an array of shape (n_events, n_quantities)
+        # (the latter is what the CutflowProcessor stores in its calc dicts)
+        if isinstance(values, dict):
+            stacked = np.stack([ values[quantity] for quantity in self.quantities ], axis=0)
+        else:
+            values = np.asarray(values)
+            if values.ndim != 2 or values.shape[1] != len(self.quantities):
+                raise ValueError(f'Expected array of shape (n_events, {len(self.quantities)}) but got {values.shape} (dtype {values.dtype})')
+
+            stacked = values.T
         total = stacked.sum(axis=0)
 
         selection = np.zeros(stacked.shape[1], dtype=bool)
@@ -250,7 +263,14 @@ class NDimensionalBinnedCut(Cut):
         ])
 
     def latex(self, *args, **kwargs)->str:
-        return self.formula(*args, **kwargs)
+        # the raw formula contains characters (&, #, _) that are not valid in LaTeX math mode
+        def name(label:str)->str:
+            return label.split('#')[-1].replace('_', r'\_')
+
+        return r' \vee '.join([
+            rf"(P_{{\mathrm{{{name(label)}}}}} \geq {own:.4g} \wedge P_{{\mathrm{{others}}}} \leq {others:.4g})"
+            for label, own, others in zip(self.labels, self.own_thresholds, self.others_thresholds)
+        ])
 
     def __hash__(self)->str:
         return ' | '.join([

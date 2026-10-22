@@ -25,12 +25,6 @@ luminosity: 2.
 # sources section below
 reset: false
 
-# definition of event categories
-# the registration of event categories to specific sources is done in the sources section
-# info: while the naming can be arbitrary, a unique ID must be supplied which must exist 
-#       in the EVENT_CATEGORIES_TRUE class, too. See EventCategories.py
-event_categories: '$REPO_ROOT/config/event_categories.yaml'
-
 # definition of input data and information about the event categorization
 # path                : path to a directory containing Merged.root file whose content
 #                       must be compliant to the one output from the AnalysisCombine
@@ -286,7 +280,7 @@ mvas:
   - name: default_mva
 
     # model: either 'LGBMClassifier' or 'XGBClassifier' 
-    model: LGBMClassifier
+    model: XGBClassifier # LGBMClassifier
 
     features: [
       jet1_m, jet2_m, jet3_m, jet4_m,

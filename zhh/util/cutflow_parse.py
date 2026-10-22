@@ -337,10 +337,20 @@ def cutflow_provision_features(interpretations:list[Interpretation],
             feature_names.append(name)
 
             if 'auto_increment' in feature and feature['auto_increment']:
-                if not name in ds_keys:
+                # (re)create if missing or if its length does not match nrows (stale, e.g. after the input files changed)
+                stale = False
+                if name in ds_keys:
+                    with h5py.File(ds_path, 'r') as hf:
+                        stale = hf[name].shape[0] != nrows
+
+                if stale or not name in ds_keys:
+                    if readonly:
+                        raise ReadonlyWriteAttempt(f'Cannot add auto_increment column {name} to readonly dataset {ds_path}')
+
                     with h5py.File(ds_path, 'a') as hf:
-                        if readonly:
-                            raise ReadonlyWriteAttempt(f'Cannot add auto_increment column {name} to readonly dataset {ds_path}')
+                        if stale:
+                            print(f'Property <{name}> has a length different from nrows={nrows} and will be regenerated')
+                            del hf[name]
 
                         hf[name] = np.arange(nrows, dtype=feature['dtype'] if 'dtype' in feature else 'uint32')
                 

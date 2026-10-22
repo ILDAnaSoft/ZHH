@@ -10,7 +10,7 @@ from ..CutflowTableEntry import CutflowTableEntry, LatexCutflowTableEntry, SumCu
 
 class CreateCutflowTableAction(FileBasedProcessorAction):
     def __init__(self, cp:CutflowProcessor, steer:dict, file:str, weight_columns:list[str]|None=None,
-                 show_cross_sections:bool=True, **kwargs):
+                 show_cross_sections:bool=True, categories_left:bool=True, **kwargs):
         """_summary_
 
         Args:
@@ -32,6 +32,7 @@ class CreateCutflowTableAction(FileBasedProcessorAction):
         self._weight_columns = weight_columns
         self._steer = steer
         self._show_cross_sections = show_cross_sections
+        self._categories_left = categories_left
 
         self._cutflow_table_entries = parse_cutflow_table_entries(steer)
         self._all_categories:list[str] = [cast(CategorizedCutflowTableEntry, a).category for a in list(
@@ -68,7 +69,8 @@ class CreateCutflowTableAction(FileBasedProcessorAction):
                        cutflow_table_entries=self._cutflow_table_entries,
                        cuts=cuts,
                        path=str(self.output()[0].abspath),
-                       show_cross_sections=self._show_cross_sections)
+                       show_cross_sections=self._show_cross_sections,
+                       categories_left=self._categories_left)
     
     def output(self):
         return [
@@ -274,6 +276,19 @@ def calculate_counts_by_category(
     
     return source_2_counts, source_2_category_names
 
+def transpose(columns)->list:
+    return list(map(list, zip(*columns)))
+
+def transpose_table(table:Sequence[Sequence[str]|str])->list:
+    """Transposes a to-be-rendered table. Raw LaTeX code (strings) are dropped.
+    \\hline is inserted below the new header row instead. Used if categories_left
+    is False in cutflowTableFn()."""
+
+    rows = [ row for row in table if not isinstance(row, str) ]
+    transposed:list = transpose(rows)
+
+    return [ transposed[0], r'\hline', *transposed[1:] ]
+
 def cutflowTableFn(source_2_counts:dict[str, dict[str, np.ndarray]],
                    source_2_category_names:dict[str, list[str]],
                    signal_categories:list[str],
@@ -281,7 +296,8 @@ def cutflowTableFn(source_2_counts:dict[str, dict[str, np.ndarray]],
                    cutflow_table_entries:Sequence[CutflowTableEntry|LatexCutflowTableEntry],
                    cuts:Sequence[Sequence[Cut]],
                    path:str,
-                   show_cross_sections:bool=True):
+                   show_cross_sections:bool=True,
+                   categories_left:bool=True):
     """Renders the cutflow tables (absolute counts, efficiencies, fraction passing).
 
     Args:
@@ -289,6 +305,8 @@ def cutflowTableFn(source_2_counts:dict[str, dict[str, np.ndarray]],
         show_cross_sections (bool): if True, the table of absolute counts gets an additional
             column with the (effective, i.e. polarization weighted) cross section in fb, calculated
             as the expected number of events before any cut divided by the luminosity
+        categories_left (bool): if True, event categories are shown on the left, cuts at the top.
+                                if False, rows and columns are transposed. Defaults to True.
     """
     
     from zhh import combined_cross_section, renderTableFn, renderLatexFn, EventCategories, \
@@ -422,7 +440,9 @@ def cutflowTableFn(source_2_counts:dict[str, dict[str, np.ndarray]],
                 category_counts[category_out] = entry_counts[i, :]
 
         table.insert(0, header)
-        #lable = transpose(table)
+
+        if not categories_left:
+            table = transpose_table(table)
 
         latex_out = renderTableFn(table)
         

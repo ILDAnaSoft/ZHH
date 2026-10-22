@@ -42,7 +42,7 @@ reset: false
 sources:
   - name: 4fsl
     path: $DATA_PATH/AnalysisCombine/550-4fsl-$CONF_SUFFIX
-    root_files: /data/dust/user/jtorndal/zhh/AnalysisFinal/550-4fsl-$CONF_SUFFIX/*.root
+    root_files: $DATA_PATH/AnalysisFinal/550-4fsl-$CONF_SUFFIX/*.root
     event_categorization:
       default: EventCategories.F4_OTHER
       order: null
@@ -52,7 +52,7 @@ sources:
   
   - name: 4flh
     path: $DATA_PATH/AnalysisCombine/550-4flh-$CONF_SUFFIX
-    root_files: /data/dust/user/jtorndal/zhh/AnalysisFinal/550-4flh-$CONF_SUFFIX/*.root
+    root_files: $DATA_PATH/AnalysisFinal/550-4flh-$CONF_SUFFIX/*.root
     event_categorization:
       default: EventCategories.F4_OTHER
       order: [ llll, qqqq ]
@@ -62,7 +62,7 @@ sources:
 
   - name: 2l4q
     path: $DATA_PATH/AnalysisCombine/550-2l4q-$CONF_SUFFIX
-    root_files: /data/dust/user/jtorndal/zhh/AnalysisFinal/550-2l4q-$CONF_SUFFIX/*.root
+    root_files: $DATA_PATH/AnalysisFinal/550-2l4q-$CONF_SUFFIX/*.root
     event_categorization:
       default: EventCategories.F6_OTHER
       order: [ lvqqqq, lvbbqq, llqqqq, vvqqqq ]
@@ -72,7 +72,7 @@ sources:
 
   - name: llhh
     path: $DATA_PATH/AnalysisCombine/550-llhh-$CONF_SUFFIX
-    root_files: /data/dust/user/bliewert/zhh/AnalysisFinal/550-llhh-$CONF_SUFFIX/*.root
+    root_files: $DATA_PATH/AnalysisFinal/550-llhh-$CONF_SUFFIX/*.root
     event_categorization:
       default: null
       order: null
@@ -82,7 +82,7 @@ sources:
 
   - name: 6q
     path: $DATA_PATH/AnalysisCombine/550-6q-$CONF_SUFFIX
-    root_files: /data/dust/user/jtorndal/zhh/AnalysisFinal/550-6q-$CONF_SUFFIX/*.root
+    root_files: $DATA_PATH/AnalysisFinal/550-6q-$CONF_SUFFIX/*.root
     event_categorization:
       default: EventCategories.qqqqqq
       order: []
@@ -92,7 +92,7 @@ sources:
 
   - name: tthz
     path: $DATA_PATH/AnalysisCombine/550-tthz-$CONF_SUFFIX
-    root_files: /data/dust/user/jtorndal/zhh/AnalysisFinal/550-tthz-$CONF_SUFFIX/*.root
+    root_files: $DATA_PATH/AnalysisFinal/550-tthz-$CONF_SUFFIX/*.root
     event_categorization:
       default: EventCategories.ttHZ
       order: null
@@ -280,7 +280,7 @@ mvas:
   - name: default_mva
 
     # model: either 'LGBMClassifier' or 'XGBClassifier' 
-    model: LGBMClassifier # XGBClassifier # 
+    model: XGBClassifier # LGBMClassifier
 
     features: [
       jet1_m, jet2_m, jet3_m, jet4_m,
@@ -405,7 +405,7 @@ actions:
     mva: default_mva
     split: 0
     ntrials: 500
-    nprocesses: 8 # on NAF, use some lower value (e.g. 8). on Maxwell, 50 should be OK
+    nprocesses: 50 # on NAF, use some lower value (e.g. 8). on Maxwell, 50 should be OK
     disabled: false
 
   - type: SklearnMulticlassInference

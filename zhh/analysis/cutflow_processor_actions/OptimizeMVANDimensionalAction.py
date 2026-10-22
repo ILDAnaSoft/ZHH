@@ -76,7 +76,7 @@ class OptimizeMVANDimensionalAction(CutGroupProviderInterface, FileBasedProcesso
             probas = list(data.values())
             objective, guess, bounds = optimization_objective_factory(probas[:-1], weights, is_signal, is_background, mode=mode)
             
-            res = differential_evolution(objective, x0=guess , bounds=bounds)
+            res = differential_evolution(objective, x0=guess , bounds=bounds, seed=42) # fixed seed for reproducible cuts
             significance = 1/res.fun
             found_parameters:np.ndarray = res.x
 

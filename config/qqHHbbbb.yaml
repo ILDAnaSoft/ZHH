@@ -25,12 +25,6 @@ luminosity: 2.
 # sources section below
 reset: false
 
-# definition of event categories
-# the registration of event categories to specific sources is done in the sources section
-# info: while the naming can be arbitrary, a unique ID must be supplied which must exist 
-#       in the EVENT_CATEGORIES_TRUE class, too. See EventCategories.py
-event_categories: '$REPO_ROOT/config/event_categories.yaml'
-
 # definition of input data and information about the event categorization
 # path                : path to a directory containing Merged.root file whose content
 #                       must be compliant to the one output from the AnalysisCombine
@@ -62,7 +56,7 @@ sources:
     event_categorization:
       default: EventCategories.F4_OTHER
       order: null
-      items: [ llll, qqqq, vvvv ]
+      items: [ llll, bbbb, qqqq, vvvv ]
     disabled: false
     reset: false
 
@@ -117,7 +111,7 @@ sources:
       default: EventCategories.ttHZ
       order: null
       items: [ ttH, ttZ, ttHZ ]
-    disabled: false
+    disabled: true
     reset: false
 
 # feature definition
@@ -183,6 +177,10 @@ features:
   - { names: [ ptmiss, pzmiss, cosmiss, thrust, costhrust, evis ], tree: EventObservablesQQ, dtype: float32 }
   - { names: [ sphericity, aplanarity, fw2 ], tree: EventObservablesQQ, dtype: float32 }
 
+  # ZHH hypothesis with b-tag driven pairing: the four jets with the largest b-tag form the two H candidates (best of the 3 pairings),
+  # the remaining two jets the Z
+  - { names: [ zhh_chi2, zhh_mz, zhh_mh1, zhh_mh2, zhh_mhh, zhh_p1st, zhh_cosTh1st ], tree: EventObservablesQQ, dtype: float32 }
+
   # ZHH hypothesis from jet masses only (Z->qq, H->bb from all 45 pairings; chi2 contains Z mass)
   - { names: [ zhh6_chi2, zhh6_mz, zhh6_mh1, zhh6_mh2, zhh6_mhh, zhh6_recoil_hh, zhh6_recoil_z,
                zhh6_cosz, zhh6_coshh, zhh6_cos_hh, zhh6_cos_zjj, zhh6_cosh1star, zhh6_cosh2star ], tree: EventObservablesQQ, dtype: float32 }
@@ -227,22 +225,28 @@ cutflow_table:
   items:
     - category: qqqqH
       label: qqqqH
-    - category: qqqq
-      label: qqqq
-    - category: lvbbqq
-      label: lvbbqq
-    - category: bbqqqq
-      label: bbqqqq
     - category: bbbbqq
       label: bbbbqq
+    - category: bbbb
+      label: bbbb
+    - category: bbqqqq
+      label: bbqqqq
+    - category: lvbbqq
+      label: lvbbqq
+    - sum: background
+      label: 'Total background'
+    
     - category: qqHH_nonbbbb
       label: qqHH (non-bbbb)
+      is_signal: True
     - category: qqHHbbbb
       label: (qqHH bbbb)
       is_signal: true
     - category: bbHHbbbb
       label: (bbHH bbbb)
       is_signal: true
+    - sum: signal
+      label: 'Total signal'
   ignore_categories: []
 
 # general note about cuts:
@@ -266,6 +270,8 @@ cutflow_table:
 cuts:
   preselection:
   - { quantity: nisoleptons, operator: eq, value: 0, label: 'N_{iso. leptons}' }
+  # four jets with b-likeliness > 0.16 (b-tags are sorted descending, i.e. bmax4 is the fourth largest value), as in the 2014 analysis
+  - { quantity: bmax4, operator: gte, value: 0.16, label: 'b_{max4}' }
   - { quantity: ptmiss, operator: lte, value: 100., label: 'p_{t}^{miss}', unit: 'GeV' }
   - { quantity: thrust, operator: lte, value: 0.9, label: 'thrust' }
   - { quantity: zhh6_mz, operator: within_bounds, lower: 40., upper: 120., label: 'm_{Z}', unit: 'GeV', xlim_view: [0, 200] }
@@ -301,11 +307,16 @@ cuts:
 #
 mvas:
   - name: default_mva
+
+    # model: either 'LGBMClassifier' or 'XGBClassifier' 
+    model: XGBClassifier # LGBMClassifier
+    
     features: [
       jet1_m, jet2_m, jet3_m, jet4_m, jet5_m, jet6_m,
       bmax1, bmax2, bmax3, bmax4, bmax5, bmax6, btag4sum, btag4prod, nbjets05, ctagz,
       m_inv_jets, ptmiss, pzmiss, thrust, costhrust, sphericity, aplanarity, fw2,
       npfos, npfosmin6j, yplus, yminus, cosjj_max, mjj_min,
+      zhh_chi2, zhh_mz, zhh_mh1, zhh_mh2, zhh_mhh, zhh_p1st, zhh_cosTh1st,
       zhh6_chi2, zhh6_mz, zhh6_mh1, zhh6_mh2, zhh6_mhh, zhh6_recoil_hh, zhh6_cosz, zhh6_cos_hh, zhh6_cos_zjj,
       zzh6_chi2, zzh6_mh, zzh6_mz1, zzh6_mz2,
       ww4_chi2, zz_bestchi2, tt_chi2, tt_mt1, tt_mt2,
@@ -351,6 +362,7 @@ actions:
   # step_end: 0
   - type: CreateCutflowTable
     file: '$hypothesis_cutflow_preselection_table.pdf'
+    categories_left: False
 
   - type: WriteROOTSnapshot
     file: '$hypothesis_inputs.root'
@@ -410,6 +422,7 @@ actions:
     mva: default_mva
     split: 0
     ntrials: 250
+    #nprocesses: 8 # only use 8 CPU cores
     disabled: false
 
   # optional:
@@ -477,3 +490,4 @@ actions:
     file: '$hypothesis_cutflow_mva_table.pdf'
     step_start: 0
     step_end: 1
+    categories_left: False
