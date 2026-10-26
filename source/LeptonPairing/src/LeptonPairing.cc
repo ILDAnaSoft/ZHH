@@ -89,7 +89,7 @@ LeptonPairing::LeptonPairing():
   registerProcessorParameter("diLepInvMass",
 			     "Invariant mass of di-lepton system in Isolated Leptons [GeV]",
 			     m_diLepInvMass,
-			     double(91.2)
+			     double(91.1879) // m_Z from PDG 2026, Int. J. Mod. Phys. A 41, 2630011 (2026)
 			     );
 
   registerProcessorParameter("doPhotonRecovery",

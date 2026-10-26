@@ -41,7 +41,7 @@ class LeptonPairing : public Processor
   virtual void end();
 
  protected:
-  double m_diLepInvMass = 91.2;
+  double m_diLepInvMass = 91.1879; // PDG 2026, Int. J. Mod. Phys. A 41, 2630011 (2026)
   string m_rootFile{};
   bool m_doPhotonRecovery = true;
   bool m_fillRootTree = true;
