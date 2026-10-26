@@ -162,8 +162,9 @@ void LeptonPairingCombined::Clear() {
   m_bestLeptonType = 0;
   m_bestLeptonDelta = 99999.;
 
+  // one entry per lepton flavour (e, mu, tau); 9999 = no pair of that flavour
   m_IsoLepsInvMass = { 9999., 9999., 9999. };
-  m_RecoLepsInvMass.clear();
+  m_RecoLepsInvMass = { 9999., 9999., 9999. };
   m_bestLeptonPair.clear();
   m_bestLeptonPairIDx.clear();
 }
