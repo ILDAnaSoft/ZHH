@@ -208,7 +208,7 @@
         <parameter name="IsoMuonCollection" type="string" lcioInType="ReconstructedParticle">ISOMuons</parameter>
         <parameter name="IsoTauCollection" type="string" lcioInType="ReconstructedParticle">ISOTaus</parameter>
         
-        <parameter name="LeptonPair" type="string" lcioOutType="ReconstructedParticle">LeptonPair</parameter>
+        <parameter name="LepPairCollection" type="string" lcioOutType="ReconstructedParticle">LeptonPair</parameter>
         <parameter name="PFOsWOLepPairCollection" type="string" lcioOutType="ReconstructedParticle">PandoraPFOsWithoutLepPair</parameter>
         <parameter name="fillRootTree" type="bool">true</parameter>
 
