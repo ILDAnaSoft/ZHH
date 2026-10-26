@@ -199,6 +199,7 @@ void LeptonPairing::processEvent( EVENT::LCEvent *pLCEvent ) {
     streamlog_out(DEBUG7) << lepton1->getType() << " " << lepton2->getType()<< " " << lepton1->getCharge() << " " << lepton2->getCharge() << endl;
     if (lepton1->getType() + lepton2->getType() == 0) {
       LeptonPair = {lepton1, lepton2};
+      paired_lep_idx = {0, 1};
       _lep_type = lepton1->getType();
       streamlog_out(DEBUG7) << "mass = " << inv_mass(lepton1, lepton2)  << endl;
       streamlog_out(DEBUG7) << "same type, opposite charge" << endl;
