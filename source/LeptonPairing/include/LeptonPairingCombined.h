@@ -45,8 +45,8 @@ class LeptonPairingCombined : public Processor
   
   double m_diLepInvMass = 91.2;
   string m_rootFile{};
-  bool m_doPhotonRecovery = false;
-  bool m_fillRootTree = false;
+  bool m_doPhotonRecovery = true;
+  bool m_fillRootTree = true;
   int m_nRun;
   int m_nEvt;
   vector<float> m_IsoLepsInvMass{};
