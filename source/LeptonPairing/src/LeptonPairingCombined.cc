@@ -215,8 +215,8 @@ float LeptonPairingCombined::evaluateIsoLeptons(EVENT::LCCollection *isoLepColle
           pairmass = inv_mass(&recoLepton1, &recoLepton2);
           massDelta = abs(pairmass - m_diLepInvMass);
 
-          streamlog_out(MESSAGE) << "same type, opposite charge; recolep mass = " << pairmass << endl;
-          streamlog_out(MESSAGE) << "same type, opposite charge; isolep mass = " << inv_mass(lepton1, lepton2) << endl;
+          streamlog_out(DEBUG7) << "same type, opposite charge; recolep mass = " << pairmass << endl;
+          streamlog_out(DEBUG7) << "same type, opposite charge; isolep mass = " << inv_mass(lepton1, lepton2) << endl;
 
           if (massDelta > bestDelta)
             continue;
@@ -268,7 +268,6 @@ void LeptonPairingCombined::processEvent( EVENT::LCEvent *pLCEvent ) {
     cerr << "Critical error: One of the given input collections do not exist in event " << m_nEvt << ": " << m_inputIsoElectronCollection << ", " << m_inputIsoMuonCollection << " or " << m_inputPFOsWOIsoLepCollection;
     throw EVENT::Exception("Required collection does not exist");
   }
-  streamlog_out(MESSAGE) << " test message " <<endl;
   
   try {
     IsoTauCollection = pLCEvent->getCollection(m_inputIsoTauCollection);
@@ -334,8 +333,8 @@ void LeptonPairingCombined::processEvent( EVENT::LCEvent *pLCEvent ) {
       E_ph_tot += photons[i_ph]->getEnergy();
     }
 
-    streamlog_out(MESSAGE) << "Best lepton pair (type=" << m_bestLeptonType << ") with invariant mass = " << m_IsoLepsInvMass[massEntryIndex] << " (before pairing: " << m_RecoLepsInvMass[massEntryIndex] <<")" << endl;      
-    streamlog_out(MESSAGE) << "  Recovered " << photons.size() << " photons with an energy of " << E_ph_tot << endl;
+    streamlog_out(DEBUG7) << "Best lepton pair (type=" << m_bestLeptonType << ") with invariant mass = " << m_RecoLepsInvMass[massEntryIndex] << " (before photon recovery: " << m_IsoLepsInvMass[massEntryIndex] << ")" << endl;
+    streamlog_out(DEBUG7) << "  Recovered " << photons.size() << " photons with an energy of " << E_ph_tot << endl;
 
     m_IsoLepPairCol->addElement(m_bestLeptonPair[0]);
     m_IsoLepPairCol->addElement(m_bestLeptonPair[1]);
