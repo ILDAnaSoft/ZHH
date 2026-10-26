@@ -193,23 +193,26 @@ float LeptonPairingCombined::evaluateIsoLeptons(EVENT::LCCollection *isoLepColle
     float massDelta;
 
     Double_t fCosFSRCut = m_doPhotonRecovery ? 0.99 : 99.; // the angle of BS and FSR around the direction of charged lepton
-    vector<lcio::ReconstructedParticle*> photons;
 
     for ( int i_lep1 = 0 ; i_lep1 < InIsoLeps - 1 ; ++i_lep1 ) {
       ReconstructedParticle* lepton1 = static_cast<ReconstructedParticle*>( isoLepCollection->getElementAt( i_lep1 ) );
-      // temporary candidate, only used to evaluate the pair mass
-      ReconstructedParticleImpl recoLepton1;
-      ZHH::doPhotonRecovery(lepton1, pfosWOIsoLepCollection, &recoLepton1, fCosFSRCut, lepton1->getType(), photons);
-      
+
       for ( int i_lep2 = i_lep1 + 1 ; i_lep2 < InIsoLeps ; ++i_lep2 ) {
         ReconstructedParticle* lepton2 = static_cast<ReconstructedParticle*>( isoLepCollection->getElementAt( i_lep2 ) );
-	ReconstructedParticleImpl recoLepton2;
-	ZHH::doPhotonRecovery(lepton2, pfosWOIsoLepCollection, &recoLepton2, fCosFSRCut, lepton2->getType(), photons);
-	
+
         //Check if same type and have opposite charge 
         streamlog_out(DEBUG7) << "Pairing item [" << i_lep1 << "] with [" << i_lep2 << "]" << endl;
         
         if (lepton1->getType() + lepton2->getType() == 0) {
+          // photon recovery for this pair only (as done for the final pair in processEvent), so
+          // that the pair mass does not depend on photons assigned in other pair combinations;
+          // temporary candidates, only used to evaluate the pair mass
+          vector<lcio::ReconstructedParticle*> photons;
+          ReconstructedParticleImpl recoLepton1;
+          ReconstructedParticleImpl recoLepton2;
+          ZHH::doPhotonRecovery(lepton1, pfosWOIsoLepCollection, &recoLepton1, fCosFSRCut, lepton1->getType(), photons);
+          ZHH::doPhotonRecovery(lepton2, pfosWOIsoLepCollection, &recoLepton2, fCosFSRCut, lepton2->getType(), photons);
+
           pairmass = inv_mass(&recoLepton1, &recoLepton2);
           massDelta = abs(pairmass - m_diLepInvMass);
 
