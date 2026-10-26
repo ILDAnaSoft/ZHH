@@ -197,19 +197,20 @@ float LeptonPairingCombined::evaluateIsoLeptons(EVENT::LCCollection *isoLepColle
 
     for ( int i_lep1 = 0 ; i_lep1 < InIsoLeps - 1 ; ++i_lep1 ) {
       ReconstructedParticle* lepton1 = static_cast<ReconstructedParticle*>( isoLepCollection->getElementAt( i_lep1 ) );
-      ReconstructedParticleImpl *recoLepton1 = new ReconstructedParticleImpl();
-      ZHH::doPhotonRecovery(lepton1, pfosWOIsoLepCollection, recoLepton1, fCosFSRCut, lepton1->getType(), photons);
+      // temporary candidate, only used to evaluate the pair mass
+      ReconstructedParticleImpl recoLepton1;
+      ZHH::doPhotonRecovery(lepton1, pfosWOIsoLepCollection, &recoLepton1, fCosFSRCut, lepton1->getType(), photons);
       
       for ( int i_lep2 = i_lep1 + 1 ; i_lep2 < InIsoLeps ; ++i_lep2 ) {
         ReconstructedParticle* lepton2 = static_cast<ReconstructedParticle*>( isoLepCollection->getElementAt( i_lep2 ) );
-	ReconstructedParticleImpl *recoLepton2 = new ReconstructedParticleImpl();
-	ZHH::doPhotonRecovery(lepton2, pfosWOIsoLepCollection, recoLepton2, fCosFSRCut, lepton2->getType(), photons);
+	ReconstructedParticleImpl recoLepton2;
+	ZHH::doPhotonRecovery(lepton2, pfosWOIsoLepCollection, &recoLepton2, fCosFSRCut, lepton2->getType(), photons);
 	
         //Check if same type and have opposite charge 
         streamlog_out(DEBUG7) << "Pairing item [" << i_lep1 << "] with [" << i_lep2 << "]" << endl;
         
         if (lepton1->getType() + lepton2->getType() == 0) {
-          pairmass = inv_mass(recoLepton1, recoLepton2);
+          pairmass = inv_mass(&recoLepton1, &recoLepton2);
           massDelta = abs(pairmass - m_diLepInvMass);
 
           streamlog_out(MESSAGE) << "same type, opposite charge; recolep mass = " << pairmass << endl;
