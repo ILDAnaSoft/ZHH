@@ -188,7 +188,6 @@ float LeptonPairingCombined::evaluateIsoLeptons(EVENT::LCCollection *isoLepColle
   streamlog_out(DEBUG7) << "Pairing iso (type=" << leptonType << ") leptons. Checking n=" << InIsoLeps << " objects" << endl;
 
   if (InIsoLeps >= 2) {
-    float bestMass = 0;
     float pairmass = 0;
     float massDelta;
 
@@ -222,13 +221,13 @@ float LeptonPairingCombined::evaluateIsoLeptons(EVENT::LCCollection *isoLepColle
           if (massDelta > bestDelta)
             continue;
 
-          bestMass = pairmass;
           bestDelta = massDelta;
 
           streamlog_out(DEBUG7) << "new best pairing: deltaM = " << bestDelta << endl;
 
-          if (massDelta < abs(m_IsoLepsInvMass[massEntryIndex] - m_diLepInvMass))
-            m_IsoLepsInvMass[massEntryIndex] = bestMass;
+          // mass before photon recovery of the best pair of this flavour (the pair choice
+          // itself uses the recovered mass); the recovered mass is stored in RecoLepsInvMass
+          m_IsoLepsInvMass[massEntryIndex] = inv_mass(lepton1, lepton2);
 
           if (massDelta < m_bestLeptonDelta) {
             m_bestLeptonDelta = massDelta;
