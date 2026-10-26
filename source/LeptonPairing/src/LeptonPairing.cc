@@ -163,7 +163,7 @@ void LeptonPairing::processEvent( EVENT::LCEvent *pLCEvent ) {
     streamlog_out(DEBUG7) << "Input collections successfully found in event " << m_nEvt << endl; 
   }
   catch( DataNotAvailableException &e ) {
-    streamlog_out(MESSAGE) << "     Input collection not found in event " << m_nEvt << endl;
+    streamlog_out(WARNING) << "     Input collection not found in event " << m_nEvt << ", writing empty output collections" << endl;
   }
   IMPL::LCCollectionVec* m_LepPairCol = new IMPL::LCCollectionVec( LCIO::RECONSTRUCTEDPARTICLE );
   //m_LepPairCol->setSubset( true );
@@ -171,6 +171,15 @@ void LeptonPairing::processEvent( EVENT::LCEvent *pLCEvent ) {
   m_PFOsWOLepPairCol->setSubset( true );
   IMPL::LCCollectionVec* m_IsoLepPairCol = new IMPL::LCCollectionVec( LCIO::RECONSTRUCTEDPARTICLE );
   m_IsoLepPairCol->setSubset( true );
+
+  // without input, add the (empty) output collections so that downstream processors find them
+  if ( IsoLepCollection == nullptr || PFOsWOIsoLepCollection == nullptr ) {
+    pLCEvent->addCollection(m_LepPairCol, m_outputLepPairCollection.c_str());
+    pLCEvent->addCollection(m_PFOsWOLepPairCol, m_outputPFOsWOLepPairCollection.c_str());
+    pLCEvent->addCollection(m_IsoLepPairCol, m_outputIsoLepPairCollection.c_str());
+    if ( m_fillRootTree ) m_pTTree->Fill();
+    return;
+  }
 
   int InIsoLeps = IsoLepCollection->getNumberOfElements();
   streamlog_out(DEBUG7) << "Number of iso leptons = " << InIsoLeps << endl;
