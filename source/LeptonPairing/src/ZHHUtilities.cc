@@ -41,8 +41,8 @@ void doPhotonRecovery(ReconstructedParticle *lepton, LCCollection *colPFO, Recon
 
     photons.push_back(recPart);
     recoLepton->addParticle(recPart);
-    if (lepType == 11) {
-      // do split algorithm only for electron
+    if (abs(lepType) == 11) {
+      // do split algorithm only for electrons and positrons
       Bool_t isSplit = isolep::getSplitTag(lepton, recPart);
       if (isSplit) continue;
     }
