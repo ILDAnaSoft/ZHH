@@ -89,7 +89,7 @@ LeptonPairing::LeptonPairing():
   registerProcessorParameter("diLepInvMass",
 			     "Invariant mass of di-lepton system in Isolated Leptons [GeV]",
 			     m_diLepInvMass,
-			     double(91.2)
+			     double(91.1879) // m_Z from PDG 2026, Int. J. Mod. Phys. A 41, 2630011 (2026)
 			     );
 
   registerProcessorParameter("doPhotonRecovery",
@@ -163,7 +163,7 @@ void LeptonPairing::processEvent( EVENT::LCEvent *pLCEvent ) {
     streamlog_out(DEBUG7) << "Input collections successfully found in event " << m_nEvt << endl; 
   }
   catch( DataNotAvailableException &e ) {
-    streamlog_out(MESSAGE) << "     Input collection not found in event " << m_nEvt << endl;
+    streamlog_out(WARNING) << "     Input collection not found in event " << m_nEvt << ", writing empty output collections" << endl;
   }
   IMPL::LCCollectionVec* m_LepPairCol = new IMPL::LCCollectionVec( LCIO::RECONSTRUCTEDPARTICLE );
   //m_LepPairCol->setSubset( true );
@@ -172,10 +172,18 @@ void LeptonPairing::processEvent( EVENT::LCEvent *pLCEvent ) {
   IMPL::LCCollectionVec* m_IsoLepPairCol = new IMPL::LCCollectionVec( LCIO::RECONSTRUCTEDPARTICLE );
   m_IsoLepPairCol->setSubset( true );
 
+  // without input, add the (empty) output collections so that downstream processors find them
+  if ( IsoLepCollection == nullptr || PFOsWOIsoLepCollection == nullptr ) {
+    pLCEvent->addCollection(m_LepPairCol, m_outputLepPairCollection.c_str());
+    pLCEvent->addCollection(m_PFOsWOLepPairCol, m_outputPFOsWOLepPairCollection.c_str());
+    pLCEvent->addCollection(m_IsoLepPairCol, m_outputIsoLepPairCollection.c_str());
+    if ( m_fillRootTree ) m_pTTree->Fill();
+    return;
+  }
+
   int InIsoLeps = IsoLepCollection->getNumberOfElements();
   streamlog_out(DEBUG7) << "Number of iso leptons = " << InIsoLeps << endl;
   vector< ReconstructedParticle* > LeptonPair = {};
-  int _lep_type = 0;
   Double_t fCosFSRCut; // the angle of BS and FSR around the direction of charged lepton
   if (m_doPhotonRecovery) fCosFSRCut = 0.99;
   else fCosFSRCut = 99.;
@@ -190,7 +198,7 @@ void LeptonPairing::processEvent( EVENT::LCEvent *pLCEvent ) {
     streamlog_out(DEBUG7) << lepton1->getType() << " " << lepton2->getType()<< " " << lepton1->getCharge() << " " << lepton2->getCharge() << endl;
     if (lepton1->getType() + lepton2->getType() == 0) {
       LeptonPair = {lepton1, lepton2};
-      _lep_type = lepton1->getType();
+      paired_lep_idx = {0, 1};
       streamlog_out(DEBUG7) << "mass = " << inv_mass(lepton1, lepton2)  << endl;
       streamlog_out(DEBUG7) << "same type, opposite charge" << endl;
     }
@@ -211,7 +219,6 @@ void LeptonPairing::processEvent( EVENT::LCEvent *pLCEvent ) {
 	  LeptonPair = {lepton1, lepton2};
     paired_lep_idx[0] = i_lep1;
     paired_lep_idx[1] = i_lep2;
-	  _lep_type = lepton1->getType();
 	} 
       }
     }
@@ -228,9 +235,9 @@ void LeptonPairing::processEvent( EVENT::LCEvent *pLCEvent ) {
     // recovery of FSR and BS
     m_IsoLepsInvMass.push_back(inv_mass(LeptonPair[0], LeptonPair[1]));
     ReconstructedParticleImpl * recoLepton1 = new ReconstructedParticleImpl();
-    ZHH::doPhotonRecovery(LeptonPair[0],PFOsWOIsoLepCollection,recoLepton1,fCosFSRCut,_lep_type,photons);
+    ZHH::doPhotonRecovery(LeptonPair[0],PFOsWOIsoLepCollection,recoLepton1,fCosFSRCut,LeptonPair[0]->getType(),photons);
     ReconstructedParticleImpl * recoLepton2 = new ReconstructedParticleImpl();
-    ZHH::doPhotonRecovery(LeptonPair[1],PFOsWOIsoLepCollection,recoLepton2,fCosFSRCut,_lep_type,photons);
+    ZHH::doPhotonRecovery(LeptonPair[1],PFOsWOIsoLepCollection,recoLepton2,fCosFSRCut,LeptonPair[1]->getType(),photons);
     m_RecoLepsInvMass.push_back(inv_mass(recoLepton1,recoLepton2));
     
     m_IsoLepPairCol->addElement(LeptonPair[0]);
