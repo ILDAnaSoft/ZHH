@@ -43,10 +43,10 @@ class LeptonPairingCombined : public Processor
  protected:
   virtual float evaluateIsoLeptons(EVENT::LCCollection *isoLepCollection,EVENT::LCCollection *pfosWOIsoLepCollection, int leptonType);
   
-  double m_diLepInvMass = 91.2;
+  double m_diLepInvMass = 91.1879; // PDG 2026, Int. J. Mod. Phys. A 41, 2630011 (2026)
   string m_rootFile{};
-  bool m_doPhotonRecovery = false;
-  bool m_fillRootTree = false;
+  bool m_doPhotonRecovery = true;
+  bool m_fillRootTree = true;
   int m_nRun;
   int m_nEvt;
   vector<float> m_IsoLepsInvMass{};
