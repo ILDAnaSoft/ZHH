@@ -63,7 +63,7 @@ class DataStore(MixedLazyTablelike):
             for i in range(len(fs_columns)):
                 self[fs_columns[i]] = NamedHDF5Mapping(self._h5_file, f'final_state_counts.dim{i}')
         
-        self['sumBTags'] = lambda intf: ( np.sum( [ getattr(self, f'bmax{i}') for i in range(n_jets) ], axis=0 ) )
+        self['sumBTags'] = lambda intf: ( np.sum( [ intf[f'bmax{i}'] for i in range(1, n_jets + 1) ], axis=0 ) )
 
         self['yminus_mod100'] = lambda intf: np.mod(intf['yminus2'], 100)
         self.propsFromFile()

@@ -10,7 +10,9 @@ from ..CutflowTableEntry import CutflowTableEntry, LatexCutflowTableEntry, SumCu
 
 class CreateCutflowTableAction(FileBasedProcessorAction):
     def __init__(self, cp:CutflowProcessor, steer:dict, file:str, weight_columns:list[str]|None=None,
-                 show_cross_sections:bool=True, categories_left:bool=True, **kwargs):
+                 show_cross_sections:bool=True, categories_left:bool=True,
+                 step_start:int=0, step_end:int=0, steps:list[int]|None=None,
+                 **kwargs):
         """_summary_
 
         Args:
@@ -20,6 +22,15 @@ class CreateCutflowTableAction(FileBasedProcessorAction):
             weight_columns (list[str]): _description_
             show_cross_sections (bool): if True (default), the table of absolute counts gets a column with the
                 cross section in fb (expected events before cuts / integrated luminosity)
+            step_start (int): index of first cut group to get for event counting. ignored if steps is not None.
+                              Defaults to 0.
+            step_end (int): index of last cut group to get for event counting. ignored if steps is not None.
+                            Defaults to 0.
+            steps (list[int], optional): the cut groups (steps) to show, in the given order, e.g. [0, 2] for
+                the preselection (0) followed by a cut group that was set up with step_in=0 (2), skipping group
+                1 which is another branch. Alternative to step_start/step_end (which select a contiguous
+                range); may not be combined with them. Defaults to None, in which case step_start..step_end
+                (inclusive) is used.
         """
 
         assert('cutflow_table' in steer)
@@ -27,8 +38,16 @@ class CreateCutflowTableAction(FileBasedProcessorAction):
         super().__init__(cp, steer)
         
         self._file = file
-        self._step_start = kwargs.get('step_start', 0)
-        self._step_end = kwargs.get('step_end', 0)
+        if steps is not None:
+            if not len(steps):
+                raise ValueError('steps must contain at least one step')
+            if len(set(steps)) != len(steps):
+                raise ValueError(f'steps must be unique, got {steps}')
+
+            self._steps = list(steps)
+        else:
+            self._steps = list(range(step_start, step_end + 1))
+            
         self._weight_columns = weight_columns
         self._steer = steer
         self._show_cross_sections = show_cross_sections
@@ -50,12 +69,16 @@ class CreateCutflowTableAction(FileBasedProcessorAction):
         get_sources_2_categories(steer, cp._sources, self._all_categories)
     
     def run(self):
-        weight_columns:list[str] = [self._cp._weight_columns[step] for step in range(self._step_start, self._step_end+1)] if self._weight_columns is None else self._weight_columns
+        for step in self._steps:
+            if not (step in self._cp._masks and step in self._cp._cuts):
+                raise Exception(f'Step {step} requested for the cutflow table has not been processed (available: {sorted(self._cp._masks.keys())})')
+
+        weight_columns:list[str] = [self._cp._weight_columns[step] for step in self._steps] if self._weight_columns is None else self._weight_columns
 
         masks = []
         cuts = []
 
-        for step in range(self._step_start, self._step_end+1):
+        for step in self._steps:
             masks.append(self._cp._masks[step])
             cuts.append(self._cp._cuts[step])
         

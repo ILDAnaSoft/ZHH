@@ -344,12 +344,22 @@ mvas:
 # define what should be done after the data is loaded
 # for a documentation of supplied actions, see zhh/analysis/cutflow_processor_actions/README.md
 actions:
+  - type: PlotObservable
+    observable: sumBTags
+    before_step: 0 # no cuts applied
+    file: '$hypothesis_sumBTags_before_presel.pdf'
+
   - type: ApplyCuts
     cuts: preselection
     weight_column: weight
-    split: 0 # split is only read if weight_column is different than the default value 'weight'
     step: 0 # step=0 is always preselection
     cache: '$hypothesis_cutflow_presel.pickle'
+
+  - type: PlotObservable
+    observable: sumBTags
+    weight_prop: weight
+    file: '$hypothesis_sumBTags.pdf'
+    before_step: 1 # after the preselection (cut group 0)
   
   # optional:
   # step_start: 0

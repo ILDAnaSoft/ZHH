@@ -306,7 +306,9 @@ class CutflowProcessor:
         return masks, subsets, calc_dicts
     
     def getFinalEventMasks(self, step:int|None=None)->list[tuple[str, np.ndarray]]:
-        """Returns the masks for the preselection cuts.
+        """Returns the event masks after the last cut of the cut group step (i.e. *after*
+        that group has been applied; compare getSubsetsAt(), where the step is the group
+        *before* which the events are taken).
         
         Args: 
             step (int|none, optional): n-th cut group. Use 0 for preselection,
@@ -353,7 +355,9 @@ class CutflowProcessor:
         return post_presel_mask
     
     def snapshotAt(self, columns:list[str], step:int, weight_column:str, split:int|None=None, split_colum:str='split'):
-        """Extracts data for the M requested columns from all sources at a given step (i.e. after a cut group).
+        """Extracts data for the M requested columns from all sources at a given step (i.e. *after* the cut group
+        step has been applied; step=0 is the preselection. Compare getSubsetsAt(), where the step is the group *before* which
+        the events are taken).
         A split may be used for selecting events, as well. Assuming the total selection includes N entries, the result
         will be:
         - masks: a dictionary of structure source_name => binary mask accross all events
@@ -514,7 +518,42 @@ class CutflowProcessor:
         
         return masks, cuts, calc_dicts, max_before
     
-    def getSubsetsAt(self, step:int|None=None, split:int|None=None)->dict[str, TTreeInterface]:
+    @staticmethod
+    def _resolveBeforeStep(before_step:int|None, step:int|None, caller:str)->int|None:
+        """Handles the deprecated argument step of the methods operating on the state *before* a cut group:
+        returns before_step, or step (with a DeprecationWarning) if only that was given."""
+
+        if step is None:
+            return before_step
+
+        if before_step is not None:
+            raise ValueError(f'{caller}: before_step and the deprecated argument step cannot both be given')
+
+        import warnings
+        warnings.warn(f'{caller}: argument <step> is deprecated; use <before_step> (same meaning)', DeprecationWarning, stacklevel=3)
+
+        return step
+
+    def getSubsetsAt(self, before_step:int|None=None, split:int|None=None, step:int|None=None)->dict[str, TTreeInterface]:
+        """Returns, for each source, the events *before* the cut group before_step is applied, i.e. after
+        all cut groups 0 .. before_step-1 have been applied. Note that this is shifted by one with respect to
+        getFinalEventMasks() and snapshotAt(), whose step is the cut group *after* which the events are taken.
+
+        Args:
+            before_step (int | None, optional): 0: no cuts at all (the full data), 1: after the preselection
+                (cut group 0), 2: after cut group 1 etc. All cut groups before before_step must have been
+                applied (processed) already. None or -1 uses the state after the last processed cut group.
+                Defaults to None.
+            split (int | None, optional): if not None, additionally selects events of this data split (see
+                the SplitDatasets action). Only applied if before_step > 0 (ignored for no cuts). Defaults to None.
+            step (int | None, optional): deprecated alias of before_step.
+
+        Returns:
+            dict[str, TTreeInterface]: source name => events
+        """
+
+        step = self._resolveBeforeStep(before_step, step, 'getSubsetsAt')
+
         if step == None or step == -1:
             step = len(self._masks)
         
@@ -539,10 +578,24 @@ class CutflowProcessor:
         
         return subsets
         
-    def getCalcDictAt(self, quantity:str, step:int|None=None, split:int|None=None, weight_prop:str='weight'):
+    def getCalcDictAt(self, quantity:str, before_step:int|None=None, split:int|None=None, weight_prop:str='weight', step:int|None=None)->dict[str, tuple[np.ndarray, np.ndarray]]:
+        """Returns, per event category, the values of a quantity and the event weights for the events before the
+        cut group before_step is applied. See getSubsetsAt() for the meaning of before_step and split.
+
+        Args:
+            quantity (str): column to extract
+            before_step (int | None, optional): see getSubsetsAt(). Defaults to None.
+            split (int | None, optional): see getSubsetsAt(). Defaults to None.
+            weight_prop (str, optional): column holding the event weights. Defaults to 'weight'.
+            step (int | None, optional): deprecated alias of before_step.
+
+        Returns:
+            dict[str, tuple[np.ndarray, np.ndarray]]: event category => (values, weights)
+        """
+
         from zhh import EventCategories, calc_preselection_by_event_categories
         
-        subsets = self.getSubsetsAt(step=step, split=split)
+        subsets = self.getSubsetsAt(before_step=self._resolveBeforeStep(before_step, step, 'getCalcDictAt'), split=split)
         flattened = []
         
         for src_name, subset in subsets.items():        
@@ -567,8 +620,25 @@ class CutflowProcessor:
             
         return calc_dict
             
-    def plotAt(self, quantity:str, step:int|None=None, split:int|None=None, plotTop9:bool=False,
-               signal_category_names:list[str]|None=None, weight_prop:str='weight', **plot_kwargs):
+    def plotAt(self, quantity:str, before_step:int|None=None, split:int|None=None, plotTop9:bool=False,
+               signal_category_names:list[str]|None=None, weight_prop:str='weight', step:int|None=None, **plot_kwargs):
+        """Plots the distribution of a quantity per event category for the events before the cut group
+        before_step is applied (0: no cuts, 1: after the preselection etc., see getSubsetsAt()).
+
+        Args:
+            quantity (str): column to plot
+            before_step (int | None, optional): see getSubsetsAt(). Defaults to None.
+            split (int | None, optional): see getSubsetsAt(). Defaults to None.
+            plotTop9 (bool, optional): if True, plots the 9 largest background categories one by one together
+                with the signal. Defaults to False (stacked plot of all categories).
+            signal_category_names (list[str] | None, optional): categories to treat as signal. Defaults to the
+                signal categories of the CutflowProcessor.
+            weight_prop (str, optional): column holding the event weights. Defaults to 'weight'.
+            step (int | None, optional): deprecated alias of before_step.
+            **plot_kwargs: passed on to plot_combined_hist() (or plotCalcDictTopN() if plotTop9)
+        """
+        
+        step = self._resolveBeforeStep(before_step, step, 'plotAt')
         
         from zhh import plot_combined_hist
         from zhh.processes.EventCategories import EventCategories
@@ -576,7 +646,7 @@ class CutflowProcessor:
         signal_category_names = [EventCategories.inverted[cat] for cat in self._signal_categories] if signal_category_names is None else signal_category_names
 
         #plot_kwargs['ild_style_kwargs']['title_postfix'] = rf' before cut on ${cut.formula(unit=plot_kwargs["xunit"] if ("xunit" in plot_kwargs) else None)}$'
-        calc_dict = self.getCalcDictAt(quantity, step=step, split=split, weight_prop=weight_prop)
+        calc_dict = self.getCalcDictAt(quantity, before_step=step, split=split, weight_prop=weight_prop)
 
         # stacked plot
         if not plotTop9:

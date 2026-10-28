@@ -7,7 +7,7 @@ class ApplyCutsAction(CutflowProcessorAction):
     interruptible = False # makes sure to delete HDF5 dataset to avoid corrupted datasets on interrupt
 
     def __init__(self, cp:CutflowProcessor, steer:dict, step:int, cuts:str,
-                 weight_column:str, split:int|None, cache:str|None=None,
+                 weight_column:str, split:int|None=None, cache:str|None=None,
                  step_in:int|None=None, **kwargs):
         """_summary_
 

@@ -239,9 +239,10 @@ class AnalysisChannel:
         """Extracts cross-sections and number of generated events for each
         polarization-process combination. Then calculates weights for each
         combination (processes, n x M) and event (weight_data, l x K). The
-        results are given as two named numpy arrays. processes is stored in
-        self._processes. Requires combine() and fetch(). Attached pid and
-        weight columns to the preselection summary.
+        results are given as two named numpy arrays, weight_data and
+        processes. The latter is stored in self._processes. Requires
+        combine() and fetch(). Attached pid and weight columns to the pre-
+        selection summary.
         
         n: number of process-polarization ("proc_pol") combinations
         M: 9 features, e.g. "cross_sec", "proc_pol", "n_events", "weight"

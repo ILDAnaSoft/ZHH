@@ -135,7 +135,21 @@ TODO
 
 ### PlotObservable
 
-TODO
+Plots the distribution of one observable per event category (stacked, or the nine largest backgrounds individually with `plotTop9`).
+
+Required arguments:
+
+- (str) `observable`: column to plot
+- (str) `file`: output PDF file
+
+Optional arguments:
+
+- (int) `before_step`: plots the events *before* the cut group with this index is applied, i.e. after all cut groups `0 .. before_step-1`. `0`: no cuts at all; `1`: after the preselection (cut group 0); `2`: after cut group 1 etc. If omitted, the state after the last cut group applied at the time the action runs is used (depends on the position of the action). Note that this is shifted by one with respect to the `step` of `ApplyCuts`, `CreateCutflowTable` and `snapshotAt`, which name the group that is applied/after which events are taken. `step` is a deprecated alias of `before_step`.
+- (int) `split`: only use events of this data split; ignored for `before_step=0`
+- (str) `weight_column`: column holding the event weights. Defaults to `weight`.
+- (bool) `plotTop9`: plot the 9 largest background categories separately. Defaults to False.
+- (list[str]) `signal_categories`: categories drawn as signal. Defaults to the `signal_categories` of the steering file.
+- (dict) `plot_kwargs`: options passed on to the plotting function
 
 ### PrintSplitWeights
 
