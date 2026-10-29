@@ -24,14 +24,19 @@ DEFAULTS = {
 }
 
 def set_polarization(beamPolarization:tuple[float, float]|None):
-    
-    Peminus, Peplus = beamPolarization
-    w_em_ep = w_prefacs(Peminus, Peplus)
+    if beamPolarization is not None:
+        Peminus, Peplus = beamPolarization
+        w_em_ep = w_prefacs(Peminus, Peplus)
 
-    DEFAULTS['BEAM_POLARIZATION'] = (Peminus, Peplus)
-    
-    for i, key in enumerate(['LL', 'LR', 'RL', 'RR']):
-        DEFAULTS['w_em_ep'][key] = w_em_ep[i]        
+        DEFAULTS['BEAM_POLARIZATION'] = (Peminus, Peplus)
+        
+        for i, key in enumerate(['LL', 'LR', 'RL', 'RR']):
+            DEFAULTS['w_em_ep'][key] = w_em_ep[i]
+    else:
+        DEFAULTS['BEAM_POLARIZATION'] = None
+        
+        for i, key in enumerate(['LL', 'LR', 'RL', 'RR']):
+            DEFAULTS['w_em_ep'][key] = .25
 
 def get_polarization()->tuple[float, float]:
     return DEFAULTS['BEAM_POLARIZATION']

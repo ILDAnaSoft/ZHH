@@ -8,6 +8,7 @@ from glob import glob
 from ..analysis.PreselectionAnalysis import set_polarization
 from ..analysis.Cuts import EqualCut, GreaterThanEqualCut, LessThanEqualCut, WithinBoundsCut, ValueCut
 from ..analysis.DataSource import DataSource
+from ..analysis.FinalStateDefinitions import FinalStateDefinition
 from .replace_properties import replace_properties
 from .replace_references import replace_references
 from ..data.ROOT2HDF5Converter import ROOT2HDF5Converter, GroupedConversionPlan
@@ -17,52 +18,49 @@ from typing import TypedDict, NotRequired, cast, TYPE_CHECKING, NotRequired
 from multiprocessing import cpu_count
 from copy import deepcopy
 from math import ceil
-
-if TYPE_CHECKING:
-    from zhh.analysis.FinalStateDefinitions import FinalStateDefinition
     
-    class CategoryDefinitionDictType(TypedDict):
-        name:str
-        id:int
-        final_state:NotRequired[Callable]
-        latex_label:NotRequired[str]
+class CategoryDefinitionDictType(TypedDict):
+    name:str
+    id:int
+    final_state:NotRequired[Callable]
+    latex_label:NotRequired[str]
 
-    class CutflowSourceSpecificationEventCategorizationType(TypedDict):
-        default:str|None
-        order:list[str]|None
-        items:list[str]
+class CutflowSourceSpecificationEventCategorizationType(TypedDict):
+    default:str|None
+    order:list[str]|None
+    items:list[str]
 
-    class CutflowSourceSpecificationType(TypedDict):
-        name:str
-        path:str
-        root_files:str
-        event_categorization:CutflowSourceSpecificationEventCategorizationType
-        disabled:NotRequired[bool]
-        reset:NotRequired[bool]
+class CutflowSourceSpecificationType(TypedDict):
+    name:str
+    path:str
+    root_files:str
+    event_categorization:CutflowSourceSpecificationEventCategorizationType
+    disabled:NotRequired[bool]
+    reset:NotRequired[bool]
 
-    class CutflowSteeringFileType(TypedDict):
-        hypothesis:str
-        signal_categories:list[str]
-        beam_polarization:tuple[float, float]|None
-        luminosity:float
-        reset:NotRequired[bool]
+class CutflowSteeringFileType(TypedDict):
+    hypothesis:str
+    signal_categories:list[str]
+    beam_polarization:tuple[float, float]|None
+    luminosity:float
+    reset:NotRequired[bool]
 
-        sources:list[CutflowSourceSpecificationType]
+    sources:list[CutflowSourceSpecificationType]
 
-        processes:NotRequired[dict[str, int]|str]
-        event_categories:NotRequired[list[CategoryDefinitionDictType]]
+    processes:NotRequired[dict[str, int]|str]
+    event_categories:NotRequired[list[CategoryDefinitionDictType]]
 
-    class CutflowFeatureInterpretation(TypedDict):
-        name: NotRequired[str]
-        tree: NotRequired[str]
-        branch: NotRequired[str]
-        dtype: NotRequired[str]
-        auto_increment: NotRequired[bool]
-        columns: NotRequired[int]
-        names: NotRequired[str]
-        clamp_min: NotRequired[float|int]
-        clamp_max: NotRequired[float|int]
-        nan_to: NotRequired[float|int]
+class CutflowFeatureInterpretation(TypedDict):
+    name: NotRequired[str]
+    tree: NotRequired[str]
+    branch: NotRequired[str]
+    dtype: NotRequired[str]
+    auto_increment: NotRequired[bool]
+    columns: NotRequired[int]
+    names: NotRequired[str]
+    clamp_min: NotRequired[float|int]
+    clamp_max: NotRequired[float|int]
+    nan_to: NotRequired[float|int]
 
 
 def cutflow_parse_processes(processes:dict[str, int]|str):
@@ -307,7 +305,7 @@ def cutflow_process_steering(steer:CutflowSteeringFileType, integrity_check:bool
 
     return source_map, final_state_configs, reset_sources
 
-def cutflow_provision_features(interpretations:list['CutflowFeatureInterpretation'],
+def cutflow_provision_features(interpretations:list[CutflowFeatureInterpretation],
                                       root_files_glob:str, items_path:str, ds_path:str,
                                       integrity_check:bool=True,
                                       base_tree:str='FinalStates',
