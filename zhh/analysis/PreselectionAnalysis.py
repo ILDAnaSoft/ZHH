@@ -23,7 +23,8 @@ DEFAULTS = {
     }
 }
 
-def set_polarization(beamPolarization:tuple[float, float]):
+def set_polarization(beamPolarization:tuple[float, float]|None):
+    
     Peminus, Peplus = beamPolarization
     w_em_ep = w_prefacs(Peminus, Peplus)
 

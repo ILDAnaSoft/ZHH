@@ -1,4 +1,6 @@
 # keep in sync with source/FinalStateRecorder/include/common.h
+from .process_registry import GlobalProcessRegistry
+
 class PROCESS_CATEGORIES:
     e1e1hh = 1111
     e2e2hh = 1112
@@ -268,4 +270,5 @@ class PROCESS_CATEGORIES:
         self.map = { key:value for key, value in PROCESS_CATEGORIES.__dict__.items() if not key.startswith('__') and not callable(key)}
         self.inverted = { v: k for k, v in self.map.items() }
 
-ProcessCategories = PROCESS_CATEGORIES()
+#ProcessCategories = PROCESS_CATEGORIES()
+ProcessCategories = GlobalProcessRegistry

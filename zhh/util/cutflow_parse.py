@@ -13,10 +13,104 @@ from .replace_references import replace_references
 from ..data.ROOT2HDF5Converter import ROOT2HDF5Converter, GroupedConversionPlan
 from ..task.ConcurrentFuturesRunner import ProcessRunner
 from ..analysis import CutflowProcessor, CutflowProcessorAction, CreateCutflowPlotsAction, ReadonlyWriteAttempt
-from typing import TypedDict, NotRequired, cast
+from typing import TypedDict, NotRequired, cast, TYPE_CHECKING, NotRequired
 from multiprocessing import cpu_count
 from copy import deepcopy
 from math import ceil
+
+if TYPE_CHECKING:
+    from zhh.analysis.FinalStateDefinitions import FinalStateDefinition
+    
+    class CategoryDefinitionDictType(TypedDict):
+        name:str
+        id:int
+        final_state:NotRequired[Callable]
+        latex_label:NotRequired[str]
+
+    class CutflowSourceSpecificationEventCategorizationType(TypedDict):
+        default:str|None
+        order:list[str]|None
+        items:list[str]
+
+    class CutflowSourceSpecificationType(TypedDict):
+        name:str
+        path:str
+        root_files:str
+        event_categorization:CutflowSourceSpecificationEventCategorizationType
+        disabled:NotRequired[bool]
+        reset:NotRequired[bool]
+
+    class CutflowSteeringFileType(TypedDict):
+        hypothesis:str
+        signal_categories:list[str]
+        beam_polarization:tuple[float, float]|None
+        luminosity:float
+        reset:NotRequired[bool]
+
+        sources:list[CutflowSourceSpecificationType]
+
+        processes:NotRequired[dict[str, int]|str]
+        event_categories:NotRequired[list[CategoryDefinitionDictType]]
+
+    class CutflowFeatureInterpretation(TypedDict):
+        name: NotRequired[str]
+        tree: NotRequired[str]
+        branch: NotRequired[str]
+        dtype: NotRequired[str]
+        auto_increment: NotRequired[bool]
+        columns: NotRequired[int]
+        names: NotRequired[str]
+        clamp_min: NotRequired[float|int]
+        clamp_max: NotRequired[float|int]
+        nan_to: NotRequired[float|int]
+
+
+def cutflow_parse_processes(processes:dict[str, int]|str):
+    """Loads physics processes and their IDs
+
+    The input may be one of the following:
+    1. a dictionary of process_name -> process_id (the actual value of
+        process_id is not important, but it must be unique; used for repro-
+        ducible output of tables and plots)
+    2. or a path/name of a JSON file containing the information (preferred
+        for usage with FinalStateRecorder)
+        
+    Args:
+        processes (dict[str, int]|str): 
+    """
+
+    from zhh.processes.process_registry import GlobalProcessRegistry, ProcessDefinition
+
+    if isinstance(processes, str):
+        with open(processes, 'rt') as jf:
+            proc:dict = json.load(jf)
+    else:
+        proc = processes
+
+    GlobalProcessRegistry.clear()
+
+    for name, id in proc.items():
+        GlobalProcessRegistry.add(ProcessDefinition(name, id))
+
+def cutflow_parse_final_states_and_categories(category_definitions_dict:list['CategoryDefinitionDictType']):
+    """Loads event categories and their definitions as FinalStateDefinition
+    and registers them in the global event category registry.
+
+    Args:
+        category_definitions_dict (list[CategoryDefinitionDictType]): _description_
+    """
+
+    from zhh.processes.event_category_registry import GlobalEventCategoryRegistry, EventCategoryDefinition
+    
+    GlobalEventCategoryRegistry.clear()
+
+    for item in category_definitions_dict:
+        if 'final_state' in item and isinstance(item['final_state'], str):
+            item['final_state'] = eval(item['final_state'])
+            
+        definition = EventCategoryDefinition(**item)
+
+        GlobalEventCategoryRegistry.add(definition)
 
 def cutflow_parse_steering_file(loc:str):
     """Loads a YAML steering file, replaces references within them
@@ -43,22 +137,41 @@ def cutflow_parse_steering_file(loc:str):
 
     f_str = f_str.replace('$hypothesis', os.environ['hypothesis'])
     parsed = yaml.safe_load(f_str)
+    
+    # replace file references
+    parsed = cast('CutflowSteeringFileType', replace_references(parsed))
 
-    # replace references to final state definitions (functions) and EventCategories (ints)
-    return replace_properties(replace_references(parsed), {
-        'EventCategories': EventCategories,
-        'FinalStateDefinitions': FinalStateDefinitions
+    # register processes under GlobalProcessRegistry
+    if 'processes' in parsed:
+        processes = parsed['processes']
+        assert (isinstance(processes, str) or isinstance(processes, dict)), 'Received invalid type for processes: Expects either a file name or a dictionary'
+
+        cutflow_parse_processes(processes)
+    else:
+        # use ZHH defaults
+        from zhh import PROCESS_CATEGORIES
+        import zhh.processes as processes
+        processes.ProcessCategories = PROCESS_CATEGORIES()
+    
+    # register event categories under GlobalEventCategoryRegistry
+    if 'event_categories' in parsed:
+        cutflow_parse_final_states_and_categories(parsed['event_categories'])
+    
+    # replace references to EventCategories (ints)
+    # TODO later: make this step obsolete
+    return replace_properties(parsed, {
+        'EventCategories': EventCategories
     })
 
-def cutflow_process_steering(steer:dict, integrity_check:bool=True,
+def cutflow_process_steering(steer:CutflowSteeringFileType, integrity_check:bool=True,
                              check_requires_exact_path_match:bool=False,
                              readonly:bool=False, use_vds:bool=True,):
-    """Processes a parsed steering dictionary and handles feature interpretations.
-    Returns two dictionaries: First a dict<name, DataSource> and second, a dict
-    holding <name, [cat_register_fn, cat_default, cat_order]>.
+    """Processes a parsed dictionary (a CutflowSteeringFileType-like) and handles
+    feature interpretations. Returns two dictionaries: First a dict<name, DataSource>
+    and second, a dict holding <name, [cat_register_fn, cat_default, cat_order]>.
     
     Args:
-        steer (_type_): _description_
+        steer (CutflowSteeringFileType): _description_
         integrity_check (bool): if True and an existing HDF5 file exists, will
                                 check that the list of used ROOT files matches 
         check_requires_exact_path_match (bool): if True and existing HDF5 files
@@ -93,10 +206,11 @@ def cutflow_process_steering(steer:dict, integrity_check:bool=True,
     
     # process beam polarization; adjust if not ILC-like
     beam_pol = steer['beam_polarization']
-    assert(-1 <= beam_pol[0] <= 1)
-    assert(-1 <= beam_pol[1] <= 1)
+    if beam_pol is not None:
+        assert(-1 <= beam_pol[0] <= 1 and
+               -1 <= beam_pol[1] <= 1)
 
-    if beam_pol[0] != -0.8 or beam_pol[1] != 0.3:
+    if beam_pol is None or (beam_pol[0] != -0.8 or beam_pol[1] != 0.3):
         set_polarization(beam_pol)
     
     def instantiate_source(name, source_spec)->DataSource:
@@ -118,13 +232,18 @@ def cutflow_process_steering(steer:dict, integrity_check:bool=True,
         # make sure beam polarization fits
         with h5py.File(ds_path, 'r' if readonly else 'a') as hf:
             if 'beam_polarization' in hf.attrs:
-                beam_pol_read = hf.attrs.get('beam_polarization', None)
-                if beam_pol_read is not None:
-                    assert(len(beam_pol_read) == 2)
-                    assert(-1 <= beam_pol_read[0] <= 1)
-                    assert(-1 <= beam_pol_read[1] <= 1)
+                beam_pol_read = hf.attrs.get('beam_polarization', 0)
+                if beam_pol_read != 0:
+                    beam_pols_dont_match = (beam_pol is None and beam_pol_read is not None) or (beam_pol is not None and beam_pol_read is None)
 
-                    if beam_pol[0] != beam_pol_read[0] or beam_pol[1] != beam_pol_read[1]:
+                    if beam_pol_read is not None:
+                        assert(len(beam_pol_read) == 2)
+                        assert(-1 <= beam_pol_read[0] <= 1)
+                        assert(-1 <= beam_pol_read[1] <= 1)
+
+                        beam_pols_dont_match = beam_pol is None or beam_pol[0] != beam_pol_read[0] or beam_pol[1] != beam_pol_read[1]
+
+                    if beam_pols_dont_match:
                         # calculating the NPZ file will force source.initialize() to be called -> correct reweighting will be done automatically
                         confirm = input(f'The requested beam pol {beam_pol} does not match the saved {beam_pol_read}: Do you want to automatically reweight the events? y/n (n)').lower()
 
@@ -188,19 +307,7 @@ def cutflow_process_steering(steer:dict, integrity_check:bool=True,
 
     return source_map, final_state_configs, reset_sources
 
-class Interpretation(TypedDict):
-    name: NotRequired[str]
-    tree: NotRequired[str]
-    branch: NotRequired[str]
-    dtype: NotRequired[str]
-    auto_increment: NotRequired[bool]
-    columns: NotRequired[int]
-    names: NotRequired[str]
-    clamp_min: NotRequired[float|int]
-    clamp_max: NotRequired[float|int]
-    nan_to: NotRequired[float|int]
-
-def cutflow_provision_features(interpretations:list[Interpretation],
+def cutflow_provision_features(interpretations:list['CutflowFeatureInterpretation'],
                                       root_files_glob:str, items_path:str, ds_path:str,
                                       integrity_check:bool=True,
                                       base_tree:str='FinalStates',

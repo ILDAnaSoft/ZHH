@@ -22,6 +22,7 @@ FinalStateRecorder aFinalStateRecorder ;
 FinalStateRecorder::FinalStateRecorder() :
 
   Processor("FinalStateRecorder"),
+  m_outputJsonFile("None"),
   m_beam_pol1(0.),
   m_beam_pol2(0.),
   m_cross_section(0.),
@@ -71,7 +72,7 @@ FinalStateRecorder::FinalStateRecorder() :
 	registerProcessorParameter("outputJsonFilename",
 				"name of output json file containing meta information about the process. if 'None', no JSON will be written",
 				m_outputJsonFile,
-				std::string("FinalStates.json")
+				std::string("None")
 				);
 	
 	registerProcessorParameter("EventFilter",
@@ -81,7 +82,7 @@ FinalStateRecorder::FinalStateRecorder() :
 				);
 	
 	registerProcessorParameter("MultiProcess",
-				"if true, keeps all FinalStateResolvers for the whole runtime duration. if false, only keeps the one that is used to resolve the first event. defaults to false",
+				"if true, keeps all FinalStateResolvers for the whole runtime duration. if false, only keeps the one that is used to resolve the first event. must be true if Marlin is to encounter events from more than one process in one run. defaults to false",
 				m_multiProcess,
 				false
 				);
@@ -584,7 +585,9 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 		if (m_beam_pol1 == -1 && m_beam_pol2 == -1) m_polarization_code = POLARIZATION_CODES::EL_PL; else
 		if (m_beam_pol1 == -1 && m_beam_pol2 ==  1) m_polarization_code = POLARIZATION_CODES::EL_PR; else
 		if (m_beam_pol1 ==  1 && m_beam_pol2 == -1) m_polarization_code = POLARIZATION_CODES::ER_PL; else
-		if (m_beam_pol1 ==  1 && m_beam_pol2 ==  1) m_polarization_code = POLARIZATION_CODES::ER_PR;
+		if (m_beam_pol1 ==  1 && m_beam_pol2 ==  1) m_polarization_code = POLARIZATION_CODES::ER_PR; else
+		if (m_beam_pol1 ==  0 && m_beam_pol2 ==  0) m_polarization_code = POLARIZATION_CODES::NOPOL; else
+			throw EVENT::Exception("Unsupported beam polarization");
 
 		if (!m_multiProcess) {
 			// delete all other resolvers if they are not required

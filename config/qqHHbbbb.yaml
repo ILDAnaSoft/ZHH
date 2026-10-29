@@ -292,6 +292,14 @@ cuts:
   # signal class is used, where SklearnMulticlassTraining finds one set of thresholds per signal class
   mva_cuts_lazy: None
 
+  # separation of the Z->bb (bbHH dominant) and Z->qq (light qqHH dominant) signal by the sum of the b-tags of all six jets
+  # (see zhh/analysis/DataStore.py): 6 b jets give values > 4. both groups start from the preselection (step_in: 0) and are
+  # complementary (the value of exactly 4 is a measure-zero overlap for a continuous variable)
+  bbHH_dominant:
+  - { quantity: sumBTags, operator: gte, value: 4., label: '\Sigma_{b-tags}' }
+  qqHH_dominant:
+  - { quantity: sumBTags, operator: lte, value: 4., label: '\Sigma_{b-tags}' }
+
 # MVAs are defined here
 # training, inference and optimization (i.e. assignment which threshold value to use) are
 # done by actions, which reference the MVA (see the actions section).
@@ -359,7 +367,7 @@ actions:
     observable: sumBTags
     weight_prop: weight
     file: '$hypothesis_sumBTags.pdf'
-    before_step: 1 # after the preselection (cut group 0)
+    before_step: 1 # after step=0, i.e. preselection (cut group 0)
   
   # optional:
   # step_start: 0
@@ -500,4 +508,28 @@ actions:
     file: '$hypothesis_cutflow_mva_table.pdf'
     step_start: 0
     step_end: 1
+    categories_left: False
+
+  # bbHH dominant/light qqHH dominant: two parallel cut groups (steps 2 and 3), both applied to the events passing the
+  # preselection (step_in: 0). tables use steps to skip the MVA cut group (step 1). all events (no data split) are used
+  - type: ApplyCuts
+    cuts: bbHH_dominant
+    step_in: 0
+    step: 2
+    weight_column: weight
+
+  - type: ApplyCuts
+    cuts: qqHH_dominant
+    step_in: 0
+    step: 3
+    weight_column: weight
+
+  - type: CreateCutflowTable
+    file: '$hypothesis_cutflow_bbHH_dominant_table.pdf'
+    steps: [0, 2]
+    categories_left: False
+
+  - type: CreateCutflowTable
+    file: '$hypothesis_cutflow_qqHH_dominant_table.pdf'
+    steps: [0, 3]
     categories_left: False

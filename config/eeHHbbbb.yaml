@@ -393,7 +393,7 @@ actions:
     mva: default_mva
     split: 0
     check_hash: false
-    disabled: true
+    disabled: false
 
   - type: SklearnMulticlassHyperparamTraining
     hyperparams: { n_jobs: 1 } # use only 1 thread per classifier
@@ -406,7 +406,7 @@ actions:
     split: 0
     ntrials: 500
     nprocesses: 50 # on NAF, use some lower value (e.g. 8). on Maxwell, 50 should be OK
-    disabled: false
+    disabled: true
 
   - type: SklearnMulticlassInference
     mva: default_mva

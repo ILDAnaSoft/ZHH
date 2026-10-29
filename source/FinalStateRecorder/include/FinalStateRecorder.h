@@ -26,7 +26,8 @@ struct POLARIZATION_CODES {
 		EL_PL = 0,
 		EL_PR = 1,
 		ER_PL = 2,
-		ER_PR = 3
+		ER_PR = 3,
+		NOPOL = 4
 	};
 };
 
