@@ -1,9 +1,16 @@
 import numpy as np
+from typing import TYPE_CHECKING
 
-def plot_classifier_thresholds(stats:np.ndarray, title:str='MVA Score'):
-    from zhh import MulticlassModel, fig_ild_style
-    from zhh.plot.ild_style import legend_kwargs_fn
+if TYPE_CHECKING:
+    from .ild_style import ILDStyleContext
+
+def plot_classifier_thresholds(stats:np.ndarray, title:str='MVA Score', ild_style:'ILDStyleContext|None'=None):
+    from zhh import MulticlassModel
+    from zhh.plot.ild_style import ILDStyleContext
     import matplotlib.pyplot as plt
+    
+    if ild_style is None:
+        ild_style = ILDStyleContext.fromDefaults()
     
     figs = []
     
@@ -31,10 +38,10 @@ def plot_classifier_thresholds(stats:np.ndarray, title:str='MVA Score'):
             ax1.axvline(x=best_sig_at, color='red')
         
         lns = lns1+lns2+lns3
-        ax1.legend(lns, [str(l.get_label()) for l in lns], loc='lower left', **legend_kwargs_fn())
+        ax1.legend(lns, [str(l.get_label()) for l in lns], loc='lower left', **ild_style.legend_kwargs_fn())
         ax1.grid()
         
-        fig_ild_style(fig, title=title, xlabel='Cut Value', xunit=None,
+        ild_style.apply(fig, title=title, xlabel='Cut Value', xunit=None,
                         yunit=None, ylabel_prefix='', ild_offset_x=0.65, ild_offset_y=0.12);
         
         if zoomed_in:
