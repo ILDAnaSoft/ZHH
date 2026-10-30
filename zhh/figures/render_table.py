@@ -14,7 +14,7 @@ latex_replacements = [
     ('<=', r'\Leftarrow '),
 ]
     
-def render_table(lines:Sequence[Sequence[str]|str], col_sep:str='8pt', row_sep:float=1.2, replacements:list[tuple[str, str]]|None=latex_replacements):            
+def renderTableFn(lines:Sequence[Sequence[str]|str], col_sep:str='8pt', row_sep:float=1.2, replacements:list[tuple[str, str]]|None=latex_replacements):            
     column_widths = [1] * len(lines[0])
     n_lines = len(lines)
     
