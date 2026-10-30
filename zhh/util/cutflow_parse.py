@@ -14,7 +14,7 @@ from .replace_references import replace_references
 from ..data.ROOT2HDF5Converter import ROOT2HDF5Converter, GroupedConversionPlan
 from ..task.ConcurrentFuturesRunner import ProcessRunner
 from ..analysis import CutflowProcessor, CutflowProcessorAction, CreateCutflowPlotsAction, ReadonlyWriteAttempt
-from typing import TypedDict, NotRequired, cast, TYPE_CHECKING, NotRequired
+from typing import TypedDict, NotRequired, cast, TYPE_CHECKING, NotRequired, Literal
 from multiprocessing import cpu_count
 from copy import deepcopy
 from math import ceil
@@ -41,7 +41,7 @@ class CutflowSourceSpecificationType(TypedDict):
 class CutflowSteeringFileType(TypedDict):
     hypothesis:str
     signal_categories:list[str]
-    beam_polarization:tuple[float, float]|None
+    beam_polarization:tuple[float, float]|None|Literal[0]
     luminosity:float
     reset:NotRequired[bool]
 
@@ -99,12 +99,15 @@ def cutflow_parse_final_states_and_categories(category_definitions_dict:list['Ca
     """
 
     from zhh.processes.event_category_registry import GlobalEventCategoryRegistry, EventCategoryDefinition
+    from zhh.processes.ProcessCategories import ProcessCategories
     
     GlobalEventCategoryRegistry.clear()
+    # lambdas created by eval resolve free names via globals, not the locals dict
+    eval_globals = { **globals(), 'ProcessCategories': ProcessCategories }
 
     for item in category_definitions_dict:
         if 'final_state' in item and isinstance(item['final_state'], str):
-            item['final_state'] = eval(item['final_state'])
+            item['final_state'] = eval(item['final_state'], eval_globals)
             
         definition = EventCategoryDefinition(**item)
 
@@ -204,12 +207,15 @@ def cutflow_process_steering(steer:CutflowSteeringFileType, integrity_check:bool
     
     # process beam polarization; adjust if not ILC-like
     beam_pol = steer['beam_polarization']
-    if beam_pol is not None:
+    if beam_pol is None or beam_pol == 0:
+        beam_pol = 0
+    elif isinstance(beam_pol, tuple):
         assert(-1 <= beam_pol[0] <= 1 and
                -1 <= beam_pol[1] <= 1)
+    else:
+        raise Exception('Invalid beam_polarization: Must be either a tuple of floats or 0 for unpolarized beams')
 
-    if beam_pol is None or (beam_pol[0] != -0.8 or beam_pol[1] != 0.3):
-        set_polarization(beam_pol)
+    set_polarization(beam_pol)
     
     def instantiate_source(name, source_spec)->DataSource:
         items_path = osp.expandvars(source_spec['path'])
@@ -230,17 +236,12 @@ def cutflow_process_steering(steer:CutflowSteeringFileType, integrity_check:bool
         # make sure beam polarization fits
         with h5py.File(ds_path, 'r' if readonly else 'a') as hf:
             if 'beam_polarization' in hf.attrs:
-                beam_pol_read = hf.attrs.get('beam_polarization', 0)
-                if beam_pol_read != 0:
-                    beam_pols_dont_match = (beam_pol is None and beam_pol_read is not None) or (beam_pol is not None and beam_pol_read is None)
-
-                    if beam_pol_read is not None:
-                        assert(len(beam_pol_read) == 2)
-                        assert(-1 <= beam_pol_read[0] <= 1)
-                        assert(-1 <= beam_pol_read[1] <= 1)
-
-                        beam_pols_dont_match = beam_pol is None or beam_pol[0] != beam_pol_read[0] or beam_pol[1] != beam_pol_read[1]
-
+                beam_pol_read = hf.attrs.get('beam_polarization', None)
+                if beam_pol_read is not None:
+                    beam_pols_dont_match = (isinstance(beam_pol, tuple) and isinstance(beam_pol_read, int)) or \
+                                           (isinstance(beam_pol, int) and isinstance(beam_pol_read, tuple)) or \
+                                           beam_pol != beam_pol_read
+                    
                     if beam_pols_dont_match:
                         # calculating the NPZ file will force source.initialize() to be called -> correct reweighting will be done automatically
                         confirm = input(f'The requested beam pol {beam_pol} does not match the saved {beam_pol_read}: Do you want to automatically reweight the events? y/n (n)').lower()
@@ -251,8 +252,8 @@ def cutflow_process_steering(steer:CutflowSteeringFileType, integrity_check:bool
             else:
                 if readonly:
                     raise ReadonlyWriteAttempt(f'Cannot append beam_polarization to HDF5 dataset at {ds_path}')
-
-                hf.attrs['beam_polarization'] = beam_pol
+                
+                hf.attrs['beam_polarization'] = 0 if beam_pol is None else beam_pol
 
         # Register event category definitions
         event_categorization = source_spec['event_categorization']

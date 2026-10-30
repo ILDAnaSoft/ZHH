@@ -65,7 +65,8 @@ def plot_combined_hist(calc_dict:dict[str, tuple[np.ndarray, np.ndarray]],
     colorpalette = plot_context.getColorPalette(list(plot_dict.keys()))
     
     fig_plot_hist_kwargs = {
-        'stacked': stacked if stacked is not None else len(calc_dict.keys()) > 1,
+        # signal keys are drawn separately; a single-entry stack makes matplotlib return unnested patches
+        'stacked': (stacked if stacked is not None else True) and len(plot_dict) > 1,
         'custom_styling': True,
         'colorpalette': colorpalette,
         'hist_kwargs': { }

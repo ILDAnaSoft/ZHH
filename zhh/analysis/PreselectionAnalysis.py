@@ -1,7 +1,7 @@
 from ast import literal_eval as make_tuple
 from glob import glob
 from dateutil import parser
-from typing import Optional
+from typing import Optional, Literal
 from tqdm.auto import tqdm
 import os.path as osp
 import json
@@ -23,8 +23,8 @@ DEFAULTS = {
     }
 }
 
-def set_polarization(beamPolarization:tuple[float, float]|None):
-    if beamPolarization is not None:
+def set_polarization(beamPolarization:tuple[float, float]|Literal[0]):
+    if isinstance(beamPolarization, tuple):
         Peminus, Peplus = beamPolarization
         w_em_ep = w_prefacs(Peminus, Peplus)
 
@@ -32,11 +32,13 @@ def set_polarization(beamPolarization:tuple[float, float]|None):
         
         for i, key in enumerate(['LL', 'LR', 'RL', 'RR']):
             DEFAULTS['w_em_ep'][key] = w_em_ep[i]
-    else:
-        DEFAULTS['BEAM_POLARIZATION'] = None
+    elif beamPolarization == 0:
+        DEFAULTS['BEAM_POLARIZATION'] = 0
         
         for i, key in enumerate(['LL', 'LR', 'RL', 'RR']):
             DEFAULTS['w_em_ep'][key] = .25
+    else:
+        raise Exception('Invalid beam_polarization: Must be either a tuple of floats or 0 for unpolarized beams')
 
 def get_polarization()->tuple[float, float]:
     return DEFAULTS['BEAM_POLARIZATION']

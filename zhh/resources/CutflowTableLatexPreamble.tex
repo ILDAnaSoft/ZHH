@@ -1,0 +1,38 @@
+% if you want to use heppennames natively, replace iffalse with iftrue
+\iffalse
+\usepackage{heppennames}
+\usepackage{xpatch}
+\makeatletter
+\xpatchcmd\@HepConStyle
+  {\edef\@upcode{\updefault}}
+  {\ifdefined\shapedefault\edef\@upcode{\shapedefault}\else\edef\@upcode{\updefault}\fi}
+  {}{}
+\makeatother
+\usepackage{isomath}
+\usepackage[utopia, greeklowercase=upright]{mathdesign}
+\else
+\usepackage{upgreek}
+\newcommand{\Pq}{$\mathrm{q}$} % generic quark
+\newcommand{\Pqb}{$\mathrm{b}$} % b quark
+\newcommand{\Pqt}{$\mathrm{t}$} % t quark
+\newcommand{\Pqs}{$\mathrm{s}$} % s quark
+\newcommand{\Pqc}{$\mathrm{c}$} % c quark
+\newcommand{\Pqd}{$\mathrm{d}$} % d quark
+\newcommand{\Pqu}{$\mathrm{u}$} % u quark
+
+\newcommand{\Plpm}{$\mathrm{l^{\pm}}$}  % charged lepton
+\newcommand{\Pe}{$\mathrm{e}$} % electron
+\newcommand{\Pgm}{$\mathrm{\upmu}$} % muonic
+\newcommand{\Pgt}{$\mathrm{\uptau}$} % tauonic
+
+\newcommand{\Pgn}{$\mathrm{\upnu}$} % generic neutrino
+
+\newcommand{\PH}{$\mathrm{H}$} % Higgs
+\newcommand{\PZ}{$\mathrm{Z}$} % Z
+\newcommand{\PW}{$\mathrm{W}$} % W
+\newcommand{\HepProcess}{}
+\fi
+
+%\usepackage{tabularx}
+\usepackage{siunitx}
+\sisetup{round-mode=figures, round-precision=3}
