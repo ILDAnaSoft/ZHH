@@ -118,7 +118,7 @@ def plot_combined_hist(calc_dict:dict[str, tuple[np.ndarray, np.ndarray]],
     
     if hypothesis is not None:
         title_prefix = '' if (analysis_name is None or analysis_name == '') else analysis_name
-        fig_ild_kwargs['title'] = rf'{title_prefix}{f" → {hypothesis}" if hypothesis is not None else ""} analysis' + (f' ({title_label})' if title_label is not None else '')
+        fig_ild_kwargs['title'] = rf'{title_prefix}{f" → " if hypothesis is not None and title_prefix != "" else ""}{f"{hypothesis}" if hypothesis is not None else ""} analysis' + (f' ({title_label})' if title_label is not None else '')
     
     legend_labels = []
     for key, value in plot_dict.items():

@@ -133,15 +133,17 @@ def cutflow_parse_steering_file(loc:str):
         f_str = f.read()
         parsed = yaml.safe_load(f_str)
 
-    # replace $hypothesis and $analysis_name if they exist
-    # in parsed and are not yet in the environment
-    if not 'hypothesis' in os.environ:
+    # export hypothesis and analysis_name to the environment; values in the
+    # steering file take precedence over already existing environment variables
+    if 'hypothesis' in parsed:
         os.environ['hypothesis'] = parsed['hypothesis']
 
-    if not 'analysis_name' in os.environ:
-        os.environ['analysis_name'] = parsed['analysis_name'] if 'analysis_name' in parsed else 'ZHH'
+    os.environ['analysis_name'] = parsed.get('analysis_name', os.environ.get('analysis_name', 'ZHH'))
 
-    f_str = f_str.replace('$hypothesis', os.environ['hypothesis'])
+    # replace $hypothesis and $analysis_name textually
+    for key in ['hypothesis', 'analysis_name']:
+        f_str = f_str.replace(f'${{{key}}}', os.environ[key]).replace(f'${key}', os.environ[key])
+
     parsed = yaml.safe_load(f_str)
     
     # replace file references
