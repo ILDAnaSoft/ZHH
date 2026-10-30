@@ -1,5 +1,6 @@
 from ..CutflowProcessorAction import FileBasedProcessorAction, CutflowProcessor
 from ...util.PlotContext import PlotContext
+from ...plot.ild_style import ILDStyleContext
 from typing import Literal
 import numpy as np
 import os, os.path as osp
@@ -64,7 +65,9 @@ class PlotMVAFeaturesAction(FileBasedProcessorAction):
         figures = plotFn(
             features, inputs, labels, weight,
             self._label_2_category, self._signal_categories,
-            plot_kwargs=self._plot_kwargs
+            plot_context=self._cp.getPlotContext(),
+            plot_kwargs=self._plot_kwargs,
+            ild_style=self._cp.getILDStyleContext()
         )
 
         export_figures(self.output().abspath, figures)
@@ -76,7 +79,8 @@ class PlotMVAFeaturesAction(FileBasedProcessorAction):
         return self.localTarget(self._plot_file)
 
 def plotFn(features, inputs, labels, weight, label_2_category:dict[int, str], signal_categories:list[str],
-           plot_context:PlotContext|None=None, plot_options:dict[str, dict]={}, plot_kwargs:dict={}):
+           plot_context:PlotContext|None=None, plot_options:dict[str, dict]={}, plot_kwargs:dict={},
+           ild_style:ILDStyleContext|None=None):
     
     from zhh import colormap_desy, plot_weighted_hist, figure_options, deepmerge, PlotContext
     from copy import deepcopy
@@ -144,7 +148,7 @@ def plotFn(features, inputs, labels, weight, label_2_category:dict[int, str], si
             plot_kwargs['xunit'] = xunits[i]
         
         fig = plot_weighted_hist(plot_dict, title=None, plot_context=plot_context,
-                                    plot_hist_kwargs_overwrite=hist_kwargs_overwrite, **plot_kwargs)
+                                    plot_hist_kwargs_overwrite=hist_kwargs_overwrite, ild_style=ild_style, **plot_kwargs)
         fig.set_layout_engine('tight')
         
         figures.append(fig)
