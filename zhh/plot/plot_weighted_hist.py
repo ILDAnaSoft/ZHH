@@ -19,7 +19,8 @@ def plot_combined_hist(calc_dict:dict[str, tuple[np.ndarray, np.ndarray]],
                        plot_hist_kwargs_overwrite:dict={},
                        ax:Union['Axes', None]=None,
                        signal_keys:list[str]=[],
-                       stacked:bool|None=None)->'Figure':
+                       stacked:bool|None=None,
+                       analysis_name:str|None=None)->'Figure':
     """Plots the properties in calc_dict
 
     Args:
@@ -116,7 +117,8 @@ def plot_combined_hist(calc_dict:dict[str, tuple[np.ndarray, np.ndarray]],
     int_bins = fig_ild_kwargs['int_bins']
     
     if hypothesis is not None:
-        fig_ild_kwargs['title'] = rf'ZHH{f" → {hypothesis}" if hypothesis is not None else ""} analysis' + (f' ({title_label})' if title_label is not None else '')
+        title_prefix = '' if (analysis_name is None or analysis_name == '') else analysis_name
+        fig_ild_kwargs['title'] = rf'{title_prefix}{f" → {hypothesis}" if hypothesis is not None else ""} analysis' + (f' ({title_label})' if title_label is not None else '')
     
     legend_labels = []
     for key, value in plot_dict.items():

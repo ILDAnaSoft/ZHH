@@ -41,7 +41,7 @@ class CutflowSourceSpecificationType(TypedDict):
 class CutflowSteeringFileType(TypedDict):
     hypothesis:str
     signal_categories:list[str]
-    beam_polarization:tuple[float, float]|None|Literal[0]
+    beam_polarization:tuple[float, float]
     luminosity:float
     reset:NotRequired[bool]
 
@@ -133,8 +133,13 @@ def cutflow_parse_steering_file(loc:str):
         f_str = f.read()
         parsed = yaml.safe_load(f_str)
 
-    # replace $hypothesis    
-    os.environ['hypothesis'] = parsed['hypothesis']
+    # replace $hypothesis and $analysis_name if they exist
+    # in parsed and are not yet in the environment
+    if not 'hypothesis' in os.environ:
+        os.environ['hypothesis'] = parsed['hypothesis']
+
+    if not 'analysis_name' in os.environ:
+        os.environ['analysis_name'] = parsed['analysis_name'] if 'analysis_name' in parsed else 'ZHH'
 
     f_str = f_str.replace('$hypothesis', os.environ['hypothesis'])
     parsed = yaml.safe_load(f_str)
@@ -207,19 +212,14 @@ def cutflow_process_steering(steer:CutflowSteeringFileType, integrity_check:bool
     
     # process beam polarization; adjust if not ILC-like
     beam_pol = steer['beam_polarization']
-    if beam_pol is None or beam_pol == 0:
-        beam_pol = 0
-    elif isinstance(beam_pol, tuple):
-        assert(-1 <= beam_pol[0] <= 1 and
-               -1 <= beam_pol[1] <= 1)
-    else:
-        raise Exception('Invalid beam_polarization: Must be either a tuple of floats or 0 for unpolarized beams')
+    assert(-1 <= beam_pol[0] <= 1 and -1 <= beam_pol[1] <= 1)
 
     set_polarization(beam_pol)
     
     def instantiate_source(name, source_spec)->DataSource:
         items_path = osp.expandvars(source_spec['path'])
-        ds_path = f'{os.getcwd()}/{steer["hypothesis"]}.{name}.h5'
+        ds_path = source_spec['ds_path'] if 'ds_path' in source_spec else f'{os.getcwd()}/{steer["hypothesis"]}.{name}.h5'
+        ds_path = osp.expandvars(ds_path)
         
         if integrity_check and 'interpret' in steer['features']:
             print(f'  Reading file from <{ds_path}> and items from <{items_path}>')
@@ -236,13 +236,10 @@ def cutflow_process_steering(steer:CutflowSteeringFileType, integrity_check:bool
         # make sure beam polarization fits
         with h5py.File(ds_path, 'r' if readonly else 'a') as hf:
             if 'beam_polarization' in hf.attrs:
-                beam_pol_read = hf.attrs.get('beam_polarization', None)
+                beam_pol_read:tuple[float, float]|None = hf.attrs.get('beam_polarization', None)
+
                 if beam_pol_read is not None:
-                    beam_pols_dont_match = (isinstance(beam_pol, tuple) and isinstance(beam_pol_read, int)) or \
-                                           (isinstance(beam_pol, int) and isinstance(beam_pol_read, tuple)) or \
-                                           beam_pol != beam_pol_read
-                    
-                    if beam_pols_dont_match:
+                    if beam_pol[0] != beam_pol_read[0] or beam_pol[1] != beam_pol_read[1]:
                         # calculating the NPZ file will force source.initialize() to be called -> correct reweighting will be done automatically
                         confirm = input(f'The requested beam pol {beam_pol} does not match the saved {beam_pol_read}: Do you want to automatically reweight the events? y/n (n)').lower()
 
@@ -774,7 +771,7 @@ def cutflow_execute_actions(actions:list[CutflowProcessorAction], check_only:boo
             except KeyboardInterrupt as interrupt:
                 print('Interrupt received. Stopping...')
                 if not action.interruptible:
-                    print(f'Action {action.__class__.__name__} is non-interruptible. Cleaning outputs')
+                    print(f'Action {action.__class__.__name__} cannot be safely interrupted. Cleaning outputs')
                     action.reset()
                 
                 raise interrupt

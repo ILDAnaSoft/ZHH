@@ -40,7 +40,9 @@ class DataStore(MixedLazyTablelike):
                 while f'jet{n_jets+1}_m' in hf_keys:
                     n_jets += 1
         
-        assert(r_size)
+        if not r_size:
+            raise Exception(f'The dataset file at {h5_file} seems corrupted. Please regenerate it')
+        
         super().__init__(r_size)
         
         # this attaches the properties of the TTree

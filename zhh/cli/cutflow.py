@@ -31,7 +31,12 @@ if __name__ == '__main__':
     
     print('----------------------- Initializing CutflowProcessor -----------------------------')
     preselection = cutflow_parse_cuts(steer['cuts']['preselection'])
-    cp = CutflowProcessor(sources, hypothesis=steer['hypothesis'], cuts=preselection, signal_categories=steer['signal_categories'])
+    cp = CutflowProcessor(sources,
+            hypothesis=steer['hypothesis'],
+            signal_categories=steer['signal_categories'],
+            cuts=preselection,
+            beam_polarization=steer['beam_polarization'],
+            analysis_name=steer['analysis_name'] if 'analysis_name' in steer else 'ZHH')
 
     print('----------------------- Registering MVAs -----------------------------')
     registered_mvas = cutflow_register_mvas(steer, cp)
@@ -54,5 +59,6 @@ if __name__ == '__main__':
     to_execute = cutflow_execute_actions(actions, check_only=True)
     for i, action in enumerate(to_execute):
         print(f'Action {i+1}/{len(to_execute)}:', action)
+        
     print('----------------------- Executing actions -----------------------------')
     cutflow_execute_actions(actions, log_level=log_level)

@@ -39,6 +39,8 @@ class CutflowProcessor:
                  hypothesis:str,
                  signal_categories:list[int],
                  cuts:Sequence[ValueCut],
+                 beam_polarization:tuple[float, float],
+                 analysis_name:str,
                  colormap:Union['Colormap', None]=None,
                  plot_options:dict[str, dict[str, dict]]={},
                  plot_context:PlotContext|None=None,
@@ -69,7 +71,7 @@ class CutflowProcessor:
         
         assert(isinstance(signal_categories, list) and len(signal_categories) > 0)
         
-        # make sure weighted lumi is the same across all sources
+        # make sure integrated lumi is the same across all sources
         for source in self._sources:
             if source.getIntegratedLuminosity() != self._sources[0].getIntegratedLuminosity():
                 raise ValueError(f"All sources must have the same luminosity. Found {source.getIntegratedLuminosity()} and {self._sources[0].getIntegratedLuminosity()}.")
@@ -79,11 +81,13 @@ class CutflowProcessor:
             
         self._work_dir = work_dir
         self._luminosity = self._sources[0].getIntegratedLuminosity()
+        self._beam_polarization = beam_polarization
+        self._analysis_name = analysis_name
+
         self._cuts:dict[int, Sequence[ValueCut]] = { 0: zhh_cuts(hypothesis) if cuts is None else cuts }
         self._cuts_hash:str|None = None if self._cuts is None else Cut.hash_cuts(flatten(self._cuts.values()))
 
-        self._plot_options:dict[str, dict[str, dict]] = deepmerge(
-            deepmerge({}, deepcopy(figure_options_zhh)), plot_options)
+        self._plot_options:dict[str, dict[str, dict]] = deepcopy(figure_options_zhh if plot_options is None else plot_options)
         
         self._hypothesis = hypothesis
         
@@ -660,9 +664,10 @@ class CutflowProcessor:
             }
             plot_kwargs = deepmerge(plot_kwargs_defaults, plot_kwargs)
         
-            return plot_combined_hist(calc_dict=calc_dict, hypothesis=self._hypothesis, **plot_kwargs)
+            return plot_combined_hist(calc_dict=calc_dict, hypothesis=self._hypothesis, analysis_name=self._analysis_name, **plot_kwargs)
         else:
-            return plotCalcDictTopN(self.getPlotContext(), calc_dict, quantity, signal_category_names, hypothesis=self._hypothesis, plot_options=plot_kwargs, nrows=3, ncols=3)
+            return plotCalcDictTopN(self.getPlotContext(), calc_dict, quantity, signal_category_names,
+                                    analysis_name=self._analysis_name, hypothesis=self._hypothesis, plot_options=plot_kwargs, nrows=3, ncols=3)
 
     def registerMVA(self, name:str, features:list[str], classes:list[tuple[int, str]],
                     label_name:str, mva_file:str, threshold:float|int|None=None, **kwargs):
@@ -688,6 +693,7 @@ def cutflowPlots(cp:CutflowProcessor, output_file:str|None, display:bool=True, s
     return cutflowPlotsFn(signal_category_names,
         cuts,
         calc_dicts,
+        cp._analysis_name,
         cp._hypothesis,
         cp._plot_options,
         plot_options_call,
@@ -699,8 +705,8 @@ def cutflowPlots(cp:CutflowProcessor, output_file:str|None, display:bool=True, s
         annotate_cut)
 
 def plotCalcDictTopN(context:PlotContext, calc_dict:dict[str, tuple[np.ndarray, np.ndarray]], quantity:str, signal_category_names:list[str],
-                     plot_options:dict={}, hist_kwargs:dict={}, hypothesis:str|None=None, bins:int=100, xlim:tuple[float, float]|None=None,
-                     nrows:int=3, ncols:int=3, figsize:tuple[int, int]=(18,18)):
+                     plot_options:dict={}, hist_kwargs:dict={}, analysis_name:str|None=None, hypothesis:str|None=None, bins:int=100,
+                     xlim:tuple[float, float]|None=None, nrows:int=3, ncols:int=3, figsize:tuple[int, int]=(18,18)):
     from zhh import plot_combined_hist
     import matplotlib.pyplot as plt
     
@@ -747,6 +753,7 @@ def plotCalcDictTopN(context:PlotContext, calc_dict:dict[str, tuple[np.ndarray, 
             'xlabel': quantity,
             'plot_context': context,
             'hypothesis': hypothesis,
+            'analysis_name': analysis_name,
             'xlim': [xlim_min, xlim_max]
         }, deepcopy(plot_options))
         plot_kwargs['ild_style_kwargs']['ild_text_position'] = 'upper left'
@@ -761,6 +768,7 @@ def plotCalcDictTopN(context:PlotContext, calc_dict:dict[str, tuple[np.ndarray, 
 def cutflowPlotsFn(signal_category_names:list[str],
                  cuts:Sequence[ValueCut],
                  calc_dicts:list[dict[str, tuple[np.ndarray, np.ndarray]]],
+                 analysis_name:str,
                  hypothesis:str,
                  plot_options:dict[str, dict[str, dict]],
                  plot_options_call:dict[str, dict[str, dict]],
@@ -822,7 +830,7 @@ def cutflowPlotsFn(signal_category_names:list[str],
         
         # non-stacked plot
         fig2 = plotCalcDictTopN(plot_context, calc_dict, rf'${cut.label}$', signal_category_names, plot_options_quantity,
-                                hist_kwargs=hist_kwargs, hypothesis=hypothesis, bins=bins,
+                                hist_kwargs=hist_kwargs, analysis_name=analysis_name, hypothesis=hypothesis, bins=bins,
                                 xlim=plot_kwargs['xlim'] if 'xlim' in plot_kwargs else None);
         
         figs_sigvbkg.append(fig2)
