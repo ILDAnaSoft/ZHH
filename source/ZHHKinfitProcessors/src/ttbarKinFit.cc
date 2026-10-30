@@ -908,7 +908,7 @@ ttbarKinFit::FitResult ttbarKinFit::performqqqqbbFIT( pfoVector jets, bool trace
 	for (size_t i = 0; i < m_bTagValues.size(); i++)
 			m_bTagsSorted.push_back(std::make_pair(i, m_bTagValues[i]));
 
-	std::sort (m_bTagsSorted.begin(), m_bTagsSorted.end(), jetTaggingComparator);
+	std::stable_sort (m_bTagsSorted.begin(), m_bTagsSorted.end(), jetTaggingComparator);
 
 	TVector3 pjbmaxA1 (jets[m_bTagsSorted[0].first]->getMomentum());
 	TVector3 pjbmaxA2 (jets[m_bTagsSorted[1].first]->getMomentum());
