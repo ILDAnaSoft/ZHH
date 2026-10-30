@@ -37,7 +37,7 @@ class CreateCutflowTableAction(FileBasedProcessorAction):
 
         super().__init__(cp, steer)
         
-        self._file = file
+        self._file = osp.expandvars(file)
         if steps is not None:
             if not len(steps):
                 raise ValueError('steps must contain at least one step')
