@@ -1,5 +1,9 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
+#include <pybind11/stl.h> // std::optional (calc_me_zz)
+#include <map>
+#include <optional>
+#include <tuple>
 #include "physsim/LCMEZHH.h"
 #include "physsim/LCMEZZH.h"
 #include "physsim/LCMEZZ.h"
@@ -7,6 +11,80 @@
 #include "Python.h"
 
 namespace py = pybind11;
+
+// Due to technical reasons, instances of lcme::LCMEZHH / lcme::LCMEZZH are created per distinct
+// parameter set and kept alive for the lifetime of the process; the number of distinct sets is
+// tiny (polarization x decay mode x propagator settings), so memory stays bounded.
+// Not thread-safe: the functions below hold the GIL throughout.
+typedef std::tuple<double, double, int, int, double> ZHHKey;           // pol_e, pol_p, zDecayMode, propagator_type, higgs_width
+typedef std::tuple<double, double, int, int, int, double> ZZHKey;      // pol_e, pol_p, z1DecayMode, z2DecayMode, propagator_type, higgs_width
+
+static lcme::LCMEZHH* get_lcme_zhh(double pol_e, double pol_p, int zDecayMode, int propagator_type, double higgs_width) {
+    static std::map<ZHHKey, lcme::LCMEZHH*> cache;
+    ZHHKey key(pol_e, pol_p, zDecayMode, propagator_type, higgs_width);
+
+    auto it = cache.find(key);
+    if (it != cache.end())
+        return it->second;
+
+    lcme::LCMEZHH* calcme = new lcme::LCMEZHH("LCMEZHH", "ZHH", 125., pol_e, pol_p);
+    calcme->SetZDecayMode(zDecayMode);
+    // propagator_type: 0 = disabled (no Higgs-mass-shell weighting at all),
+    // 1 = relativistic Breit-Wigner (Physsim default, higgs_width defaults to the
+    // true SM width 4.3 MeV -- an essentially unmeasurable, needle-narrow scale
+    // given measured jet momenta), 2 = the Physsim-native "effective Gaussian with
+    // detector resolution" option -- pass higgs_width = the actual reconstructed
+    // dijet-mass resolution (GeV) to use that sensibly.
+    calcme->SetPropagator(propagator_type != 0);
+    if (propagator_type != 0) {
+        calcme->SetPropagatorType(propagator_type);
+        calcme->SetHiggsWidth(higgs_width);
+    }
+    //calcme->SetMEType(2);
+
+    cache[key] = calcme;
+    return calcme;
+}
+
+static lcme::LCMEZZH* get_lcme_zzh(double pol_e, double pol_p, int z1DecayMode, int z2DecayMode, int propagator_type, double higgs_width) {
+    static std::map<ZZHKey, lcme::LCMEZZH*> cache;
+    ZZHKey key(pol_e, pol_p, z1DecayMode, z2DecayMode, propagator_type, higgs_width);
+
+    auto it = cache.find(key);
+    if (it != cache.end())
+        return it->second;
+
+    lcme::LCMEZZH* calcme = new lcme::LCMEZZH("LCMEZZH", "ZZH", 125., pol_e, pol_p);
+    calcme->SetZDecayMode(z1DecayMode, z2DecayMode);
+    // see get_lcme_zhh for propagator_type/higgs_width semantics
+    calcme->SetPropagator(propagator_type != 0);
+    if (propagator_type != 0) {
+        calcme->SetPropagatorType(propagator_type);
+        calcme->SetHiggsWidth(higgs_width);
+    }
+    //calcme->SetMEType(2);
+
+    cache[key] = calcme;
+    return calcme;
+}
+
+static lcme::LCMEZZ* get_lcme_zz(double pol_e, double pol_p, int z1DecayMode, int z2DecayMode) {
+    // see the comment on the caches above: instances are shared and must not be deleted
+    static std::map<std::tuple<double, double, int, int>, lcme::LCMEZZ*> cache;
+    std::tuple<double, double, int, int> key(pol_e, pol_p, z1DecayMode, z2DecayMode);
+
+    auto it = cache.find(key);
+    if (it != cache.end())
+        return it->second;
+
+    lcme::LCMEZZ* calcme = new lcme::LCMEZZ("LCMEZZ", "ZZ", pol_e, pol_p, 0);
+    calcme->SetZDecayMode(z1DecayMode, z2DecayMode);
+    calcme->SetPropagator(1);
+    //calcme->SetMEType(2);
+
+    cache[key] = calcme;
+    return calcme;
+}
 
 void physsim_get_z_decay_modes() {
     GENPDTZBoson* fZBosonPtr = new GENPDTZBoson();
@@ -29,26 +107,25 @@ py::array_t<double> calc_me_zhh_jm(
     double pol_p,
     int zDecayMode,
     py::array_t<double> input_kinematics,
-    py::array_t<int8_t> jet_matching) {
-     
+    py::array_t<int8_t> jet_matching,
+    int propagator_type = 1,
+    double higgs_width = 0.0043) {
+
     auto kref = input_kinematics.unchecked<2>();
     auto jmref = jet_matching.unchecked<2>();
     size_t nrows = (size_t)kref.shape(0);
 
     if (kref.shape(1) != 24)
         throw std::runtime_error("Invalid number of kinematic inputs; need array of size (n x 24) in order (px,py,pz,E) for (zdecay1particle, zdecay2particle, higgs1decay1particle, higgs1decay2particle, higgs2decay1particle, higgs2decay2particle) where zdecay1particle is positive, 2 is negative");
-    
-    double *arr = new double[nrows];
 
     // load jet matching
-    if (jmref.shape(1) != 4)
-        throw std::runtime_error("Invalid number of jet matching parameters");
+    if (jmref.shape(1) != 4 || (size_t)jmref.shape(0) != nrows)
+        throw std::runtime_error("Invalid shape of jet matching parameters; need array of size (n x 4) with the same n as the kinematics");
 
-    // matrix element initialization
-    lcme::LCMEZHH* calcme = new lcme::LCMEZHH("LCMEZHH", "ZHH", 125., pol_e, pol_p);
-    calcme->SetZDecayMode(zDecayMode);
-    calcme->SetPropagator(1);
-    //calcme->SetMEType(2);
+    double *arr = new double[nrows];
+
+    // matrix element (shared, see get_lcme_zhh; must not be deleted)
+    lcme::LCMEZHH* calcme = get_lcme_zhh(pol_e, pol_p, zDecayMode, propagator_type, higgs_width);
 
     // jet matching indidces and input kinematics
     int jet_idx1, jet_idx2, jet_idx3, jet_idx4;
@@ -87,12 +164,9 @@ py::array_t<double> calc_me_zhh_jm(
         //std::cerr << "LCME ZHH: m(Z)=" << (lortz[0] + lortz[1]).M() << " | m(H1)=" << lortz[2].M() << " | m(H2)=" << lortz[3].M() << std::endl;
     }
 
+    // arr was allocated with new[], so it must be released with delete[]
     py::capsule free_when_done(arr, [](void *val) {
-        double *arr = reinterpret_cast<double *>(val);
-        std::cerr << "Element [0] = " << arr[0] << "\n";
-        std::cerr << "freeing memory @ " << val << "\n";
-        if (arr)
-            free(arr);
+        delete[] reinterpret_cast<double *>(val);
     });
 
     return py::array_t<double>({nrows}, {sizeof(double)}, arr, free_when_done);
@@ -104,7 +178,9 @@ py::array_t<double> calc_me_zzh_jm(
     int z1DecayMode,
     int z2DecayMode,
     py::array_t<double> input_kinematics,
-    py::array_t<int8_t> jet_matching) {
+    py::array_t<int8_t> jet_matching,
+    int propagator_type = 1,
+    double higgs_width = 0.0043) {
 
     auto kref = input_kinematics.unchecked<2>();
     auto jmref = jet_matching.unchecked<2>();
@@ -112,17 +188,14 @@ py::array_t<double> calc_me_zzh_jm(
 
     if (kref.shape(1) != 24)
         throw std::runtime_error("Invalid number of kinematic inputs; need array of size (n x 24) in order (px,py,pz,E) for (zdecay1particle, zdecay2particle, higgs1decay1particle, higgs1decay2particle, higgs2decay1particle, higgs2decay2particle) where zdecay1particle is positive, 2 is negative");
-    
+
+    if (jmref.shape(1) != 4 || (size_t)jmref.shape(0) != nrows)
+        throw std::runtime_error("Invalid shape of jet matching parameters; need array of size (n x 4) with the same n as the kinematics");
+
     double *arr = new double[nrows];
 
-    if (jmref.shape(1) != 4)
-        throw std::runtime_error("Invalid number of jet matching parameters");
-
-    // matrix element initialization
-    lcme::LCMEZZH* calcme = new lcme::LCMEZZH("LCMEZZH", "ZZH", 125., pol_e, pol_p);
-    calcme->SetZDecayMode(z1DecayMode, z2DecayMode);
-    calcme->SetPropagator(1);
-    //calcme->SetMEType(2);
+    // matrix element (shared, see get_lcme_zzh; must not be deleted)
+    lcme::LCMEZZH* calcme = get_lcme_zzh(pol_e, pol_p, z1DecayMode, z2DecayMode, propagator_type, higgs_width);
 
     // jet matching indidces and input kinematics
     int jet_idx1, jet_idx2, jet_idx3, jet_idx4;
@@ -155,12 +228,9 @@ py::array_t<double> calc_me_zzh_jm(
         //std::cerr << "LCME ZZH: m(Z1)=" << (lortz[0] + lortz[1]).M() << " | m(Z2)=" << (lortz[2] + lortz[3]).M() << " | m(H)=" << lortz[4].M() << std::endl;
     }
 
+    // arr was allocated with new[], so it must be released with delete[]
     py::capsule free_when_done(arr, [](void *val) {
-        double *arr = reinterpret_cast<double *>(val);
-        std::cerr << "Element [0] = " << arr[0] << "\n";
-        std::cerr << "freeing memory @ " << val << "\n";
-        if (arr)
-            free(arr);
+        delete[] reinterpret_cast<double *>(val);
     });
 
     return py::array_t<double>({nrows}, {sizeof(double)}, arr, free_when_done);
@@ -171,14 +241,13 @@ py::array_t<double> calc_me_zzh(
     double pol_p,
     int z1DecayMode,
     int z2DecayMode,
-    py::array_t<double> input_kinematics) {
-        
-    lcme::LCMEZZH* calcme = new lcme::LCMEZZH("LCMEZZH", "ZZH", 125., pol_e, pol_p);
+    py::array_t<double> input_kinematics,
+    int propagator_type = 1,
+    double higgs_width = 0.0043) {
 
-    calcme->SetZDecayMode(z1DecayMode, z2DecayMode);
-    calcme->SetPropagator(1);
-    //calcme->SetMEType(2);
-    
+    // matrix element (shared, see get_lcme_zzh; must not be deleted)
+    lcme::LCMEZZH* calcme = get_lcme_zzh(pol_e, pol_p, z1DecayMode, z2DecayMode, propagator_type, higgs_width);
+
     py::buffer_info bufIn = input_kinematics.request();
 
     if (bufIn.ndim != 2)
@@ -214,8 +283,6 @@ py::array_t<double> calc_me_zzh(
         // std::cerr << "-> " << ptrOut[idx] << std::endl;
     }
 
-    delete calcme;
-
     return result;
 }
 
@@ -228,12 +295,9 @@ py::array_t<double> calc_me_zz(
     std::optional<py::array_t<double>> out_rest_frame_data
 ) {
         
-    lcme::LCMEZZ* calcme = new lcme::LCMEZZ("LCMEZZ", "ZZ", pol_e, pol_p, 0);
+    // matrix element (shared, see get_lcme_zz; must not be deleted)
+    lcme::LCMEZZ* calcme = get_lcme_zz(pol_e, pol_p, z1DecayMode, z2DecayMode);
 
-    calcme->SetZDecayMode(z1DecayMode, z2DecayMode);
-    calcme->SetPropagator(1);
-    //calcme->SetMEType(2);
-    
     py::buffer_info bufIn = input_kinematics.request();
 
     if (bufIn.ndim != 2)
@@ -259,7 +323,7 @@ py::array_t<double> calc_me_zz(
         if (buf_rf_data.ndim != 2 || buf_rf_data.shape[1] != 9)
             throw std::runtime_error("Invalid number of kinematic inputs; need array of size (n x 9) and will be filled in order (Q^2, CosTheta, Phi) for (Z1, Z2, ZZ system)");
 
-        rf_angles = static_cast<double *>(bufOut.ptr);
+        rf_angles = static_cast<double *>(buf_rf_data.ptr);
     }    
 
     TLorentzVector lortz[4];
@@ -296,8 +360,6 @@ py::array_t<double> calc_me_zz(
         //std::cerr << "-> " << ptrOut[idx] << std::endl;
     }
 
-    delete calcme;
-
     return result;
 }
 
@@ -305,15 +367,23 @@ PYBIND11_MODULE(PhyssimWrapper, m) {
     m.doc() = "PhyssimWrapper using pybind11";
 
     //m.def("calc_me_zhh", &calc_me_zhh, "Calculate e+e- -> ZHH matrix element");
-    m.def("calc_me_zhh_jm", &calc_me_zhh_jm, "Calculate e+e- -> ZHH matrix element with a given jet matching"); // , py::call_guard<py::gil_scoped_release>());
-    m.def("calc_me_zzh_jm", &calc_me_zzh_jm, "Calculate e+e- -> ZZH matrix element with a given jet matching"); // , py::call_guard<py::gil_scoped_release>());
-    //m.def("calc_me_zzh", &calc_me_zzh, "Calculate e+e- -> ZZH matrix element");
-    /*
-    m.def("calc_me_zz", &calc_me_zz, "Calculate e+e- -> ZZ matrix element",
+    m.def("calc_me_zhh_jm", &calc_me_zhh_jm, "Calculate e+e- -> ZHH matrix element with a given jet matching",
+        py::arg("pol_e"), py::arg("pol_p"), py::arg("zDecayMode"),
+        py::arg("input_kinematics"), py::arg("jet_matching"),
+        py::arg("propagator_type") = 1, py::arg("higgs_width") = 0.0043);
+    m.def("calc_me_zzh_jm", &calc_me_zzh_jm, "Calculate e+e- -> ZZH matrix element with a given jet matching",
+        py::arg("pol_e"), py::arg("pol_p"), py::arg("z1DecayMode"), py::arg("z2DecayMode"),
+        py::arg("input_kinematics"), py::arg("jet_matching"),
+        py::arg("propagator_type") = 1, py::arg("higgs_width") = 0.0043);
+    m.def("calc_me_zzh", &calc_me_zzh, "Calculate e+e- -> ZZH matrix element; kinematics (n x 20) in order (z1decay1, z1decay2, z2decay1, z2decay2, higgs)",
+        py::arg("pol_e"), py::arg("pol_p"), py::arg("z1DecayMode"), py::arg("z2DecayMode"),
+        py::arg("input_kinematics"),
+        py::arg("propagator_type") = 1, py::arg("higgs_width") = 0.0043);
+    m.def("calc_me_zz", &calc_me_zz, "Calculate e+e- -> ZZ matrix element; kinematics (n x 16) in order (z1decay1, z1decay2, z2decay1, z2decay2)",
         py::arg("pol_e"), py::arg("pol_p"),
         py::arg("z1DecayMode"), py::arg("z2DecayMode"),
         py::arg("input_kinematics"),
-        py::arg("out_rest_frame_data") = py::none());*/
+        py::arg("out_rest_frame_data") = py::none());
 
     //m.def("calc_me", &calc_me, "Calculate polarized-weighted squared matrix elements");
     m.def("physsim_get_z_decay_modes", &physsim_get_z_decay_modes, "Get decay modes of Z boson");

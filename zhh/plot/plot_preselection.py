@@ -6,7 +6,7 @@ from tqdm.auto import tqdm
 from .ild_style import fig_ild_style
 from ..analysis.PreselectionAnalysis import calc_preselection_by_event_categories
 import numpy as np
-from ..analysis.Cuts import Cut, EqualCut, WindowCut, GreaterThanEqualCut, LessThanEqualCut
+from ..analysis.Cuts import Cut, EqualCut, WindowCut, GreaterThanEqualCut, LessThanEqualCut, NDimensionalBinnedCut
 from ..analysis.ZHHCuts import zhh_cuts
 from ..util.PlotContext import PlotContext
 
@@ -24,6 +24,10 @@ def plot_preselection_by_calc_dict(*args, **kwargs):
 
 def annotate_cut(ax:'Axes', cut:Cut, spancolor:str='red', alpha:float=0.7):
     from zhh import CutTypes
+
+    # selection in the space of multiple quantities: cannot be drawn into a 1D distribution
+    if isinstance(cut, NDimensionalBinnedCut):
+        return
     
     if cut.type == CutTypes.CUT_WINDOW:
         cut = cast(WindowCut, cut)

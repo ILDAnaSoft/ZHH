@@ -304,7 +304,8 @@ def plotFn(de:DataExtractor, inputs:np.ndarray, weight:np.ndarray, labels:np.nda
                 plot_kwargs['xunit'] = xunits[i]
             
             fig = plot_weighted_hist(plot_dict, title=None, plot_context=context,
-                                     plot_hist_kwargs_overwrite=hist_kwargs_overwrite, **plot_kwargs)
+                                     plot_hist_kwargs_overwrite=hist_kwargs_overwrite,
+                                     ild_style=de._cp.getILDStyleContext(), **plot_kwargs)
             fig.set_tight_layout(True)
             
             figures.append(fig)

@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="us-ascii"?>
+    <marlin xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://ilcsoft.desy.de/marlin/marlin.xsd">
+
+    <constants>
+        <!-- These variables must be provided by the call to Marlin
+        The MarlinZHH alias in setup.sh populates these variables with
+        the correct values
+        -->
+        <constant name="ILDConfigDir" value="" />
+        <constant name="ZHH_REPO_ROOT" value="." />
+
+        <constant name="TauTaggerModelDirectory" value="${ZHH_REPO_ROOT}/dependencies/MarlinMLFlavorTagging/TorchTauTagger" />
+        <constant name="PFOsWithoutOverlayCollection" value="PFOsWithoutOverlayCheated" />
+        <constant name="JetClusteringInputPFOs" value="RejectedTauCandidatePFOs" />
+        <constant name="RunTauRecoPerformance" value="false" />
+
+        <!-- These must be chosen depending on fast/full simulation options -->
+        <constant name="IsFastSim" value="true" />
+        <constant name="errorflowconfusion" value="true" />
+
+        <!-- These variables should be constant -->
+        <constant name="LCFIPlusML_ONNX" value="${ZHH_REPO_ROOT}/dependencies/LCFIPlusConfig/onnx/ilc_nnqq_sgv1m_11cat/ilc_nnqq_sgv1m_11cat.onnx" />
+        <constant name="LCFIPlusML_JSON" value="${ZHH_REPO_ROOT}/dependencies/LCFIPlusConfig/onnx/ilc_nnqq_sgv1m_11cat/preprocess.json" />
+
+        <constant name="lcgeo_DIR" value="/cvmfs/sw.hsf.org/key4hep/releases/2024-03-10/x86_64-centos7-gcc12.2.0-opt/k4geo/0.20-e42drs/share/k4geo" />
+        <constant name="DetectorModel" value="ILD_l5_o1_v02" />
+        <constant name="CompactFile" value="${lcgeo_DIR}/ILD/compact/${DetectorModel}/${DetectorModel}.xml" />
+        <constant name="OutputDirectory" value="." />
+        <constant name="OutputBaseName" value="zhh_reco" />
+        <constant name="OutputRootFile" value="${OutputBaseName}.root" />
+        <constant name="NumberOfHiggs" value="2" />
+        <constant name="MCParticleCollectionName" value="MCParticlesSkimmed" />
+        <constant name="PFOCollectionName" value="PandoraPFOs_pfoselection" />
+        <constant name="CMSEnergy" value="550." />
+	    <constant name="ISRPzMax" value="125.6" />
+        <constant name="Verbosity" value="SILENT" />
+        <constant name="forceProcess" value="" /><!-- can be supplied optionally  -->
+        <constant name="throwOnBadEvent" value="true" />
+    </constants>
+
+    <execute>
+        <processor name="MyAIDAProcessor" />
+        <processor name="InitDD4hep" />
+        <processor name="MyStatusmonitor" />
+
+        <!-- Runtime+Process information in FinalStatesMeta.json -->
+        <processor name="MyFinalStateRecorder" />
+
+        <if condition="MyFinalStateRecorder.GoodEvent">
+            <!-- when running on fast sim samples, apply the CovMatSwitch fix to correct extremely large errors from tracks (use cluster error then) -->
+            <if condition="${IsFastSim}">
+                <group name="prodRecoFastSim" />
+            </if>
+
+            <!-- Reconstruction -->
+            <group name="prodRecoCorrections" />
+
+            <group name="prodRecoMain" />
+
+            <!-- tau reco performance vs. hard-interaction e/mu/tau (needs MyFinalStateRecorder; processor from DevProcessors); trees go to the AIDA file -->
+            <if condition="${RunTauRecoPerformance}">
+                <processor name="MyTauRecoPerformance" />
+            </if>
+
+            <processor name="MyLCIOOutputProcessor" />
+        </if>
+    </execute>
+
+    <global>
+        <parameter name="LCIOInputFiles">
+            /pnfs/desy.de/ilc/prod/ilc/mc-2020/ild/dst-merged/500-TDR_ws/hh/ILD_l5_o1_v02/v02-02-03/00015739/000/rv02-02-03.sv02-02-03.mILD_l5_o1_v02.E500-TDR_ws.I403001.Pe2e2hh.eL.pR.n000.d_dstm_15739_0.slcio
+            <!--
+            /pnfs/desy.de/ilc/prod/ilc/ild/copy/dst-merged/500-TDR_ws/2f_Z_hadronic/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I250114.P2f_z_h.eL.pR.n001.d_dstm_10410_1.slcio
+            /pnfs/desy.de/ilc/prod/ilc/ild/copy/dst-merged/500-TDR_ws/6fVVWW/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I108596.Pvvveev.eL.pR.n001.d_dstm_10354_0.slcio 
+            /pnfs/desy.de/ilc/prod/ilc/ild/copy/dst-merged/500-TDR_ws/6f_ttbar/ILD_l5_o1_v02/v02-00-01/rv02-00-01.sv02-00-01.mILD_l5_o1_v02.E500-TDR_ws.I108677.Pyyuyyu.eL.pR.n007.d_dstm_10433_15.slcio
+            -->
+        </parameter>
+        <!-- limit the number of processed records (run+evt): -->
+        <!--parameter name="MaxRecordNumber" value="0" /to process all events--> 
+        <!--parameter name="MaxRecordNumber" value="1000" /to process 1000 events--> 
+        <parameter name="MaxRecordNumber" value="50"/>
+        <parameter name="SkipNEvents" value="0" />
+        <parameter name="SupressCheck" value="false" />
+        <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT">SILENT</parameter>
+        <parameter name="RandomSeed" value="1234567890" />
+        <parameter name="OutputSteeringFile" value="" />
+        <parameter name="AllowToModifyEvent" value="true" />
+        <!-- optionally limit the collections that are read from the input file: -->
+        <!--parameter name="LCIOReadCollectionNames">MCParticle PandoraPFOs</parameter-->
+    </global>
+
+    <processor name="MyStatusmonitor" type="Statusmonitor">
+        <!--Statusmonitor prints out information on running Marlin Job: Prints number of runs run and current number of the event. Counting is sequential and not the run or event ID.-->
+        <!--Print the event number every N events-->
+        <parameter name="HowOften" type="int">1 </parameter>
+        <parameter name="Verbosity" type="string">MESSAGE</parameter>
+    </processor>
+
+    <processor name="MyAIDAProcessor" type="AIDAProcessor">
+        <!--Processor that handles AIDA files. Creates on directory per processor.  Processors only need to create and fill the histograms,clouds and tuples. Needs to be the first ActiveProcessor-->
+        <!-- compression of output file 0: false >0: true (default) -->
+        <parameter name="Compress" type="int">1</parameter>
+        <!-- filename without extension-->
+        <parameter name="FileName" type="string">${OutputDirectory}/${OutputBaseName}_AIDA</parameter>
+        <!-- type of output file root (default) or xml )-->
+        <parameter name="FileType" type="string">root</parameter>
+        <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
+        <!--parameter name="Verbosity" type="string">DEBUG </parameter-->
+    </processor>
+
+    <processor name="InitDD4hep" type="InitializeDD4hep">
+        <!--InitializeDD4hep reads a compact xml file and initializes the DD4hep::LCDD object-->
+        <!--Name of the DD4hep compact xml file to load-->
+        <parameter name="DD4hepXMLFile" type="string">${CompactFile}</parameter>
+        <parameter name="Verbosity" type="string">SILENT</parameter>
+    </processor>
+
+    <include ref="${ZHH_REPO_ROOT}/scripts/prod_reco_v2.xml" />
+
+    <processor name="MyFinalStateRecorder" type="FinalStateRecorder">
+        <!--MyFinalStateRecorder identified events that have passed the EventObservables-->
+        <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
+        <parameter name="outputJsonFilename" type="string">${OutputDirectory}/${OutputBaseName}_FinalStateMeta.json</parameter>
+        <parameter name="writeTTree" type="bool">false</parameter>
+
+        <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
+        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
+        <parameter name="forceProcess" type="string">${forceProcess}</parameter>
+        <parameter name="throwOnBadEvent" type="string">${throwOnBadEvent}</parameter>
+    </processor>
+
+    <processor name="MyTauRecoPerformance" type="TauRecoPerformance">
+        <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
+        <parameter name="IsolatedElectronCollection" type="string" lcioInType="ReconstructedParticle">ISOElectrons</parameter>
+        <parameter name="IsolatedMuonCollection" type="string" lcioInType="ReconstructedParticle">ISOMuons</parameter>
+        <parameter name="HadronicTauCollection" type="string" lcioInType="ReconstructedParticle">HadronicTaus</parameter>
+        <parameter name="RootFile" type="string"></parameter>
+        <parameter name="Verbosity" type="string">${Verbosity}</parameter>
+    </processor>
+
+    <processor name="MyLCIOOutputProcessor" type="LCIOOutputProcessor">
+        <parameter name="LCIOOutputFile" type="string">${OutputDirectory}/${OutputBaseName}.slcio</parameter>
+        <!--write mode for output file:  WRITE_APPEND or WRITE_NEW-->
+        <parameter name="LCIOWriteMode" type="string">WRITE_NEW</parameter>
+        <!--will split output file if size in kB exceeds given value - doesn't work with APPEND and NEW-->
+        <!--parameter name="SplitFileSizekB" type="int">1992294 </parameter-->
+        <!--verbosity level of this processor ("DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT")-->
+        <parameter name="Verbosity" type="string">DEBUG</parameter>
+    </processor>
+</marlin>

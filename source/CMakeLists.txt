@@ -48,6 +48,7 @@ include(GNUInstallDirs)
 
 # Collect all the source files from the subdirectories
 set(sources
+  CommonTools/include/TrueJetMapping.cc
   AddNeutralPFOCovMat/src/AddNeutralPFOCovMat.cc
   ChargedPFOCorrection/src/ChargedPFOCorrection.cc
   CheatedMCOverlayRemoval/src/CheatedMCOverlayRemoval.cc

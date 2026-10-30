@@ -2,13 +2,23 @@ from zhh import DataStore
 from tqdm.auto import tqdm
 import numpy as np
 
-def load_jet_matching_kinfit(store:DataStore)->np.ndarray:
+def load_jet_matching_kinfit(store:DataStore, which:str='best')->np.ndarray:
+    """Loads the (N,4) KinFit jet matching of the given hypothesis ('best', 'zhh' or 'zzh').
+    Entries are -1 where KinFit did not find a matching; see valid_jet_matching_mask."""
+    assert(which in ['best', 'zhh', 'zzh'])
+
     jmk = np.zeros((len(store), 4), dtype=np.int8)
 
     for i in range(4):
-        jmk[:, i] = store[f'jet_matching_kinfit_best.dim{i}']
+        jmk[:, i] = store[f'jet_matching_kinfit_{which}.dim{i}']
 
     return jmk
+
+def valid_jet_matching_mask(jet_matching:np.ndarray)->np.ndarray:
+    """True for every row of an (N,4) jet matching that is a permutation of {0,1,2,3}.
+    PhyssimWrapper does not range-check its jet matching input (-1 reads out of bounds),
+    so matrix elements must only be evaluated for rows where the matching is valid."""
+    return (np.sort(np.asarray(jet_matching), axis=1) == np.arange(4)).all(axis=1)
 
 def fill_mem_momenta(store:DataStore, mask:np.ndarray|None=None, size:int|None=None):
     """H1 = Jet1 + Jet2

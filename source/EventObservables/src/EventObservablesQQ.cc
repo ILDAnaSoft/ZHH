@@ -34,14 +34,6 @@ void EventObservablesQQ::prepareChannelTree() {
         ttree->Branch("ptjmax4", &m_ptjmax4, "ptjmax4/F");
         ttree->Branch("pjmax4", &m_pjmax4, "pjmax4/F");
 
-        ttree->Branch("jet5_4v", &m_jets4v[4]);
-		ttree->Branch("jet5_q", &m_jet5_q, "jet5_q/F");
-        ttree->Branch("jet5_qdyn", &m_jet5_qdyn, "jet5_qdyn/F");
-
-        ttree->Branch("jet6_4v", &m_jets4v[5]);
-		ttree->Branch("jet6_q", &m_jet6_q, "jet6_q/F");
-        ttree->Branch("jet6_qdyn", &m_jet6_qdyn, "jet6_qdyn/F");
-
         ttree->Branch("bmax5", &m_bmax5, "bmax5/F");
         ttree->Branch("bmax6", &m_bmax6, "bmax6/F");
         ttree->Branch("btagz", &m_bTagZ, "btagz/F");
@@ -54,12 +46,6 @@ void EventObservablesQQ::prepareChannelTree() {
         ttree->Branch("tt_mt1", &m_tt_mt1, "tt_mt1/F");
         ttree->Branch("tt_mt2", &m_tt_mt2, "tt_mt2/F");
         ttree->Branch("tt_chi2", &m_tt_chi2, "tt_chi2/F");
-
-        // ZHH
-        ttree->Branch("zhh_mz", &m_zhh_mz, "zhh_mz/F");
-        ttree->Branch("zhh_mh1", &m_zhh_mh1, "zhh_mh1/F");
-        ttree->Branch("zhh_mh2", &m_zhh_mh2, "zhh_mh2/F");
-        ttree->Branch("zhh_chi2", &m_zhh_chi2, "zhh_chi2/F");
     }
 
     m_tt_target_masses = { kMassW, kMassW, kMassTop, kMassTop };
@@ -220,13 +206,6 @@ void EventObservablesQQ::updateChannelValues(EVENT::LCEvent *pLCEvent) {
                                 v4old(m_jets[2 + m_zhh_jet_matching[2]]), v4old(m_jets[2 + m_zhh_jet_matching[3]]), true);
         #endif
     }
-};
-
-void EventObservablesQQ::setJetCharges() {
-    EventObservablesBase::setJetCharges();
-
-	std::tie(m_jet5_q, m_jet5_qdyn) = jetCharge(m_jets[4]);
-    std::tie(m_jet6_q, m_jet6_qdyn) = jetCharge(m_jets[5]);
 };
 
 void EventObservablesQQ::calculateSimpleZHHChi2() {

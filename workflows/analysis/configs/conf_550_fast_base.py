@@ -1,4 +1,6 @@
 from hep_workflows import AnalysisConfiguration, configurations 
+from hep_workflows.framework import EVENT_SIM_ENUM, RECO_ANA_RUNMODES
+
 from typing import TYPE_CHECKING
 from os import environ, path as osp
 import numpy as np
@@ -9,7 +11,9 @@ if TYPE_CHECKING:
 
 def define_configs_550_fast(suffix:str, sgv_options:dict,
                             sgv_executable_cfg:str='$SGV_DIR/tests/usesgvlcio.exe',
-                            sgv_steering_file_src_cfg:str='$SGV_DIR/tests/sgv.steer'):
+                            sgv_steering_file_src_cfg:str='$SGV_DIR/tests/sgv.steer',
+                            reco_steering_file:str='$REPO_ROOT/scripts/prod_reco_run.xml',
+                            analysis_steering_file:str='$REPO_ROOT/scripts/prod_analysis_run.xml'):
     
     def marlin_task_kwargs_factory(task):
         """Used to set task parameters by overwriting properties of the
@@ -41,20 +45,29 @@ def define_configs_550_fast(suffix:str, sgv_options:dict,
             'check_output_lcio_files': ['zhh_reco.slcio'] if is_reco else None,
             'output_file': 'zhh_reco.slcio' if is_reco else 'zhh_AIDA.root',
 
-            'steering_file': f'{environ["REPO_ROOT"]}/scripts/prod_reco_run.xml' if is_reco else f'{environ["REPO_ROOT"]}/scripts/prod_analysis_run.xml'
+            'steering_file': osp.expandvars(reco_steering_file) if is_reco else osp.expandvars(analysis_steering_file)
         }
 
     class Config_550_base(AnalysisConfiguration):
         sqrt_s = 550
 
-        marlin_globals = {  }
-        marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False', 'ZHH_REPO_ROOT': environ['REPO_ROOT'] }
+        simulation = EVENT_SIM_ENUM.FAST_SGV
+        high_level_reco = RECO_ANA_RUNMODES.MARLIN
+        analysis = RECO_ANA_RUNMODES.MARLIN
+
+        globals = {  }
+        constants = {
+            'CMSEnergy': 550,
+            'errorflowconfusion': 'False',
+            'ZHH_REPO_ROOT': environ['REPO_ROOT'],
+            'ILDConfigDir': environ['ILD_CONFIG_DIR']
+        }
 
         sgv_executable = sgv_executable_cfg
         sgv_steering_file_src = sgv_steering_file_src_cfg
 
         task_kwargs = {
-            'MarlinBaseJob': marlin_task_kwargs_factory # used to overwrite properties/defaults of all Marlin tasks
+            'RecoAnaBaseJob': marlin_task_kwargs_factory # used to overwrite properties/defaults of all Marlin tasks
         }
     
     class Config_550_llhh(Config_550_base):

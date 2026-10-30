@@ -20,16 +20,13 @@ beam_polarization: [ -0.8, +0.3 ]
 # unit: ab^-1
 luminosity: 2.
 
+# center-of-mass energy in GeV
+sqrt_s: 550.
+
 # set to true for a clean run; i.e. delete previous run through cutflow (plots/tables),
 # MVA training files + any plots/tables. can also be set individually per source in the
 # sources section below
 reset: false
-
-# definition of event categories
-# the registration of event categories to specific sources is done in the sources section
-# info: while the naming can be arbitrary, a unique ID must be supplied which must exist 
-#       in the EVENT_CATEGORIES_TRUE class, too. See EventCategories.py
-event_categories: '$REPO_ROOT/config/event_categories.yaml'
 
 # definition of input data and information about the event categorization
 # path                : path to a directory containing Merged.root file whose content
@@ -166,14 +163,14 @@ features:
   - { name: ZZH_cosThBeforeFit, tree: KinFitLL_ZZH, branch: cosThBeforeFit, dtype: float32 }
 
   # MEM
-#  - { names: [
-#        lep1_4v/fCoordinates,
-#        lep2_4v/fCoordinates,
-#        jet1_4v/fCoordinates,
-#        jet2_4v/fCoordinates,
-#        jet3_4v/fCoordinates,
-#        jet4_4v/fCoordinates
-#      ], tree: EventObservablesLL, dtype: float32, columns: [ fCoordinates.fX, fCoordinates.fY, fCoordinates.fZ, fCoordinates.fT ] }
+  - { names: [
+        lep1_4v/fCoordinates,
+        lep2_4v/fCoordinates,
+        jet1_4v/fCoordinates,
+        jet2_4v/fCoordinates,
+        jet3_4v/fCoordinates,
+        jet4_4v/fCoordinates
+      ], tree: EventObservablesLL, dtype: float32, columns: [ fCoordinates.fX, fCoordinates.fY, fCoordinates.fZ, fCoordinates.fT ] }
 #  - { name: jet_matching_kinfit_best, tree: EventObservablesLL, dtype: int8, columns: 4 }
 #  - { names: [ jet1_tags, jet2_tags, jet3_tags, jet4_tags ], tree: EventObservablesLL, dtype: float32 }
   
@@ -286,7 +283,7 @@ mvas:
   - name: default_mva
 
     # model: either 'LGBMClassifier' or 'XGBClassifier' 
-    model: LGBMClassifier
+    model: XGBClassifier # LGBMClassifier
 
     features: [
       jet1_m, jet2_m, jet3_m, jet4_m,
