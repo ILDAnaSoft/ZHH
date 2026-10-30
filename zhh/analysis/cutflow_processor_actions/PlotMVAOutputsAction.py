@@ -1,5 +1,6 @@
 from ..CutflowProcessorAction import FileBasedProcessorAction, CutflowProcessor
 from ...util.PlotContext import PlotContext
+from ...plot.ild_style import ILDStyleContext
 from typing import Literal
 import numpy as np
 import os, os.path as osp
@@ -63,7 +64,8 @@ class PlotMVAOutputsAction(FileBasedProcessorAction):
         is_signal, is_background = DataSource.signal_background_masks(self._cp._sources, masks, self._signal_categories)
 
         figures = plotFn(data, data['fsc_coded'], is_signal, is_background, weights, self._signal_category_ids, self._columns[:-1],
-                         nbins=self._nbins, N_largest=self._N_largest)
+                         nbins=self._nbins, N_largest=self._N_largest,
+                         plot_context=self._cp.getPlotContext(), ild_style=self._cp.getILDStyleContext())
 
         export_figures(self.output().abspath, figures)
 
@@ -74,7 +76,8 @@ class PlotMVAOutputsAction(FileBasedProcessorAction):
         return self.localTarget(self._plot_file)
 
 def plotFn(probas:dict[str, np.ndarray], fsc_coded:np.ndarray, is_signal:np.ndarray, is_background:np.ndarray, weights:np.ndarray, categories:list[int], mva_score_names:list[str],
-           nbins:int=25, N_largest:int=3, plot_context:PlotContext|None=None, plot_additional:list[tuple[bool, float, float, bool]]=[]):
+           nbins:int=25, N_largest:int=3, plot_context:PlotContext|None=None, plot_additional:list[tuple[bool, float, float, bool]]=[],
+           ild_style:ILDStyleContext|None=None):
     
     from zhh import PlotContext, plot_combined_hist, FinalStateCounts
     from matplotlib.figure import Figure
@@ -181,7 +184,8 @@ def plotFn(probas:dict[str, np.ndarray], fsc_coded:np.ndarray, is_signal:np.ndar
                     plot_hist_kwargs['labels'] += [f'{label} ({op}: {sum_visible:.3g}' + ( ')' if sum_total == sum_visible else f', {sum_visible/sum_total:.0%})')]
 
                 plot_combined_hist(plot_dict, f'{category_name} score', plot_context, bins=bins, yscale='log',
-                                    ax=ax, xlim=(bins[0], bins[-1]), plot_hist_kwargs=plot_hist_kwargs, ild_style_kwargs=ild_style_kwargs)
+                                    ax=ax, xlim=(bins[0], bins[-1]), plot_hist_kwargs=plot_hist_kwargs, ild_style_kwargs=ild_style_kwargs,
+                                    ild_style=ild_style)
                 
                 ax.set_ylim([5e-3, 1.1 * max_value])
                 ax.grid(which='major', linewidth=0.5)

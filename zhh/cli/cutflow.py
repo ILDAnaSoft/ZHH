@@ -35,8 +35,11 @@ if __name__ == '__main__':
             hypothesis=steer['hypothesis'],
             signal_categories=steer['signal_categories'],
             cuts=preselection,
+            sqrt_s=steer['sqrt_s'],
             beam_polarization=steer['beam_polarization'],
-            analysis_name=steer['analysis_name'] if 'analysis_name' in steer else 'ZHH')
+            analysis_name=steer.get('analysis_name', 'ZHH'),
+            ild_status=steer.get('ild_status', 'preliminary'),
+            plot_options=steer.get('plot_options', None))
 
     print('----------------------- Registering MVAs -----------------------------')
     registered_mvas = cutflow_register_mvas(steer, cp)

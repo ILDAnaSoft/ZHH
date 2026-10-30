@@ -14,7 +14,7 @@ from .replace_references import replace_references
 from ..data.ROOT2HDF5Converter import ROOT2HDF5Converter, GroupedConversionPlan
 from ..task.ConcurrentFuturesRunner import ProcessRunner
 from ..analysis import CutflowProcessor, CutflowProcessorAction, CreateCutflowPlotsAction, ReadonlyWriteAttempt
-from typing import TypedDict, NotRequired, cast, TYPE_CHECKING, NotRequired, Literal
+from typing import TypedDict, NotRequired, cast, TYPE_CHECKING, NotRequired, Any
 from multiprocessing import cpu_count
 from copy import deepcopy
 from math import ceil
@@ -38,18 +38,6 @@ class CutflowSourceSpecificationType(TypedDict):
     disabled:NotRequired[bool]
     reset:NotRequired[bool]
 
-class CutflowSteeringFileType(TypedDict):
-    hypothesis:str
-    signal_categories:list[str]
-    beam_polarization:tuple[float, float]
-    luminosity:float
-    reset:NotRequired[bool]
-
-    sources:list[CutflowSourceSpecificationType]
-
-    processes:NotRequired[dict[str, int]|str]
-    event_categories:NotRequired[list[CategoryDefinitionDictType]]
-
 class CutflowFeatureInterpretation(TypedDict):
     name: NotRequired[str]
     tree: NotRequired[str]
@@ -61,6 +49,28 @@ class CutflowFeatureInterpretation(TypedDict):
     clamp_min: NotRequired[float|int]
     clamp_max: NotRequired[float|int]
     nan_to: NotRequired[float|int]
+
+class CutflowFeatureDefinitionType(TypedDict):
+    interpret:list[CutflowFeatureInterpretation]
+
+class CutflowSteeringFileType(TypedDict):
+    hypothesis:str
+    signal_categories:list[str]
+    beam_polarization:tuple[float, float]
+    luminosity:float
+    sqrt_s:float|int
+    
+    reset:NotRequired[bool]
+
+    sources:list[CutflowSourceSpecificationType]
+    features:CutflowFeatureDefinitionType
+    
+    processes:NotRequired[dict[str, int]|str]
+    event_categories:NotRequired[list[CategoryDefinitionDictType]]
+
+    ild_status:NotRequired[str]
+    analysis_name:NotRequired[str]
+    plot_options:NotRequired[dict[str, dict[str, dict]]]
 
 
 def cutflow_parse_processes(processes:dict[str, int]|str):

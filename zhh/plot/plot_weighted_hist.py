@@ -2,7 +2,7 @@ from copy import deepcopy
 from typing import Union, cast, TYPE_CHECKING
 
 from ..util.PlotContext import PlotContext
-from .ild_style import fig_ild_style
+from .ild_style import fig_ild_style, ILDStyleContext
 import numpy as np
 
 if TYPE_CHECKING:
@@ -20,7 +20,8 @@ def plot_combined_hist(calc_dict:dict[str, tuple[np.ndarray, np.ndarray]],
                        ax:Union['Axes', None]=None,
                        signal_keys:list[str]=[],
                        stacked:bool|None=None,
-                       analysis_name:str|None=None)->'Figure':
+                       analysis_name:str|None=None,
+                       ild_style:ILDStyleContext|None=None)->'Figure':
     """Plots the properties in calc_dict
 
     Args:
@@ -38,6 +39,8 @@ def plot_combined_hist(calc_dict:dict[str, tuple[np.ndarray, np.ndarray]],
         plot_hist_kwargs_overwrite (dict, optional): _description_. Defaults to {}.
         ax (Axes | None, optional): _description_. Defaults to None.
         signal_keys (list[str], optional): _description_. Defaults to [].
+        ild_style (ILDStyleContext | None, optional): context providing beam energy, luminosity,
+            polarization etc. If None, ILDStyleContext.fromDefaults() is used. Defaults to None.
 
     Returns:
         Figure: _description_
@@ -115,6 +118,10 @@ def plot_combined_hist(calc_dict:dict[str, tuple[np.ndarray, np.ndarray]],
     }
     fig_ild_kwargs = deepmerge(fig_ild_kwargs, ild_style_kwargs)
     int_bins = fig_ild_kwargs['int_bins']
+
+    if int_bins:
+        from matplotlib.ticker import MultipleLocator
+        fig_ild_kwargs['xlocator'] = MultipleLocator(1)
     
     if hypothesis is not None:
         title_prefix = '' if (analysis_name is None or analysis_name == '') else analysis_name
@@ -125,7 +132,10 @@ def plot_combined_hist(calc_dict:dict[str, tuple[np.ndarray, np.ndarray]],
         if len(value) > 0:
             legend_labels.append(key)
             
-    fig_and_kwags = fig_ild_style(ax, xlim, bins, legend_labels=legend_labels, **fig_ild_kwargs)
+    if ild_style is None:
+        ild_style = ILDStyleContext.fromDefaults()
+    
+    fig_and_kwags = ild_style.apply(ax, xlim, bins, legend_labels=legend_labels, **fig_ild_kwargs)
     assert(isinstance(fig_and_kwags, tuple))
     
     fig, legend_kwargs = fig_and_kwags
@@ -160,7 +170,8 @@ def plot_weighted_hist(calc_dict, title:str|None=None, xlabel:str='<xlabel undef
                                 plot_hist_kwargs:dict={},
                                 plot_hist_kwargs_overwrite:dict={},
                                 ax:Union['Axes', None]=None,
-                                signal_keys:list[str]=[]):
+                                signal_keys:list[str]=[],
+                                ild_style:ILDStyleContext|None=None):
     
     from zhh import deepmerge
     
@@ -199,7 +210,7 @@ def plot_weighted_hist(calc_dict, title:str|None=None, xlabel:str='<xlabel undef
                             ild_style_kwargs=fig_ild_kwargs,
                             plot_hist_kwargs=fig_plot_hist_kwargs,
                             plot_hist_kwargs_overwrite=plot_hist_kwargs_overwrite,
-                            yscale=yscale, signal_keys=signal_keys)
+                            yscale=yscale, signal_keys=signal_keys, ild_style=ild_style)
 
 def plot_weighted_hist_old(calc_dict, title:str='<title undefined>', xlabel:str='<xlabel undefined>', plot_context:PlotContext|None=None,
                                    xunit:str|None=None,

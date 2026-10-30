@@ -3,6 +3,7 @@ from .MulticlassModel import MulticlassModel
 from .MVAModule import MVA_MODULE_STATES, MVAModule
 from ..analysis.DataExtractor import DataExtractor
 from ..util.PlotContext import PlotContext
+from ..plot.ild_style import ILDStyleContext
 
 class CompositeBinaryModel(MulticlassModel):
     def __init__(self, extractor:DataExtractor, classes:list[tuple[str, int]], clfs:list[MVAModule], threshold_scan:np.ndarray|None=None):        
@@ -144,8 +145,6 @@ class CompositeBinaryModel(MulticlassModel):
                 
     def plot_statistics(self, fname:str='mva_significances.pdf'):
         from phc import export_figures
-        from zhh.plot.ild_style import legend_kwargs_fn, fig_ild_style
-        import matplotlib.pyplot as plt
         
         classes = self.getClasses()
         stats_data = self.getStatistics()
@@ -158,7 +157,7 @@ class CompositeBinaryModel(MulticlassModel):
             stats = stats_data[f'{idx}.test']
             title = f'BDTG {idx+1} ({classes[0][0]} vs {classes[idx+1][0]})'
 
-            for fig in CompositeBinaryModel.plotFn(stats, title=title):
+            for fig in CompositeBinaryModel.plotFn(stats, title=title, ild_style=self._extractor._cp.getILDStyleContext()):
                 figs += [fig]
 
         export_figures(fname, figs)
@@ -188,10 +187,13 @@ class CompositeBinaryModel(MulticlassModel):
         return statistics, best_threshold
     
     @staticmethod
-    def plotFn(statistics:np.ndarray, title:str, to_plot:list[tuple[bool, tuple]]|None=None, xlabel:str='Cut Value'):
-        from zhh.plot.ild_style import legend_kwargs_fn, fig_ild_style
+    def plotFn(statistics:np.ndarray, title:str, to_plot:list[tuple[bool, tuple]]|None=None, xlabel:str='Cut Value',
+               ild_style:ILDStyleContext|None=None):
         import matplotlib.pyplot as plt
         from matplotlib.figure import Figure
+        
+        if ild_style is None:
+            ild_style = ILDStyleContext.fromDefaults()
 
         thresholds = statistics['threshold']
 
@@ -222,10 +224,10 @@ class CompositeBinaryModel(MulticlassModel):
                 ax1.axvline(x=best_sig_at, color='red')
             
             lns = lns1+lns2+lns3
-            ax1.legend(lns, [str(l.get_label()) for l in lns], loc='lower left', **legend_kwargs_fn())
+            ax1.legend(lns, [str(l.get_label()) for l in lns], loc='lower left', **ild_style.legend_kwargs_fn())
             ax1.grid()
             
-            fig_ild_style(fig, title=title, xlabel=xlabel, xunit=None,
+            ild_style.apply(fig, title=title, xlabel=xlabel, xunit=None,
                             yunit=None, ylabel_prefix='', ild_offset_x=0.65, ild_offset_y=0.12);
             
             if zoomed_in:

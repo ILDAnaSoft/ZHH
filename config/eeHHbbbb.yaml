@@ -20,6 +20,9 @@ beam_polarization: [ -0.8, +0.3 ]
 # unit: ab^-1
 luminosity: 2.
 
+# center-of-mass energy in GeV
+sqrt_s: 550.
+
 # set to true for a clean run; i.e. delete previous run through cutflow (plots/tables),
 # MVA training files + any plots/tables. can also be set individually per source in the
 # sources section below

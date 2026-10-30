@@ -23,6 +23,9 @@ beam_polarization: [ -0.8, +0.3 ]
 # unit: ab^-1
 luminosity: 2.
 
+# center-of-mass energy in GeV
+sqrt_s: 550.
+
 # definition of input data and information about the event categorization
 # path                : path to a directory containing Merged.root file whose content
 #                       must be compliant to the one output from the AnalysisCombine

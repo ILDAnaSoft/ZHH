@@ -100,7 +100,8 @@ class OptimizeMVANDimensionalAction(CutGroupProviderInterface, FileBasedProcesso
 
             statistics, best_threshold = CompositeBinaryModel.doThresholdScan(data[discriminator], thresholds, weights, is_signal, is_background)
             figures = CompositeBinaryModel.plotFn(statistics, f'{self._mva_name} Signal vs Background',
-                                                  to_plot=[ (False, (0., 1.)) ], xlabel=self._aggregated_signal_column)
+                                                  to_plot=[ (False, (0., 1.)) ], xlabel=self._aggregated_signal_column,
+                                                  ild_style=self._cp.getILDStyleContext())
         elif best_mode == 'N_DIMENSIONAL_BINNED':
             own_thresholds = best_parameters[0::2]
             others_thresholds = best_parameters[1::2]
