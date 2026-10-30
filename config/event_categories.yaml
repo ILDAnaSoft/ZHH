@@ -144,7 +144,7 @@
 # qqhh TODO
 - name: qqHH
   handler: FinalStateDefinitions.define_qqHH
-  id: EventCategories.vvHH
+  id: EventCategories.qqHH
 - name: qqqqH
   handler: FinalStateDefinitions.define_qqqqH
   id: EventCategories.qqqqH

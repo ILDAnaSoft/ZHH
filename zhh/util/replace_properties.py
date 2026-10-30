@@ -1,4 +1,8 @@
-def replace_properties(tree:dict, globals:dict, keys=None)->dict:
+from typing import Mapping, Any, TypeVar
+
+T = TypeVar('T', bound=Mapping[str, Any]|list)
+
+def replace_properties(tree:T, globals:Mapping[str, Any], keys=None)->T:
     """Traverses through the dict tree recursively and attempts to replace values strings
     with one dot with a value from globals. The first key will be interpreted as the key
     in globals, the second as a property of that value.
@@ -12,19 +16,21 @@ def replace_properties(tree:dict, globals:dict, keys=None)->dict:
         dict: _description_
     """
 
+    node:Any = tree
+
     if keys is None:
-        keys = tree.keys()
+        keys = node.keys()
     
     for key in keys:
-        if isinstance(tree[key], dict):
-            replace_properties(tree[key], globals)
-        elif isinstance(tree[key], list):
-            replace_properties(tree[key], globals, list(range(len(tree[key]))))
-        elif isinstance(tree[key], str):
-            if not '.' in tree[key]:
+        if isinstance(node[key], dict):
+            replace_properties(node[key], globals)
+        elif isinstance(node[key], list):
+            replace_properties(node[key], globals, list(range(len(node[key]))))
+        elif isinstance(node[key], str):
+            if not '.' in node[key]:
                 continue
 
-            parts = tree[key].split('.')
+            parts = node[key].split('.')
             if len(parts) != 2:
                 continue
 
@@ -32,11 +38,11 @@ def replace_properties(tree:dict, globals:dict, keys=None)->dict:
             
             if prefix in globals:
                 if hasattr(globals[prefix], suffix):
-                    tree[key] = getattr(globals[prefix], suffix)
+                    node[key] = getattr(globals[prefix], suffix)
                 else:
                     try:
                         if suffix in globals[prefix]:
-                            tree[key] = globals[prefix][suffix]
+                            node[key] = globals[prefix][suffix]
                         else:
                             print(f'Key <{suffix}> not found in {globals[prefix]}')
                             raise KeyError(f'Key {suffix} not found')

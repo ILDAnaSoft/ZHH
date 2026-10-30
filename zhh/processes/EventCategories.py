@@ -1,5 +1,9 @@
-from ..analysis.FinalStateDefinitions import FinalStateDefinition
+from typing import TYPE_CHECKING
 from ..analysis import FinalStateDefinitions
+from .event_category_registry import GlobalEventCategoryRegistry
+
+if TYPE_CHECKING:
+    from ..analysis.FinalStateDefinitions import FinalStateDefinition
 
 class EVENT_CATEGORY_TRUE:
     OTHER = 0
@@ -146,21 +150,17 @@ class EVENT_CATEGORY_TRUE:
         self.map:dict[str, int]      = { key:value for key, value in EVENT_CATEGORY_TRUE.__dict__.items() if not key.startswith('__') and not callable(key)}
         self.inverted:dict[int, str] = { v: k for k, v in self.map.items() }
     
-EventCategories = EVENT_CATEGORY_TRUE()
+# EventCategories = EVENT_CATEGORY_TRUE()
+EventCategories = GlobalEventCategoryRegistry
 
-def find_event_category_definition(name:str,
-                                   definitions=FinalStateDefinitions,
-                                   definitions_map:dict[str, FinalStateDefinition]={})->FinalStateDefinition:
+def find_event_category_definition(name:str)->'FinalStateDefinition':
     """Tries to find the definition for the event category given by name in the
-    registered definitions in the FinalStateDefinitions module. This is the
-    default way in which event categories may be implemented.
+    GlobalEventCategoryRegistry.
     
     Optionally, more definitions can be provided in definitions_map 
 
     Args:
         name (str): _description_
-        definitions (_type_, optional): _description_. Defaults to FinalStateDefinitions.
-        definitions_map (dict[str, FinalStateDefinition], optional): _description_. Defaults to {}.
 
     Raises:
         Exception: _description_
@@ -168,11 +168,10 @@ def find_event_category_definition(name:str,
     Returns:
         FinalStateDefinition: _description_
     """
-    def_name = f'define_{name}'
 
-    if hasattr(definitions, def_name):
-        return getattr(definitions, def_name)
-    elif def_name in definitions_map:
-        return definitions_map[def_name]
-    else:
-        raise Exception(f'Could not find definition <{def_name}> for final state {name}')
+    evt_category_definition = EventCategories.getItemByName(name)
+
+    if evt_category_definition.final_state is None:
+        raise Exception(f'No final state definition registered for event category <{name}>')
+
+    return evt_category_definition.final_state
