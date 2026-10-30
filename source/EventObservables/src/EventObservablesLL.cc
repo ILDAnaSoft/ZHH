@@ -470,14 +470,12 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
 		mcParticles->parameters().getIntVals("FINAL_STATE_PARTICLE_INDICES", fsIndices);
 
 		// show Higgses first
-		std::sort(fsIndices.begin(), fsIndices.end(), [mcParticles]( const int& mcp1_idx, const int& mcp2_idx ) {
-            (void) mcp2_idx;
-
-			return abs( ((MCParticle*)mcParticles->getElementAt(mcp1_idx))->getPDG() ) == 25; // && trueJet->E_icn(icn1_idx) > trueJet->E_icn(icn2_idx); // need to have some sorting besides PDG=25
+		std::stable_partition(fsIndices.begin(), fsIndices.end(), [mcParticles]( const int& mcp_idx ) {
+			return abs( ((MCParticle*)mcParticles->getElementAt(mcp_idx))->getPDG() ) == 25;
 		});
 
-		vector<MCParticle*> hadronicMCPs;
-		vector<MCParticle*> leptonicMCPs;
+		vector<MCParticle*> hadronicMCPs; // should be analogous to all TrueJet initial_elementon()'s with PDG in [1...6]
+		vector<MCParticle*> leptonicMCPs; // should be analogous to all TrueJet initial_elementon()'s with PDG in [11...16]
 
 		std::cerr << "fsParticle order: "; 
 		for (int &i_part: fsIndices)
@@ -617,12 +615,17 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
             */
 
             // make sure trueHadronicJetIndices contains same elements as trueJetCandidates
-            // does not consider q -> q + g etc.
             m_trueJetN = trueHadronicJetIndices.size();
 
-            bool truthMatches = (trueHadronicJetIndices.size() >= trueJetCandidates.size()) && containSameElements(trueHadronicJetIndices, trueJetCandidates); 
+            bool truthMatches = (trueHadronicJetIndices.size() >= trueJetCandidates.size()) && containSameElements(trueHadronicJetIndices, trueJetCandidates);
 
             if (truthMatches) {
+                // recombine TrueJets split off by a quark -> quark + gluon splitting: group all
+                // hadronic TrueJets (trueHadronicJetIndices, which may contain such split-off
+                // TrueJets alongside the "main" quark TrueJets) by their common initial_elementon,
+                // one group per entry in trueJetCandidates (already sorted by ICN)
+                std::vector<TrueJetMapping> trueJetMappings = combineSplitTrueJets(trueHadronicJetIndices, trueJetCandidates);
+
                 // use trueJetCandidates as they are already sorted by ICN
                 trueHadronicJetIndices = trueJetCandidates;
 
@@ -632,27 +635,23 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
                 vector<TVector3> recoMomenta(m_nJets);
 
                 for (unsigned int i = 0; i < m_nJets; i++) {
-                    const double* trueJetMomentum = ptrueseen(trueHadronicJetIndices[i]);
-
-                    trueMomenta[i] = TVector3(trueJetMomentum[0], trueJetMomentum[1], trueJetMomentum[2]);
+                    trueMomenta[i] = trueJetMappings[i].getMomentum();
                     recoMomenta[i] = m_jets.at(i)->getMomentum();
                 }
 
                 m_matchingSumCos = getMatchingByAngularSpace(recoMomenta, trueMomenta, m_reco2TrueJetIndex, m_true2RecoJetIndex);
-                m_trueRecoJetsMapped = m_matchingSumCos < 99.;
+                bool matching_successful = m_matchingSumCos < 99.;
 
-                if (m_trueRecoJetsMapped) {
+                if (matching_successful) {
                     std::vector<int> truejetpermICNs;
 
                     //streamlog_out(DEBUG3) << "number of icns = " << nicn << endl;
-                    // sort ICNs: any Higgs first; important as this is the order assumed at MEM calculation for the jet matching 
+                    // sort ICNs: any Higgs first; important as this is the order assumed at MEM calculation for the jet matching
                     std::vector<int> icn_indices_sorted(trueJet->nicn());
                     std::iota(icn_indices_sorted.begin(), icn_indices_sorted.end(), 0);
 
-                    std::sort(icn_indices_sorted.begin(), icn_indices_sorted.end(), [trueJet]( const int& icn1_idx, const int& icn2_idx ) {
-                        (void) icn2_idx;
-
-                        return abs(trueJet->pdg_icn_parent(icn1_idx)) == 25; // && trueJet->E_icn(icn1_idx) > trueJet->E_icn(icn2_idx); // need to have some sorting besides PDG=25
+                    std::stable_partition(icn_indices_sorted.begin(), icn_indices_sorted.end(), [trueJet]( const int& icn_idx ) {
+                        return abs(trueJet->pdg_icn_parent(icn_idx)) == 25;
                     });
 
                     std::cerr << "Matching successful. ICN order: "; 
@@ -699,6 +698,10 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
                                             truejetpermICNs = {};
                                         } else {
                                             m_trueDijetICNPDGs[truejetpermICNs.size() / 2 - 1] = icn_pdg;
+                                            std::cerr << "Found TrueJets to ICN[" << icn_pdg << "]: ";
+                                            for (const int& tj: jet_ids)
+                                                std::cerr << tj << " ";
+                                            std::cerr << std::endl;
                                         }
                                     }
                                 }
@@ -711,34 +714,51 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
                             throw EVENT::Exception("Expected H/Z -> q + qbar decay");
 
                         for (size_t i = 0; i < truejetpermICNs.size(); i++) {
-                            int index = trueHadronicJetIndices[truejetpermICNs[i]];
+                            //int index = trueHadronicJetIndices[truejetpermICNs[i]];
+                            const TrueJetMapping &mapping = trueJetMappings[truejetpermICNs[i]];
 
-                            const EVENT::IntVec others = initial_siblings(index);
-                            std::cerr << "Siblings of jet [" << index << "]: ";
-                            for (auto elem: others) {
-                                std::cerr << elem << " ";
-                            }
-                            std::cerr << std::endl;
+                            //const EVENT::IntVec others = initial_siblings(index);
+                            //std::cerr << "Siblings of jet [" << index << "]: ";
+                            //for (auto elem: others) {
+                            //    std::cerr << elem << " ";
+                            //}
+                            //std::cerr << std::endl;
 
-                            const ReconstructedParticle* tjet = trueJet->jet(index);
+                            // const ReconstructedParticle* tjet = trueJet->jet(index);
 
-                            //m_trueJetMomenta[i] = v4(tjet);
-                            const double* v4_truejet = p4true(index);
-                            m_trueJetMomenta[i].SetPxPyPzE(v4_truejet[1], v4_truejet[2], v4_truejet[3], v4_truejet[0]);
+                            // sum true (resp. seen) four momenta over all TrueJets grouped into this
+                            // mapping (i.e. including any quark -> quark + gluon split-off TrueJets)
+                            m_trueJetMomenta[i] = sumTrueJetFourMomentum(mapping, false);
+                            m_trueJetVisibleMomenta[i] = sumTrueJetFourMomentum(mapping, true);
 
-                            const double* v4_truejet_visible = p4trueseen(index);
-                            m_trueJetVisibleMomenta[i].SetPxPyPzE(v4_truejet_visible[1], v4_truejet_visible[2], v4_truejet_visible[3], v4_truejet_visible[0]);
+                            m_trueJetTypes[i] = type_jet(mcpjet(mapping.getInitialElementon())); // type_jet(index);
+                            m_trueJetPDGs[i] = mapping.getInitialElementon()->getPDG();
 
-                            m_trueJetTypes[i] = type_jet(index);
-                            m_trueJetPDGs[i] = tjet->getParticleIDs()[0]->getPDG();
+                            std::cerr << "TrueJetMapping [" << truejetpermICNs[i] << "] with jets [ ";
+                            for (auto jet_idx: mapping.getIndex())
+                                std::cerr << jet_idx << " ";
 
-                            std::cerr << "TrueJet [" << index << "] PDG=" << m_trueJetPDGs[i] << " | Parent[ICN=" << std::floor(i / 2) << "]PDG = " << m_trueDijetICNPDGs[std::floor(i / 2)] << " | type=" << m_trueJetTypes[i] << " | E=" << m_trueJetMomenta[i].E() << std::endl;
+                            std::cerr << "] PDG=" << m_trueJetPDGs[i] << " | Parent[ICN=" << std::floor(i / 2) << "]PDG = " << m_trueDijetICNPDGs[std::floor(i / 2)] << " | type=" << m_trueJetTypes[i] << " | E=" << m_trueJetMomenta[i].E() << std::endl;
 
                             if (i % 2 != 0) {
                                 std::cerr << "M(hadronic system " << ((i-1)/2 + 1) << ") = " << (m_trueJetMomenta[i] + m_trueJetMomenta[i - 1]).M() << std::endl;
                             }
                         }
+
+                        if (truejetpermICNs.size() == m_nJets) {
+                            // make sure the ordering in m_true2RecoJetIndex and m_reco2TrueJetIndex
+                            // matches that of the ICNs
+                            std::vector<int> true2RecoJetIndexICN(m_nJets);
+                            for (unsigned int i = 0; i < m_nJets; i++)
+                                true2RecoJetIndexICN[i] = m_true2RecoJetIndex[truejetpermICNs[i]];
+                            m_true2RecoJetIndex = true2RecoJetIndexICN;
+
+                            for (unsigned int i = 0; i < m_nJets; i++)
+                                m_reco2TrueJetIndex[m_true2RecoJetIndex[i]] = i;
+                        }
                     }
+
+                    m_trueRecoJetsMapped = truejetpermICNs.size() == 2;
                 } else {
                     std::cerr << "True-Reco matching failed" << std::endl;
                 }
