@@ -1,7 +1,7 @@
 from ast import literal_eval as make_tuple
 from glob import glob
 from dateutil import parser
-from typing import Optional
+from typing import Optional, Literal
 from tqdm.auto import tqdm
 import os.path as osp
 import json
@@ -19,7 +19,8 @@ DEFAULTS = {
         'LL': 0.315,
         'LR': 0.585,
         'RL': 0.035,
-        'RR': 0.065
+        'RR': 0.065,
+        'NN': 1. # unpolarized weight factor
     }
 }
 
@@ -30,7 +31,7 @@ def set_polarization(beamPolarization:tuple[float, float]):
     DEFAULTS['BEAM_POLARIZATION'] = (Peminus, Peplus)
     
     for i, key in enumerate(['LL', 'LR', 'RL', 'RR']):
-        DEFAULTS['w_em_ep'][key] = w_em_ep[i]        
+        DEFAULTS['w_em_ep'][key] = w_em_ep[i]
 
 def get_polarization()->tuple[float, float]:
     return DEFAULTS['BEAM_POLARIZATION']
@@ -176,25 +177,56 @@ def combined_cross_section(processes:np.ndarray, process:str|list[str],
     
     if isinstance(process, list):
         return np.sum([combined_cross_section(processes, p, pol_em, pol_ep) for p in process])
-    
-    prefacs = w_prefacs(pol_em, pol_ep)
-    cross_secs = np.zeros(4, dtype=float)
-    
-    for i, suffix in enumerate(['LL', 'LR', 'RL', 'RR']):
-        entry = processes[processes['proc_pol'] == f'{process}_{suffix}']
-        if len(entry) == 1:
-            cross_secs[i] = entry['cross_sec'][0]
-    
-    return np.dot(prefacs, cross_secs)
 
-def get_pol_key(pol_em:float, pol_ep:float)->str:
+    if pol_em != 0 and pol_ep != 0:
+        prefacs = w_prefacs(pol_em, pol_ep)
+        cross_secs = np.zeros(4, dtype=float)
+        
+        for i, suffix in enumerate(['LL', 'LR', 'RL', 'RR']):
+            entry = processes[processes['proc_pol'] == f'{process}_{suffix}']
+
+            if len(entry) == 1:
+                cross_secs[i] = entry['cross_sec'][0]
+            else:
+                print(entry)
+                raise Exception(f'Either no or no unique cross-section found for combinations of <process>_<polarization>={process}_{suffix}!')
+
+        return np.dot(prefacs, cross_secs)
+    else:
+        entry = processes[processes['proc_pol'] == f'{process}_NN'][0]
+
+        if len(entry) == 1:
+            return entry[0]
+        else:
+            print(entry)
+            raise Exception(f'Either no or no unique cross-section found for combinations of <process>_<polarization>={process}_NN!')
+
+def get_pol_key(pol_em:float, pol_ep:float)->Literal['LL', 'LR', 'RL', 'RR', 'NN']:
+    """Maps a polarization base (e.g. eL.pR given by (-1, 1)) for event reweighting
+    to the key of the `w_em_ep` dict to find the correct weight factor.
+
+    0 is only supported for unpolarized datasets, i.e. `pol_em = pol_ep = 0`.
+
+    Args:
+        pol_em (float): either -1, 1 or 0
+        pol_ep (float): either -1, 1 or 0
+
+    Raises:
+        Exception: _description_
+
+    Returns:
+        Literal['LL', 'LR', 'RL', 'RR', 'NN']: _description_
+    """
+
     key_em = ('L' if pol_em == -1. else ('R' if pol_em == 1. else 'N'))
     key_ep = ('L' if pol_ep == -1. else ('R' if pol_ep == 1. else 'N'))
+
+    result = key_em + key_ep
     
-    if key_em == 'N' or key_ep == 'N':
-        raise Exception('Invalid polarization encountered')
+    if result in ['LN', 'NL', 'RN', 'NR']:
+        raise Exception('Invalid polarization encountered: If one beam is unpolarized, the other must be as well. Only one unpolarized beam is not supported yet.')
     
-    return key_em + key_ep
+    return result
 
 def get_w_pol(pol_em:int, pol_ep:int)->float:
     key = get_pol_key(pol_em, pol_ep)

@@ -5,7 +5,7 @@ from tqdm.auto import tqdm
 from tqdm.auto import tqdm
 from os import environ
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('steer', type=str, default=None, help='Path to a YAML steering file, e.g. $REPO_ROOT/config/llHHbbbb.yaml')
     parser.add_argument('--skip-integrity-check', action='store_true', help='Controls whether the check of matching ROOT and HDF5 files should be skipped. Defaults to False.')
@@ -17,7 +17,7 @@ if __name__ == "__main__":
     log_level = getattr(logging, args.log_level)
     
     # process the steering file -> sources and final state info
-    print("----------------------- Processing steering file -----------------------------")
+    print('----------------------- Processing steering file -----------------------------')
     steer = cutflow_parse_steering_file(args.steer)
     sources_map, final_state_configs, reset_sources = cutflow_process_steering(steer, integrity_check=not args.skip_integrity_check,
                                                                                readonly=args.readonly)
@@ -25,19 +25,27 @@ if __name__ == "__main__":
     if args.reset:
         reset_sources = list(sources_map.keys())
 
-    print("----------------------- Initializing data -----------------------------")
+    print('----------------------- Initializing data -----------------------------')
     sources = list(sources_map.values())
     cutflow_initialize_sources(sources, final_state_configs, lumi_inv_ab=steer['luminosity'], reset_sources=reset_sources)
     
-    print("----------------------- Initializing CutflowProcessor -----------------------------")
+    print('----------------------- Initializing CutflowProcessor -----------------------------')
     preselection = cutflow_parse_cuts(steer['cuts']['preselection'])
-    cp = CutflowProcessor(sources, hypothesis=steer['hypothesis'], cuts=preselection, signal_categories=steer['signal_categories'])
+    cp = CutflowProcessor(sources,
+            hypothesis=steer['hypothesis'],
+            signal_categories=steer['signal_categories'],
+            cuts=preselection,
+            sqrt_s=steer['sqrt_s'],
+            beam_polarization=steer['beam_polarization'],
+            analysis_name=steer.get('analysis_name', 'ZHH'),
+            ild_status=steer.get('ild_status', 'preliminary'),
+            plot_options=steer.get('plot_options', None))
 
-    print("----------------------- Registering MVAs -----------------------------")
+    print('----------------------- Registering MVAs -----------------------------')
     registered_mvas = cutflow_register_mvas(steer, cp)
     print(f'Registered {len(registered_mvas)} MVAs:', ', '.join(registered_mvas))
 
-    print("----------------------- Preparing actions -----------------------------")
+    print('----------------------- Preparing actions -----------------------------')
     actions:list[CutflowProcessorAction] = cutflow_parse_actions(steer, cp, any_source_reset=any(
         [ source.getName() in reset_sources for source in sources ]))
 
@@ -54,5 +62,6 @@ if __name__ == "__main__":
     to_execute = cutflow_execute_actions(actions, check_only=True)
     for i, action in enumerate(to_execute):
         print(f'Action {i+1}/{len(to_execute)}:', action)
-    print("----------------------- Executing actions -----------------------------")
+        
+    print('----------------------- Executing actions -----------------------------')
     cutflow_execute_actions(actions, log_level=log_level)
