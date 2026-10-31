@@ -8,7 +8,7 @@ from glob import glob
 from ..analysis.PreselectionAnalysis import set_polarization
 from ..analysis.Cuts import EqualCut, GreaterThanEqualCut, LessThanEqualCut, WithinBoundsCut, ValueCut
 from ..analysis.DataSource import DataSource
-from ..analysis.FinalStateDefinitions import FinalStateDefinition
+from ..processes.event_category_registry import FinalStateDefinition
 from .replace_properties import replace_properties
 from .replace_references import replace_references
 from ..data.ROOT2HDF5Converter import ROOT2HDF5Converter, GroupedConversionPlan
@@ -125,8 +125,8 @@ def cutflow_parse_final_states_and_categories(category_definitions_dict:list['Ca
 
 def cutflow_parse_steering_file(loc:str):
     """Loads a YAML steering file, replaces references within them
-    and replaces references with the EventCategories and
-    FinalStateDefinitions objects. Also adds the value of
+    and replaces references with the EventCategories object.
+    Also adds the value of
     steer['hypothesis'] to the environment.
 
     Args:
@@ -137,7 +137,6 @@ def cutflow_parse_steering_file(loc:str):
     """
 
     import zhh.processes.EventCategories as EventCategories
-    import zhh.analysis.FinalStateDefinitions as FinalStateDefinitions
 
     with open(osp.expandvars(loc)) as f:
         f_str = f.read()
@@ -156,8 +155,10 @@ def cutflow_parse_steering_file(loc:str):
 
     parsed = yaml.safe_load(f_str)
     
-    # replace file references
-    parsed = cast('CutflowSteeringFileType', replace_references(parsed))
+    # replace file references; relative paths not found in the cwd are
+    # resolved relative to the steering file
+    parsed = cast('CutflowSteeringFileType', replace_references(
+        parsed, base_dir=osp.dirname(osp.abspath(osp.expandvars(loc)))))
 
     # register processes under GlobalProcessRegistry
     if 'processes' in parsed:

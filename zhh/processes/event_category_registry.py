@@ -1,9 +1,12 @@
 from collections.abc import Callable
 from typing import TYPE_CHECKING
+import numpy as np
 
 if TYPE_CHECKING:
     from ..analysis.DataSource import DataSource, FinalStateCounts
-    from ..analysis.FinalStateDefinitions import FinalStateDefinition
+
+# (source, final state counts) -> mask of events belonging to an event category
+FinalStateDefinition = Callable[['DataSource', 'FinalStateCounts'], np.ndarray]
 
 class EventCategoryDefinition:
     def __init__(self, name:str, id:int,

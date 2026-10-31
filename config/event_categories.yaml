@@ -1,167 +1,294 @@
 # event categories are used for plotting/cutflow tables and assigned using MC truth information
-# each event will be assigned an 'id' (event_category column) in the following order:
-# 1  (deprecated) the TTree branch event_category is read; the value might be overwritten by 2. and 3. (if defined)
-# 2. a default value can be used to overwrite for all events of a data source (see sources section below)
-# 3. the value of the last matching registered (see event_categorization.items for each source, below) category is used, where
+# each entry is parsed into an EventCategoryDefinition and registered in the GlobalEventCategoryRegistry
+# <#>.name and <#>.id are obligatory. the ID's value is arbitrary but must be unique and kept constant,
+#   as it is stored in the event_category column of existing datasets
+# <#>.final_state (optional): Python code (lambda source, fsc) parsed to a FinalStateDefinition; np and
+#   ProcessCategories are available. categories without final_state can be used as default categories
+# order of assignment for each event (event_category column):
+# 1. (deprecated) the TTree branch event_category is read; the value might be overwritten by 2. and 3. (if defined)
+# 2. a default value can be used to overwrite for all events of a data source (see sources section of the steering files)
+# 3. the value of the last matching registered category (see event_categorization.items for each source) is used, where
 #    the order is given either explicitly (event_categorization.order) or the order of definition is used.
-# plots use the id to uniquely identify categories, whereas cutflow tables can make use of the named categorization and thus
-# use different categories/be more granular (the logic to make sure no double counting occurs happens in the background :))
+# IDs are taken from the former EVENT_CATEGORY_TRUE (zhh/processes/EventCategories.py)
+- name: OTHER
+  id: 0
 
-# 4f sl
-- name: llqq
-  handler: FinalStateDefinitions.define_llqq
-  id: EventCategories.llqq
-- name: vvqq
-  handler: FinalStateDefinitions.define_vvqq
-  id: EventCategories.vvqq
-- name: eebb
-  handler: FinalStateDefinitions.define_eebb
-  id: EventCategories.eebb
-- name: μμbb
-  handler: FinalStateDefinitions.define_μμbb
-  id: EventCategories.μμbb
-- name: ττbb
-  handler: FinalStateDefinitions.define_ττbb
-  id: EventCategories.ττbb
-- name: lvqq
-  handler: FinalStateDefinitions.define_lvqq
-  id: EventCategories.lvqq
-- name: vvbb
-  handler: FinalStateDefinitions.define_vvbb
-  id: EventCategories.vvbb
+# SINGLE HIGGS
+- name: llH
+  id: 1
+  final_state: "lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.e1e1h, ProcessCategories.e2e2h, ProcessCategories.e3e3h])"
+- name: vvH
+  id: 2
+  final_state: "lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.n1n1h, ProcessCategories.n23n23h])"
+- name: qqH
+  id: 3
+  final_state: "lambda ac, fsc: ac.getStore()['process'] == ProcessCategories.qqh"
 
-# 4f fully leptonic/hadronic
-- name: llll
-  handler: FinalStateDefinitions.define_llll
-  id: EventCategories.llll
-- name: qqqq
-  handler: FinalStateDefinitions.define_qqqq
-  id: EventCategories.qqqq
-- name: vvvv
-  handler: FinalStateDefinitions.define_vvvv
-  id: EventCategories.vvvv
-- name: bbbb
-  handler: FinalStateDefinitions.define_bbbb
-  id: EventCategories.bbbb
-
-# 2l4q
-- name: lvqqqq
-  handler: FinalStateDefinitions.define_lvqqqq
-  id: EventCategories.lvqqqq
-- name: lvbbqq
-  handler: FinalStateDefinitions.define_lvbbqq
-  id: EventCategories.lvbbqq
-# next three are part of lvbbqq. setting id != null would plot them as a separate category
-# due to lack of colors, this is not done
-- name: evbbqq
-  handler: FinalStateDefinitions.define_evbbqq
-  id: null
-- name: μvbbqq
-  handler: FinalStateDefinitions.define_μvbbqq
-  id: null
-- name: τvbbqq
-  handler: FinalStateDefinitions.define_τvbbqq
-  id: null
-- name: lvbbbb
-  handler: FinalStateDefinitions.define_lvbbbb
-  id: EventCategories.lvbbbb
-- name: llqqqq
-  handler: FinalStateDefinitions.define_llqqqq
-  id: EventCategories.llqqqq
-- name: llbbqq
-  handler: FinalStateDefinitions.define_llbbqq
-  id: null
-- name: llbbbb
-  handler: FinalStateDefinitions.define_llbbbb
-  id: null
-- name: vvqqqq
-  handler: FinalStateDefinitions.define_vvqqqq
-  id: EventCategories.vvqqqq
-- name: vvbbqq
-  handler: FinalStateDefinitions.define_vvbbqq
-  id: null
-- name: vvbbbb
-  handler: FinalStateDefinitions.define_vvbbbb
-  id: null
-
-# 6q
-- name: bbqqqq
-  handler: FinalStateDefinitions.define_bbqqqq
-  id: EventCategories.bbqqqq
-- name: bbbbqq
-  handler: FinalStateDefinitions.define_bbbbqq
-  id: EventCategories.bbbbqq
-- name: bbbbbb
-  handler: FinalStateDefinitions.define_bbbbbb
-  id: EventCategories.bbbbbb
-
-# llhh
-- name: llHH
-  handler: FinalStateDefinitions.define_llHH
-  id: EventCategories.llHH
-- name: eeHHbbbb
-  handler: FinalStateDefinitions.define_eeHHbbbb
-  id: EventCategories.eeHHbbbb
-- name: μμHHbbbb
-  handler: FinalStateDefinitions.define_μμHHbbbb
-  id: EventCategories.μμHHbbbb
-- name: ττHHbbbb
-  handler: FinalStateDefinitions.define_ττHHbbbb
-  id: EventCategories.ττHHbbbb
-- name: llHH_llbbbb
-  handler: FinalStateDefinitions.define_llHH_llbbbb
-  id: null
-- name: llHH_llnonbbbb
-  handler: FinalStateDefinitions.define_llHH_llnonbbbb
-  id: null
-- name: llqqH
-  handler: FinalStateDefinitions.define_llqqH
-  id: EventCategories.llqqH
-
-# vvhh
-- name: vvHH
-  handler: FinalStateDefinitions.define_vvHH
-  id: EventCategories.vvHH
-- name: v1v1HHbbbb
-  handler: FinalStateDefinitions.define_v1v1HHbbbb
-  id: EventCategories.v1v1HHbbbb
-- name: v23v23HHbbbb
-  handler: FinalStateDefinitions.define_v23v23HHbbbb
-  id: EventCategories.v23v23HHbbbb
-- name: vvHHbbbb
-  handler: FinalStateDefinitions.define_vvHHbbbb
-  id: EventCategories.vvHHbbbb
-- name: vvHH_nonbbbb
-  handler: FinalStateDefinitions.define_vvHH_nonbbbb
-  id: null
-- name: vvqqH
-  handler: FinalStateDefinitions.define_vvqqH
-  id: EventCategories.vvqqH
-- name: WBF_vvbbbb
-  handler: FinalStateDefinitions.define_WBF_vvbbbb
-  id: EventCategories.WBF_vvbbbb
-
-# qqhh TODO
-- name: qqHH
-  handler: FinalStateDefinitions.define_qqHH
-  id: EventCategories.qqHH
-- name: qqqqH
-  handler: FinalStateDefinitions.define_qqqqH
-  id: EventCategories.qqqqH
-- name: qqHHbbbb
-  handler: FinalStateDefinitions.define_qqHHbbbb
-  id: EventCategories.qqHHbbbb
-- name: qqHH_nonbbbb
-  handler: FinalStateDefinitions.define_qqHH_nonbbbb
-  id: EventCategories.qqHH_nonbbbb
-
-# ttH/ttZ
-- name: ttH
-  handler: FinalStateDefinitions.define_ttH
-  id: null # EventCategories.ttH
-- name: ttZ
-  handler: FinalStateDefinitions.define_ttZ
-  id: null # EventCategories.ttZ
 - name: ttHZ
-  handler: FinalStateDefinitions.define_ttHZ
-  id: null
+  id: 7
+  final_state: "lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.f8_tth, ProcessCategories.f8_ttz])"
+- name: ttH
+  id: 8
+  final_state: "lambda ac, fsc: ac.getStore()['process'] == ProcessCategories.f8_tth"
+- name: ttZ
+  id: 9
+  final_state: "lambda ac, fsc: ac.getStore()['process'] == ProcessCategories.f8_ttz"
+
+# LEPTONIC
+- name: OTHER_LL
+  id: 10
+- name: llHH
+  id: 11
+  final_state: "lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.e1e1hh, ProcessCategories.e2e2hh, ProcessCategories.e3e3hh])"
+
+# START Only used in analysis (not in Marlin processor)
+- name: eeHH
+  id: 111
+  final_state: "lambda ac, fsc: ac.getStore()['process'] == ProcessCategories.e1e1hh"
+- name: μμHH
+  id: 112
+  final_state: "lambda ac, fsc: ac.getStore()['process'] == ProcessCategories.e2e2hh"
+- name: ττHH
+  id: 113
+  final_state: "lambda ac, fsc: ac.getStore()['process'] == ProcessCategories.e3e3hh"
+
+- name: eeHHbbbb
+  id: 114
+  final_state: "lambda ac, fsc: (fsc.n_e == 2) & (fsc.n_charged_lep == 2) & (fsc.n_neutral_lep == 0) & (fsc.n_q == 4) & (fsc.n_b_from_higgs == 4)"
+- name: μμHHbbbb
+  id: 115
+  final_state: "lambda ac, fsc: (fsc.n_mu == 2) & (fsc.n_charged_lep == 2) & (fsc.n_neutral_lep == 0) & (fsc.n_q == 4) & (fsc.n_b_from_higgs == 4)"
+- name: ττHHbbbb
+  id: 116
+  final_state: "lambda ac, fsc: (fsc.n_tau == 2) & (fsc.n_charged_lep == 2) & (fsc.n_neutral_lep == 0) & (fsc.n_q == 4) & (fsc.n_b_from_higgs == 4)"
+- name: llHH_llnonbbbb
+  id: 117
+  final_state: "lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.e1e1hh, ProcessCategories.e2e2hh, ProcessCategories.e3e3hh]) & (fsc.n_b_from_higgs != 4)"
+# END
+
+- name: eebb
+  id: 12
+  final_state: "lambda ac, fsc: (fsc.n_e == 2) & (fsc.n_b == 2)"
+- name: μμbb
+  id: 13
+  final_state: "lambda ac, fsc: (fsc.n_mu == 2) & (fsc.n_b == 2)"
+- name: ττbb
+  id: 14
+  final_state: "lambda ac, fsc: (fsc.n_tau == 2) & (fsc.n_b == 2)"
+- name: llbbbb
+  id: 15
+  final_state: "lambda ac, fsc: (fsc.n_charged_lep == 2) & (fsc.n_neutral_lep == 0) & (fsc.n_q == 4) & (fsc.n_b == 4)"
+- name: llqqH
+  id: 16
+  final_state: "lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.e1e1qqh, ProcessCategories.e2e2qqh, ProcessCategories.e3e3qqh])"
+- name: ll
+  id: 17
+  final_state: "lambda ac, fsc: (fsc.n_charged_lep == 2) & (fsc.n_q == 0) & (fsc.n_neutral_lep == 0)"
+- name: llll
+  id: 18
+  final_state: "lambda ac, fsc: (fsc.n_charged_lep == 4) & (fsc.n_q == 0) & (fsc.n_neutral_lep == 0)"
+- name: llqq
+  id: 19
+  final_state: "lambda ac, fsc: (fsc.n_charged_lep == 2) & (fsc.n_q == 2)"
+- name: llvv
+  id: 20
+  final_state: "lambda ac, fsc: (fsc.n_charged_lep == 2) & (fsc.n_q == 0) & (fsc.n_neutral_lep == 2)"
+#eeWW = 21
+#llWW = 22
+
+- name: lvqqqq
+  id: 23
+  final_state: "lambda ac, fsc: (fsc.n_charged_lep == 1) & (fsc.n_neutral_lep == 1) & (fsc.n_q == 4)"
+- name: lvbbqq
+  id: 24
+  final_state: "lambda ac, fsc: (fsc.n_charged_lep == 1) & (fsc.n_neutral_lep == 1) & (fsc.n_q == 4) & (fsc.n_b >= 2)"
+
+- name: llqqqq
+  id: 25
+  final_state: "lambda ac, fsc: (fsc.n_charged_lep == 2) & (fsc.n_neutral_lep == 0) & (fsc.n_q == 4)"
+- name: llbbqq
+  id: 26
+  final_state: "lambda ac, fsc: (fsc.n_charged_lep == 2) & (fsc.n_neutral_lep == 0) & (fsc.n_q == 4) & (fsc.n_b >= 2)"
+- name: llbb
+  id: 27
+  final_state: "lambda ac, fsc: (fsc.n_charged_lep == 2) & (fsc.n_b == 2)"
+- name: lvbbbb
+  id: 28
+  final_state: "lambda ac, fsc: (fsc.n_charged_lep == 1) & (fsc.n_neutral_lep == 1) & (fsc.n_q == 4) & (fsc.n_b == 4)"
+
+- name: tatabb
+  id: 29
+  final_state: "lambda ac, fsc: (fsc.n_charged_lep == 2) & (fsc.n_q == 2) & (fsc.n_tau == 2) & (fsc.n_b == 2)"
+
+# NEUTRINO
+- name: OTHER_VV
+  id: 30
+- name: vvHH
+  id: 31
+  final_state: "lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.n1n1hh, ProcessCategories.n23n23hh])"
+
+# START Only used in analysis (not in Marlin processor)
+- name: v1v1HH
+  id: 131
+- name: v23v23HH
+  id: 132
+
+- name: v1v1HHbbbb
+  id: 133
+  final_state: "lambda ac, fsc: ac.getCategoryMask('vvHHbbbb') & (fsc.n_ve == 2) & (fsc.n_vmu == 0) & (fsc.n_vtau == 0) & (fsc.n_b_from_higgs == 4)"
+- name: v23v23HHbbbb
+  id: 134
+  final_state: "lambda ac, fsc: ac.getCategoryMask('vvHHbbbb') & (fsc.n_ve == 0) & ((fsc.n_vmu == 2) | (fsc.n_vtau == 2)) & (fsc.n_b_from_higgs == 4)"
+- name: vvHHbbbb
+  id: 135
+  final_state: "lambda ac, fsc: ac.getCategoryMask('vvHH') & (fsc.n_charged_lep == 0) & (fsc.n_neutral_lep == 2) & (fsc.n_b_from_higgs == 4)"
+- name: vvHH_nonbbbb
+  id: 136
+  final_state: "lambda ac, fsc: ac.getCategoryMask('vvHH') & (fsc.n_charged_lep == 0) & (fsc.n_neutral_lep == 2) & (fsc.n_b_from_higgs != 4)"
+- name: WBF_vvbbbb
+  id: 137
+  final_state: "lambda ac, fsc: ac.getCategoryMask('v1v1HHbbbb') & ((ac.getStore()['massDiNeutrino'] < 79) | (ac.getStore()['massDiNeutrino'] > 102)) & (fsc.n_ve + fsc.n_vmu + fsc.n_vtau == 2) & (fsc.n_b_from_higgs == 4)"
+- name: v1v1HH_w
+  id: 138
+  final_state: "lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.n1n1hh_w])"
+- name: v1v1HHbbbb_w
+  id: 139
+  final_state: "lambda ac, fsc: ac.getCategoryMask('v1v1HH_w') & (fsc.n_charged_lep == 0) & (fsc.n_neutral_lep == 2) & (fsc.n_b_from_higgs == 4)"
+
+# END
+
+- name: vvbb
+  id: 32
+  final_state: "lambda ac, fsc: (fsc.n_neutral_lep == 2) & (fsc.n_b == 2)"
+- name: vvbbbb
+  id: 33
+  final_state: "lambda ac, fsc: (fsc.n_charged_lep == 0) & (fsc.n_neutral_lep == 2) & (fsc.n_q == 4) & (fsc.n_b == 4)"
+- name: vvqqH
+  id: 34
+  final_state: "lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.n1n1qqh, ProcessCategories.n23n23qqh])"
+- name: vv
+  id: 35
+  final_state: "lambda ac, fsc: (fsc.n_charged_lep == 0) & (fsc.n_q == 0) & (fsc.n_neutral_lep == 2)"
+- name: vvqq
+  id: 36
+  final_state: "lambda ac, fsc: (fsc.n_neutral_lep == 2) & (fsc.n_q == 2)"
+#vvWW = 37
+
+- name: vvqqqq
+  id: 38
+  final_state: "lambda ac, fsc: (fsc.n_charged_lep == 0) & (fsc.n_neutral_lep == 2) & (fsc.n_q == 4)"
+- name: vvbbqq
+  id: 39
+  final_state: "lambda ac, fsc: (fsc.n_charged_lep == 0) & (fsc.n_neutral_lep == 2) & (fsc.n_q == 4) & (fsc.n_b >= 2)"
+- name: vvvv
+  id: 40
+  final_state: "lambda ac, fsc: (fsc.n_charged_lep == 0) & (fsc.n_q == 0) & (fsc.n_neutral_lep == 4)"
+
+# HADRONIC
+- name: OTHER_QQ
+  id: 50
+- name: qqHH
+  id: 51
+  final_state: "lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.qqhh])"
+
+# START Only used in analysis (not in Marlin processor)
+- name: qqHHbbbb
+  id: 151
+  final_state: "lambda ac, fsc: ac.getCategoryMask('qqHH') & (fsc.n_b_from_higgs == 4)"
+- name: bbHHbbbb
+  id: 152
+  final_state: "lambda ac, fsc: ac.getCategoryMask('qqHHbbbb') & (fsc.n_b == 6)"
+- name: qqHH_nonbbbb
+  id: 153
+  final_state: "lambda ac, fsc: ac.getCategoryMask('qqHH') & (fsc.n_b_from_higgs != 4)"
+
+# END
+
+- name: qqqqH
+  id: 52
+  final_state: "lambda ac, fsc: np.isin(ac.getStore()['process'], [ProcessCategories.qqqqh])"
+- name: bbbbqq
+  id: 53
+  final_state: "lambda ac, fsc: (fsc.n_charged_lep == 0) & (fsc.n_neutral_lep == 0) & (fsc.n_q == 6) & (fsc.n_b >= 4)"
+- name: bbbb
+  id: 54
+  final_state: "lambda ac, fsc: (fsc.n_charged_lep == 0) & (fsc.n_q == 4) & (fsc.n_neutral_lep == 0) & (fsc.n_b == 4)"
+#ttbb = 56
+- name: qq
+  id: 57
+  final_state: "lambda ac, fsc: (fsc.n_charged_lep == 0) & (fsc.n_q == 2) & (fsc.n_neutral_lep == 0)"
+- name: qqqq
+  id: 58
+  final_state: "lambda ac, fsc: (fsc.n_charged_lep == 0) & (fsc.n_q == 4) & (fsc.n_neutral_lep == 0)"
+- name: bbbbbb
+  id: 59
+  final_state: "lambda ac, fsc: (fsc.n_charged_lep == 0) & (fsc.n_neutral_lep == 0) & (fsc.n_q == 6) & (fsc.n_b == 6)"
+- name: qqqqqq
+  id: 60
+  final_state: "lambda ac, fsc: (fsc.n_charged_lep == 0) & (fsc.n_neutral_lep == 0) & (fsc.n_q == 6)"
+- name: qqbb
+  id: 61
+  final_state: "lambda ac, fsc: (fsc.n_charged_lep == 0) & (fsc.n_q == 4) & (fsc.n_neutral_lep == 0) & (fsc.n_b == 2)"
+
+# SEMILEPTONIC
+- name: lvqq
+  id: 65
+  final_state: "lambda ac, fsc: (fsc.n_charged_lep == 1) & (fsc.n_q == 2) & (fsc.n_neutral_lep == 1)"
+- name: F4_OTHER
+  id: 69
+
+# ttbar -> lvbbqq [t->Wb, W->lv/qq, b->bb]
+# so far not accounted: ttbar -> llvvbb (two leptonically decaying W bosons)
+# reason: https://tikz.net/sm_decay_piechart/
+# W -> qqbar 67%; W -> lv 33%
+# => 2xW -> qqbar 67% * 67% = 44.89% (two hadronic decays)
+# => 2xW -> lv 33% * 33% = 10.89% (two leptonic decays)
+# rest: 44.22% (one hadronic, one leptonic decay)
+- name: OTHER_TTBAR
+  id: 70
+- name: evbbqq
+  id: 71
+  final_state: "lambda ac, fsc: (fsc.n_e == 1) & (fsc.n_neutral_lep == 1) & (fsc.n_q == 4) & (fsc.n_b >= 2)"
+- name: μvbbqq
+  id: 72
+  final_state: "lambda ac, fsc: (fsc.n_mu == 1) & (fsc.n_neutral_lep == 1) & (fsc.n_q == 4) & (fsc.n_b >= 2)"
+- name: τvbbqq
+  id: 73
+  final_state: "lambda ac, fsc: (fsc.n_tau == 1) & (fsc.n_neutral_lep == 1) & (fsc.n_q == 4) & (fsc.n_b >= 2)"
+
+#evbbcs = 74
+#μvbbcs = 75
+#τvbbcs = 76
+
+#evbbud = 77
+#μvbbud = 78
+#τvbbud = 79
+
+# tt/WWZ -> bbqqqq
+# for tt: tt -> bbqqqq : 2x [t->Wb; W->qq]
+# for WWZ: WWZ -> bbqqqq : 2x [W->qq; Z->bb]
+- name: OTHER_FULL_HADRONIC
+  id: 80
+- name: bbqqqq
+  id: 81
+  final_state: "lambda ac, fsc: (fsc.n_charged_lep == 0) & (fsc.n_neutral_lep == 0) & (fsc.n_q == 6) & (fsc.n_b >= 2)"
+#bbcssc = 82
+#bbuddu = 83
+#bbcsdu = 84
+
+- name: OTHER_EVENTS
+  id: 90
+- name: F5_OTHER
+  id: 91
+
+#f6_yyyyZ = 95
+#f6_xxWW = 96
+#f6_xxxxZ = 97
+
+- name: F6_OTHER
+  id: 98
+
+# not part of the former EVENT_CATEGORY_TRUE; new ID
+- name: llHH_llbbbb
+  id: 154
+  final_state: "lambda ac, fsc: np.logical_or.reduce((ac.getCategoryMask('eeHHbbbb'), ac.getCategoryMask('μμHHbbbb'), ac.getCategoryMask('ττHHbbbb')))"

@@ -1,7 +1,7 @@
 from .ProcessIndex import ProcessIndex, lcio_event_count
 from .PolarizationCodes import PolarizationCodes, parse_polarization_code
 from .event_category_registry import EventCategoryRegistry, EventCategoryDefinition, \
-    GlobalEventCategoryRegistry
+    GlobalEventCategoryRegistry, FinalStateDefinition
 from .process_registry import ProcessDefinition, ProcessRegistry, GlobalProcessRegistry
 
 # shorthands to GlobalProcessRegistry and GlobalEventCategoryRegistry 

@@ -2,8 +2,12 @@
 # 2025/11/05 - Bryan Bliewert / DESY / bryan.bliewert@desy.de
 
 # Changes:
-# 2025/11: following globals are allowed: EventCategories, FinalStateDefinitions
+# 2025/11: following globals are allowed: EventCategories
+#          (resolves to GlobalEventCategoryRegistry)
 #          following environment variables are assumed: REPO_ROOT, DATA_PATH
+# 2026/10: values ending with .json or .yaml are resolved as contents of the
+#          (assumed to be) files. if they are not found in the cwd, they are
+#          searched for in the same dir as this steering file
 
 # hypothesis: used as label in plots and for naming output files
 # made available within the run of cutflow as environment variable '$hypothesis'
@@ -27,6 +31,13 @@ sqrt_s: 550.
 # MVA training files + any plots/tables. can also be set individually per source in the
 # sources section below
 reset: false
+
+# define all available event categories
+event_categories: 'event_categories.yaml'
+
+# define all known physics processes and their internal IDs
+# TODO: make it possible to use the pre-generated process_id (from Whizard)
+processes: 'processes.json'
 
 # definition of input data and information about the event categorization
 # path                : path to a directory containing Merged.root file whose content
@@ -80,7 +91,7 @@ sources:
     event_categorization:
       default: null
       order: null
-      items: [ llhh, eeHHbbbb, μμHHbbbb, ττHHbbbb, llhh_llbbbb, llhh_llnonbbbb, llqqh ]
+      items: [ llHH, eeHHbbbb, μμHHbbbb, ττHHbbbb, llHH_llbbbb, llHH_llnonbbbb, llqqH ]
     disabled: true
     reset: false
 

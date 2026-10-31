@@ -14,16 +14,6 @@ from .DataSource import DataSource
 from .DataSourceTools import mod_weights_from_split, apply_split
 from .CutflowProcessor import CutflowProcessor, cutflowPlots, evaluate_categories_ordered, invert_dict
 from .figure_options import figure_options
-from .FinalStateDefinitions import define_eebb, define_μμbb, define_ττbb, \
-    define_lvqqqq, define_lvbbqq, define_evbbqq, define_μvbbqq, define_τvbbqq, \
-    define_lvbbbb, define_llqqqq, define_llbbqq, define_llbbbb, \
-    define_vvqqqq, define_vvbbqq, \
-    define_bbqqqq, define_bbbbqq, define_bbbbbb, \
-    define_llHH, define_eeHHbbbb, define_μμHHbbbb, define_ττHHbbbb, \
-    define_llHH_llbbbb, define_llqqH, define_ttH, define_ttZ, \
-    FinalStateDefinition, \
-    categorize_llHH, categorize_4fsl, categorize_2l4q, categorize_6q, \
-    categorize_tthz
 from .DataExtractor import DataExtractor
 from .cutflow_processor_actions import *
 from .CutflowProcessorAction import CutflowProcessorAction, FileBasedProcessorAction
