@@ -1,5 +1,6 @@
 from collections.abc import Callable
-from .PreselectionAnalysis import sample_weight, get_pol_key
+from .PreselectionAnalysis import get_w_pol, get_pol_key
+from ..processes.PolarizationCodes import PolarizationCodes
 from .DataStore import DataStore, ReadonlyWriteAttempt, DataStoreStates
 from zhh.analysis.TTreeInterface import FinalStateCounts
 from typing import cast, TYPE_CHECKING
@@ -169,13 +170,15 @@ class DataSource:
         from zhh import plot_final_state_counts 
         return plot_final_state_counts(self.getStore())
 
-    def weight(self, lumi_inv_ab:float=2.)->tuple[np.ndarray,np.ndarray]:
+    def weight(self, lumi_inv_ab:float|None=None)->tuple[np.ndarray,np.ndarray]:
         """Extracts cross-sections and number of generated events for each
         polarization-process combination. Then calculates weights for each
         combination (processes, n x M) and event (weight_data, l x K). The
         results are given as two named numpy arrays. processes is stored in
         self._processes. Requires combine() and fetch(). Attached pid and
         weight columns to the preselection summary.
+
+        For an unpolarized dataset, 
         
         n: number of process-polarization ("proc_pol") combinations
         M: 9 features, e.g. "cross_sec", "proc_pol", "n_events", "weight"
@@ -191,8 +194,10 @@ class DataSource:
         """
 
         from zhh.processes import parse_polarization_code, ProcessCategories
-        
-        self._lumi_inv_ab = lumi_inv_ab
+
+        if lumi_inv_ab is not None:
+            self._lumi_inv_ab = lumi_inv_ab
+
         # fetch data for weight calculation
         store = self.getStore()
         process = store['process']
@@ -237,10 +242,12 @@ class DataSource:
 
                 cross_sec = weight_data[mask]['cross_section'][0]
                 n_gen = np.sum(mask)
-                wt = sample_weight(cross_sec, (Pem, Pep), n_gen, lumi_inv_ab)
+
+                w_pol = get_w_pol(Pem, Pep)
+                wt = cross_sec * 1000 * self.getIntegratedLuminosity() * w_pol / n_gen
                 
                 print(f'Process {process_name:12} with Pol e{"L" if Pem == -1 else "R"}.p{"L" if Pep == -1 else "R"}'+
-                      f' has {n_gen:9} events xsec={cross_sec:.3E} wt={wt:.3E}')
+                      f' has {n_gen:9} events xsec={cross_sec:.3E} wt={wt:.4E} (wt_pol={w_pol:.3E})')
                 procpol = f'{process_name}_{get_pol_key(Pem, Pep)}'
                 
                 processes[idx]['process'] = process_name

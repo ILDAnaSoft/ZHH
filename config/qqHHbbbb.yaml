@@ -2,8 +2,12 @@
 # 2025/11/05 - Bryan Bliewert / DESY / bryan.bliewert@desy.de
 
 # Changes:
-# 2025/11: following globals are allowed: EventCategories, FinalStateDefinitions
+# 2025/11: following globals are allowed: EventCategories
+#          (resolves to GlobalEventCategoryRegistry)
 #          following environment variables are assumed: REPO_ROOT, DATA_PATH
+# 2026/10: values ending with .json or .yaml are resolved as contents of the
+#          (assumed to be) files. if they are not found in the cwd, they are
+#          searched for in the same dir as this steering file
 
 # hypothesis: used as label in plots and for naming output files
 # made available within the run of cutflow as environment variable '$hypothesis'
@@ -11,7 +15,7 @@ hypothesis: qqbbbb
 
 signal_categories:
 - EventCategories.qqHHbbbb
-- EventCategories.qqHH_nonbbbb
+- EventCategories.bbHHbbbb
 
 # used to calculate event weights and absolute event counts
 # polarization of [ electronBeam, positronBeam ]
@@ -20,16 +24,20 @@ beam_polarization: [ -0.8, +0.3 ]
 # unit: ab^-1
 luminosity: 2.
 
+# center-of-mass energy in GeV
+sqrt_s: 550.
+
 # set to true for a clean run; i.e. delete previous run through cutflow (plots/tables),
 # MVA training files + any plots/tables. can also be set individually per source in the
 # sources section below
 reset: false
 
-# definition of event categories
-# the registration of event categories to specific sources is done in the sources section
-# info: while the naming can be arbitrary, a unique ID must be supplied which must exist 
-#       in the EVENT_CATEGORIES_TRUE class, too. See EventCategories.py
-event_categories: '$REPO_ROOT/config/event_categories.yaml'
+# define all available event categories
+event_categories: 'event_categories.yaml'
+
+# define all known physics processes and their internal IDs
+# TODO: make it possible to use the pre-generated process_id (from Whizard)
+processes: 'processes.json'
 
 # definition of input data and information about the event categorization
 # path                : path to a directory containing Merged.root file whose content
@@ -62,7 +70,7 @@ sources:
     event_categorization:
       default: EventCategories.F4_OTHER
       order: null
-      items: [ llll, qqqq, vvvv ]
+      items: [ llll, bbbb, qqqq, vvvv ]
     disabled: false
     reset: false
 
@@ -72,7 +80,8 @@ sources:
     event_categorization:
       default: EventCategories.F6_OTHER
       order: null
-      items: [ lvqqqq, lvbbqq, evbbqq, μvbbqq, τvbbqq, lvbbbb, llqqqq, llbbqq, llbbbb, vvqqqq, vvbbqq ]
+      #items: [ lvqqqq, lvbbqq, evbbqq, μvbbqq, τvbbqq, lvbbbb, llqqqq, llbbqq, llbbbb, vvqqqq, vvbbqq ]
+      items: [ lvqqqq, lvbbqq, lvbbbb, llqqqq, llbbqq, llbbbb, vvqqqq, vvbbqq ]
     disabled: false
     reset: false
 
@@ -82,7 +91,20 @@ sources:
     event_categorization:
       default: null
       order: null
-      items: [ llhh, eeHHbbbb, μμHHbbbb, ττHHbbbb, llhh_llbbbb, llhh_llnonbbbb, llqqh ]
+      items: [ llHH, eeHHbbbb, μμHHbbbb, ττHHbbbb, llHH_llbbbb, llHH_llnonbbbb, llqqH ]
+    disabled: true
+    reset: false
+
+  # contains both the qqHH (signal) and qqqqH (ZZH background) samples; the categorization
+  # uses the process of each event. later items take precedence, i.e. bbHHbbbb (Z->bb)
+  # is carved out of qqHHbbbb
+  - name: qqhh
+    path: $DATA_PATH/AnalysisCombine/550-qqhh-$CONF_SUFFIX
+    root_files: $DATA_PATH/AnalysisFinal/550-qqhh-$CONF_SUFFIX/*.root
+    event_categorization:
+      default: null
+      order: null
+      items: [ qqHH, qqHHbbbb, bbHHbbbb, qqHH_nonbbbb, qqqqH ]
     disabled: false
     reset: false
 
@@ -141,45 +163,68 @@ features:
   - { name: pol_code, tree: FinalStates, branch: polarization_code, dtype: uint8 }
   - { name: process, tree: FinalStates, dtype: uint32 }
 
-  # physics quantities; must be given because some other quantities use this
-  - { name: cosjzmax, tree: EventObservablesLL, branch: cosJZMax_2Jets, dtype: float32 }
+  # all following features come from the EventObservablesQQ/KinFitQQ_* TTrees (qqbbbb channel)
+  # the number of jets is 6: bmax1..6 are the b-tags (sorted descending) and jet1_m..jet6_m the jet masses
+  # (sorted ascending when the DataStore is initialized)
 
-  # physics quantities
-  - { names: [ bmax1, bmax2, bmax3, bmax4 ], tree: EventObservablesLL, dtype: float32 }
-  - { names: [ jet1_m, jet2_m, jet3_m, jet4_m ], tree: EventObservablesLL, dtype: float32 }
-  - { name: mz_pre_pairing, tree: EventObservablesLL, branch: mzll_pre_pairing, dtype: float32 }
-  - { name: mhh, tree: EventObservablesLL, branch: m_invjet, dtype: float32 }
-  - { names: [ fit4C_mz, ptmiss, thrust, evis ], tree: EventObservablesLL, dtype: float32 }
-  - { name: fit4C_mh1, tree: EventObservablesLL, dtype: float32, nan_to: -20., clamp_min: -10. }
-  - { name: fit4C_mh2, tree: EventObservablesLL, dtype: float32, nan_to: -20., clamp_min: -10. }
-  - { names: [ nisomuons, pairedLepType ], tree: EventObservablesLL, dtype: uint8 }
-  
-  # for MVA analysis
-  - { names: [ npfos ], tree: EventObservablesLL, dtype: uint16 }
-  - { names: [ costhrust, pjmax2, npfosmin4j, yplus, plmin, mbmax12, mbmax34,
-               mvalepminus, yminus2 ], tree: EventObservablesLL, dtype: float32 } # mcmax12, mcmax34,
-  - { name: ZHH_FitChi2, tree: KinFitLL_ZHH, branch: FitChi2, dtype: float32 }
-  - { name: ZZH_FitChi2, tree: KinFitLL_ZZH, branch: FitChi2, dtype: float32 }
-  - { name: ZHH_p1stBeforeFit, tree: KinFitLL_ZHH, branch: p1stBeforeFit, dtype: float32 }
-  - { name: ZZH_p1stBeforeFit, tree: KinFitLL_ZZH, branch: p1stBeforeFit, dtype: float32 }
-  - { name: ZHH_cosThBeforeFit, tree: KinFitLL_ZHH, branch: cosThBeforeFit, dtype: float32 }
-  - { name: ZZH_cosThBeforeFit, tree: KinFitLL_ZZH, branch: cosThBeforeFit, dtype: float32 }
+  # event selection
+  - { name: errorCode, tree: EventObservablesQQ, branch: errorCode, dtype: uint8 }
+  - { names: [ nisoleptons ], tree: EventObservablesQQ, dtype: uint8 }
 
-  # MEM
-  - { names: [
-        lep1_4v/fCoordinates,
-        lep2_4v/fCoordinates,
-        jet1_4v/fCoordinates,
-        jet2_4v/fCoordinates,
-        jet3_4v/fCoordinates,
-        jet4_4v/fCoordinates
-      ], tree: EventObservablesLL, dtype: float32, columns: [ fCoordinates.fX, fCoordinates.fY, fCoordinates.fZ, fCoordinates.fT ] }
-  - { name: jet_matching_kinfit_best, tree: EventObservablesLL, dtype: int8, columns: 4 }
-  - { names: [ jet1_tags, jet2_tags, jet3_tags, jet4_tags ], tree: EventObservablesLL, dtype: float32 }
-  
-  # TODO: ability to use custom handlers to attach these
-  # serialize:
-  # - { handler: Serializers.JetMasses, provides: [ jet0_m, jet1_m, jet2_m, jet4_m ] }
+  # flavor tagging
+  - { names: [ bmax1, bmax2, bmax3, bmax4, bmax5, bmax6 ], tree: EventObservablesQQ, dtype: float32 }
+  - { names: [ cmax1, cmax2, cmax3, cmax4 ], tree: EventObservablesQQ, dtype: float32 }
+  - { names: [ btagz, ctagz, btag4sum, btag4prod ], tree: EventObservablesQQ, dtype: float32 }
+  - { name: nbjets05, tree: EventObservablesQQ, dtype: uint8 }
+  # note: sumBTags (bmax1+..+bmax4) is derived in the DataStore; sum over all six jets is
+  - { name: sumBTags6, tree: EventObservablesQQ, branch: sumBTags, dtype: float32 }
+
+  # jets
+  - { names: [ jet1_m, jet2_m, jet3_m, jet4_m, jet5_m, jet6_m ], tree: EventObservablesQQ, dtype: float32 }
+  - { names: [ cosjj_max, mjj_min ], tree: EventObservablesQQ, dtype: float32 }
+  - { names: [ npfos ], tree: EventObservablesQQ, dtype: uint16 }
+  - { names: [ npfosmin6j, npfosmax6j ], tree: EventObservablesQQ, dtype: uint16 }
+  - { names: [ yminus, yplus ], tree: EventObservablesQQ, dtype: float32 }
+
+  # global event properties
+  - { name: m_inv_jets, tree: EventObservablesQQ, branch: m_invjet, dtype: float32 }
+  - { names: [ ptmiss, pzmiss, cosmiss, thrust, costhrust, evis ], tree: EventObservablesQQ, dtype: float32 }
+  - { names: [ sphericity, aplanarity, fw2 ], tree: EventObservablesQQ, dtype: float32 }
+
+  # ZHH hypothesis with b-tag driven pairing: the four jets with the largest b-tag form the two H candidates (best of the 3 pairings),
+  # the remaining two jets the Z
+  - { names: [ zhh_chi2, zhh_mz, zhh_mh1, zhh_mh2, zhh_mhh, zhh_p1st, zhh_cosTh1st ], tree: EventObservablesQQ, dtype: float32 }
+
+  # ZHH hypothesis from jet masses only (Z->qq, H->bb from all 45 pairings; chi2 contains Z mass)
+  - { names: [ zhh6_chi2, zhh6_mz, zhh6_mh1, zhh6_mh2, zhh6_mhh, zhh6_recoil_hh, zhh6_recoil_z,
+               zhh6_cosz, zhh6_coshh, zhh6_cos_hh, zhh6_cos_zjj, zhh6_cosh1star, zhh6_cosh2star ], tree: EventObservablesQQ, dtype: float32 }
+
+  # ZZH hypothesis, WW/ZZ -> 4 jets, ttbar -> 6 jets
+  - { names: [ zzh6_chi2, zzh6_mh, zzh6_mz1, zzh6_mz2 ], tree: EventObservablesQQ, dtype: float32 }
+  - { names: [ ww4_chi2, ww4_mw1, ww4_mw2, zz_bestchi2 ], tree: EventObservablesQQ, dtype: float32 }
+  - { names: [ tt_chi2, tt_mw1, tt_mw2, tt_mt1, tt_mt2 ], tree: EventObservablesQQ, dtype: float32 }
+
+  # kinematic fits; chi2 can reach 1e9 for failed fits
+  - { name: ZHH_FitChi2, tree: KinFitQQ_ZHH, branch: FitChi2, dtype: float32, clamp_max: 100000. }
+  - { name: ZZH_FitChi2, tree: KinFitQQ_ZZH, branch: FitChi2, dtype: float32, clamp_max: 100000. }
+  - { name: ZHH_FitProbability, tree: KinFitQQ_ZHH, branch: FitProbability, dtype: float32 }
+  - { name: ZZH_FitProbability, tree: KinFitQQ_ZZH, branch: FitProbability, dtype: float32 }
+  - { name: ZHH_p1stBeforeFit, tree: KinFitQQ_ZHH, branch: p1stBeforeFit, dtype: float32 }
+  - { name: ZZH_p1stBeforeFit, tree: KinFitQQ_ZZH, branch: p1stBeforeFit, dtype: float32 }
+  - { name: ZHH_cosThBeforeFit, tree: KinFitQQ_ZHH, branch: cosThBeforeFit, dtype: float32 }
+  - { name: ZZH_cosThBeforeFit, tree: KinFitQQ_ZZH, branch: cosThBeforeFit, dtype: float32 }
+  - { names: [ kfzhh_mhh, kfzhh_cosz, kfzhh_cos_hh ], tree: EventObservablesQQ, dtype: float32 }
+
+  # MEM: matrix elements are calculated separately, see AttachMatrixElements below
+  #- { names: [
+  #      jet1_4v/fCoordinates,
+  #      jet2_4v/fCoordinates,
+  #      jet3_4v/fCoordinates,
+  #      jet4_4v/fCoordinates,
+  #      jet5_4v/fCoordinates,
+  #      jet6_4v/fCoordinates
+  #    ], tree: EventObservablesQQ, dtype: float32, columns: [ fCoordinates.fX, fCoordinates.fY, fCoordinates.fZ, fCoordinates.fT ] }
+  #- { name: jet_matching_kinfit_best, tree: EventObservablesQQ, dtype: int8, columns: 6 }
 
 # cutflow_table
 # defines the event categories and the order with which they should be appear in the
@@ -192,25 +237,31 @@ features:
 
 cutflow_table:
   items:
-    - category: μμbb
-      label: '\boldsymbol{\mu\mu} bb'
-    - category: μvbbqq
-      label: '\boldsymbol{\mu \nu b b q q}'
+    - category: qqqqH
+      label: qqqqH
+    - category: bbbbqq
+      label: bbbbqq
+    - category: bbbb
+      label: bbbb
     - category: bbqqqq
       label: bbqqqq
-    - category: llqqqq
-      label: llqqqq
-    - category: llbbbb
-      label: (llbbbb)
-    - category: llqqh
-      label: llqqh
-    - category: llhh
-      label: llhh
+    - category: lvbbqq
+      label: lvbbqq
+    - sum: background
+      label: 'Total background'
+    
+    - category: qqHH_nonbbbb
+      label: qqHH (non-bbbb)
+      is_signal: True
+    - category: qqHHbbbb
+      label: (qqHH bbbb)
       is_signal: true
-    - category: μμHHbbbb
-      label: (\mu\mu bbbb)
+    - category: bbHHbbbb
+      label: (bbHH bbbb)
       is_signal: true
-  ignore_categories: llbbbb
+    - sum: signal
+      label: 'Total signal'
+  ignore_categories: []
 
 # general note about cuts:
 # they appear in groups composed of at least one cut and are denoted in code by the
@@ -232,13 +283,14 @@ cutflow_table:
 
 cuts:
   preselection:
-  - { quantity: nisomuons, operator: gte, value: 2, label: IsoMuons }
-  - { quantity: pairedLepType, operator: eq, value: 13, label: Paired Lepton Type }
-  - { quantity: fit4C_mz, operator: within_bounds, lower: 20., upper: 150., label: 'm_{ll}^{4C}', unit: 'GeV', xlim_view: [0, 270] }
-  - { quantity: fit4C_mh1, operator: within_bounds, lower: 50., upper: 200., label: 'm_{H1}^{4C}', unit: 'GeV', xlim_view: [0, 500] }
-  - { quantity: fit4C_mh2, operator: within_bounds, lower: 50., upper: 200., label: 'm_{H2}^{4C}', unit: 'GeV', xlim_view: [0, 550] }
-  - { quantity: ptmiss, operator: lte, value: 70., label: 'p_{t}^{miss}', unit: 'GeV' }
+  - { quantity: nisoleptons, operator: eq, value: 0, label: 'N_{iso. leptons}' }
+  # four jets with b-likeliness > 0.16 (b-tags are sorted descending, i.e. bmax4 is the fourth largest value), as in the 2014 analysis
+  - { quantity: bmax4, operator: gte, value: 0.16, label: 'b_{max4}' }
+  - { quantity: ptmiss, operator: lte, value: 100., label: 'p_{t}^{miss}', unit: 'GeV' }
   - { quantity: thrust, operator: lte, value: 0.9, label: 'thrust' }
+  - { quantity: zhh6_mz, operator: within_bounds, lower: 40., upper: 120., label: 'm_{Z}', unit: 'GeV', xlim_view: [0, 200] }
+  - { quantity: zhh6_mh1, operator: within_bounds, lower: 85., upper: 155., label: 'm_{H1}', unit: 'GeV', xlim_view: [0, 250] }
+  - { quantity: zhh6_mh2, operator: within_bounds, lower: 60., upper: 180., label: 'm_{H2}', unit: 'GeV', xlim_view: [0, 250] }
   - { quantity: sumBTags, operator: gte, value: 1., label: 'sum b-tags', disabled: true }
   
   # the mva_cut is applied after training and inference of a MVA
@@ -249,6 +301,18 @@ cuts:
   #    for this, use the syntax: <mva_name>.threshold
   mva_cut:
   - { quantity: SigMVAOutput, operator: gte, value: default_mva.threshold }
+
+  # filled lazily by the OptimizeMVANDimensional action (cut_group); required when more than one
+  # signal class is used, where SklearnMulticlassTraining finds one set of thresholds per signal class
+  mva_cuts_lazy: None
+
+  # separation of the Z->bb (bbHH dominant) and Z->qq (light qqHH dominant) signal by the sum of the b-tags of all six jets
+  # (see zhh/analysis/DataStore.py): 6 b jets give values > 4. both groups start from the preselection (step_in: 0) and are
+  # complementary (the value of exactly 4 is a measure-zero overlap for a continuous variable)
+  bbHH_dominant:
+  - { quantity: sumBTags, operator: gte, value: 4., label: '\Sigma_{b-tags}' }
+  qqHH_dominant:
+  - { quantity: sumBTags, operator: lte, value: 4., label: '\Sigma_{b-tags}' }
 
 # MVAs are defined here
 # training, inference and optimization (i.e. assignment which threshold value to use) are
@@ -265,24 +329,32 @@ cuts:
 #
 mvas:
   - name: default_mva
+
+    # model: either 'LGBMClassifier' or 'XGBClassifier' 
+    model: XGBClassifier # LGBMClassifier
+    
     features: [
-      jet1_m, jet2_m, jet3_m, jet4_m,
-      mhh, fit4C_mz, fit4C_mh1, fit4C_mh2,
-      npfos, thrust, costhrust, pjmax2, cosjzmax,
-      npfosmin4j, yplus, yminus_mod100, plmin,
-      mbmax34, ptmiss, mvalepminus,
-      ZHH_FitChi2, ZZH_FitChi2, ZHH_p1stBeforeFit,
-      ZZH_p1stBeforeFit, ZHH_cosThBeforeFit, ZZH_cosThBeforeFit,
-      bmax1, bmax2, bmax3, bmax4 ]
+      jet1_m, jet2_m, jet3_m, jet4_m, jet5_m, jet6_m,
+      bmax1, bmax2, bmax3, bmax4, bmax5, bmax6, btag4sum, btag4prod, nbjets05, ctagz,
+      m_inv_jets, ptmiss, pzmiss, thrust, costhrust, sphericity, aplanarity, fw2,
+      npfos, npfosmin6j, yplus, yminus, cosjj_max, mjj_min,
+      zhh_chi2, zhh_mz, zhh_mh1, zhh_mh2, zhh_mhh, zhh_p1st, zhh_cosTh1st,
+      zhh6_chi2, zhh6_mz, zhh6_mh1, zhh6_mh2, zhh6_mhh, zhh6_recoil_hh, zhh6_cosz, zhh6_cos_hh, zhh6_cos_zjj,
+      zzh6_chi2, zzh6_mh, zzh6_mz1, zzh6_mz2,
+      ww4_chi2, zz_bestchi2, tt_chi2, tt_mt1, tt_mt2,
+      ZHH_FitChi2, ZZH_FitChi2, ZHH_FitProbability, ZZH_FitProbability,
+      ZHH_p1stBeforeFit, ZZH_p1stBeforeFit, ZHH_cosThBeforeFit, ZZH_cosThBeforeFit,
+      kfzhh_mhh ]
     classes:
     # two-element arrays of structure (label, name of registered EventCategory)
     # see sources/.../event_categorization/items
-    - [0, 'μμHHbbbb']
-    - [1, 'llhh_llnonbbbb']
-    - [2, 'llqqh']
-    - [3, 'llqqqq']
-    - [4, 'μμbb']
+    - [0, 'qqHHbbbb']
+    - [1, 'bbHHbbbb']
+    - [2, 'qqqqH']
+    - [3, 'bbqqqq']
+    - [4, 'bbbbqq']
     - [5, 'lvbbqq']
+    - [6, 'qqqq']
     # note: the output is the sum for all signal categories given in steer['signal_categories'] 
     label_name: SigMVAOutput
 
@@ -294,11 +366,22 @@ mvas:
 # define what should be done after the data is loaded
 # for a documentation of supplied actions, see zhh/analysis/cutflow_processor_actions/README.md
 actions:
-  # optional:
+  - type: PlotObservable
+    observable: sumBTags
+    before_step: 0 # no cuts applied
+    file: '$hypothesis_sumBTags_before_presel.pdf'
+
   - type: ApplyCuts
     cuts: preselection
+    weight_column: weight
     step: 0 # step=0 is always preselection
     cache: '$hypothesis_cutflow_presel.pickle'
+
+  - type: PlotObservable
+    observable: sumBTags
+    weight_prop: weight
+    file: '$hypothesis_sumBTags.pdf'
+    before_step: 1 # after step=0, i.e. preselection (cut group 0)
   
   # optional:
   # step_start: 0
@@ -311,6 +394,15 @@ actions:
   # step_end: 0
   - type: CreateCutflowTable
     file: '$hypothesis_cutflow_preselection_table.pdf'
+    categories_left: False
+
+  - type: WriteROOTSnapshot
+    file: '$hypothesis_inputs.root'
+    include_custom_columns: [event_category, weight]
+    include_input_columns: true
+    include_mva_outputs: false
+    # optional:
+    # tree: cutflow
 
   # split in train/testing [accross all steps, i.e. regardless of cut group]
   # creates a new integer column 'split'; for n entries in fractions:
@@ -319,6 +411,9 @@ actions:
   # value n is assigned to the remaining events [fraction (1 - sum(all previous values))]
   - type: SplitDatasets
     fractions: [ 0.5 ]
+    # the following two are just here to be explicit and should not be changed
+    split_column: split 
+    wt_split_column: weights_split
     
   # writes out training/testing data
   # optional:
@@ -328,13 +423,14 @@ actions:
 
   - type: PrintSplitWeights
     disabled: true
-  
-  # data_source: 'kinfit' or (TODO) 'flavortag' or 'hybrid'
-  - type: AttachMatrixElements
-    output_name: DsigZHH_ZZH
-    data_source: kinfit
-    disabled: True
 
+  # matrix elements are calculated separately; this action is commented out on purpose
+  # data_source: 'kinfit' or (TODO) 'flavortag' or 'hybrid'
+  #- type: AttachMatrixElements
+  #  output_name: DsigZHH_ZZH
+  #  data_source: kinfit
+
+  # training with fixed hyperparameters
   - type: SklearnMulticlassTraining
     hyperparams: {
       max_depth: 5,
@@ -358,6 +454,7 @@ actions:
     mva: default_mva
     split: 0
     ntrials: 250
+    #nprocesses: 8 # only use 8 CPU cores
     disabled: false
 
   # optional:
@@ -366,7 +463,6 @@ actions:
   - type: SklearnMulticlassInference
     mva: default_mva
     split: 1 # split 0 = train dataset; split 1 = test dataset
-    disabled: false
   
   - type: PlotMVAFeatures
     mva: default_mva
@@ -374,21 +470,80 @@ actions:
     plot_kwargs: {
       bins: 50
     }
-  
-  # The values to cut on can be evaluated lazily
-  # i.e. the value does not need to be known when the program is started
-  # This can be useful for cuts on MVA output, when the best value can
-  # be fetched from training/validation. 
+
+  - type: WriteROOTSnapshot
+    file: '$hypothesis_mva.root'
+    include_custom_columns: [split, weights_split]
+    include_input_columns: false
+    include_mva_outputs: true
+
+  - type: PlotMVAOutputs
+    mva: default_mva
+    file: $hypothesis_mva_output_distributions.pdf
+    step: 0
+    split: 1
+    weight_column: weights_split
+    signal_categories: [ qqHHbbbb, bbHHbbbb ]
+    N_largest: 3
+    nbins: 25
+
+  # finds the optimal cut on the MVA outputs (one threshold set per signal category)
+  - type: OptimizeMVANDimensional
+    mva: default_mva
+    cut_group: mva_cuts_lazy
+    cut_file: $hypothesis_optimized_mva_cuts.txt
+    plot_file: $hypothesis_optimized_mva_cuts.pdf
+    step: 0
+    step_out: 1 # optimized cuts are stored at step_out
+    split: 1
+    weight_column: weights_split
+    signal_categories: [ qqHHbbbb, bbHHbbbb ]
+
   - type: ApplyCuts
-    cuts: mva_cut
+    cuts: mva_cuts_lazy
+    step_in: 0
     step: 1
-  
+    split: 1 # use only testing data
+    weight_column: weights_split # use the weights after splitting the dataset
+
+  # note: CreateCutflowPlots cannot be used for step >= 1 since the optimized MVA cut is a
+  # NDimensionalBinnedCut, which is not supported by the cutflow plots (yet)
+  #- type: CreateCutflowPlots
+  #  file: '$hypothesis_cutflow_mva_plots.pdf'
+  #  step_start: 1
+  #  step_end: 1
+
   - type: CreateCutflowPlots
     file: '$hypothesis_cutflow_mva_plots.pdf'
-    step_start: 1
+    step_start: 0
     step_end: 1
-    
+
   - type: CreateCutflowTable
     file: '$hypothesis_cutflow_mva_table.pdf'
-    step_start: 1
+    step_start: 0
     step_end: 1
+    categories_left: False
+
+  # bbHH dominant/light qqHH dominant: two parallel cut groups (steps 2 and 3), both applied to the events passing the
+  # preselection (step_in: 0). tables use steps to skip the MVA cut group (step 1). all events (no data split) are used
+  - type: ApplyCuts
+    cuts: bbHH_dominant
+    step_in: 0
+    step: 2
+    weight_column: weight
+
+  - type: ApplyCuts
+    cuts: qqHH_dominant
+    step_in: 0
+    step: 3
+    weight_column: weight
+
+  - type: CreateCutflowTable
+    file: '$hypothesis_cutflow_bbHH_dominant_table.pdf'
+    steps: [0, 2]
+    categories_left: False
+
+  - type: CreateCutflowTable
+    file: '$hypothesis_cutflow_qqHH_dominant_table.pdf'
+    steps: [0, 3]
+    categories_left: False

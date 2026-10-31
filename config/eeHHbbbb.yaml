@@ -2,8 +2,12 @@
 # 2025/11/05 - Bryan Bliewert / DESY / bryan.bliewert@desy.de
 
 # Changes:
-# 2025/11: following globals are allowed: EventCategories, FinalStateDefinitions
+# 2025/11: following globals are allowed: EventCategories
+#          (resolves to GlobalEventCategoryRegistry)
 #          following environment variables are assumed: REPO_ROOT, DATA_PATH
+# 2026/10: values ending with .json or .yaml are resolved as contents of the
+#          (assumed to be) files. if they are not found in the cwd, they are
+#          searched for in the same dir as this steering file
 
 # hypothesis: used as label in plots and for naming output files
 # made available within the run of cutflow as environment variable '$hypothesis'
@@ -20,10 +24,20 @@ beam_polarization: [ -0.8, +0.3 ]
 # unit: ab^-1
 luminosity: 2.
 
+# center-of-mass energy in GeV
+sqrt_s: 550.
+
 # set to true for a clean run; i.e. delete previous run through cutflow (plots/tables),
 # MVA training files + any plots/tables. can also be set individually per source in the
 # sources section below
 reset: false
+
+# define all available event categories
+event_categories: 'event_categories.yaml'
+
+# define all known physics processes and their internal IDs
+# TODO: make it possible to use the pre-generated process_id (from Whizard)
+processes: 'processes.json'
 
 # definition of input data and information about the event categorization
 # path                : path to a directory containing Merged.root file whose content
@@ -42,7 +56,7 @@ reset: false
 sources:
   - name: 4fsl
     path: $DATA_PATH/AnalysisCombine/550-4fsl-$CONF_SUFFIX
-    root_files: /data/dust/user/jtorndal/zhh/AnalysisFinal/550-4fsl-$CONF_SUFFIX/*.root
+    root_files: $DATA_PATH/AnalysisFinal/550-4fsl-$CONF_SUFFIX/*.root
     event_categorization:
       default: EventCategories.F4_OTHER
       order: null
@@ -52,7 +66,7 @@ sources:
   
   - name: 4flh
     path: $DATA_PATH/AnalysisCombine/550-4flh-$CONF_SUFFIX
-    root_files: /data/dust/user/jtorndal/zhh/AnalysisFinal/550-4flh-$CONF_SUFFIX/*.root
+    root_files: $DATA_PATH/AnalysisFinal/550-4flh-$CONF_SUFFIX/*.root
     event_categorization:
       default: EventCategories.F4_OTHER
       order: [ llll, qqqq ]
@@ -62,7 +76,7 @@ sources:
 
   - name: 2l4q
     path: $DATA_PATH/AnalysisCombine/550-2l4q-$CONF_SUFFIX
-    root_files: /data/dust/user/jtorndal/zhh/AnalysisFinal/550-2l4q-$CONF_SUFFIX/*.root
+    root_files: $DATA_PATH/AnalysisFinal/550-2l4q-$CONF_SUFFIX/*.root
     event_categorization:
       default: EventCategories.F6_OTHER
       order: [ lvqqqq, lvbbqq, llqqqq, vvqqqq ]
@@ -72,7 +86,7 @@ sources:
 
   - name: llhh
     path: $DATA_PATH/AnalysisCombine/550-llhh-$CONF_SUFFIX
-    root_files: /data/dust/user/bliewert/zhh/AnalysisFinal/550-llhh-$CONF_SUFFIX/*.root
+    root_files: $DATA_PATH/AnalysisFinal/550-llhh-$CONF_SUFFIX/*.root
     event_categorization:
       default: null
       order: null
@@ -82,7 +96,7 @@ sources:
 
   - name: 6q
     path: $DATA_PATH/AnalysisCombine/550-6q-$CONF_SUFFIX
-    root_files: /data/dust/user/jtorndal/zhh/AnalysisFinal/550-6q-$CONF_SUFFIX/*.root
+    root_files: $DATA_PATH/AnalysisFinal/550-6q-$CONF_SUFFIX/*.root
     event_categorization:
       default: EventCategories.qqqqqq
       order: []
@@ -92,7 +106,7 @@ sources:
 
   - name: tthz
     path: $DATA_PATH/AnalysisCombine/550-tthz-$CONF_SUFFIX
-    root_files: /data/dust/user/jtorndal/zhh/AnalysisFinal/550-tthz-$CONF_SUFFIX/*.root
+    root_files: $DATA_PATH/AnalysisFinal/550-tthz-$CONF_SUFFIX/*.root
     event_categorization:
       default: EventCategories.ttHZ
       order: null
@@ -280,7 +294,7 @@ mvas:
   - name: default_mva
 
     # model: either 'LGBMClassifier' or 'XGBClassifier' 
-    model: LGBMClassifier # XGBClassifier # 
+    model: XGBClassifier # LGBMClassifier
 
     features: [
       jet1_m, jet2_m, jet3_m, jet4_m,
@@ -393,7 +407,7 @@ actions:
     mva: default_mva
     split: 0
     check_hash: false
-    disabled: true
+    disabled: false
 
   - type: SklearnMulticlassHyperparamTraining
     hyperparams: { n_jobs: 1 } # use only 1 thread per classifier
@@ -405,8 +419,8 @@ actions:
     mva: default_mva
     split: 0
     ntrials: 500
-    nprocesses: 8 # on NAF, use some lower value (e.g. 8). on Maxwell, 50 should be OK
-    disabled: false
+    nprocesses: 50 # on NAF, use some lower value (e.g. 8). on Maxwell, 50 should be OK
+    disabled: true
 
   - type: SklearnMulticlassInference
     mva: default_mva

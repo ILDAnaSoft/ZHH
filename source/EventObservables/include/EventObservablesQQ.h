@@ -42,7 +42,6 @@ class EventObservablesQQ : public EventObservablesBase, public EventObservablesF
 		std::string m_zhhKinfitJetCollection{};
 
 		// overriden parent functions
-		void setJetCharges();
 
 		// data members
 		ReconstructedParticleVec m_4jets{};

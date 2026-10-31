@@ -22,6 +22,7 @@ FinalStateRecorder aFinalStateRecorder ;
 FinalStateRecorder::FinalStateRecorder() :
 
   Processor("FinalStateRecorder"),
+  m_outputJsonFile("None"),
   m_beam_pol1(0.),
   m_beam_pol2(0.),
   m_cross_section(0.),
@@ -71,7 +72,7 @@ FinalStateRecorder::FinalStateRecorder() :
 	registerProcessorParameter("outputJsonFilename",
 				"name of output json file containing meta information about the process. if 'None', no JSON will be written",
 				m_outputJsonFile,
-				std::string("FinalStates.json")
+				std::string("None")
 				);
 	
 	registerProcessorParameter("EventFilter",
@@ -81,9 +82,15 @@ FinalStateRecorder::FinalStateRecorder() :
 				);
 	
 	registerProcessorParameter("MultiProcess",
-				"if true, keeps all FinalStateResolvers for the whole runtime duration. if false, only keeps the one that is used to resolve the first event. defaults to false",
+				"if true, keeps all FinalStateResolvers for the whole runtime duration. if false, only keeps the one that is used to resolve the first event. must be true if Marlin is to encounter events from more than one process in one run. defaults to false",
 				m_multiProcess,
 				false
+				);
+
+	registerProcessorParameter("throwOnBadEvent",
+				"if true, throws an exception if an unknown physics process or unexpected event typology is encountered. defaults to true",
+				m_throwOnBadEvent,
+				true
 				);
 }
 
@@ -548,6 +555,7 @@ void FinalStateRecorder::clear()
 	m_event_category_zhh = EVENT_CATEGORY::NONE;
 
 	m_hard_fs_indices.clear();
+	m_isGoodEvent = true;
 }
 void FinalStateRecorder::processRunHeader( LCRunHeader*  /*run*/) { 
 	m_n_run++ ;
@@ -577,7 +585,9 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 		if (m_beam_pol1 == -1 && m_beam_pol2 == -1) m_polarization_code = POLARIZATION_CODES::EL_PL; else
 		if (m_beam_pol1 == -1 && m_beam_pol2 ==  1) m_polarization_code = POLARIZATION_CODES::EL_PR; else
 		if (m_beam_pol1 ==  1 && m_beam_pol2 == -1) m_polarization_code = POLARIZATION_CODES::ER_PL; else
-		if (m_beam_pol1 ==  1 && m_beam_pol2 ==  1) m_polarization_code = POLARIZATION_CODES::ER_PR;
+		if (m_beam_pol1 ==  1 && m_beam_pol2 ==  1) m_polarization_code = POLARIZATION_CODES::ER_PR; else
+		if (m_beam_pol1 ==  0 && m_beam_pol2 ==  0) m_polarization_code = POLARIZATION_CODES::NOPOL; else
+			throw EVENT::Exception("Unsupported beam polarization");
 
 		if (!m_multiProcess) {
 			// delete all other resolvers if they are not required
@@ -598,12 +608,16 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 	
 	m_n_run = pLCEvent->getRunNumber();
 	m_n_evt = pLCEvent->getEventNumber();
-	m_n_evt_sum++;
 
 	if (!m_multiProcess && process != m_process_name) {
 		std::cerr << "multiProcess is disabled, but found process " << process << " differs from expected process " << m_process_name << " in event " << m_n_evt << ". Aborting..." << std::endl ;
-		throw ERROR_CODES::PROCESS_MISMATCH;
+
+		m_error_code = ERROR_CODES::PROCESS_MISMATCH;
+		if (m_throwOnBadEvent)
+			throw ERROR_CODES::PROCESS_MISMATCH;
 	}
+
+	if (m_isGoodEvent) {
 
 	try {
 		LCCollection *inputMCParticleCollection;
@@ -636,14 +650,20 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 						m_final_state_counts[abs(particle_pdg)]++;
 					} else {
 						std::cerr << "Encountered unallowed final state particle " << abs(particle_pdg) << " in run " << m_n_run << " (process " << m_process << ") at event " << m_n_evt << std::endl ;
-						throw ERROR_CODES::UNALLOWED_VALUES;
+						m_error_code = ERROR_CODES::UNALLOWED_VALUES;
+
+						if (m_throwOnBadEvent)
+							throw EVENT::Exception("Exception: UNALLOWED_VALUES");
 					}
 
 					if (m_final_state_counts_signed.find(particle_pdg) != m_final_state_counts_signed.end()) {
 						m_final_state_counts_signed[particle_pdg]++;
 					} else {
 						std::cerr << "Encountered unallowed signed final state particle " << particle_pdg << " in run " << m_n_run << " (process " << m_process << ") at event " << m_n_evt << std::endl ;
-						throw ERROR_CODES::UNALLOWED_VALUES;
+						m_error_code = ERROR_CODES::UNALLOWED_VALUES;
+
+						if (m_throwOnBadEvent) 
+							throw EVENT::Exception("Exception: UNALLOWED_VALUES");
 					}
 				}
 
@@ -654,14 +674,20 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 						m_higgs_final_state_counts[abs(particle_pdg)]++;
 					} else {
 						std::cerr << "Encountered unallowed final state particle " << abs(particle_pdg) << " in run " << m_n_run << " (process " << m_process << ") at event " << m_n_evt << std::endl ;
-						throw ERROR_CODES::UNALLOWED_VALUES;
+						m_error_code = ERROR_CODES::UNALLOWED_VALUES;
+
+						if (m_throwOnBadEvent)
+							throw EVENT::Exception("Exception: UNALLOWED_VALUES");
 					}
 
 					if (m_higgs_final_state_counts_signed.find(particle_pdg) != m_higgs_final_state_counts_signed.end()) {
 						m_higgs_final_state_counts_signed[particle_pdg]++;
 					} else {
 						std::cerr << "Encountered unallowed signed final state particle " << particle_pdg << " in run " << m_n_run << " (process " << m_process << ") at event " << m_n_evt << std::endl ;
-						throw ERROR_CODES::UNALLOWED_VALUES;
+						m_error_code = ERROR_CODES::UNALLOWED_VALUES;
+
+						if (m_throwOnBadEvent)
+							throw EVENT::Exception("Exception: UNALLOWED_VALUES");
 					}
 				}
 				
@@ -681,9 +707,8 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 					m_passed_filter = process_filter();
 					streamlog_out(MESSAGE) << "Passed event " << m_n_evt << ": " << (m_passed_filter ? "YES" : "NO") << std::endl;
 				}
-				setReturnValue("GoodEvent", m_passed_filter);
 			} catch (int err) {
-				std::cerr << "Encountered exception (error " << err << ") in run " << m_n_run << " (process " << m_process << ") at event " << m_n_evt << std::endl ;
+				std::cerr << "Encountered error " << err << " in run " << m_n_run << " (process " << m_process << ") at event " << m_n_evt << std::endl ;
 				std::cerr << "Indices of MCParticles from hard interaction: [ ";
 
 				for (auto ind: m_hard_fs_indices) {
@@ -692,26 +717,39 @@ void FinalStateRecorder::processEvent( EVENT::LCEvent *pLCEvent )
 
 				std::cerr << "]" << std::endl;
 
-				setReturnValue("GoodEvent", false);
-				throw err;
+				m_error_code = err;
+				
+				if (m_throwOnBadEvent)
+					throw EVENT::Exception("Encountered error " + std::to_string(err));
 			}
 
 		} else {
-			throw EVENT::Exception("Critical error: process not registered: " + process);
-			//m_error_code = ERROR_CODES::PROCESS_NOT_FOUND;
-			//streamlog_out(MESSAGE) << "processEvent : process not registered: " << process << std::endl;
-			//setReturnValue("GoodEvent", false);
+			m_error_code = ERROR_CODES::PROCESS_NOT_FOUND;
+
+			if (m_throwOnBadEvent)
+				throw EVENT::Exception("Critical error: process not registered: " + process);
 		}
 
 	} catch(DataNotAvailableException &e) {
 		m_error_code = ERROR_CODES::COLLECTION_NOT_FOUND;
 		streamlog_out(MESSAGE) << "processEvent : Input collections not found in event " << m_n_evt << std::endl;
-		setReturnValue("GoodEvent", false);
+	}
+	
 	}
 
 	if (m_write_ttree && (!m_setReturnValues || m_passed_filter)) {
 		m_pTTree->Fill();
 	}
+
+	m_isGoodEvent = m_error_code == ERROR_CODES::OK;
+
+	if (m_setReturnValues)
+		m_isGoodEvent = m_passed_filter;
+
+	if (m_isGoodEvent)
+		m_n_evt_sum++;
+
+	setReturnValue("GoodEvent", m_isGoodEvent);
 }
 
 void FinalStateRecorder::check()

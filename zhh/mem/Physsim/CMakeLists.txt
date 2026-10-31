@@ -14,6 +14,8 @@ target_link_libraries(PhyssimWrapper PRIVATE
     ${ROOT_LIBRARIES}
     Physsim::Physsim)
 
+get_filename_component(PHYSSIM_ROOT_DIR "${Physsim_DIR}/../../.." ABSOLUTE)
 target_include_directories(PhyssimWrapper PRIVATE
     ${ROOT_INCLUDE_DIRS}
-    ${PHYSSIM_INCLUDE_DIRS})
+    ${PHYSSIM_INCLUDE_DIRS}
+    ${PHYSSIM_ROOT_DIR}/include)

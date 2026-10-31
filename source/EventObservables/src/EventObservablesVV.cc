@@ -270,8 +270,8 @@ void EventObservablesVV::updateChannelValues(EVENT::LCEvent *pLCEvent) {
     MCParticle* neutrino1 = (MCParticle*)mcParticles->getElementAt(fsIndices[0]);
     MCParticle* neutrino2 = (MCParticle*)mcParticles->getElementAt(fsIndices[1]);
     
-    assert(neutrino1->getPDG() >= 11 && neutrino1->getPDG() <= 16);
-    assert(neutrino2->getPDG() >= 11 && neutrino2->getPDG() <= 16);
+    assert(abs(neutrino1->getPDG()) >= 11 && abs(neutrino1->getPDG()) <= 16);
+    assert(abs(neutrino2->getPDG()) >= 11 && abs(neutrino2->getPDG()) <= 16);
     
     m_diNeutrinoMass = (v4(neutrino1) + v4(neutrino2)).M();
   }
