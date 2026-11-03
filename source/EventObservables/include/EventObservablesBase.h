@@ -136,6 +136,10 @@ class EventObservablesBase: public Processor, public TrueJet_Parser {
 		virtual void prepareChannelTree() = 0;
 		virtual void clearChannelValues() = 0;
 		virtual void updateChannelValues(EVENT::LCEvent *pLCEvent) = 0;
+
+		// status code 100 flags missing kinfit collections; channels that rely on them (LL, VV) must be skipped,
+		// channels that do not (QQ) can override this
+		virtual bool m_channelRequiresKinfit() { return true; }
 		virtual TTree* getTTree() = 0;
 		virtual unsigned int m_nAskedJets() = 0;
 		virtual unsigned int m_nAskedIsoLeps() = 0;

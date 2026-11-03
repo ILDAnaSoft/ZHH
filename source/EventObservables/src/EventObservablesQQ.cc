@@ -1,4 +1,6 @@
 #include "EventObservablesQQ.h"
+#include <Math/Boost.h>
+#include <cmath>
 
 // errorCodes:
 // -
@@ -40,6 +42,21 @@ void EventObservablesQQ::prepareChannelTree() {
 
         zz_init(ttree);
 
+        #define QQ_BRANCH(name) ttree->Branch(#name, &m_x.name, #name "/F")
+        QQ_BRANCH(zhh6_chi2); QQ_BRANCH(zhh6_mz); QQ_BRANCH(zhh6_mh1); QQ_BRANCH(zhh6_mh2); QQ_BRANCH(zhh6_mhh);
+        QQ_BRANCH(zhh6_recoil_hh); QQ_BRANCH(zhh6_recoil_z);
+        QQ_BRANCH(zhh6_cosz); QQ_BRANCH(zhh6_coshh); QQ_BRANCH(zhh6_cos_hh); QQ_BRANCH(zhh6_cos_zjj);
+        QQ_BRANCH(zhh6_cosh1star); QQ_BRANCH(zhh6_cosh2star);
+        QQ_BRANCH(zzh6_chi2); QQ_BRANCH(zzh6_mh); QQ_BRANCH(zzh6_mz1); QQ_BRANCH(zzh6_mz2);
+        QQ_BRANCH(ww4_chi2); QQ_BRANCH(ww4_mw1); QQ_BRANCH(ww4_mw2);
+        QQ_BRANCH(sumBTags); QQ_BRANCH(btag4sum); QQ_BRANCH(btag4prod); QQ_BRANCH(ctagz);
+        QQ_BRANCH(pzmiss); QQ_BRANCH(cosmiss);
+        QQ_BRANCH(sphericity); QQ_BRANCH(aplanarity); QQ_BRANCH(fw2);
+        QQ_BRANCH(cosjj_max); QQ_BRANCH(mjj_min);
+        QQ_BRANCH(kfzhh_mhh); QQ_BRANCH(kfzhh_cosz); QQ_BRANCH(kfzhh_cos_hh);
+        #undef QQ_BRANCH
+        ttree->Branch("nbjets05", &m_nbjets05, "nbjets05/I");
+
         // ttbar
         ttree->Branch("tt_mw1", &m_tt_mw1, "tt_mw1/F");
         ttree->Branch("tt_mw2", &m_tt_mw2, "tt_mw2/F");
@@ -80,6 +97,9 @@ void EventObservablesQQ::clearChannelValues() {
     m_tt_chi2 = 0.;
 
     zz_clear();
+
+    m_x = QQExtraFeatures{};
+    m_nbjets05 = 0;
 };
 
 void EventObservablesQQ::updateChannelValues(EVENT::LCEvent *pLCEvent) {
@@ -178,8 +198,8 @@ void EventObservablesQQ::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         m_tt_mt1 = tt_masses[2];
         m_tt_mt2 = tt_masses[3];
 
-        // C. ZHH
-        
+        // C. ADDITIONAL FEATURES (ZHH/ZZH/WW hypotheses, angles, flavor tags, event shape, kinfit results)
+        calculateExtraFeatures(pLCEvent);
 
         // B.1. CHI2
         
@@ -242,4 +262,188 @@ void EventObservablesQQ::calculateSimpleZHHChi2() {
     m_zhh_mh1 = zhh_masses[0];
     m_zhh_mh2 = zhh_masses[1];
     m_zhh_mhh = (jet_v4[m_bTagsSorted[0].first] + jet_v4[m_bTagsSorted[1].first] + jet_v4[m_bTagsSorted[2].first] + jet_v4[m_bTagsSorted[3].first]).M();
+}
+
+// ---------------------------------------------------------------------------------------------
+// additional features; requires m_jets, m_4jets, m_bTagValues, m_cTagValues, m_bTagsSorted to be filled
+// ---------------------------------------------------------------------------------------------
+namespace {
+    using LV = ROOT::Math::PxPyPzEVector;
+
+    inline float cosAngle(const LV &a, const LV &b) {
+        double pa = a.P(), pb = b.P();
+        return (pa > 0 && pb > 0) ? (a.Vect().Dot(b.Vect()) / (pa * pb)) : 0.;
+    }
+
+    // |cos| of the angle between a daughter (in the rest frame of the parent) and the flight direction of the parent
+    inline float helicityCos(const LV &parent, const LV &daughter) {
+        if (parent.M2() <= 0 || parent.P() <= 0) return 0.;
+        ROOT::Math::Boost to_rest(parent.BoostToCM());
+        LV d = to_rest(daughter);
+        return std::abs(cosAngle(d, parent));
+    }
+
+    // eigenvalues of a symmetric 3x3 matrix, sorted descending (analytic, Smith 1961)
+    std::array<double, 3> eigenvalues3(const double a[3][3]) {
+        double p1 = a[0][1]*a[0][1] + a[0][2]*a[0][2] + a[1][2]*a[1][2];
+        double q = (a[0][0] + a[1][1] + a[2][2]) / 3.;
+        if (p1 < 1e-18) {
+            std::array<double, 3> r = { a[0][0], a[1][1], a[2][2] };
+            std::sort(r.begin(), r.end(), std::greater<double>());
+            return r;
+        }
+        double p2 = std::pow(a[0][0]-q, 2) + std::pow(a[1][1]-q, 2) + std::pow(a[2][2]-q, 2) + 2*p1;
+        double p = std::sqrt(p2 / 6.);
+        double B[3][3];
+        for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) B[i][j] = (a[i][j] - (i == j ? q : 0.)) / p;
+        double detB = B[0][0]*(B[1][1]*B[2][2] - B[1][2]*B[2][1])
+                    - B[0][1]*(B[1][0]*B[2][2] - B[1][2]*B[2][0])
+                    + B[0][2]*(B[1][0]*B[2][1] - B[1][1]*B[2][0]);
+        double r = std::max(-1., std::min(1., detB / 2.));
+        double phi = std::acos(r) / 3.;
+        double e1 = q + 2*p*std::cos(phi);
+        double e3 = q + 2*p*std::cos(phi + 2*M_PI/3.);
+        return { e1, 3*q - e1 - e3, e3 };
+    }
+}
+
+void EventObservablesQQ::calculateExtraFeatures(EVENT::LCEvent *pLCEvent) {
+    QQExtraFeatures &x = m_x;
+    std::vector<LV> jv = v4(m_jets);
+
+    // A. ZHH hypothesis: (Z, H, H) from all 45 pairings; chi2 contains the Z mass term
+    {
+        std::vector<float> masses;
+        std::vector<unsigned short> perm;
+        std::tie(perm, masses, x.zhh6_chi2) = pairJetsByMass(jv, { 23, 25, 25 });
+
+        LV z  = jv[perm[0]] + jv[perm[1]];
+        LV h1 = jv[perm[2]] + jv[perm[3]];
+        LV h2 = jv[perm[4]] + jv[perm[5]];
+
+        // h1 is the Higgs candidate closer to 125 GeV
+        bool swap = std::abs(h1.M() - kMassH) > std::abs(h2.M() - kMassH);
+        if (swap) { std::swap(h1, h2); std::swap(perm[2], perm[4]); std::swap(perm[3], perm[5]); }
+
+        LV hh = h1 + h2;
+
+        x.zhh6_mz  = z.M();
+        x.zhh6_mh1 = h1.M();
+        x.zhh6_mh2 = h2.M();
+        x.zhh6_mhh = hh.M();
+        x.zhh6_recoil_hh = (m_ecms - hh).M();
+        x.zhh6_recoil_z  = (m_ecms - z).M();
+
+        x.zhh6_cosz  = z.P() > 0 ? z.Pz() / z.P() : 0.;
+        x.zhh6_coshh = hh.P() > 0 ? hh.Pz() / hh.P() : 0.;
+        x.zhh6_cos_hh  = cosAngle(h1, h2);
+        x.zhh6_cos_zjj = cosAngle(jv[perm[0]], jv[perm[1]]);
+        x.zhh6_cosh1star = helicityCos(h1, jv[perm[2]]);
+        x.zhh6_cosh2star = helicityCos(h2, jv[perm[4]]);
+    }
+
+    // B. ZZH hypothesis: (H, Z, Z)
+    {
+        std::vector<float> masses;
+        std::vector<unsigned short> perm;
+        std::tie(perm, masses, x.zzh6_chi2) = pairJetsByMass(jv, { 25, 23, 23 });
+
+        x.zzh6_mh = masses[0];
+        x.zzh6_mz1 = std::max(masses[1], masses[2]);
+        x.zzh6_mz2 = std::min(masses[1], masses[2]);
+    }
+
+    // C. WW/ZZ -> 4 quarks from the 4 jet clustering
+    if (m_4jets.size() == 4) {
+        FloatVec masses;
+        std::vector<unsigned short> perm;
+        std::tie(perm, masses, x.ww4_chi2) = pairJetsByMass(m_4jets, { 24, 24 });
+        x.ww4_mw1 = std::max(masses[0], masses[1]);
+        x.ww4_mw2 = std::min(masses[0], masses[1]);
+    }
+
+    // D. flavor tagging; m_bTagsSorted is sorted descending
+    x.btag4prod = 1.;
+    for (size_t i = 0; i < m_bTagsSorted.size(); i++) {
+        float b = m_bTagsSorted[i].second;
+        if (std::isnan(b)) continue;
+
+        x.sumBTags += b;
+        if (i < 4) { x.btag4sum += b; x.btag4prod *= b; }
+        if (b > 0.5) m_nbjets05++;
+    }
+    x.ctagz = m_cTagValues[m_bTagsSorted[4].first] + m_cTagValues[m_bTagsSorted[5].first];
+
+    // E. missing momentum
+    x.pzmiss  = m_pmis.Pz();
+    x.cosmiss = m_pmis.P() > 0 ? m_pmis.Pz() / m_pmis.P() : 0.;
+
+    // F. jet topology: smallest opening angle (largest cosine) and smallest invariant mass of any jet pair
+    x.cosjj_max = -1.;
+    x.mjj_min = 1e9;
+    for (size_t i = 0; i < jv.size(); i++)
+        for (size_t j = i + 1; j < jv.size(); j++) {
+            x.cosjj_max = std::max(x.cosjj_max, cosAngle(jv[i], jv[j]));
+            x.mjj_min = std::min(x.mjj_min, (float)(jv[i] + jv[j]).M());
+        }
+
+    // G. event shape from the PFOs: sphericity, aplanarity, 2nd normalized Fox-Wolfram moment
+    {
+        LCCollection *pfos = pLCEvent->getCollection(m_inputPfoCollection);
+        std::vector<std::array<double, 3>> p;
+        for (int i = 0; i < pfos->getNumberOfElements(); i++) {
+            const double *m = static_cast<ReconstructedParticle*>(pfos->getElementAt(i))->getMomentum();
+            p.push_back({ m[0], m[1], m[2] });
+        }
+
+        double S[3][3] = {{0}};
+        double psum2 = 0.;
+        for (auto &v : p) {
+            for (int a = 0; a < 3; a++) for (int b = 0; b < 3; b++) S[a][b] += v[a] * v[b];
+            psum2 += v[0]*v[0] + v[1]*v[1] + v[2]*v[2];
+        }
+
+        if (psum2 > 0) {
+            for (int a = 0; a < 3; a++) for (int b = 0; b < 3; b++) S[a][b] /= psum2;
+            auto ev = eigenvalues3(S);
+            x.sphericity = 1.5 * (ev[1] + ev[2]);
+            x.aplanarity = 1.5 * ev[2];
+
+            double h0 = 0., h2 = 0.;
+            for (size_t i = 0; i < p.size(); i++) {
+                double pi = std::sqrt(p[i][0]*p[i][0] + p[i][1]*p[i][1] + p[i][2]*p[i][2]);
+                for (size_t j = 0; j < p.size(); j++) {
+                    double pj = std::sqrt(p[j][0]*p[j][0] + p[j][1]*p[j][1] + p[j][2]*p[j][2]);
+                    if (pi == 0 || pj == 0) continue;
+                    double c = (p[i][0]*p[j][0] + p[i][1]*p[j][1] + p[i][2]*p[j][2]) / (pi * pj);
+                    h0 += pi * pj;
+                    h2 += pi * pj * 0.5 * (3*c*c - 1);
+                }
+            }
+            x.fw2 = h0 > 0 ? h2 / h0 : 0.;
+        }
+    }
+
+    // H. post-fit kinematics of the ZHH (H,H,Z) kinematic fit
+    try {
+        LCCollection *zhh = pLCEvent->getCollection(m_inputJetKinFitZHHCollection);
+
+        std::vector<int> perm;
+        zhh->parameters().getIntVals("permutation", perm);
+
+        // jets are stored in the order of the input jets; perm[k] is the input index of the k-th fit object
+        if (zhh->getNumberOfElements() >= 6 && perm.size() >= 6) {
+            std::vector<LV> f;
+            for (int k = 0; k < 6; k++)
+                f.push_back(v4((ReconstructedParticle*)zhh->getElementAt(perm[k])));
+
+            LV h1 = f[0] + f[1], h2 = f[2] + f[3], z = f[4] + f[5];
+
+            x.kfzhh_mhh = (h1 + h2).M();
+            x.kfzhh_cosz = z.P() > 0 ? z.Pz() / z.P() : 0.;
+            x.kfzhh_cos_hh = cosAngle(h1, h2);
+        }
+    } catch (DataNotAvailableException &e) {
+        streamlog_out(MESSAGE) << "ZHH kinfit jet collection not found; kfzhh_* will be 0" << std::endl;
+    }
 }

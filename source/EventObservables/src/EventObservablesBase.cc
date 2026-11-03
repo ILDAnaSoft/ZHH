@@ -1267,8 +1267,8 @@ void EventObservablesBase::processEvent( LCEvent* evt ){
 	streamlog_out(DEBUG) << "END updateBaseValues -> status code " << m_statusCode << std::endl;
 
 	// all channel specific processors require that at least acquiring the base values succeeds
-	// status 100 only flags missing kinfit collections (not produced in the QQ channel), which channel processors do not require
-	if (m_statusCode == 0 || m_statusCode == 100) {
+	// status 100 only flags missing kinfit collections, which not all channel processors require
+	if (m_statusCode == 0 || (m_statusCode == 100 && !m_channelRequiresKinfit())) {
 		streamlog_out(DEBUG) << "START updateChannelValues" << std::endl;
 		calculateSimpleZHHChi2();
 		updateChannelValues(evt);
