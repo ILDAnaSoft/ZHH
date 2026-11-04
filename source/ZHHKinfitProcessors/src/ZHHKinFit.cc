@@ -384,6 +384,7 @@ void ZHHKinFit::init()
   m_pTTree->Branch("Sigma_E2",&m_Sigma_E2);
 
   m_pTTree->Branch("bTags", &m_bTagValues);
+  m_pTTree->Branch("bBarTags", &m_bBarTagValues);
   m_pTTree->Branch("bmax1", &m_bmax1, "bmax1/F");
   m_pTTree->Branch("bmax2", &m_bmax2, "bmax2/F");
   m_pTTree->Branch("bmax3", &m_bmax3, "bmax3/F");
@@ -391,6 +392,22 @@ void ZHHKinFit::init()
   m_pTTree->Branch("bmax5", &m_bmax5, "bmax5/F");
   m_pTTree->Branch("bmax6", &m_bmax6, "bmax6/F");
   m_pTTree->Branch("btagsum", &m_btagsum, "m_btagsum/F");
+
+  if (m_signature == "llbbbb") {
+    m_nAskedJets = 4;
+    m_nAskedLeps = 2;
+  } else if (m_signature == "vvbbbb") {
+    m_nAskedJets = 4;
+    m_nAskedLeps = 0;
+  } else if (m_signature == "qqbbbb") {
+    m_nAskedJets = 6;
+    m_nAskedLeps = 0;
+
+    m_kinfitFlavorWeightedRaw = std::vector<std::vector<float>>(45);
+  }
+
+  m_bTagValues = std::vector<float>(m_nAskedJets, -1.);
+  m_bBarTagValues = std::vector<float>(m_nAskedJets, -1.);
   
   streamlog_out(MESSAGE) << "   init finished  " << std::endl;
 
@@ -463,7 +480,12 @@ void ZHHKinFit::Clear()
   m_Sigma_E2.clear();
 
   m_bTagValues.clear();
+  m_bBarTagValues.clear();
   m_bTagsSorted.clear();
+  for (size_t i = 0; i < m_kinfitFlavorWeightedRaw.size(); i++) {
+    m_kinfitFlavorWeightedRaw[i].clear();
+  }
+
   m_bmax1 = -1.;
   m_bmax2 = -1.;
   m_bmax3 = -1.;
@@ -628,16 +650,6 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
   
   else streamlog_out(WARNING) << "////////////////////////////////////////////////// MC Higgs pair not found //////////////////////////////////////////////////" << endl;
 
-  if (m_signature == "llbbbb") {
-    m_nAskedJets = 4;
-    m_nAskedLeps = 2;
-  } else if (m_signature == "vvbbbb") {
-    m_nAskedJets = 4;
-    m_nAskedLeps = 0;
-  } else if (m_signature == "qqbbbb") {
-    m_nAskedJets = 6;
-    m_nAskedLeps = 0;
-  }
   if ( m_nJets != m_nAskedJets || m_nLeps != m_nAskedLeps ) {
     m_pTTree->Fill();
     return;
@@ -688,21 +700,26 @@ void ZHHKinFit::processEvent( EVENT::LCEvent *pLCEvent )
   int _FTAlgoID = jetPIDh.getAlgorithmID(m_JetTaggingPIDAlgorithm);
   int BTagID = jetPIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterB);
   int BbarTagID = jetPIDh.getParameterIndex(_FTAlgoID, m_JetTaggingPIDParameterBbar);
-  m_bTagValues.assign(m_nJets, -1.0);
+  std::fill(m_bTagValues.begin(), m_bTagValues.end(), -1.);
+  std::fill(m_bBarTagValues.begin(), m_bBarTagValues.end(), -1.);
+
   streamlog_out(MESSAGE) << "--- FLAVOR TAG ---" << std::endl;
   for (int i_jet = 0; i_jet < m_nJets; i_jet++) {
     ReconstructedParticle* recoJet = dynamic_cast<ReconstructedParticle*>(recoJetCollection->getElementAt(i_jet));
     const ParticleIDImpl& FTImpl = dynamic_cast<const ParticleIDImpl&>(jetPIDh.getParticleID(recoJet, _FTAlgoID));
     const FloatVec& FTPara = FTImpl.getParameters();
-    m_bTagValues[i_jet] = FTPara[BTagID] + FTPara[BbarTagID];
-    streamlog_out(MESSAGE) << "Jet " << i_jet << std::endl << " > Algo1 - B [B,Bbar] = " << m_bTagValues[i_jet] << " [" << FTPara[BTagID] << ", " << FTPara[BbarTagID] << "]" << std::endl;
+    m_bTagValues[i_jet] = FTPara[BTagID];
+    m_bBarTagValues[i_jet] = FTPara[BbarTagID];
+    streamlog_out(MESSAGE) << "Jet " << i_jet << std::endl << " > Algo1 - B [B,Bbar] = " << (FTPara[BTagID] + FTPara[BbarTagID]) << " [" << FTPara[BTagID] << ", " << FTPara[BbarTagID] << "]" << std::endl;
   }
   // calculate bmax1,2,3,4,5,6 and sum
   float btagsum = 0;
   for (unsigned int i = 0; i < m_bTagValues.size(); i++) {
-    m_bTagsSorted.push_back(std::make_pair(i, m_bTagValues[i]));
-    btagsum += m_bTagValues[i];
-    streamlog_out(MESSAGE) <<m_bTagValues[i];
+    float qbAny = m_bTagValues[i] + m_bBarTagValues[i];
+
+    m_bTagsSorted.push_back(std::make_pair(i, qbAny));
+    btagsum += qbAny;
+    streamlog_out(MESSAGE) << qbAny;
   }
   std::stable_sort (m_bTagsSorted.begin(), m_bTagsSorted.end(), jetTaggingComparator);
   m_bmax1 = m_bTagsSorted[0].second;
@@ -2475,6 +2492,21 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
 
     streamlog_out(MESSAGE8) << "helper constraints added"  << std::endl ; //changed from debug level 
 
+    // tests for flavor weighting
+    if (m_fithypothesis == "ZHH") {
+      if (fitter->getError()==0) {
+        doFlavorWeightingRaw(fitter->getChi2(),
+          h1m->getMass(),
+          h2m->getMass(),
+          z2m->getMass(),
+          perms[iperm],
+          iperm
+        );
+      } else {
+        m_kinfitFlavorWeightedRaw[iperm] = { -1., -1., -1., -1., -1., -1. };
+      }
+    }
+
     //---------------------------
     if(fitter->getError()==0) {
       if (fitter->getChi2() < bestChi2) {
@@ -2516,6 +2548,24 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
   return bestFitResult;
 }
 
+void ZHHKinFit::doFlavorWeightingRaw(double fitChi2, double mH1, double mH2, double mZ, std::vector<unsigned int> &perm, unsigned int iperm){
+  // convention: take first of H/Z as fermion, second as anti-fermion
+  
+  float sH1 = -(TMath::Log(m_bTagValues[perm[0]] * m_bBarTagValues[perm[1]]
+                         + m_bTagValues[perm[1]] * m_bBarTagValues[perm[0]]));
+
+  float sH2 = -(TMath::Log(m_bTagValues[perm[2]] * m_bBarTagValues[perm[3]]
+                         + m_bTagValues[perm[3]] * m_bBarTagValues[perm[2]]));
+
+  float q_flavor = sH1 + sH2;
+
+  std::vector<float> result = {
+    fitChi2, mH1, mH2, mZ,
+    sH1, sH2
+  };
+
+  m_kinfitFlavorWeightedRaw[iperm] = result;
+};
 
 
 void ZHHKinFit::getJetParameters(ReconstructedParticle* jet, float (&parameters)[3], float (&errors)[3])

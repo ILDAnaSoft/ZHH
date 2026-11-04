@@ -99,6 +99,7 @@ public:
   FitResult performllbbbbFIT( pfoVector jets,pfoVector leptons,bool traceEvent);	    
   FitResult performvvbbbbFIT( pfoVector jets,bool traceEvent, LCCollection *inputMCParticleCollection);	    
   FitResult performqqbbbbFIT( pfoVector jets,bool traceEvent);	    
+  void doFlavorWeightingRaw(double fitChi2, double mH1, double mH2, double mZ, std::vector<unsigned int> &perm, unsigned int iperm);
   virtual void	getJetParameters( ReconstructedParticle* jet , float (&parameters)[ 3 ] , float (&errors)[ 3 ] );
   virtual void	getLeptonParameters( ReconstructedParticle* lepton , float (&parameters)[ 3 ] , float (&errors)[ 3 ] );
   std::pair<std::vector<double>,std::vector<double>> calculateInitialValues(pfoVector jets, pfoVector leptons, vector<int> perm);
@@ -229,6 +230,8 @@ private:
   std::vector<float> m_Sigma_PzE{};
   std::vector<float> m_Sigma_E2{};
   std::vector<float> m_bTagValues{};
+  std::vector<float> m_bBarTagValues{};
+  std::vector<std::vector<float>> m_kinfitFlavorWeightedRaw{};
   float m_bmax1{};
   float m_bmax2{};
   float m_bmax3{};
