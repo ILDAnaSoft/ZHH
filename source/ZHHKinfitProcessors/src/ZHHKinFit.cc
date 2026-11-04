@@ -218,16 +218,35 @@ ZHHKinFit::ZHHKinFit() :
             std::string("mc_b")
             );
 
+  registerProcessorParameter("fakUse4CFit",
+            "qqbbbb ZHH/ZZH: fit only E and p conservation and add the mass hypothesis through fakCalculateChiMass",
+            m_fakUse4CFit,
+            (bool)true
+            );
+
+  // defaults: Gaussian core of truth-paired jets after the 4C fit, 550 GeV SGV qqhh, RefinedJets6
+  registerProcessorParameter("fakMassH",
+            "Peak [GeV] of the H candidate mass in fakCalculateChiMass",
+            m_fakMassH,
+            (float)124.1
+            );
+
+  registerProcessorParameter("fakMassZ",
+            "Peak [GeV] of the Z candidate mass in fakCalculateChiMass",
+            m_fakMassZ,
+            (float)95.0
+            );
+
   registerProcessorParameter("fakSigmaMassH",
             "Width [GeV] of the H candidate mass in fakCalculateChiMass",
             m_fakSigmaMassH,
-            (float)15.
+            (float)5.05
             );
 
   registerProcessorParameter("fakSigmaMassZ",
             "Width [GeV] of the Z candidate mass in fakCalculateChiMass",
             m_fakSigmaMassZ,
-            (float)15.
+            (float)7.54
             );
 
   registerProcessorParameter("JetTaggingPIDParameterBbar",
@@ -408,6 +427,7 @@ void ZHHKinFit::init()
   m_pTTree->Branch("btagsum", &m_btagsum, "m_btagsum/F");
 
   m_pTTree->Branch("qflavor", &m_qflavor);
+  m_pTTree->Branch("fakChi2Mass", &m_fakChi2Mass, "fakChi2Mass/F");
   m_pTTree->Branch("kinfitFlavorWeightedRaw", &m_kinfitFlavorWeightedRaw );
 
   if (m_signature == "llbbbb") {
@@ -504,6 +524,7 @@ void ZHHKinFit::Clear()
     m_kinfitFlavorWeightedRaw[i].clear();
   }
   std::fill(m_qflavor.begin(), m_qflavor.end(), -1.);
+  m_fakChi2Mass = -1.;
 
   m_bmax1 = -1.;
   m_bmax2 = -1.;
@@ -2291,6 +2312,7 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
   std::iota(flav_pref_perms.begin(), flav_pref_perms.end(), 0);
 
   const bool useFlavorPreselection = perms.size() > 1;
+  const bool fak4CFit = m_fakUse4CFit && (m_fithypothesis == "ZHH" || m_fithypothesis == "ZZH");
   if (useFlavorPreselection) {
     for (unsigned int iperm = 0; iperm < perms.size(); iperm++) {
       float s01, s23, s45;
@@ -2470,7 +2492,9 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
     fitter->addConstraint( pyc.get() );
     fitter->addConstraint( pzc.get() );
     fitter->addConstraint( ec.get() );
-    if (m_fithypothesis == "ZHH") {
+    if (fak4CFit) {
+      // no mass constraints: the fit does not depend on the jet pairing
+    } else if (m_fithypothesis == "ZHH") {
       fitter->addConstraint( h1m.get() );
       fitter->addConstraint( h2m.get() );
       fitter->addConstraint( z2m.get() );
@@ -2549,15 +2573,19 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
       }
     }
 
+    const float fakChi2Mass = fak4CFit ? fakCalculateChiMass(h1m->getMass(), h2m->getMass(), z2m->getMass()) : -1.;
+    const double fitScore = fak4CFit ? fitter->getChi2() + fakChi2Mass : fitter->getChi2();
+
     //---------------------------
     if(fitter->getError()==0) {
-      if (fitter->getChi2() < bestChi2) {
+      if (fitScore < bestChi2) {
       //if(fitProbability > bestProb) {
 	streamlog_out(MESSAGE) << "fit probability: " << fitProbability << " is better than " << bestProb << " use that one" << endl;
 	streamlog_out(MESSAGE) << "fit chi2 = " << fitter->getChi2() << endl;
 	streamlog_out(MESSAGE) << "error code: " << fitter->getError() << endl;
 	bestProb = fitProbability;
-	bestChi2 = fitter->getChi2();
+	bestChi2 = fitScore;
+	m_fakChi2Mass = fakChi2Mass;
 
 	if( m_fitISR ) {
 	  streamlog_out(MESSAGE)  << "After fit four-vector of ISR photon: " << *(photon) << std::endl ; //changed from debug level
@@ -2610,9 +2638,10 @@ float ZHHKinFit::fakCalculateQFlavor(const std::vector<unsigned int> &perm, floa
   s23 = sBB(perm[2], perm[3]);
   s45 = sBB(perm[4], perm[5]);
 
-  if (!(m_btagsum > 4.)) {
-    // 4b2q: one Z decays to light jets, which is always {4,5} for ZHH. The two Z pairs
-    // of ZZH are interchangeable and the list has only one ordering, so take the better
+  if (m_btagsum < 4.) {
+    // treat as 4b2q: one Z decays to light jets, which is always {4,5} for ZHH. The two
+    // Z pairs of ZZH are interchangeable and the list has only one ordering, so take the
+    // better
     const float s23qq = sNonB(perm[2]) + sNonB(perm[3]);
     const float s45qq = sNonB(perm[4]) + sNonB(perm[5]);
     const bool isZZH = m_fithypothesis == "ZZH" || m_fithypothesis == "ZZHsoft";
@@ -2627,12 +2656,12 @@ float ZHHKinFit::fakCalculateQFlavor(const std::vector<unsigned int> &perm, floa
 float ZHHKinFit::fakCalculateChiMass(float m01, float m23, float m45) const {
   // perm layout: ZHH-like H={0,1}, H={2,3}, Z={4,5}; ZZH-like H={0,1}, Z={2,3}, Z={4,5}
   const bool isZZH = m_fithypothesis == "ZZH" || m_fithypothesis == "ZZHsoft";
-  const float target23 = isZZH ? 91.2 : 125.;
+  const float target23 = isZZH ? m_fakMassZ : m_fakMassH;
   const float sigma23 = isZZH ? m_fakSigmaMassZ : m_fakSigmaMassH;
 
-  return std::pow((m01 - 125.) / m_fakSigmaMassH, 2)
+  return std::pow((m01 - m_fakMassH) / m_fakSigmaMassH, 2)
        + std::pow((m23 - target23) / sigma23, 2)
-       + std::pow((m45 - 91.2) / m_fakSigmaMassZ, 2);
+       + std::pow((m45 - m_fakMassZ) / m_fakSigmaMassZ, 2);
 }
 
 void ZHHKinFit::fakDoFlavorWeightingRaw(double fitChi2, double m01, double m23, double m45,
@@ -2646,7 +2675,7 @@ void ZHHKinFit::fakDoFlavorWeightingRaw(double fitChi2, double m01, double m23, 
     s01, s23, s45, q_flavor,
     static_cast<float>(iperm),
     m01Prefit, m23Prefit, m45Prefit,
-    fakCalculateChiMass(m01Prefit, m23Prefit, m45Prefit)
+    fakCalculateChiMass(m01, m23, m45)
   };
 };
 
