@@ -20,6 +20,8 @@ bin
 *.slcio
 .law
 */test/*
+!tests/
+!tests/*.py
 test*.ipynb
 view*.ipynb
 Ranlux.coonf
