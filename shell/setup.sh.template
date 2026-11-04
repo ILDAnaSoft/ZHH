@@ -3,7 +3,7 @@
 export REPO_ROOT="<REPO_ROOT>"
 export ZHH_K4H_RELEASE="<ZHH_K4H_RELEASE>"
 
-source $REPO_ROOT/shell/common.sh
+source "$REPO_ROOT/shell/common.sh"
 
 # Force cmake to use custom dependency versions instead of those in key4hep
 # must match CMakeLists.txt in source directory
@@ -48,7 +48,7 @@ function zhh_attach_marlin_dlls() {
         local lib="${libs_new[$i]}"
 
         # MarlinMLFlavorTagging optional: skip if the file does not exist
-        if [[ $lib == *"MarlinMLFlavorTagging"* && ! -d "$MarlinMLFlavorTagging" ]]; then
+        if [[ "$lib" == *"MarlinMLFlavorTagging"* && ! -f "$lib" ]]; then
             zhh_echo "Skipping MarlinMLFlavorTagging (optional, but no local copy found)"
             continue
         fi
@@ -91,10 +91,10 @@ function MarlinZHH() {
         steering_file="$REPO_ROOT/scripts/prod.xml"
     fi
 
-    Marlin $steering_file --constant.ILDConfigDir="$ILD_CONFIG_DIR" --constant.ZHH_REPO_ROOT="$REPO_ROOT" "$@"
+    Marlin "$steering_file" --constant.ILDConfigDir="$ILD_CONFIG_DIR" --constant.ZHH_REPO_ROOT="$REPO_ROOT" "$@"
 }
 function zhhvenv() {
-    source $REPO_ROOT/$ZHH_VENV_NAME/bin/activate
+    source "$REPO_ROOT/$ZHH_VENV_NAME/bin/activate"
 }
 
 # Helpful for running batch jobs
