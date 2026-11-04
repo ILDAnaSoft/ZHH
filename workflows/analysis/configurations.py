@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from hep_workflows.tasks_index import RawIndex, AbstractIndex
 
 # load prod configs
+from .configs.conf_550_fast_base import marlin_task_kwargs
 from .configs.conf_550_fast_perf import *
 from .configs.conf_550_fast_pfl import *
 from .configs.conf_550_full import *
@@ -77,7 +78,14 @@ class Config_550_llbb_fast_perf(AnalysisConfiguration):
         
         return input_files, input_options
     
-    constants = { 'CMSEnergy': 550 }
+    constants = {
+        'CMSEnergy': 550,
+        'errorflowconfusion': 'False',
+        'ZHH_REPO_ROOT': environ['REPO_ROOT'],
+        'ILDConfigDir': environ['ILD_CONFIG_DIR']
+    }
+    
+    task_kwargs = { 'RecoAnaBaseJob': marlin_task_kwargs() }
         
 # example how to use Whizard before SGV
 class Config_500_zh_tau_fast_perf(AnalysisConfiguration):
