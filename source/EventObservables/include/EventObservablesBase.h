@@ -353,6 +353,10 @@ class EventObservablesBase: public Processor, public TrueJet_Parser {
         float m_fitprob_ZZH{};
 		float m_fitchi2_ZHH{};
         float m_fitchi2_ZZH{};
+		float m_qflavor_ZHH{};
+		float m_qflavor_ZZH{};
+		float m_qreco_ZHH{};
+		float m_qreco_ZZH{};
 
 		std::vector<ROOT::Math::PxPyPzEVector> m_jets4v_post_4C_kinfit{};
 		std::vector<float> m_jetsMasses_post_4C_kinfit{}; 

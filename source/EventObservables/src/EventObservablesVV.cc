@@ -134,7 +134,8 @@ void EventObservablesVV::updateChannelValues(EVENT::LCEvent *pLCEvent) {
     }
   }
   
-  for (int i = 0; i < m_inputJKF_solveNuCollection->getNumberOfElements(); i++) {
+  // NULL if the kinfit produced no output for this event (status code 100)
+  for (int i = 0; m_inputJKF_solveNuCollection && i < m_inputJKF_solveNuCollection->getNumberOfElements(); i++) {
     ReconstructedParticle* jet = (ReconstructedParticle*) m_inputJKF_solveNuCollection->getElementAt(i);
     m_jets4v_post_4C_kinfit[i] = v4(jet);
   }

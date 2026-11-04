@@ -405,6 +405,10 @@ void EventObservablesBase::prepareBaseTree()
 		ttree->Branch("fitprob_ZZH", &m_fitprob_ZZH, "fitprob_ZZH/F");
 		ttree->Branch("fitchi2_ZHH", &m_fitchi2_ZHH, "fitchi2_ZHH/F");
 		ttree->Branch("fitchi2_ZZH", &m_fitchi2_ZZH, "fitchi2_ZZH/F");
+		ttree->Branch("qflavor_ZHH", &m_qflavor_ZHH, "qflavor_ZHH/F");
+		ttree->Branch("qflavor_ZZH", &m_qflavor_ZZH, "qflavor_ZZH/F");
+		ttree->Branch("qreco_ZHH", &m_qreco_ZHH, "qreco_ZHH/F");
+		ttree->Branch("qreco_ZZH", &m_qreco_ZZH, "qreco_ZZH/F");
 
 		// 4C fit
 		ttree->Branch("fit4C_masses", &m_fit4C_masses);
@@ -760,6 +764,10 @@ void EventObservablesBase::clearBaseValues()
 	m_fitprob_ZZH = 0.;
 	m_fitchi2_ZHH = 0.;
 	m_fitchi2_ZZH = 0.;
+	m_qflavor_ZHH = 0.;
+	m_qflavor_ZZH = 0.;
+	m_qreco_ZHH = 0.;
+	m_qreco_ZZH = 0.;
 
 	m_fit4C_masses.clear();
 	m_fit4C_mz = 0.;
@@ -821,6 +829,10 @@ void EventObservablesBase::updateBaseValues(EVENT::LCEvent *pLCEvent) {
 			m_fitprob_ZZH = inputJKF_ZZHCollection->parameters().getFloatVal("fitprob");
 			m_fitchi2_ZHH = inputJKF_ZHHCollection->parameters().getFloatVal("fitchi2");
 			m_fitchi2_ZZH = inputJKF_ZZHCollection->parameters().getFloatVal("fitchi2");
+			m_qflavor_ZHH = inputJKF_ZHHCollection->parameters().getFloatVal("qflavor");
+			m_qflavor_ZZH = inputJKF_ZZHCollection->parameters().getFloatVal("qflavor");
+			m_qreco_ZHH = inputJKF_ZHHCollection->parameters().getFloatVal("qreco");
+			m_qreco_ZZH = inputJKF_ZZHCollection->parameters().getFloatVal("qreco");
 
 			EVENT::IntVec JMK_ZHH;
 			EVENT::IntVec JMK_ZZH;
