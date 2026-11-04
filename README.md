@@ -185,7 +185,24 @@ You could also do the same via shell before launching Python. Now `torch.cuda.is
 
 ## Continuous Integration
 
-TBD
+`.github/workflows/create_image.yml` builds the `Dockerfile`, runs the integration tests in `tests/` in that image, in one parallel job per test file, and pushes the image to `ghcr.io` only if they pass. The image is passed between the jobs as an artifact, so pull requests from forks, which are built from the fork (build argument `repo`), are tested in the same way, but never pushed. The image contains a sample of 100 events per beam polarization of the tag `550-llbb-fast-perf` (`WhizardEventGeneration` and `FastSimSGV`, see `shell/ci_prepare_sample.sh`), which all the tests reuse.
+
+| Test file                       | Content                                                                                                                  |
+|---------------------------------|--------------------------------------------------------------------------------------------------------------------------|
+| `tests/test_marlin_steering.py` | runs `prod_reco_run.xml` with Marlin on one file of the sample, then `prod_analysis_run.xml` on its output               |
+| `tests/test_law_analysis.py`    | runs `law run AnalysisFinal --tag=550-llbb-fast-perf` and all its dependencies as local workflows                        |
+| `tests/test_cutflow.py`         | runs `cutflow` on a copy of `config/mmHHbbbb.yaml` with dummy data and a minimal MVA training (`tests/dummy_cutflow_data.py`), and requires all expected output files to exist |
+
+To run them outside of the image, use
+
+```shell
+source workflows/setup.sh
+python -m pytest -v tests
+```
+
+Unless `ZHH_TEST_DATA_PATH` is set, `DATA_PATH` is replaced by a temporary directory, so that no existing data is touched, and the sample is generated first (takes a few minutes).
+
+Tasks running as local workflows must be given `OMP_NUM_THREADS=1`: otherwise, each Whizard process starts one thread per core, which, when running in parallel, slows down the integration by orders of magnitude.
 
 # Acknowledgements
 
