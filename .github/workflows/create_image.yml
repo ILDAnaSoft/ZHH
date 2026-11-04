@@ -4,23 +4,29 @@ on:
   push:
     branches: [main, ci-workflow-initial]
   pull_request:
-    types: [opened, reopened]
+    types: [opened, reopened, synchronize]
+
+# a newer run for the same PR makes the older one obsolete; runs for branches are not interrupted
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
   BRANCH_NAME: ${{ github.head_ref || github.ref_name }} 
+  # the repository containing the code to build; differs from this one for pull requests from forks
+  REPO_URL: ${{ github.event.pull_request.head.repo.clone_url || format('{0}/{1}.git', github.server_url, github.repository) }}
 
+# The image is passed between the jobs as an artifact, not through the registry. This way, pull requests from forks,
+# whose GITHUB_TOKEN is read-only, are tested in the same way as all others, and only tested images are pushed.
 jobs:
-  build-and-push-image:
+  build-image:
     runs-on: ubuntu-latest
 
     permissions:
       contents: read
-      packages: write
-      attestations: write
-      id-token: write
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -30,42 +36,137 @@ jobs:
         with:
           # required for privileged build; see https://github.com/docker/buildx/issues/2683
           buildkitd-flags: "--allow-insecure-entitlement security.insecure"
-        
+
+      # Extracts the labels which are applied to the image. For pull requests, github.sha is a temporary
+      # merge commit, whereas the image is built from the head of the branch (see build-args below)
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Build Docker image
+        uses: docker/build-push-action@9e436ba9f2d7bcd1d038c8e55d039d37896ddc5d
+        with:
+          context: .
+          file: "./Dockerfile"
+          allow: "security.insecure"
+          tags: zhh:ci
+          labels: ${{ steps.meta.outputs.labels }}
+          outputs: type=docker,dest=${{ runner.temp }}/zhh-image.tar
+          build-args: |
+            repo=${{ env.REPO_URL }}
+            branch=${{ env.BRANCH_NAME }}
+
+      - name: Upload image
+        uses: actions/upload-artifact@v4
+        with:
+          name: zhh-image
+          path: ${{ runner.temp }}/zhh-image.tar
+          retention-days: 1
+          # the layers of the image are already compressed
+          compression-level: 0
+
+  integration-tests:
+    name: integration tests (${{ matrix.name }})
+    needs: build-image
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Marlin steering files
+            tests: tests/test_marlin_steering.py
+            timeout: 60
+          - name: law AnalysisFinal
+            tests: tests/test_law_analysis.py
+            timeout: 120
+          - name: cutflow
+            tests: tests/test_cutflow.py
+            timeout: 60
+
+    timeout-minutes: ${{ matrix.timeout }}
+
+    steps:
+      - name: Download image
+        uses: actions/download-artifact@v4
+        with:
+          name: zhh-image
+          path: ${{ runner.temp }}
+
+      - name: Load image
+        run: |
+          docker load --input "$RUNNER_TEMP/zhh-image.tar"
+          rm "$RUNNER_TEMP/zhh-image.tar"
+
+      # --privileged is required to mount CVMFS, which the entrypoint of the image does. The repository is part of
+      # the image, and ZHH_TEST_DATA_PATH contains the sample which was generated when the image was built
+      - name: Run tests
+        run: |
+          docker run --rm --privileged -e ZHH_TEST_DATA_PATH=/ZHH/data zhh:ci bash -c '
+            cd /ZHH
+            source workflows/setup.sh
+            python -m pytest -v -rs --tb=short ${{ matrix.tests }}'
+
+  push-image:
+    needs: integration-tests
+    # pull requests from forks cannot push to the registry
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+
+    steps:
+      - name: Download image
+        uses: actions/download-artifact@v4
+        with:
+          name: zhh-image
+          path: ${{ runner.temp }}
+
+      - name: Load image
+        run: docker load --input "$RUNNER_TEMP/zhh-image.tar"
+
       - name: Log in to the Container registry
         uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      # This step uses [docker/metadata-action](https://github.com/docker/metadata-action#about) to extract
-      # tags and labels that will be applied to the specified image. The `id` "meta" allows the output of
-      # this step to be referenced in a subsequent step. The `images` value provides the base name for the
-      # tags and labels.
+
+      # the tags of the image; its labels are set in build-image
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-        
-      # This step uses the `docker/build-push-action` action to build the image, based on your repository's
-      # `Dockerfile`. If the build succeeds, it pushes the image to GitHub Packages. It uses the `context`
-      # parameter to define the build's context as the set of files located in the specified path. For more
-      # information, see [Usage](https://github.com/docker/build-push-action#usage) in the README of the
-      # `docker/build-push-action` repository. It uses the `tags` and `labels` parameters to tag and label
-      # the image with the output from the "meta" step.
-      - name: Build and push Docker image
+
+      - name: Push Docker image
         id: push
-        uses: docker/build-push-action@9e436ba9f2d7bcd1d038c8e55d039d37896ddc5d
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          file: "./Dockerfile"
-          allow: "security.insecure"
-          build-args: |
-            branch=${{ env.BRANCH_NAME }}
-      
+        shell: bash
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          for tag in $TAGS; do
+            docker tag zhh:ci "$tag"
+            output=$(docker push "$tag")
+            echo "$output"
+          done
+
+          # all tags refer to the same image
+          digest=$(echo "$output" | sed -n 's/.*digest: \(sha256:[0-9a-f]*\).*/\1/p')
+          [ -n "$digest" ]
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+
       # This step generates an artifact attestation for the image, which is an unforgeable statement about
       # where and how it was built. It increases supply chain security for people who consume the image. For
       # more information, see [Using artifact attestations to establish provenance for builds](/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds).
