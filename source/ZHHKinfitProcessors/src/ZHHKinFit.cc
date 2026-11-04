@@ -1,5 +1,7 @@
 #include "ZHHKinFit.h"
 #include <UTIL/PIDHandler.h>
+#include <algorithm>
+#include <numeric>
 
 using namespace lcio ;
 using namespace marlin ;
@@ -216,6 +218,18 @@ ZHHKinFit::ZHHKinFit() :
             std::string("mc_b")
             );
 
+  registerProcessorParameter("fakSigmaMassH",
+            "Width [GeV] of the H candidate mass in fakCalculateChiMass",
+            m_fakSigmaMassH,
+            (float)15.
+            );
+
+  registerProcessorParameter("fakSigmaMassZ",
+            "Width [GeV] of the Z candidate mass in fakCalculateChiMass",
+            m_fakSigmaMassZ,
+            (float)15.
+            );
+
   registerProcessorParameter("JetTaggingPIDParameterBbar",
             "Bbar parameter",
             m_JetTaggingPIDParameterBbar,
@@ -393,6 +407,9 @@ void ZHHKinFit::init()
   m_pTTree->Branch("bmax6", &m_bmax6, "bmax6/F");
   m_pTTree->Branch("btagsum", &m_btagsum, "m_btagsum/F");
 
+  m_pTTree->Branch("qflavor", &m_qflavor);
+  m_pTTree->Branch("kinfitFlavorWeightedRaw", &m_kinfitFlavorWeightedRaw );
+
   if (m_signature == "llbbbb") {
     m_nAskedJets = 4;
     m_nAskedLeps = 2;
@@ -403,7 +420,8 @@ void ZHHKinFit::init()
     m_nAskedJets = 6;
     m_nAskedLeps = 0;
 
-    m_kinfitFlavorWeightedRaw = std::vector<std::vector<float>>(45);
+    m_kinfitFlavorWeightedRaw = std::vector<std::vector<float>>(N_FLAVOR_PREF_PERMS);
+    m_qflavor = std::vector<float>(45, -1.);
   }
 
   m_bTagValues = std::vector<float>(m_nAskedJets, -1.);
@@ -479,12 +497,13 @@ void ZHHKinFit::Clear()
   m_Sigma_PzE.clear();
   m_Sigma_E2.clear();
 
-  m_bTagValues.clear();
-  m_bBarTagValues.clear();
+  std::fill(m_bTagValues.begin(), m_bTagValues.end(), -1.);
+  std::fill(m_bBarTagValues.begin(), m_bBarTagValues.end(), -1.);
   m_bTagsSorted.clear();
   for (size_t i = 0; i < m_kinfitFlavorWeightedRaw.size(); i++) {
     m_kinfitFlavorWeightedRaw[i].clear();
   }
+  std::fill(m_qflavor.begin(), m_qflavor.end(), -1.);
 
   m_bmax1 = -1.;
   m_bmax2 = -1.;
@@ -2200,7 +2219,7 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
 
   assert(jets.size()==6);
   vector<vector<unsigned int>> perms;
-  if (m_btagsum > 4) { //assumme bbbbbb i.e. all 45 permutatibs
+  // if (m_btagsum > 4) { //assumme bbbbbb i.e. all 45 permutatibs
     if (m_fithypothesis == "ZZH" || m_fithypothesis == "ZZHsoft") {
       //TO DO: redo permutations for each hypothesis
       //Combinatorics reduces by having same two equivalent mass constraints
@@ -2240,8 +2259,8 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
     	{1, 2, 3, 4, 0, 5}, {0, 1, 4, 5, 2, 3}, {0, 1, 2, 3, 4, 5},
     	{1, 3, 2, 4, 0, 5}, {0, 4, 1, 5, 2, 3}, {0, 2, 1, 3, 4, 5},
     	{1, 4, 2, 3, 0, 5}, {0, 5, 1, 4, 2, 3}, {0, 3, 1, 2, 4, 5},
-      };      
-    } else {
+      };
+    /*} else {
       perms = {{0, 1, 2, 3, 4, 5}};
     }
   } else {
@@ -2254,8 +2273,8 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
 	{m_bTagsSorted[1].first, m_bTagsSorted[2].first, m_bTagsSorted[0].first, m_bTagsSorted[3].first, m_bTagsSorted[4].first, m_bTagsSorted[5].first},
 	{m_bTagsSorted[1].first, m_bTagsSorted[3].first, m_bTagsSorted[0].first, m_bTagsSorted[2].first, m_bTagsSorted[4].first, m_bTagsSorted[5].first},
 	{m_bTagsSorted[2].first, m_bTagsSorted[3].first, m_bTagsSorted[0].first, m_bTagsSorted[1].first, m_bTagsSorted[4].first, m_bTagsSorted[5].first}
-      };
-    } else if (m_fithypothesis == "ZHH" || m_fithypothesis == "EQM"){
+      };*/
+    } else if (/*m_fithypothesis == "ZHH" || */m_fithypothesis == "EQM"){
       //jet[m_bTagsSorted[i].first] i.e. jet of ith highest b-tag score
       perms = { //H={perm[0],perm[1]}, H={perm[2],perm[3]}, Z(->qq)={perm[4],perm[5]}
     	{m_bTagsSorted[0].first, m_bTagsSorted[1].first, m_bTagsSorted[2].first, m_bTagsSorted[3].first, m_bTagsSorted[4].first, m_bTagsSorted[5].first},
@@ -2265,13 +2284,29 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
     } else {
       perms = {{0, 1, 2, 3, 4, 5}};
     }
+  //}
+
+  // only compute Kinfit for most probable permutations from flavor matching
+  std::vector<unsigned int> flav_pref_perms(perms.size());
+  std::iota(flav_pref_perms.begin(), flav_pref_perms.end(), 0);
+
+  const bool useFlavorPreselection = perms.size() > 1;
+  if (useFlavorPreselection) {
+    for (unsigned int iperm = 0; iperm < perms.size(); iperm++) {
+      float s01, s23, s45;
+      m_qflavor[iperm] = fakCalculateQFlavor(perms[iperm], s01, s23, s45);
+    }
+
+    const size_t nKeep = std::min(perms.size(), size_t(N_FLAVOR_PREF_PERMS));
+    std::partial_sort(flav_pref_perms.begin(), flav_pref_perms.begin() + nKeep, flav_pref_perms.end(),
+      [this](unsigned int lhs, unsigned int rhs) { return m_qflavor[lhs] < m_qflavor[rhs]; });
+    flav_pref_perms.resize(nKeep);
   }
 
-
-  
-  for (unsigned int iperm = 0; iperm < perms.size(); iperm++) {
+  for (unsigned int irank = 0; irank < flav_pref_perms.size(); irank++) {
+    const unsigned int iperm = flav_pref_perms[irank];
     streamlog_out(MESSAGE) << " ================================================= " << std::endl ;
-    streamlog_out(MESSAGE) << " iperm = " << iperm << std::endl ;
+    streamlog_out(MESSAGE) << " irank = " << irank << ", iperm = " << iperm << std::endl ;
 
     shared_ptr<vector<shared_ptr<JetFitObject>>> jfo_perm = make_shared<vector<shared_ptr<JetFitObject>>>();
 
@@ -2465,6 +2500,11 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
       streamlog_out(MESSAGE8) << (*it)->getName() << " soft constraint value = " << (*it)->getValue() << std::endl; //changed from debug level 
     }
 
+    // pair masses before the fit: hard mass constraints pull the fitted ones onto their targets
+    const float m01Prefit = h1m->getMass();
+    const float m23Prefit = h2m->getMass();
+    const float m45Prefit = z2m->getMass();
+
     //perform fit: 
     //streamlog_out(MESSAGE) << "chi2 before fit" << calcChi2(fos) << endl; 
     float fitProbability = fitter->fit();
@@ -2493,17 +2533,19 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
     streamlog_out(MESSAGE8) << "helper constraints added"  << std::endl ; //changed from debug level 
 
     // tests for flavor weighting
-    if (m_fithypothesis == "ZHH") {
+    if (useFlavorPreselection) {
       if (fitter->getError()==0) {
-        doFlavorWeightingRaw(fitter->getChi2(),
+        fakDoFlavorWeightingRaw(fitter->getChi2(),
           h1m->getMass(),
           h2m->getMass(),
           z2m->getMass(),
+          m01Prefit,
+          m23Prefit,
+          m45Prefit,
           perms[iperm],
-          iperm
+          iperm,
+          irank
         );
-      } else {
-        m_kinfitFlavorWeightedRaw[iperm] = { -1., -1., -1., -1., -1., -1. };
       }
     }
 
@@ -2548,23 +2590,64 @@ ZHHKinFit::FitResult ZHHKinFit::performqqbbbbFIT( pfoVector jets, bool traceEven
   return bestFitResult;
 }
 
-void ZHHKinFit::doFlavorWeightingRaw(double fitChi2, double mH1, double mH2, double mZ, std::vector<unsigned int> &perm, unsigned int iperm){
+float ZHHKinFit::fakCalculateQFlavor(const std::vector<unsigned int> &perm, float &s01, float &s23, float &s45) const {
+  // perm layout: ZHH-like H={0,1}, H={2,3}, Z={4,5}
+  //              ZZH-like H={0,1}, Z={2,3}, Z={4,5}
+  // s01, s23, s45 are the scores of the jet pairs perm[0,1], perm[2,3], perm[4,5]
   // convention: take first of H/Z as fermion, second as anti-fermion
-  
-  float sH1 = -(TMath::Log(m_bTagValues[perm[0]] * m_bBarTagValues[perm[1]]
-                         + m_bTagValues[perm[1]] * m_bBarTagValues[perm[0]]));
+  // eps goes first in std::max so that NaN tag values also yield eps
+  constexpr float eps = 1e-12f;
 
-  float sH2 = -(TMath::Log(m_bTagValues[perm[2]] * m_bBarTagValues[perm[3]]
-                         + m_bTagValues[perm[3]] * m_bBarTagValues[perm[2]]));
-
-  float q_flavor = sH1 + sH2;
-
-  std::vector<float> result = {
-    fitChi2, mH1, mH2, mZ,
-    sH1, sH2
+  auto sBB = [&](unsigned int j1, unsigned int j2) {
+    return -TMath::Log(std::max(eps, m_bTagValues[j1] * m_bBarTagValues[j2] + m_bTagValues[j2] * m_bBarTagValues[j1]));
+  };
+  // 1 - pb - pbbar instead of a sum over the other classes, so that mc_g counts as non-b
+  auto sNonB = [&](unsigned int j) {
+    return -TMath::Log(std::max(eps, 1.f - m_bTagValues[j] - m_bBarTagValues[j]));
   };
 
-  m_kinfitFlavorWeightedRaw[iperm] = result;
+  s01 = sBB(perm[0], perm[1]);
+  s23 = sBB(perm[2], perm[3]);
+  s45 = sBB(perm[4], perm[5]);
+
+  if (!(m_btagsum > 4.)) {
+    // 4b2q: one Z decays to light jets, which is always {4,5} for ZHH. The two Z pairs
+    // of ZZH are interchangeable and the list has only one ordering, so take the better
+    const float s23qq = sNonB(perm[2]) + sNonB(perm[3]);
+    const float s45qq = sNonB(perm[4]) + sNonB(perm[5]);
+    const bool isZZH = m_fithypothesis == "ZZH" || m_fithypothesis == "ZZHsoft";
+
+    if (isZZH && s23qq + s45 < s23 + s45qq) s23 = s23qq;
+    else s45 = s45qq;
+  }
+
+  return s01 + s23 + s45;
+}
+
+float ZHHKinFit::fakCalculateChiMass(float m01, float m23, float m45) const {
+  // perm layout: ZHH-like H={0,1}, H={2,3}, Z={4,5}; ZZH-like H={0,1}, Z={2,3}, Z={4,5}
+  const bool isZZH = m_fithypothesis == "ZZH" || m_fithypothesis == "ZZHsoft";
+  const float target23 = isZZH ? 91.2 : 125.;
+  const float sigma23 = isZZH ? m_fakSigmaMassZ : m_fakSigmaMassH;
+
+  return std::pow((m01 - 125.) / m_fakSigmaMassH, 2)
+       + std::pow((m23 - target23) / sigma23, 2)
+       + std::pow((m45 - 91.2) / m_fakSigmaMassZ, 2);
+}
+
+void ZHHKinFit::fakDoFlavorWeightingRaw(double fitChi2, double m01, double m23, double m45,
+    float m01Prefit, float m23Prefit, float m45Prefit,
+    const std::vector<unsigned int> &perm, unsigned int iperm, unsigned int irank){
+  float s01, s23, s45;
+  float q_flavor = fakCalculateQFlavor(perm, s01, s23, s45);
+
+  m_kinfitFlavorWeightedRaw[irank] = {
+    static_cast<float>(fitChi2), static_cast<float>(m01), static_cast<float>(m23), static_cast<float>(m45),
+    s01, s23, s45, q_flavor,
+    static_cast<float>(iperm),
+    m01Prefit, m23Prefit, m45Prefit,
+    fakCalculateChiMass(m01Prefit, m23Prefit, m45Prefit)
+  };
 };
 
 

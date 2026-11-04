@@ -99,7 +99,11 @@ public:
   FitResult performllbbbbFIT( pfoVector jets,pfoVector leptons,bool traceEvent);	    
   FitResult performvvbbbbFIT( pfoVector jets,bool traceEvent, LCCollection *inputMCParticleCollection);	    
   FitResult performqqbbbbFIT( pfoVector jets,bool traceEvent);	    
-  void doFlavorWeightingRaw(double fitChi2, double mH1, double mH2, double mZ, std::vector<unsigned int> &perm, unsigned int iperm);
+  float fakCalculateQFlavor(const std::vector<unsigned int> &perm, float &s01, float &s23, float &s45) const;
+  float fakCalculateChiMass(float m01, float m23, float m45) const;
+  void fakDoFlavorWeightingRaw(double fitChi2, double m01, double m23, double m45,
+    float m01Prefit, float m23Prefit, float m45Prefit,
+    const std::vector<unsigned int> &perm, unsigned int iperm, unsigned int irank);
   virtual void	getJetParameters( ReconstructedParticle* jet , float (&parameters)[ 3 ] , float (&errors)[ 3 ] );
   virtual void	getLeptonParameters( ReconstructedParticle* lepton , float (&parameters)[ 3 ] , float (&errors)[ 3 ] );
   std::pair<std::vector<double>,std::vector<double>> calculateInitialValues(pfoVector jets, pfoVector leptons, vector<int> perm);
@@ -139,6 +143,8 @@ private:
   std::string m_JetTaggingPIDAlgorithm{}; 
   std::string m_JetTaggingPIDParameterB{};
   std::string m_JetTaggingPIDParameterBbar{};
+  float m_fakSigmaMassH{};
+  float m_fakSigmaMassZ{};
   int m_nAskedJets{};
   int m_nAskedLeps{};
   bool m_fitISR = true;
@@ -231,7 +237,9 @@ private:
   std::vector<float> m_Sigma_E2{};
   std::vector<float> m_bTagValues{};
   std::vector<float> m_bBarTagValues{};
-  std::vector<std::vector<float>> m_kinfitFlavorWeightedRaw{};
+  static constexpr unsigned int N_FLAVOR_PREF_PERMS = 10; // permutations fitted after sorting by q_flavor
+  std::vector<std::vector<float>> m_kinfitFlavorWeightedRaw{}; // by q_flavor rank: chi2, m01, m23, m45, s01, s23, s45, q_flavor, iperm, m01Prefit, m23Prefit, m45Prefit, chi2Mass; index = jet pair positions in the permutation
+  std::vector<float> m_qflavor{}; // by index in the full permutation list
   float m_bmax1{};
   float m_bmax2{};
   float m_bmax3{};
