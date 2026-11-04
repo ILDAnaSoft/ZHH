@@ -71,4 +71,6 @@ WWCATOUTROOT
 TestProd*
 .__afs*
 scripts/DevBatch
+scripts/DevBatch.queue*
+scripts/DevBatch*.queue
 AutoDict*
