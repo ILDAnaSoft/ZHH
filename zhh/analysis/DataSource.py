@@ -203,7 +203,7 @@ class DataSource:
         process = store['process']
 
         weight_data = np.zeros(len(self), dtype=[
-            ('pid', 'H'),
+            ('pid', 'I'),
             ('process', 'I'),
             ('polarization_code', 'B'),
             ('cross_section', 'f'),
@@ -221,7 +221,7 @@ class DataSource:
             n_combinations += np.unique(weight_data[weight_data['process'] == proc]['polarization_code']).size    
 
         processes = np.zeros(n_combinations, dtype=[
-            ('pid', 'H'), # id as in ProcessCategories
+            ('pid', 'I'), # id as in ProcessCategories
             ('process', '<U60'), # string name of process
             ('proc_pol', '<U64'),
             ('pol_e', 'i'),
