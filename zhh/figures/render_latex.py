@@ -176,5 +176,5 @@ def renderLatexFn(latex:str, location:str, overwrite:bool=True, preamble:str|Non
     render_context.render(latex, location, overwrite, preamble, documentclass)
 
 def default_latex_preamble()->str:
-    with open(osp.expandvars('$REPO_ROOT/zhh/resources/CutflowTableLatexPreamble.tex')) as tf:
+    with open(osp.join(osp.dirname(osp.abspath(__file__)), '../resources/CutflowTableLatexPreamble.tex')) as tf:
         return tf.read()
