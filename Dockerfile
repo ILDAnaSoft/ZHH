@@ -27,5 +27,9 @@ RUN --security=insecure \
 # small sample for the integration tests; CVMFS does not stay mounted across RUN instructions
 RUN --security=insecure /mount.sh bash /ZHH/shell/ci_prepare_sample.sh
 
+# automount may not remove this flag file when the build stops it. If it remains in the image, automount
+# refuses to start in containers ("program is already running") and CVMFS is not available
+RUN rm -f /run/autofs-running
+
 ENTRYPOINT ["/mount.sh"]
 CMD ["/bin/bash"]
