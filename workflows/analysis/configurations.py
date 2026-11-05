@@ -21,83 +21,71 @@ if TYPE_CHECKING:
     from hep_workflows.tasks_index import RawIndex, AbstractIndex
 
 # load prod configs
+from .configs.conf_550_fast_base import marlin_task_kwargs
 from .configs.conf_550_fast_perf import *
 from .configs.conf_550_fast_pfl import *
 from .configs.conf_550_full import *
 from .configs.conf_550_fast_perfsmbc import *
 
-# only configurations
-if False:
-    # example how to use Whizard before SGV
-    class Config_550_llbb_fast_perf(AnalysisConfiguration):
-        tag = '550-llbb-fast-perf'
-        sqrt_s = 550
-        
-        whizard_options = [
-            { 'process_name': 'eebb_sl0', 'process_definition': '', 'template_dir': '$REPO_ROOT/workflows/resources/whizard_template', 'sindarin_file': 'whizard.base550.sin' },
-            { 'process_name': 'llbb_sl0', 'process_definition': '', 'template_dir': '$REPO_ROOT/workflows/resources/whizard_template', 'sindarin_file': 'whizard.base550.sin' }
-        ]
-        
-        def sgv_inputs(self, fast_sim_task):
-            from analysis.tasks_sim import FastSimSGV
-            assert(isinstance(fast_sim_task, FastSimSGV))
-            
-            sgv_inputs = fast_sim_task.input()
-            assert('whizard_event_generation' in sgv_inputs)
-            
-            whiz_outputs = sgv_inputs['whizard_event_generation']['collection']
-            
-            input_files:list[str] = []
-            for i in range(len(whiz_outputs)):
-                input_files.append(whiz_outputs[i][0].path)
-            
-            input_options = [{
-                'global_steering.MAXEV': 999999,
-                'global_generation_steering.CMS_ENE': 550,
-                'external_read_generation_steering.GENERATOR_INPUT_TYPE': 'LCIO',
-                'external_read_generation_steering.INPUT_FILENAMES': 'input.slcio',
-                'analysis_steering.CALO_TREATMENT': 'PERF'
-            }] * len(input_files)
-            
-            return input_files, input_options
-        
-        marlin_globals = {  }
-        marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
+class Config_550_llbb_fast_perf(AnalysisConfiguration):
+    """Example how to use Whizard before SGV
 
-    class Config_550_llbb_fast_pfl(AnalysisConfiguration):
-        tag = '550-llbb-fast-pfl'
-        sqrt_s = 550
+    Usage:
+
+    ```law run WhizardEventGeneration --tag=550-llbb-fast-perf
+    law run FastSimSGV --tag=550-llbb-fast-perf
+    law run RecoFinal --tag=550-llbb-fast-perf
+    law run AnalysisFinal --tag=550-llbb-fast-perf
+    ```
+
+    Args:
+        AnalysisConfiguration (_type_): _description_
+    """
+
+    tag = '550-llbb-fast-perf'
+    sqrt_s = 550
+    
+    whizard_options = [
+        {
+            'process_name': 'llbb_sl0',
+            'process_definition': '',
+            'template_dir': '$REPO_ROOT/workflows/resources/whizard_template',
+            'sindarin_file': 'whizard.base550.sin',
+            'nevents': environ.get('DEBUG_NEVENTS', 100_000)
+        }
+    ]
+    
+    def sgv_inputs(self, fast_sim_task):
+        from hep_workflows.tasks_sim import FastSimSGV
+        assert(isinstance(fast_sim_task, FastSimSGV))
         
-        whizard_options = [
-            { 'process_name': 'eebb_sl0', 'process_definition': '', 'template_dir': '$REPO_ROOT/workflows/resources/whizard_template', 'sindarin_file': 'whizard.base550.sin' },
-            { 'process_name': 'llbb_sl0', 'process_definition': '', 'template_dir': '$REPO_ROOT/workflows/resources/whizard_template', 'sindarin_file': 'whizard.base550.sin' }
-        ]
+        sgv_inputs = fast_sim_task.input()
+        assert('whizard_event_generation' in sgv_inputs)
         
-        def sgv_inputs(self, fast_sim_task):
-            from analysis.tasks_sim import FastSimSGV
-            assert(isinstance(fast_sim_task, FastSimSGV))
-            
-            sgv_inputs = fast_sim_task.input()
-            assert('whizard_event_generation' in sgv_inputs)
-            
-            whiz_outputs = sgv_inputs['whizard_event_generation']['collection']
-            
-            input_files:list[str] = []
-            for i in range(len(whiz_outputs)):
-                input_files.append(whiz_outputs[i][0].path)
-            
-            input_options = [{
-                'global_steering.MAXEV': 999999,
-                'global_generation_steering.CMS_ENE': 550,
-                'external_read_generation_steering.GENERATOR_INPUT_TYPE': 'LCIO',
-                'external_read_generation_steering.INPUT_FILENAMES': 'input.slcio',
-                'analysis_steering.CALO_TREATMENT': 'PFL '
-            }] * len(input_files)
-            
-            return input_files, input_options
+        whiz_outputs = sgv_inputs['whizard_event_generation']['collection']
         
-        marlin_globals = {  }
-        marlin_constants = { 'CMSEnergy': 550 }
+        input_files:list[str] = []
+        for i in range(len(whiz_outputs)):
+            input_files.append(whiz_outputs[i][0].path)
+        
+        input_options = [{
+            'global_steering.MAXEV': 999999,
+            'global_generation_steering.CMS_ENE': 550,
+            'external_read_generation_steering.GENERATOR_INPUT_TYPE': 'LCIO',
+            'external_read_generation_steering.INPUT_FILENAMES': 'input.slcio',
+            'analysis_steering.CALO_TREATMENT': 'PERF'
+        }] * len(input_files)
+        
+        return input_files, input_options
+    
+    constants = {
+        'CMSEnergy': 550,
+        'errorflowconfusion': 'False',
+        'ZHH_REPO_ROOT': environ['REPO_ROOT'],
+        'ILDConfigDir': environ['ILD_CONFIG_DIR']
+    }
+    
+    task_kwargs = { 'RecoAnaBaseJob': marlin_task_kwargs() }
         
 # example how to use Whizard before SGV
 class Config_500_zh_tau_fast_perf(AnalysisConfiguration):
@@ -168,13 +156,11 @@ class Config_500_zh_tau_fast_perf(AnalysisConfiguration):
         
         return input_files, input_options
     
-    marlin_globals = {  }
-    marlin_constants = { 'CMSEnergy': 500, 'errorflowconfusion': 'False' }
+    constants = { 'CMSEnergy': 500, 'errorflowconfusion': 'False' }
 
 class Config_500_zh10_tau_fast_perf(AnalysisConfiguration):
     tag = '500-zh10-tau-fast-perf'
     sqrt_s = 500
-    
     
     whizard_options = [
         { 'process_name': 'zh_e3e3nunu',
@@ -240,8 +226,7 @@ class Config_500_zh10_tau_fast_perf(AnalysisConfiguration):
         
         return input_files, input_options
     
-    marlin_globals = {  }
-    marlin_constants = { 'CMSEnergy': 500, 'errorflowconfusion': 'False' }
+    constants = { 'CMSEnergy': 500, 'errorflowconfusion': 'False' }
 
 class Config_250_ftag_fast_perf(AnalysisConfiguration):
     tag = '250-ftag-fast-perf'
@@ -276,13 +261,7 @@ class Config_250_ftag_fast_perf(AnalysisConfiguration):
         
         return input_files, input_options
     
-    # with these settings, AnalysisRuntime actually gives the final result already!
-    def __init__(self):
-        super().__init__()
-        
-        self.marlin_constants = {
-        'CMSEnergy': 250
-        }
+    constants = { 'CMSEnergy': 250 }
 
 class Config_550_bbbb_fast_perf(AnalysisConfiguration):
     tag = '550-bbbb-fast-perf'
@@ -327,7 +306,7 @@ class Config_550_bbbb_fast_perf(AnalysisConfiguration):
         return input_files, input_options
     
     marlin_globals = {  }
-    marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
+    constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
 
 class Config_550_m125_fast_perf(AnalysisConfiguration):
     tag = '550-m125-fast-perf'
@@ -364,8 +343,7 @@ class Config_550_m125_fast_perf(AnalysisConfiguration):
         
         return input_files, input_options
     
-    marlin_globals = {  }
-    marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
+    constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
 
 class Config_550_n1n1hhnores_fast_perf(AnalysisConfiguration):
     tag = '550-n1n1hhnores-fast-perf'
@@ -386,7 +364,7 @@ class Config_550_n1n1hhnores_fast_perf(AnalysisConfiguration):
         return input_files, input_options
     
     marlin_globals = {  }
-    marlin_constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
+    constants = { 'CMSEnergy': 550, 'errorflowconfusion': 'False' }
 
 #print('List of registered configs/tags:')
 #for key, val in zhh_configs.definitions.items():
@@ -398,3 +376,4 @@ configurations.add(Config_250_ftag_fast_perf())
 configurations.add(Config_550_bbbb_fast_perf())
 configurations.add(Config_550_n1n1hhnores_fast_perf())
 configurations.add(Config_550_m125_fast_perf())
+configurations.add(Config_550_llbb_fast_perf())

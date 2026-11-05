@@ -17,7 +17,7 @@
         <constant name="Runllbbbb" value="true" />
         <constant name="Runvvbbbb" value="true" />
         <constant name="Runqqbbbb" value="true" />
-        <constant name="RunTauRecoPerformance" value="false" />
+        <!-- <constant name="RunTauRecoPerformance" value="false" /> -->
         <constant name="RunTrueJet" value="false" />
         <constant name="WriteLCIO" value="false" />
 
@@ -67,10 +67,11 @@
                 <group name="prodAnalysisQQ" />
             </if>
 
-            <!-- tau reco performance vs. hard-interaction e/mu/tau (needs MyFinalStateRecorder; processor from DevProcessors); trees go to the AIDA file -->
+            <!-- tau reco performance vs. hard-interaction e/mu/tau (needs MyFinalStateRecorder; processor from DevProcessors); trees go to the AIDA file
             <if condition="${RunTauRecoPerformance}">
                 <processor name="MyTauRecoPerformance" />
             </if>
+            -->
 
             <if condition="${WriteLCIO}">
                 <processor name="MyLCIOOutputProcessor" />
@@ -140,6 +141,7 @@
 
     <include ref="${ZHH_REPO_ROOT}/scripts/prod_analysis.xml" />
 
+    <!--
     <processor name="MyTauRecoPerformance" type="TauRecoPerformance">
         <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">${MCParticleCollectionName}</parameter>
         <parameter name="IsolatedElectronCollection" type="string" lcioInType="ReconstructedParticle">ISOElectrons</parameter>
@@ -148,6 +150,7 @@
         <parameter name="RootFile" type="string"></parameter>
         <parameter name="Verbosity" type="string">${Verbosity}</parameter>
     </processor>
+    -->
 
     <processor name="MyLCIOOutputProcessor" type="LCIOOutputProcessor">
         <!--Writes the current event to the specified LCIO outputfile. Needs to be the last ActiveProcessor.-->

@@ -1,6 +1,6 @@
 import os.path as osp
 from subprocess import check_output
-from os import makedirs, getcwd, chdir, listdir
+from os import makedirs, getcwd, chdir, listdir, environ
 from glob import glob
 from shutil import move
 from time import sleep
@@ -153,8 +153,13 @@ class LatexRenderContext:
         cmd += f'pdflatex -output-directory "{self._work_dir}" "{tmp_file}"'        
         cmd += f' && cp "{self._work_dir}/{bname}.pdf" "{location}"'# && rm -rf "{tmp_dir}"'
 
+        # the default document class and preamble require these packages. the trailing ':' of
+        # TEXINPUTS makes sure the default TeX directories are searched as well
+        tex_deps = osp.join(osp.dirname(osp.abspath(__file__)), '../resources/cutflow_table_latex_deps')
+        env = { **environ, 'TEXINPUTS': f'{tex_deps}:{environ.get("TEXINPUTS", "")}' }
+
         try:
-            check_output([cmd], shell=True, timeout=timeout)
+            check_output([cmd], shell=True, timeout=timeout, env=env)
         except Exception as e:
             print(e)
             log_file = f'{osp.splitext(tmp_file)[0]}'

@@ -173,7 +173,8 @@ if [ ! -f "$REPO_ROOT/setup.sh" ] || [ $ZHH_WRITE_SETUP = "1" ]; then
     sed -i -e "s|<ZHH_K4H_RELEASE>|$ZHH_K4H_RELEASE|g" "$REPO_ROOT/setup.sh"
 
     # insert HEP_WORKFLOWS path into setup.sh
-    HEP_WORKFLOWS=$(dirname $(source "$REPO_ROOT/$ZHH_VENV_NAME/bin/activate" && python -c "import hep_workflows; print(hep_workflows.__file__)"))
+    # only locate the package: importing it requires PYTHONPATH, which zhh_install_venv unsets
+    HEP_WORKFLOWS=$(dirname $(source "$REPO_ROOT/$ZHH_VENV_NAME/bin/activate" && python -c "from importlib.util import find_spec; print(find_spec('hep_workflows').origin)"))
     sed -i -e "s|\$HEP_WORKFLOWS|$HEP_WORKFLOWS|g" "$REPO_ROOT/setup.sh"
 
     zhh_echo "Done. Attempting to load environment..."

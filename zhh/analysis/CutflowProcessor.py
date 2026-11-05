@@ -467,7 +467,7 @@ class CutflowProcessor:
                     file:str|None='cutflow_plots.pdf',
                     hist_kwargs:dict={}, plot_options_call:dict[str, dict]={},
                     signal_categories:list[str]|None=None, bins:int|np.ndarray=100,
-                    annotate_cut:bool=True):
+                    annotate_cut:bool=True, steps:list[int]|None=None):
         """Creates plots for signal/background separation
         after each cut. When return_last_calc_dict is True, a separate plot
         showing the event count per category after the last cut is created.
@@ -479,6 +479,9 @@ class CutflowProcessor:
             step_end (int, optional): Last cut group to consider. If None, will
                 be set to the last cut group, such that all cuts are considered.
                 Defaults to None.
+            steps (list[int], optional): explicit list of cut groups to consider, in this order
+                (e.g. [0, 2] for the preselection followed by cut group 2, skipping group 1). Replaces
+                step_start/step_end if given. Defaults to None.
             display (bool, optional): whether to display the created plots.
                 Defaults to True.
             file (str): file in which all plots to store
@@ -495,7 +498,7 @@ class CutflowProcessor:
                               step_end=step_end if step_end is not None else len(self._cuts)-1,
                               hist_kwargs=hist_kwargs, plot_options_call=plot_options_call,
                               signal_categories=signal_categories,
-                              bins=bins, annotate_cut=annotate_cut)
+                              bins=bins, annotate_cut=annotate_cut, steps=steps)
         
         return context_and_figures
     
@@ -519,27 +522,33 @@ class CutflowProcessor:
         """
         return self._ild_style
     
-    def _flattenSteps(self, step_end:int, step_start:int=0):
+    def _flattenSteps(self, step_end:int|None=None, step_start:int=0, steps:list[int]|None=None):
         """Concatenated masks, cuts, calc_dicts, and max_before accross
-        multiple cut groups given by step_start and step_end. 
+        multiple cut groups given by step_start and step_end, or by an explicit
+        list of steps (e.g. [0, 2] to skip the cut group 1 that is another branch).
 
         Args:
-            step_end (int): _description_
-            step_start (int, optional): _description_. Defaults to 0.
+            step_end (int, optional): last cut group (inclusive). Ignored if steps is given.
+            step_start (int, optional): first cut group. Defaults to 0. Ignored if steps is given.
+            steps (list[int], optional): the cut groups to concatenate, in this order.
 
         Returns:
             _type_: _description_
         """
+
+        if steps is None:
+            assert(step_end is not None)
+            steps = list(range(step_start, step_end+1))
         
-        assert(step_start in self._masks and step_start in self._calc_dicts and step_start in self._max_before and
-               step_end in self._masks and step_end in self._calc_dicts and step_end in self._max_before)
+        for step in steps:
+            assert(step in self._masks and step in self._calc_dicts and step in self._max_before), f'Cut group {step} has not been processed'
         
         masks:list[list[tuple[str, np.ndarray]]] = []
         cuts:Sequence[ValueCut] = []
         calc_dicts:list[dict[str, tuple[np.ndarray, np.ndarray]]] = []
         max_before = []
         
-        for step in range(step_start, step_end+1):
+        for step in steps:
             masks.extend(self._masks[step])
             cuts.extend(self._cuts[step])
             calc_dicts.extend(self._calc_dicts[step])
@@ -710,15 +719,16 @@ class CutflowProcessor:
 
 def cutflowPlots(cp:CutflowProcessor, output_file:str|None, display:bool=True, step_start:int=0, step_end:int=0,
                  hist_kwargs:dict={}, plot_options_call:dict[str, dict]={}, signal_categories:list[str]|None=None, bins:int|np.ndarray=100,
-                 annotate_cut:bool=True):
+                 annotate_cut:bool=True, steps:list[int]|None=None):
     
-    assert(cp._signal_categories is not None and step_start in cp._masks and step_end in cp._calc_dicts and step_start in cp._max_before)
+    assert(cp._signal_categories is not None)
+    assert(steps is not None or (step_start in cp._masks and step_end in cp._calc_dicts and step_start in cp._max_before))
     
     from zhh.processes.EventCategories import EventCategories
     
     signal_category_names = [EventCategories.inverted[cat] for cat in cp._signal_categories] if signal_categories is None else signal_categories
     
-    masks, cuts, calc_dicts, max_before = cp._flattenSteps(step_end, step_start)
+    masks, cuts, calc_dicts, max_before = cp._flattenSteps(step_end, step_start, steps=steps)
     
     return cutflowPlotsFn(signal_category_names,
         cuts,

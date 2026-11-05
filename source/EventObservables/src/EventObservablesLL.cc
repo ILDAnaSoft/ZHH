@@ -206,7 +206,8 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
     LCCollection *input2JetCollection = pLCEvent->getCollection( m_input2JetCollection );
     LCCollection *inputLepPairCollection = pLCEvent->getCollection( m_inputLepPairCollection );
 
-    if (m_inputLKF_solveNuCollection->getNumberOfElements() == (int)m_nAskedIsoLeps()) {
+    // the collection does not exist if the kinematic fit failed
+    if (m_inputLKF_solveNuCollection != nullptr && m_inputLKF_solveNuCollection->getNumberOfElements() == (int)m_nAskedIsoLeps()) {
         for (int i = 0; i < m_inputLKF_solveNuCollection->getNumberOfElements(); i++) {
             ReconstructedParticle* lepton = (ReconstructedParticle*) m_inputLKF_solveNuCollection->getElementAt(i);
             m_leps4v_post_4C_kinfit[i] = v4(lepton);
@@ -380,7 +381,7 @@ void EventObservablesLL::updateChannelValues(EVENT::LCEvent *pLCEvent) {
         }
 
         // m_leps4v_post_4C_kinfit filled in EventObservablesBase
-        if (m_inputLKF_solveNuCollection->getNumberOfElements() == (int)m_nAskedIsoLeps() && m_JMK_best.size() >= (size_t)m_nAskedJets()) {
+        if (m_inputLKF_solveNuCollection != nullptr && m_inputLKF_solveNuCollection->getNumberOfElements() == (int)m_nAskedIsoLeps() && m_JMK_best.size() >= (size_t)m_nAskedJets()) {
             m_fit4C_mz = (m_leps4v_post_4C_kinfit[0]+m_leps4v_post_4C_kinfit[1]).M();
             m_fit4C_masses.push_back(( m_jets4v_post_4C_kinfit[m_JMK_best[0]] + m_jets4v_post_4C_kinfit[m_JMK_best[1]] ).M());
             m_fit4C_masses.push_back(( m_jets4v_post_4C_kinfit[m_JMK_best[2]] + m_jets4v_post_4C_kinfit[m_JMK_best[3]] ).M());

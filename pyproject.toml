@@ -28,3 +28,11 @@ py-modules = ["zhh"]
 
 [project.entry-points."hep_workflows.tasks"]
 zhh = "zhh.workflows.plugin:register"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# the plugin of platformdirs is registered by the version in the venv, while the older one of key4hep is imported
+addopts = "-p no:platformdirs"
+markers = [
+    "integration: runs Marlin, law or cutflow in the software environment of workflows/setup.sh",
+]

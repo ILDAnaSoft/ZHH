@@ -361,7 +361,7 @@ def cutflowTableFn(source_2_counts:dict[str, dict[str, np.ndarray]],
 
     csv_out = f'{osp.splitext(path)[0]}_counts.csv'
 
-    render_context = LatexRenderContext(work_dir=f'{osp.dirname(csv_out)}/latex-build-{osp.splitext(osp.basename(path))[0]}', packages=[ 'ydoc', 'standalone', 'upgreek' ])
+    render_context = LatexRenderContext(work_dir=f'{osp.dirname(csv_out)}/latex-build-{osp.splitext(osp.basename(path))[0]}')
 
     for n_run in range(3):
         render_abs_table = n_run == 0

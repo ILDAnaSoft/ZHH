@@ -9,11 +9,8 @@ from zhh import glob_exp
 if TYPE_CHECKING:
     from hep_workflows import RawIndex, AbstractIndex
 
-def define_configs_550_fast(suffix:str, sgv_options:dict,
-                            sgv_executable_cfg:str='$SGV_DIR/tests/usesgvlcio.exe',
-                            sgv_steering_file_src_cfg:str='$SGV_DIR/tests/sgv.steer',
-                            reco_steering_file:str='$REPO_ROOT/scripts/prod_reco_run.xml',
-                            analysis_steering_file:str='$REPO_ROOT/scripts/prod_analysis_run.xml'):
+def marlin_task_kwargs(reco_steering_file:str='$REPO_ROOT/scripts/prod_reco_run.xml',
+                       analysis_steering_file:str='$REPO_ROOT/scripts/prod_analysis_run.xml'):
     
     def marlin_task_kwargs_factory(task):
         """Used to set task parameters by overwriting properties of the
@@ -47,6 +44,14 @@ def define_configs_550_fast(suffix:str, sgv_options:dict,
 
             'steering_file': osp.expandvars(reco_steering_file) if is_reco else osp.expandvars(analysis_steering_file)
         }
+    
+    return marlin_task_kwargs_factory
+
+def define_configs_550_fast(suffix:str, sgv_options:dict,
+                            sgv_executable_cfg:str='$SGV_DIR/tests/usesgvlcio.exe',
+                            sgv_steering_file_src_cfg:str='$SGV_DIR/tests/sgv.steer',
+                            reco_steering_file:str='$REPO_ROOT/scripts/prod_reco_run.xml',
+                            analysis_steering_file:str='$REPO_ROOT/scripts/prod_analysis_run.xml'):
 
     class Config_550_base(AnalysisConfiguration):
         sqrt_s = 550
@@ -67,7 +72,7 @@ def define_configs_550_fast(suffix:str, sgv_options:dict,
         sgv_steering_file_src = sgv_steering_file_src_cfg
 
         task_kwargs = {
-            'RecoAnaBaseJob': marlin_task_kwargs_factory # used to overwrite properties/defaults of all Marlin tasks
+            'RecoAnaBaseJob': marlin_task_kwargs(reco_steering_file, analysis_steering_file) # used to overwrite properties/defaults of all Marlin tasks
         }
     
     class Config_550_llhh(Config_550_base):

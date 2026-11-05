@@ -326,7 +326,7 @@ def cutflow_provision_features(interpretations:list[CutflowFeatureInterpretation
     """_summary_
 
     Args:
-        interpretations (list[Interpretation]): List of features to provision. see Interpretation
+        interpretations (list[CutflowFeatureInterpretation]): List of features to provision. see CutflowFeatureInterpretation
         root_files_glob (str): argument to glob() to find input ROOT files
         items_path (str): location at which converted ROOT TTree data will be stored
                           in a sub-directory '{path}/items/{tree_name}.{branch_name}/*.h5'
@@ -443,7 +443,7 @@ def cutflow_provision_features(interpretations:list[CutflowFeatureInterpretation
 
         to_sync = []
 
-        def per_interpretation(feature:Interpretation, feature_names:list[str])->tuple[tuple|None, list[str]]:
+        def per_interpretation(feature:CutflowFeatureInterpretation, feature_names:list[str])->tuple[tuple|None, list[str]]:
             assert('name' in feature)
             name = feature['name']
             

@@ -134,9 +134,12 @@ void EventObservablesVV::updateChannelValues(EVENT::LCEvent *pLCEvent) {
     }
   }
   
-  for (int i = 0; i < m_inputJKF_solveNuCollection->getNumberOfElements(); i++) {
-    ReconstructedParticle* jet = (ReconstructedParticle*) m_inputJKF_solveNuCollection->getElementAt(i);
-    m_jets4v_post_4C_kinfit[i] = v4(jet);
+  // the collection does not exist if the kinematic fit failed
+  if (m_inputJKF_solveNuCollection != nullptr) {
+    for (int i = 0; i < m_inputJKF_solveNuCollection->getNumberOfElements(); i++) {
+      ReconstructedParticle* jet = (ReconstructedParticle*) m_inputJKF_solveNuCollection->getElementAt(i);
+      m_jets4v_post_4C_kinfit[i] = v4(jet);
+    }
   }
   
   m_JMK_best = (m_fitchi2_ZHH <= m_fitchi2_ZZH ? m_JMK_ZHH : m_JMK_ZZH);
