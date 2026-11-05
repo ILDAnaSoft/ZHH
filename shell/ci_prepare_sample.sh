@@ -13,6 +13,12 @@ TAG="550-llbb-fast-perf"
 
 cd "$REPO_ROOT"
 
+if [ ! -d /cvmfs/sw.hsf.org/key4hep ]; then
+    echo "CVMFS is not available. Content of /run:"
+    ls -la /run
+    exit 1
+fi
+
 # the environment scripts of key4hep do not expect set -e
 set +e
 source workflows/setup.sh

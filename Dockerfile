@@ -24,12 +24,14 @@ RUN --security=insecure \
     echo "Building image with $(nproc) cores..." && cd /ZHH && bash install.sh --auto; \
     ls /ZHH/source/lib && echo "ZHH libraries created. Done" || exit 2
 
+# automount does not clean up its files in /run when a build step ends. If they remain, automount may refuse
+# to start in later steps and in containers ("program is already running") and CVMFS is not available
+RUN rm -rf /run/autofs*
+
 # small sample for the integration tests; CVMFS does not stay mounted across RUN instructions
 RUN --security=insecure /mount.sh bash /ZHH/shell/ci_prepare_sample.sh
 
-# automount may not remove this flag file when the build stops it. If it remains in the image, automount
-# refuses to start in containers ("program is already running") and CVMFS is not available
-RUN rm -f /run/autofs-running
+RUN rm -rf /run/autofs*
 
 ENTRYPOINT ["/mount.sh"]
 CMD ["/bin/bash"]
