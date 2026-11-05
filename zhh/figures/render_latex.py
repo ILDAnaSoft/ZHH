@@ -155,7 +155,7 @@ class LatexRenderContext:
 
         # the default document class and preamble require these packages. the trailing ':' of
         # TEXINPUTS makes sure the default TeX directories are searched as well
-        tex_deps = osp.expandvars('$REPO_ROOT/zhh/resources/cutflow_table_latex_deps')
+        tex_deps = osp.join(osp.dirname(osp.abspath(__file__)), '../resources/cutflow_table_latex_deps')
         env = { **environ, 'TEXINPUTS': f'{tex_deps}:{environ.get("TEXINPUTS", "")}' }
 
         try:
