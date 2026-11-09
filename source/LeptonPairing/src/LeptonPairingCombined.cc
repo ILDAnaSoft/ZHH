@@ -173,6 +173,14 @@ void LeptonPairingCombined::processRunHeader( LCRunHeader* run ) {
   (void) run;
 }
 
+// PDG code of an isolated lepton from the flavour of its collection (11, 13) and its charge;
+// other types (taus) keep the PFO type
+static int leptonPDG(ReconstructedParticle *lepton, int leptonType) {
+  if (abs(leptonType) != 11 && abs(leptonType) != 13)
+    return lepton->getType();
+  return lepton->getCharge() < 0 ? abs(leptonType) : -abs(leptonType);
+}
+
 float LeptonPairingCombined::evaluateIsoLeptons(EVENT::LCCollection *isoLepCollection,EVENT::LCCollection *pfosWOIsoLepCollection, int leptonType){
   float bestDelta = 99999.;
   int massEntryIndex;
@@ -209,8 +217,8 @@ float LeptonPairingCombined::evaluateIsoLeptons(EVENT::LCCollection *isoLepColle
           vector<lcio::ReconstructedParticle*> photons;
           ReconstructedParticleImpl recoLepton1;
           ReconstructedParticleImpl recoLepton2;
-          ZHH::doPhotonRecovery(lepton1, pfosWOIsoLepCollection, &recoLepton1, fCosFSRCut, lepton1->getType(), photons);
-          ZHH::doPhotonRecovery(lepton2, pfosWOIsoLepCollection, &recoLepton2, fCosFSRCut, lepton2->getType(), photons);
+          ZHH::doPhotonRecovery(lepton1, pfosWOIsoLepCollection, &recoLepton1, fCosFSRCut, leptonPDG(lepton1, leptonType), photons);
+          ZHH::doPhotonRecovery(lepton2, pfosWOIsoLepCollection, &recoLepton2, fCosFSRCut, leptonPDG(lepton2, leptonType), photons);
 
           pairmass = inv_mass(&recoLepton1, &recoLepton2);
           massDelta = abs(pairmass - m_diLepInvMass);
@@ -322,9 +330,9 @@ void LeptonPairingCombined::processEvent( EVENT::LCEvent *pLCEvent ) {
     Double_t fCosFSRCut = m_doPhotonRecovery ? 0.99 : 99.; // the angle of BS and FSR around the direction of charged lepton
 
     ReconstructedParticleImpl *recoLepton1 = new ReconstructedParticleImpl();
-    ZHH::doPhotonRecovery(m_bestLeptonPair[0], PFOsWOIsoLepCollection, recoLepton1, fCosFSRCut, m_bestLeptonPair[0]->getType(), photons);
+    ZHH::doPhotonRecovery(m_bestLeptonPair[0], PFOsWOIsoLepCollection, recoLepton1, fCosFSRCut, leptonPDG(m_bestLeptonPair[0], m_bestLeptonType), photons);
     ReconstructedParticleImpl *recoLepton2 = new ReconstructedParticleImpl();
-    ZHH::doPhotonRecovery(m_bestLeptonPair[1], PFOsWOIsoLepCollection, recoLepton2, fCosFSRCut, m_bestLeptonPair[1]->getType(), photons);
+    ZHH::doPhotonRecovery(m_bestLeptonPair[1], PFOsWOIsoLepCollection, recoLepton2, fCosFSRCut, leptonPDG(m_bestLeptonPair[1], m_bestLeptonType), photons);
 
     m_RecoLepsInvMass[massEntryIndex] = inv_mass(recoLepton1, recoLepton2);
 
