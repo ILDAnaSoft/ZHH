@@ -18,6 +18,18 @@
 
 namespace ZHH {
 
+namespace {
+
+// recPart is a photon within cos(angle) > fCosFSRCut around the lepton
+Bool_t isPhotonAroundLepton(ReconstructedParticle *lepton, ReconstructedParticle *recPart, Double_t fCosFSRCut) {
+  TVector3 momentumLepton = TVector3(lepton->getMomentum());
+  TVector3 momentum = TVector3(recPart->getMomentum());
+  Double_t cosFSR = momentum.Dot(momentumLepton)/momentum.Mag()/momentumLepton.Mag();
+  return cosFSR > fCosFSRCut && isolep::getLeptonID(recPart) == 22;
+}
+
+} // namespace
+
 void doPhotonRecovery(ReconstructedParticle *lepton, LCCollection *colPFO, ReconstructedParticleImpl *recoLepton, Double_t fCosFSRCut, 
   Int_t lepType, std::vector<lcio::ReconstructedParticle*> &photons) {
   
@@ -35,7 +47,11 @@ void doPhotonRecovery(ReconstructedParticle *lepton, LCCollection *colPFO, Recon
     if (isolep::isFoundInVector(recPart, photons))
       continue;
     
-    Bool_t isFSR = isolep::getFSRTag(lepton, recPart, fCosFSRCut);
+    // electrons and muons: the flavour is known (lepType), the lepton is not re-identified from its
+    // calorimeter energies as in isolep::getFSRTag, which fails e.g. for muons without a yoke signal
+    Bool_t isFSR = (abs(lepType) == 11 || abs(lepType) == 13)
+      ? isPhotonAroundLepton(lepton, recPart, fCosFSRCut)
+      : isolep::getFSRTag(lepton, recPart, fCosFSRCut);
     if (!isFSR)
       continue;
 
