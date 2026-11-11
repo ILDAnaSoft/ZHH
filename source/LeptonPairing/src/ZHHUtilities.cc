@@ -35,7 +35,10 @@ void doPhotonRecovery(ReconstructedParticle *lepton, LCCollection *colPFO, Recon
     if (isolep::isFoundInVector(recPart, photons))
       continue;
     
-    Bool_t isFSR = isolep::getFSRTag(lepton, recPart, fCosFSRCut);
+    // electrons and muons: the flavour is known (lepType) and passed on, so getFSRTag does not
+    // re-identify the lepton from its calorimeter energies (fails e.g. for muons without a yoke signal)
+    Bool_t isFSR = isolep::getFSRTag(lepton, recPart, fCosFSRCut,
+      (abs(lepType) == 11 || abs(lepType) == 13) ? lepType : 0);
     if (!isFSR)
       continue;
 
