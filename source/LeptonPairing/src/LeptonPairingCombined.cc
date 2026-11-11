@@ -207,10 +207,10 @@ float LeptonPairingCombined::evaluateIsoLeptons(EVENT::LCCollection *isoLepColle
       for ( int i_lep2 = i_lep1 + 1 ; i_lep2 < InIsoLeps ; ++i_lep2 ) {
         ReconstructedParticle* lepton2 = static_cast<ReconstructedParticle*>( isoLepCollection->getElementAt( i_lep2 ) );
 
-        //Check if same type and have opposite charge 
+        //Check if same type and have opposite charge (e, mu: flavour from the collection, see leptonPDG)
         streamlog_out(DEBUG7) << "Pairing item [" << i_lep1 << "] with [" << i_lep2 << "]" << endl;
         
-        if (lepton1->getType() + lepton2->getType() == 0) {
+        if (leptonPDG(lepton1, leptonType) + leptonPDG(lepton2, leptonType) == 0) {
           // photon recovery for this pair only (as done for the final pair in processEvent), so
           // that the pair mass does not depend on photons assigned in other pair combinations;
           // temporary candidates, only used to evaluate the pair mass

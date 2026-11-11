@@ -40,7 +40,7 @@ namespace isolep{
   Double_t getInvariantMass(ReconstructedParticle *recPart1, ReconstructedParticle *recPart2, ReconstructedParticle *recPart3);
   
   Int_t getLeptonID(ReconstructedParticle *recPart);
-  Bool_t getFSRTag(ReconstructedParticle *motherPart, ReconstructedParticle *recPart, Double_t fCosFSRCut = 0.999);
+  Bool_t getFSRTag(ReconstructedParticle *motherPart, ReconstructedParticle *recPart, Double_t fCosFSRCut = 0.999, Int_t motherType = 0);
   Bool_t getSplitTag(ReconstructedParticle *motherPart, ReconstructedParticle *recPart); 
 //TVector3 getConeEnergy(ReconstructedParticle *recPart, LCCollection *colPFO, Double_t cosCone, Bool_t woFSR);
 //void getConeEnergy(ReconstructedParticle *recPart, LCCollection *colPFO, Double_t cosCone, Bool_t woFSR, TVector3 coneEnergy0);
