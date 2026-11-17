@@ -287,15 +287,16 @@ Int_t getLeptonID(ReconstructedParticle *recPart) {
   return iLeptonType;
 }
 
-Bool_t getFSRTag(ReconstructedParticle *motherPart, ReconstructedParticle *recPart, Double_t fCosFSRCut) {
+Bool_t getFSRTag(ReconstructedParticle *motherPart, ReconstructedParticle *recPart, Double_t fCosFSRCut, Int_t motherType) {
   // tag the particle recPart if it is from the Bremmstrahlung or Final-State-Radiation of another particle motherPart
+  // motherType: known PDG code of motherPart; 0 = identify it from its calorimeter energies
   Bool_t isFSR = kFALSE;
   //  Double_t charge = motherPart->getCharge(); // mother particle should be charged
   TVector3 momentumMother = TVector3(motherPart->getMomentum());
   TVector3 momentum = TVector3(recPart->getMomentum());
   Double_t cosFSR = momentum.Dot(momentumMother)/momentum.Mag()/momentumMother.Mag();
   Int_t iType = getLeptonID(recPart);
-  Int_t iTypeMother = getLeptonID(motherPart);
+  Int_t iTypeMother = motherType != 0 ? abs(motherType) : getLeptonID(motherPart);
   //  if (TMath::Abs(charge) > 0.5 && cosFSR > fCosFSRCut) {
   //    if (iType == 11 || iType == 22) {
   if (cosFSR > fCosFSRCut && (iTypeMother == 11 || iTypeMother == 13)) {
