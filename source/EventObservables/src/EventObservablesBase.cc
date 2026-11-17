@@ -1267,8 +1267,10 @@ void EventObservablesBase::processEvent( LCEvent* evt ){
 	streamlog_out(DEBUG) << "END updateBaseValues -> status code " << m_statusCode << std::endl;
 
 	// all channel specific processors require that at least acquiring the base values succeeds
-	// status 100 only flags missing kinfit collections (not produced in the QQ channel), which channel processors do not require
-	if (m_statusCode == 0 || m_statusCode == 100) {
+	// status 0: base successful
+	// status 100 (missing kinfit collections) is skipped as well: with only the solveNu fit converged, m_JMK_best
+	//         stays -1 and the channel processors would index the post-fit jets out of bounds (fit4C masses)
+	if (m_statusCode == 0) {
 		streamlog_out(DEBUG) << "START updateChannelValues" << std::endl;
 		calculateSimpleZHHChi2();
 		updateChannelValues(evt);
