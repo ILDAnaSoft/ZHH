@@ -4,17 +4,7 @@
 # it should be sourced by you or whatever other file calls it
 # usage: source sgv_install.sh <SGV_DIR>
 
-# this file has been tested with
-# - key4hep stack release 2025-01-28 and
-# - SGV release e781bad09ef30595ed1db0343145eebbf5d00a1a
-# to source this key4hep stack,
-#   source /cvmfs/sw.hsf.org/key4hep/setup.sh -r "2025-01-28"
-# remark 1: the LCIO version supplied by key4hep will be used per default
-# remark 2: so far STDHEP is not working when setting up SGV using this file
-#   this seems to be related with some dependency in the key4hep stack, as it
-#   at least compiles with 2024-03-10 (maybe the gfortran version?)
-
-# there are two resulting setup:
+# there are two resulting setups:
 # 1st: in $SGV_DIR/tests and does the following:
 # - read 999999 (i.e. all) events
 # - use LCIO input
@@ -68,31 +58,54 @@ sgv_install_action () {
     fi
 
     # required on Alma9/RHEL9, and doesn't hurt on other systems
+    local USING_OPENBLAS="N"
     if [[ $(find /usr/lib64/ -name "libblas.so*" -type f | wc -l) = 1 && $(find /usr/lib64/ -name "liblapack.so*" -type f | wc -l) = 1 ]]; then
         . samples/ld_preload_for_el9
     else
-        echo "Either libblas.so or liblapack.so could not be found. If you don't fix this issue, SGV will not work correctly. You can either build it yourself or try to install it via package manager."
+        # if blas or lapack are not found (this is e.g. the case on lxplus), try to find them from the key4hep stack
+        echo "blas and/or lapack libraries not found. Trying out openblas from key4hep (assuming it also includes lapack)"
         
-        local yn=""
-        read -p "Do you wish to continue? y/n (n) " yn
-        local yn=${yn:-"n"}
+        if [ "$(gfortran -print-file-name=libblas.so)" == "libblas.so" ] || [ "$(gfortran -print-file-name=liblapack.so)" == "liblapack.so" ]; then
+            export OPENBLAS_DIR=$(echo "$CMAKE_PREFIX_PATH" | tr ':' '\n' | grep -i openblas | head -1)
+            
+            if [ ! -d "$OPENBLAS_DIR" ]; then
+                echo "Critical error: openblas could not be found. Make sure to install blas/lapack or make them available through openblas (did you source a key4hep stack?)"
+                return 3
+            fi
 
-        if [ "$yn" != "y" ]; then
-            return 3
+            echo "openblas found at $OPENBLAS_DIR. Creating symlinks in directory $HOME/SGV_LIBS..."
+            local USING_OPENBLAS="Y"
+
+            mkdir -p "$HOME/SGV_LIBS"
+            
+            ln -sf "$OPENBLAS_DIR/lib/libopenblas.so" "$HOME/SGV_LIBS/libblas.so"
+            ln -sf "$OPENBLAS_DIR/lib/libopenblas.so" "$HOME/SGV_LIBS/liblapack.so"
+            ln -sf "$OPENBLAS_DIR/lib/libopenblas.so" "$HOME/SGV_LIBS/libopenblas.so.0"
+
+            export LIBRARY_PATH="$HOME/SGV_LIBS${LIBRARY_PATH:+:$LIBRARY_PATH}"
+            export LD_LIBRARY_PATH="$HOME/SGV_LIBS${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
         fi
     fi
 
-    # prepare stdhep support;
-    # as stated above, this is disabled to support the newest key4hep stack versions
-    # you can enable it manually by setting the following to "1"
-    if [ "1" = "2" ]; then
+    # prepare stdhep support
+    local STDHEP_INSTALLED="N"
+    (
         cd $SGV_DIR/samples
-        . install-stdhep
+        . install-stdhep "$SGV_DIR"
+        # installs into $SGV_DIR/stdhep_and_mcfio
+    )
 
-        # $STDHEP_DIR should now point to a valid directory
-        if [ ! -d "$STDHEP_DIR" ]; then
-            echo "$STDHEP_DIR not pointing to a valid directory"
-            return 4
+    # $STDHEP_DIR should now point to a valid directory
+    local STDHEP_DIR_CANDIDATE="$SGV_DIR/stdhep_and_mcfio/lib"
+    if [ ! -d "$STDHEP_DIR_CANDIDATE" ]; then
+        echo "$STDHEP_DIR_CANDIDATE not pointing to a valid directory. No stdhep support will be available"
+    else
+        if [ "$(nm "$STDHEP_DIR_CANDIDATE/libstdhep.a" | grep -cE ' T (stdxropen|stdxrd|stdxend)_$')" -eq 3 ]; then
+            local STDHEP_INSTALLED="Y"
+            export STDHEP_DIR="$STDHEP_DIR_CANDIDATE"
+        else
+            echo "Stdhep compilation failed. No stdhep will be available"
+            unset STDHEP_DIR
         fi
     fi
 
@@ -218,7 +231,14 @@ ANSWERS
     cresgvexe merge usesgvlcio "-DEXTREAD" "" "" "" "eflow_par_type.o zaccon.o ztugeo-beamcal.o"
 
     # add LD_PRELOAD to sgvenv.sh to avoid missing libraries
-    echo ". $SGV_DIR/samples/ld_preload_for_el9" >> "$SGV_DIR/sgvenv.sh"
+    if [ "$USING_OPENBLAS" == "Y" ]; then
+    cat >> "$SGV_DIR/sgvenv.sh" <<EOF
+export LIBRARY_PATH="$HOME/SGV_LIBS\${LIBRARY_PATH:+:\$LIBRARY_PATH}"
+export LD_LIBRARY_PATH="$HOME/SGV_LIBS\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}"
+EOF
+    else
+        echo ". $SGV_DIR/samples/ld_preload_for_el9" >> "$SGV_DIR/sgvenv.sh"
+    fi
 }
 
 sgv_install_action "$@"
